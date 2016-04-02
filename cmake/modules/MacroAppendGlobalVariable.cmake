@@ -1,0 +1,5 @@
+# Adds source files
+MACRO(MACRO_APPEND_GLOBAL_VARIABLE VARIABLE VALUES)
+        get_property(TMP GLOBAL PROPERTY ${VARIABLE}) 
+        set_property(GLOBAL PROPERTY ${VARIABLE} ${TMP} ${VALUES} )   
+ENDMACRO()

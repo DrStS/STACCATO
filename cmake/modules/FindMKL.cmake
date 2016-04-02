@@ -1,10 +1,9 @@
-# a cmake module to find Intel Math Kernel Library
+# A cmake module to find Intel Math Kernel Library
 #------------------------------------------------------------------------------------#
 # MKL includes and libraries are searched for in MKL_INCLUDE_DIR and MKL_LIB_DIR.
 # If MKL_INCLUDE_DIR and MKL_LIB_DIR are not set, the module searches under 
 # the environment variable MKLROOT and /opt/intel/mkl subdirectories.
 #------------------------------------------------------------------------------------#
-
 set(MKLROOT_DIR $ENV{MKLROOT})
 IF (NOT MKLROOT_DIR)
    IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -28,6 +27,9 @@ IF (NOT MKL_INCLUDE_DIR)
     HINTS ${MKLROOT_DIR}
     PATH_SUFFIXES include
     )  
+	IF(MKL_INCLUDE_DIR MATCHES "MKL_INCLUDE_DIR-NOTFOUND")
+     unset(MKL_INCLUDE_DIR CACHE)
+	ENDIF()
 ENDIF ()
 message("MKL_INCLUDE_DIR is: ${MKL_INCLUDE_DIR}")
 #------------------------------------------------------------------------------------#
@@ -69,6 +71,6 @@ endif ()
 
 # set MKL_FOUND
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INTEL_LP64_LIBRARY MKL_INTEL_THREAD_LIBRARY MKL_CORE_LIBRARY)
+find_package_handle_standard_args(MKL REQUIRED_VARS MKL_INTEL_LP64_LIBRARY MKL_INTEL_THREAD_LIBRARY MKL_CORE_LIBRARY)
 #mark_as_advanced(LIB_PTHREAD MKL_INCLUDE_DIR MKL_LIBRARY_DIR)
 

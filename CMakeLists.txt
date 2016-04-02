@@ -19,7 +19,8 @@
 #------------------------------------------------------------------------------------#
 project (STACCATO)
 #------------------------------------------------------------------------------------#
-cmake_minimum_required (VERSION 2.8.10)
+cmake_minimum_required (VERSION 3.2)
+cmake_policy(VERSION 3.2)
 set( CMAKE_VERBOSE_MAKEFILE on )
 #------------------------------------------------------------------------------------#
 # Check OS and host system
@@ -75,14 +76,14 @@ macro_ensure_out_of_source_build("In source build is not allowed for ${PROJECT_N
 #------------------------------------------------------------------------------------#
 # Check compilers, their versions
 # Linux x86_64
-IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "Intel")
+IF (${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel" AND ${CMAKE_C_COMPILER_ID} STREQUAL "Intel")
   # using Intel C/C++
   SET(USE_INTEL_COMPILERS_LINUX ON)
   MESSAGE("C compiler is ${CMAKE_C_COMPILER_ID} and has version ${CMAKE_C_COMPILER_VERSION} \nC++ compiler is ${CMAKE_CXX_COMPILER_ID} and has version ${CMAKE_CXX_COMPILER_VERSION} " ) 
-ELSEIF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
    SET(USE_GCC_COMPILERS_LINUX ON)
    MESSAGE("C compiler is ${CMAKE_C_COMPILER_ID} and has version ${CMAKE_C_COMPILER_VERSION} \nC++ compiler is ${CMAKE_CXX_COMPILER_ID} and has version ${CMAKE_CXX_COMPILER_VERSION} " ) 
-ELSEIF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "MSVC")
+ELSEIF (${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC AND ${CMAKE_C_COMPILER_ID} STREQUAL MSVC)
   # using MSVC
   SET(USE_USE_MICROSOFT_COMPILERS_WINDOWS ON)
   MESSAGE("C compiler is ${CMAKE_C_COMPILER_ID} and has version ${CMAKE_C_COMPILER_VERSION} \nC++ compiler is ${CMAKE_CXX_COMPILER_ID} and has version ${CMAKE_CXX_COMPILER_VERSION} " ) 

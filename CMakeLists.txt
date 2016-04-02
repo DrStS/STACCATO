@@ -32,6 +32,8 @@ ELSEIF( (${CMAKE_SYSTEM_NAME} MATCHES "Windows" AND ${CMAKE_HOST_SYSTEM_PROCESSO
 ELSE() 
     MESSAGE(FATAL_ERROR "STACCATO is supported on Linux x86_64 and Windows x64 only")	
 ENDIF()
+# Diag output
+MESSAGE("Current source dir is" ${STACCATO_SOURCE_DIR})
 #------------------------------------------------------------------------------------#
 # 1. Options
 # 2. Macros
@@ -43,12 +45,10 @@ ENDIF()
 ######################################################################################
 # THESE GLOBAL VARIABLES ARE SET DURING THE CONFIGURATION
 ######################################################################################
-#EMPIRE_thirdparty_SOURCES
-#EMPIRE_thirdparty_INCLUDES
-#Emperor_SOURCES
-#Emperor_INCLUDES
-#Emperor_API_SOURCES
-#Emperor_API_INCLUDES
+#STACCATO_thirdparty_SOURCES
+#STACCATO_thirdparty_INCLUDES
+#STACCATO_SOURCES
+#STACCATO_INCLUDES
 ######################################################################################
 #1. Option
 ######################################################################################
@@ -58,6 +58,7 @@ option(USE_INTEL_MKL           "Use Intel MKL"  ON )
 #2. Macros
 ######################################################################################
 # Add STACCATO cmake modules
+set(CMAKE_MODULE_PATH ${STACCATO_SOURCE_DIR}/cmake/modules)
 include(MacroOutOfSourceBuild)
 include(MacroAppendGlobalVariable)
 include(ExternalProject)
@@ -89,20 +90,21 @@ ELSE()
   MESSAGE(FATAL_ERROR "Your CXX compiler is ${CMAKE_CXX_COMPILER_ID} and your C compiler is ${CMAKE_C_COMPILER_ID} they are not supported by the build system yet")	
 ENDIF()
 #------------------------------------------------------------------------------------#
-
+# Try to find Intel MKL 
+IF (${USE_INTEL_MKL})
+  find_package(MKL REQUIRED)
+  add_definitions(-DUSE_INTEL_MKL)
+ENDIF()
 #------------------------------------------------------------------------------------#
-# Global valid defines
-
-#------------------------------------------------------------------------------------#
-# Set Compiler flags and Linker flags (CMAKE_BUILD_TYPE is not used!) 
-## Here INTEL specific flags are taken care for
-
 ######################################################################################
 #4. Configure
 ######################################################################################
-
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+git_describe(GIT_TAG --tags)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/tools/AuxiliaryParameters.cpp.in" 
+"${CMAKE_CURRENT_SOURCE_DIR}/src/tools/AuxiliaryParameters.cpp" @ONLY)
 ######################################################################################
 #5. Subdirectories THE ORDER IS IMPORTANT, BECAUSE THEY ARE COMPILED IN THAT ORDER
 ######################################################################################
-
+add_subdirectory(src)
 

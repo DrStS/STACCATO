@@ -15,10 +15,15 @@ ENDFOREACH()
 get_property(STACCATO_INCLUDES GLOBAL PROPERTY STACCATO_INCLUDES) 
 get_property(STACCATO_SOURCES GLOBAL PROPERTY STACCATO_SOURCES)  
 #------------------------------------------------------------------------------------#
+# SET OCCT
+IF (${USE_OCCT})
+  include_directories(${OCCT_INCLUDE_DIR})
+  SET(STACCATO_LIBS ${STACCATO_LIBS}  ${OCCT_LIBRARIES})
+ENDIF()
 # SET Intel MKL 
 IF (${USE_INTEL_MKL})
   include_directories(${MKL_INCLUDE_DIR})
-  SET(STACCATO_LIBS ${STACCATO_LIBS} ${MKL_LIBRARIES})
+  SET(STACCATO_LIBS ${STACCATO_LIBS} ${MKL_LIBRARIES} )
 ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})

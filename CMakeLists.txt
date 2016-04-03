@@ -54,7 +54,8 @@ MESSAGE("Current source dir is" ${STACCATO_SOURCE_DIR})
 #1. Option
 ######################################################################################
 option(USE_INTEL_COMPILER      "Use Intel Compilers C/C++"  ON )
-option(USE_INTEL_MKL           "Use Intel MKL"  ON )
+option(USE_INTEL_MKL           "Use Intel MKL"  OFF )
+option(USE_OCCT                "Use Opencascade"  ON )
 ######################################################################################
 #2. Macros
 ######################################################################################
@@ -91,6 +92,10 @@ ELSE()
   MESSAGE(FATAL_ERROR "Your CXX compiler is ${CMAKE_CXX_COMPILER_ID} and your C compiler is ${CMAKE_C_COMPILER_ID} they are not supported by the build system yet")	
 ENDIF()
 #------------------------------------------------------------------------------------#
+# Try to find Opencascade
+IF (${USE_OCCT})
+  find_package(OCCT REQUIRED)
+ENDIF()
 # Try to find Intel MKL 
 IF (${USE_INTEL_MKL})
   find_package(MKL REQUIRED)

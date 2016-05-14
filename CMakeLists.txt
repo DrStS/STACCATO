@@ -56,6 +56,7 @@ MESSAGE("Current source dir is" ${STACCATO_SOURCE_DIR})
 option(USE_INTEL_COMPILER      "Use Intel Compilers C/C++"  ON )
 option(USE_INTEL_MKL           "Use Intel MKL"  OFF )
 option(USE_OCCT                "Use Opencascade"  ON )
+option(USE_QT5                 "Use QT5"  ON )
 ######################################################################################
 #2. Macros
 ######################################################################################
@@ -101,7 +102,18 @@ IF (${USE_INTEL_MKL})
   find_package(MKL REQUIRED)
   add_definitions(-DUSE_INTEL_MKL)
 ENDIF()
+IF (${USE_QT5})
+  find_package(Qt5Widgets REQUIRED)
+  MESSAGE("Qt5Widgets status: ${Qt5Widgets_FOUND}")
+  set(CMAKE_AUTOMOC ON)
+  set(CMAKE_AUTOUIC ON)
+  set(CMAKE_INCLUDE_CURRENT_DIR ON)
+ENDIF()
 #------------------------------------------------------------------------------------#
+IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+SET (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ENDIF()
 ######################################################################################
 #4. Configure
 ######################################################################################

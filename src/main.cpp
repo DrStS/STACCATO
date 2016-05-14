@@ -61,12 +61,40 @@
  **************************************************************************************************/
 
 #include <iostream>
-
-using namespace std;
+//Qt5
+#include <QApplication>
+//OCC
+#include <gp_Ax2.hxx>
+#include <TopoDS_Shape.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <TDocStd_Document.hxx>
+#include <XCAFDoc_ShapeTool.hxx>
+#include <XCAFDoc_DocumentTool.hxx>
+#include <STEPCAFControl_Writer.hxx>
+#include <StlAPI_Writer.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
+#include <BRepFeat_MakeCylindricalHole.hxx>
+#include <BRepPrimAPI_MakeCylinder.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
+#include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepPrimAPI_MakeTorus.hxx>
+#include <TColgp_Array1OfPnt.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+//USER
+#include <AuxiliaryParameters.h>
+#include <mainwindow.h>
 
 int main(int argc, char **argv) {
-    
+  
     cout << "Hello STACCATO is fired up!" << endl;
+    cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
-    return (0);
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
 }

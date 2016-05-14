@@ -28,10 +28,15 @@ ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp)
+
+add_library(mainwindow mainwindow.cpp)
+target_link_libraries (mainwindow Qt5::Widgets)
+
 add_library(STACCATOLib STATIC ${STACCATO_SOURCES})
 #------------------------------------------------------------------------------------#
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS})
+target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS} mainwindow)
 #------------------------------------------------------------------------------------#
 add_dependencies(STACCATO STACCATOLib)
 #------------------------------------------------------------------------------------#
@@ -43,3 +48,7 @@ MESSAGE("STACCATO_SOURCES: ${STACCATO_SOURCES}")
 # Where to put EXECUTABLE
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin64)
 #------------------------------------------------------------------------------------#
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()

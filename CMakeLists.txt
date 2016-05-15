@@ -21,7 +21,7 @@ project (STACCATO)
 #------------------------------------------------------------------------------------#
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(VERSION 3.2)
-set( CMAKE_VERBOSE_MAKEFILE on )
+set( CMAKE_VERBOSE_MAKEFILE off )
 #------------------------------------------------------------------------------------#
 # Check OS and host system
 IF( (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")) 

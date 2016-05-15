@@ -13,7 +13,8 @@ FOREACH(f ${STACCATO_src_subdirectories})
 ENDFOREACH()
 #------------------------------------------------------------------------------------#
 get_property(STACCATO_INCLUDES GLOBAL PROPERTY STACCATO_INCLUDES) 
-get_property(STACCATO_SOURCES GLOBAL PROPERTY STACCATO_SOURCES)  
+get_property(STACCATO_SOURCES GLOBAL PROPERTY STACCATO_SOURCES) 
+get_property(STACCATO_QT_SOURCES GLOBAL PROPERTY STACCATO_QT_SOURCES)  
 #------------------------------------------------------------------------------------#
 # SET OCCT
 IF (${USE_OCCT})
@@ -23,20 +24,20 @@ ENDIF()
 # SET Intel MKL 
 IF (${USE_INTEL_MKL})
   include_directories(${MKL_INCLUDE_DIR})
-  SET(STACCATO_LIBS ${STACCATO_LIBS} ${MKL_LIBRARIES} )
+  SET(STACCATO_LIBS ${STACCATO_LIBS} ${MKL_LIBRARIES})
+ENDIF()
+# SET QT5 
+IF (${USE_QT5})
+  SET(STACCATO_LIBS ${STACCATO_LIBS} Qt5::Widgets)
 ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp)
-
-add_library(mainwindow mainwindow.cpp)
-target_link_libraries (mainwindow Qt5::Widgets)
-
 add_library(STACCATOLib STATIC ${STACCATO_SOURCES})
 #------------------------------------------------------------------------------------#
-add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS} mainwindow)
+# STACCATO_QT_SOURCES ARE EXTRA TREATED FOR CMAKE_AUTOMOC AND CMAKE_AUTOUIC
+add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_QT_SOURCES})
+target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS})
 #------------------------------------------------------------------------------------#
 add_dependencies(STACCATO STACCATOLib)
 #------------------------------------------------------------------------------------#
@@ -44,6 +45,7 @@ MESSAGE("C Compiler Flags are:\t${CMAKE_C_FLAGS} \nC++ Compiler Flags are:\t${CM
 MESSAGE("STACCATO_LIBS: ${STACCATO_LIBS}")
 MESSAGE("STACCATO_INCLUDES: ${STACCATO_INCLUDES}")
 MESSAGE("STACCATO_SOURCES: ${STACCATO_SOURCES}")
+MESSAGE("STACCATO_QT_SOURCES: ${STACCATO_QT_SOURCES}")
 #------------------------------------------------------------------------------------#
 # Where to put EXECUTABLE
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin64)

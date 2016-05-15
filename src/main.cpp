@@ -86,7 +86,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 //USER
 #include <AuxiliaryParameters.h>
-#include <mainwindow.h>
+#include <mainWindow.h>
 
 int main(int argc, char **argv) {
   

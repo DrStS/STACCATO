@@ -1,0 +1,24 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Qt/resources/FitAll.png</file>
+        <file>Qt/resources/Home.png</file>
+        <file>Qt/resources/Pan.png</file>
+        <file>Qt/resources/Rotate.png</file>
+        <file>Qt/resources/Zoom.png</file>
+        <file>Qt/resources/cone.png</file>
+        <file>Qt/resources/cylinder.png</file>
+        <file>Qt/resources/sphere.png</file>
+        <file>Qt/resources/box.png</file>
+        <file>Qt/resources/torus.png</file>
+        <file>Qt/resources/chamfer.png</file>
+        <file>Qt/resources/fillet.png</file>
+        <file>Qt/resources/lamp.png</file>
+        <file>Qt/resources/common.png</file>
+        <file>Qt/resources/cut.png</file>
+        <file>Qt/resources/fuse.png</file>
+        <file>Qt/resources/extrude.png</file>
+        <file>Qt/resources/loft.png</file>
+        <file>Qt/resources/revolve.png</file>
+        <file>Qt/resources/helix.png</file>
+    </qresource>
+</RCC>

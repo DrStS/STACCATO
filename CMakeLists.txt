@@ -107,6 +107,7 @@ IF (${USE_QT5})
   MESSAGE("Qt5Widgets status: ${Qt5Widgets_FOUND}")
   set(CMAKE_AUTOMOC ON)
   set(CMAKE_AUTOUIC ON)
+  set(CMAKE_AUTORCC ON)
   set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ENDIF()
 #------------------------------------------------------------------------------------#

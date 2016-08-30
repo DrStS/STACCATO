@@ -114,6 +114,10 @@ ENDIF()
 IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 SET (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+IF (${USE_OCCT})
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -lglut -lGL -lGLU -lX11")
+ENDIF()
+# Try to
 ENDIF()
 ######################################################################################
 #4. Configure

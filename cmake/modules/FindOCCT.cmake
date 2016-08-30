@@ -1,8 +1,5 @@
 # A cmake module to find Opencascade
 #------------------------------------------------------------------------------------#
-# MKL includes and libraries are searched for in MKL_INCLUDE_DIR and MKL_LIB_DIR.
-# If MKL_INCLUDE_DIR and MKL_LIB_DIR are not set, the module searches under 
-# the environment variable MKLROOT and /opt/intel/mkl subdirectories.
 #------------------------------------------------------------------------------------#
 set(OCCTROOT_DIR $ENV{CASROOT})
 IF (NOT OCCTROOT_DIR)
@@ -53,10 +50,10 @@ message("OCCT_LIB_DIR is: ${OCCT_LIB_DIR}")
 # Stage 3: find the libraries
 #------------------------------------------------------------------------------------#	
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-set (CMAKE_FIND_LIBRARY_SUFFIXES .a)
+#set (CMAKE_FIND_LIBRARY_SUFFIXES .a)
 ENDIF()
 IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-set (CMAKE_FIND_LIBRARY_SUFFIXES .lib)
+#set (CMAKE_FIND_LIBRARY_SUFFIXES .lib)
 ENDIF()
 if (OCCT_LIB_DIR)
 find_library(OCCT_LIBRARY_FWOSPlugin        FWOSPlugin                      ${OCCT_LIB_DIR})

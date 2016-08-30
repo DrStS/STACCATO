@@ -64,26 +64,7 @@
 //Qt5
 #include <QApplication>
 //OCC
-#include <gp_Ax2.hxx>
-#include <TopoDS_Shape.hxx>
-#include <BRepPrimAPI_MakeSphere.hxx>
-#include <TDocStd_Document.hxx>
-#include <XCAFDoc_ShapeTool.hxx>
-#include <XCAFDoc_DocumentTool.hxx>
-#include <STEPCAFControl_Writer.hxx>
-#include <StlAPI_Writer.hxx>
-#include <BRepPrimAPI_MakeSphere.hxx>
-#include <BRepFeat_MakeCylindricalHole.hxx>
-#include <BRepPrimAPI_MakeCylinder.hxx>
-#include <BRepBuilderAPI_Transform.hxx>
-#include <BRepAlgoAPI_Cut.hxx>
-#include <BRepAlgoAPI_Fuse.hxx>
-#include <BRepPrimAPI_MakeTorus.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <BRepPrimAPI_MakeRevol.hxx>
-#include <BRepBuilderAPI_MakeWire.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <BRepBuilderAPI_MakeFace.hxx>
+#include <OSD_Environment.hxx>
 //USER
 #include <AuxiliaryParameters.h>
 #include <mainWindow.h>
@@ -92,6 +73,9 @@ int main(int argc, char **argv) {
   
     cout << "Hello STACCATO is fired up!" << endl;
     cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
+
+    qputenv("CASROOT", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0");
+    qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
 
     QApplication a(argc, argv);
     MainWindow w;

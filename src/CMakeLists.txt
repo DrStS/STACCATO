@@ -28,7 +28,7 @@ IF (${USE_INTEL_MKL})
 ENDIF()
 # SET QT5 
 IF (${USE_QT5})
-  SET(STACCATO_LIBS ${STACCATO_LIBS} Qt5::Widgets)
+  SET(STACCATO_LIBS ${STACCATO_LIBS})
 ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
@@ -38,6 +38,7 @@ add_library(STACCATOLib STATIC ${STACCATO_SOURCES})
 # STACCATO_QT_SOURCES ARE EXTRA TREATED FOR CMAKE_AUTOMOC AND CMAKE_AUTOUIC
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_QT_SOURCES} resources.qrc)
 target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS})
+qt5_use_modules(STACCATO Widgets OpenGL)
 #------------------------------------------------------------------------------------#
 add_dependencies(STACCATO STACCATOLib)
 #------------------------------------------------------------------------------------#

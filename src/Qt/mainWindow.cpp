@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setWindowIcon(QIcon(":/Qt/resources/FitAll.png"));
+    setWindowIcon(QIcon(":/Qt/Qt/resources/FitAll.png"));
     myOccView = new OccView(this);
     setCentralWidget(myOccView);
     createActions();
@@ -67,108 +67,108 @@ void MainWindow::createActions( void )
 {
     mExitAction = new QAction(tr("Exit"), this);
     mExitAction->setShortcut(tr("Ctrl+Q"));
-    mExitAction->setIcon(QIcon(":/Resources/close.png"));
+    mExitAction->setIcon(QIcon(":/Qt/resources/close.png"));
     mExitAction->setStatusTip(tr("Exit the application"));
     connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
     mViewZoomAction = new QAction(tr("Zoom"), this);
-    mViewZoomAction->setIcon(QIcon(":/Resources/Zoom.png"));
+    mViewZoomAction->setIcon(QIcon(":/Qt/resources/Zoom.png"));
     mViewZoomAction->setStatusTip(tr("Zoom the view"));
     connect(mViewZoomAction, SIGNAL(triggered()), myOccView, SLOT(zoom()));
 
     mViewPanAction = new QAction(tr("Pan"), this);
-    mViewPanAction->setIcon(QIcon(":/Resources/Pan.png"));
+    mViewPanAction->setIcon(QIcon(":/Qt/resources/Pan.png"));
     mViewPanAction->setStatusTip(tr("Pan the view"));
     connect(mViewPanAction, SIGNAL(triggered()), myOccView, SLOT(pan()));
 
     mViewRotateAction = new QAction(tr("Rotate"), this);
-    mViewRotateAction->setIcon(QIcon(":/Resources/Rotate.png"));
+    mViewRotateAction->setIcon(QIcon(":/Qt/resources/Rotate.png"));
     mViewRotateAction->setStatusTip(tr("Rotate the view"));
     connect(mViewRotateAction, SIGNAL(triggered()), myOccView, SLOT(rotate()));
 
     mViewResetAction = new QAction(tr("Reset"), this);
-    mViewResetAction->setIcon(QIcon(":/Resources/Home.png"));
+    mViewResetAction->setIcon(QIcon(":/Qt/resources/Home.png"));
     mViewResetAction->setStatusTip(tr("Reset the view"));
     connect(mViewResetAction, SIGNAL(triggered()), myOccView, SLOT(reset()));
 
     mViewFitallAction = new QAction(tr("Fit All"), this);
-    mViewFitallAction->setIcon(QIcon(":/Resources/FitAll.png"));
+    mViewFitallAction->setIcon(QIcon(":/Qt/resources/FitAll.png"));
     mViewFitallAction->setStatusTip(tr("Fit all "));
     connect(mViewFitallAction, SIGNAL(triggered()), myOccView, SLOT(fitAll()));
 
     mMakeBoxAction = new QAction(tr("Box"), this);
-    mMakeBoxAction->setIcon(QIcon(":/Resources/box.png"));
+    mMakeBoxAction->setIcon(QIcon(":/Qt/resources/box.png"));
     mMakeBoxAction->setStatusTip(tr("Make a box"));
     connect(mMakeBoxAction, SIGNAL(triggered()), this, SLOT(makeBox()));
 
     mMakeConeAction = new QAction(tr("Cone"), this);
-    mMakeConeAction->setIcon(QIcon(":/Resources/cone.png"));
+    mMakeConeAction->setIcon(QIcon(":/Qt/resources/cone.png"));
     mMakeConeAction->setStatusTip(tr("Make a cone"));
     connect(mMakeConeAction, SIGNAL(triggered()), this, SLOT(makeCone()));
 
     mMakeSphereAction = new QAction(tr("Sphere"), this);
     mMakeSphereAction->setStatusTip(tr("Make a sphere"));
-    mMakeSphereAction->setIcon(QIcon(":/Resources/sphere.png"));
+    mMakeSphereAction->setIcon(QIcon(":/Qt/resources/sphere.png"));
     connect(mMakeSphereAction, SIGNAL(triggered()), this, SLOT(makeSphere()));
 
     mMakeCylinderAction = new QAction(tr("Cylinder"), this);
     mMakeCylinderAction->setStatusTip(tr("Make a cylinder"));
-    mMakeCylinderAction->setIcon(QIcon(":/Resources/cylinder.png"));
+    mMakeCylinderAction->setIcon(QIcon(":/Qt/resources/cylinder.png"));
     connect(mMakeCylinderAction, SIGNAL(triggered()), this, SLOT(makeCylinder()));
 
     mMakeTorusAction = new QAction(tr("Torus"), this);
     mMakeTorusAction->setStatusTip(tr("Make a torus"));
-    mMakeTorusAction->setIcon(QIcon(":/Resources/torus.png"));
+    mMakeTorusAction->setIcon(QIcon(":/Qt/resources/torus.png"));
     connect(mMakeTorusAction, SIGNAL(triggered()), this, SLOT(makeTorus()));
 
     mFilletAction = new QAction(tr("Fillet"), this);
-    mFilletAction->setIcon(QIcon(":/Resources/fillet.png"));
+    mFilletAction->setIcon(QIcon(":/Qt/resources/fillet.png"));
     mFilletAction->setStatusTip(tr("Test Fillet algorithm"));
     connect(mFilletAction, SIGNAL(triggered()), this, SLOT(makeFillet()));
 
     mChamferAction = new QAction(tr("Chamfer"), this);
-    mChamferAction->setIcon(QIcon(":/Resources/chamfer.png"));
+    mChamferAction->setIcon(QIcon(":/Qt/resources/chamfer.png"));
     mChamferAction->setStatusTip(tr("Test chamfer algorithm"));
     connect(mChamferAction, SIGNAL(triggered()), this, SLOT(makeChamfer()));
 
     mExtrudeAction = new QAction(tr("Extrude"), this);
-    mExtrudeAction->setIcon(QIcon(":/Resources/extrude.png"));
+    mExtrudeAction->setIcon(QIcon(":/Qt/resources/extrude.png"));
     mExtrudeAction->setStatusTip(tr("Test extrude algorithm"));
     connect(mExtrudeAction, SIGNAL(triggered()), this, SLOT(makeExtrude()));
 
     mRevolveAction = new QAction(tr("Revolve"), this);
-    mRevolveAction->setIcon(QIcon(":/Resources/revolve.png"));
+    mRevolveAction->setIcon(QIcon(":/Qt/resources/revolve.png"));
     mRevolveAction->setStatusTip(tr("Test revol algorithm"));
     connect(mRevolveAction, SIGNAL(triggered()), this, SLOT(makeRevol()));
 
     mLoftAction = new QAction(tr("Loft"), this);
-    mLoftAction->setIcon(QIcon(":/Resources/loft.png"));
+    mLoftAction->setIcon(QIcon(":/Qt/resources/loft.png"));
     mLoftAction->setStatusTip(tr("Test loft algorithm"));
     connect(mLoftAction, SIGNAL(triggered()), this, SLOT(makeLoft()));
 
     mCutAction = new QAction(tr("Cut"), this);
-    mCutAction->setIcon(QIcon(":/Resources/cut.png"));
+    mCutAction->setIcon(QIcon(":/Qt/resources/cut.png"));
     mCutAction->setStatusTip(tr("Boolean operation cut"));
     connect(mCutAction, SIGNAL(triggered()), this, SLOT(testCut()));
 
     mFuseAction = new QAction(tr("Fuse"), this);
-    mFuseAction->setIcon(QIcon(":/Resources/fuse.png"));
+    mFuseAction->setIcon(QIcon(":/Qt/resources/fuse.png"));
     mFuseAction->setStatusTip(tr("Boolean operation fuse"));
     connect(mFuseAction, SIGNAL(triggered()), this, SLOT(testFuse()));
 
     mCommonAction = new QAction(tr("Common"), this);
-    mCommonAction->setIcon(QIcon(":/Resources/common.png"));
+    mCommonAction->setIcon(QIcon(":/Qt/resources/common.png"));
     mCommonAction->setStatusTip(tr("Boolean operation common"));
     connect(mCommonAction, SIGNAL(triggered()), this, SLOT(testCommon()));
 
     myHelixAction = new QAction(tr("Helix"), this);
-    myHelixAction->setIcon(QIcon(":/Resources/helix.png"));
+    myHelixAction->setIcon(QIcon(":/Qt/resources/helix.png"));
     myHelixAction->setStatusTip(tr("Make helix shapes"));
     connect(myHelixAction, SIGNAL(triggered()), this, SLOT(testHelix()));
 
     mAboutAction = new QAction(tr("About"), this);
     mAboutAction->setStatusTip(tr("About the application"));
-    mAboutAction->setIcon(QIcon(":/Resources/lamp.png"));
+    mAboutAction->setIcon(QIcon(":/Qt/resources/lamp.png"));
     connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 }
 

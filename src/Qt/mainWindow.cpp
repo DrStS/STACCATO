@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    setWindowIcon(QIcon(":/Qt/Qt/resources/FitAll.png"));
+    setWindowIcon(QIcon(":/Qt/resources/FitAll.png"));
     myOccView = new OccView(this);
     setCentralWidget(myOccView);
     createActions();

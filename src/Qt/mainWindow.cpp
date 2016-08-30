@@ -246,10 +246,10 @@ void MainWindow::createToolBars( void )
 
 void MainWindow::about()
 {
-    QMessageBox::about(this, tr("About MainWindow"),
-        tr("<h2>MainWindow 2.0</h2>"
-        "<p>Copyright &copy; 2014 eryar@163.com"
-        "<p>MainWindow is a demo applicaton about Qt and OpenCASCADE."));
+    QMessageBox::about(this, tr("About STACCATO"),
+        tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
+        "<p>Copyright &copy; 2016 "
+        "<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
 void MainWindow::makeBox()

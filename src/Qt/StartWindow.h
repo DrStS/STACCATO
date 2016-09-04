@@ -1,7 +1,7 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef STARTWINDOW_H
+#define STARTWINDOW_H
 
-//QT5
+// QT5
 #include <QMainWindow>
 // OCC
 #include <AIS_InteractiveContext.hxx>
@@ -10,15 +10,15 @@
 class OccView;
 
 namespace Ui {
-class MainWindow;
+class StartWindow;
 }
 
-class MainWindow: public QMainWindow {
+class StartWindow: public QMainWindow {
 	Q_OBJECT
 
 public:
-	explicit MainWindow(QWidget *parent = 0);
-	~MainWindow();
+	explicit StartWindow(QWidget *parent = 0);
+	~StartWindow();
 
 protected:
 	//! create all the actions.
@@ -77,7 +77,7 @@ private slots:
 	void testHelix(void);
 
 private:
-	Ui::MainWindow *ui;
+	Ui::StartWindow *ui;
 
 	//! make cylindrical helix.
 	void makeCylindricalHelix(void);
@@ -143,4 +143,4 @@ private:
 
 };
 
-#endif // MAINWINDOW_H 
+#endif // STARTWINDOW_H 

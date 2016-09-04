@@ -67,7 +67,7 @@
 #include <OSD_Environment.hxx>
 //USER
 #include <AuxiliaryParameters.h>
-#include <MainWindow.h>
+#include <StartWindow.h>
 
 int main(int argc, char **argv) {
   
@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
    // qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
 
     QApplication a(argc, argv);
-    MainWindow w;
+    StartWindow w;
     w.show();
     return a.exec();
 }

@@ -1,6 +1,6 @@
-#include "mainWindow.h"
-#include "ui_mainWindow.h"
-#include "occView.h"
+#include "MainWindow.h"
+#include "ui_MainWindow.h"
+#include "OccView.h"
 
 //QT5
 #include <QToolBar>

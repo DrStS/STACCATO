@@ -67,15 +67,15 @@
 #include <OSD_Environment.hxx>
 //USER
 #include <AuxiliaryParameters.h>
-#include <mainWindow.h>
+#include <MainWindow.h>
 
 int main(int argc, char **argv) {
   
     cout << "Hello STACCATO is fired up!" << endl;
     cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
-    qputenv("CASROOT", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0");
-    qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
+   // qputenv("CASROOT", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0");
+   // qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
 
     QApplication a(argc, argv);
     MainWindow w;

@@ -1,6 +1,6 @@
-#include "mainWindow.h"
-#include "ui_mainWindow.h"
-#include "occView.h"
+#include "StartWindow.h"
+#include "ui_StartWindow.h"
+#include "OccView.h"
 
 //QT5
 #include <QToolBar>
@@ -45,9 +45,9 @@
 
 #include <AIS_Shape.hxx>
 
-MainWindow::MainWindow(QWidget *parent) :
+StartWindow::StartWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::StartWindow)
 {
     ui->setupUi(this);
     setWindowIcon(QIcon(":/Qt/resources/FitAll.png"));
@@ -58,12 +58,12 @@ MainWindow::MainWindow(QWidget *parent) :
     createToolBars();
 }
 
-MainWindow::~MainWindow()
+StartWindow::~StartWindow()
 {
     delete ui;
 } 
 
-void MainWindow::createActions( void )
+void StartWindow::createActions( void )
 {
     mExitAction = new QAction(tr("Exit"), this);
     mExitAction->setShortcut(tr("Ctrl+Q"));
@@ -172,7 +172,7 @@ void MainWindow::createActions( void )
     connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 }
 
-void MainWindow::createMenus( void )
+void StartWindow::createMenus( void )
 {
     mFileMenu = menuBar()->addMenu(tr("&File"));
     mFileMenu->addAction(mExitAction);
@@ -209,7 +209,7 @@ void MainWindow::createMenus( void )
     mHelpMenu->addAction(mAboutAction);
 }
 
-void MainWindow::createToolBars( void )
+void StartWindow::createToolBars( void )
 {
     mNavigateToolBar = addToolBar(tr("&Navigate"));
     mNavigateToolBar->addAction(mViewZoomAction);
@@ -244,7 +244,7 @@ void MainWindow::createToolBars( void )
     mHelpToolBar->addAction(mAboutAction);
 }
 
-void MainWindow::about()
+void StartWindow::about()
 {
     QMessageBox::about(this, tr("About STACCATO"),
         tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
@@ -252,7 +252,7 @@ void MainWindow::about()
         "<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
-void MainWindow::makeBox()
+void StartWindow::makeBox()
 {
     TopoDS_Shape aTopoBox = BRepPrimAPI_MakeBox(3.0, 4.0, 5.0).Shape();
     Handle(AIS_Shape) anAisBox = new AIS_Shape(aTopoBox);
@@ -262,7 +262,7 @@ void MainWindow::makeBox()
     myOccView->getContext()->Display(anAisBox);
 }
 
-void MainWindow::makeCone()
+void StartWindow::makeCone()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 10.0, 0.0));
@@ -282,7 +282,7 @@ void MainWindow::makeCone()
     myOccView->getContext()->Display(anAisCone);
 }
 
-void MainWindow::makeSphere()
+void StartWindow::makeSphere()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 20.0, 0.0));
@@ -295,7 +295,7 @@ void MainWindow::makeSphere()
     myOccView->getContext()->Display(anAisSphere);
 }
 
-void MainWindow::makeCylinder()
+void StartWindow::makeCylinder()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 30.0, 0.0));
@@ -315,7 +315,7 @@ void MainWindow::makeCylinder()
     myOccView->getContext()->Display(anAisPie);
 }
 
-void MainWindow::makeTorus()
+void StartWindow::makeTorus()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 40.0, 0.0));
@@ -335,7 +335,7 @@ void MainWindow::makeTorus()
     myOccView->getContext()->Display(anAisElbow);
 }
 
-void MainWindow::makeFillet()
+void StartWindow::makeFillet()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 50.0, 0.0));
@@ -355,7 +355,7 @@ void MainWindow::makeFillet()
     myOccView->getContext()->Display(anAisShape);
 }
 
-void MainWindow::makeChamfer()
+void StartWindow::makeChamfer()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(8.0, 50.0, 0.0));
@@ -380,7 +380,7 @@ void MainWindow::makeChamfer()
     myOccView->getContext()->Display(anAisShape);
 }
 
-void MainWindow::makeExtrude()
+void StartWindow::makeExtrude()
 {
     // prism a vertex result is an edge.
     TopoDS_Vertex aVertex = BRepBuilderAPI_MakeVertex(gp_Pnt(0.0, 60.0, 0.0));
@@ -420,7 +420,7 @@ void MainWindow::makeExtrude()
     myOccView->getContext()->Display(anAisPrismEllipse);
 }
 
-void MainWindow::makeRevol()
+void StartWindow::makeRevol()
 {
     gp_Ax1 anAxis;
 
@@ -466,7 +466,7 @@ void MainWindow::makeRevol()
     myOccView->getContext()->Display(anAisRevolEllipse);
 }
 
-void MainWindow::makeLoft()
+void StartWindow::makeLoft()
 {
     // bottom wire.
     TopoDS_Edge aCircleEdge = BRepBuilderAPI_MakeEdge(gp_Circ(gp_Ax2(gp_Pnt(0.0, 80.0, 0.0), gp::DZ()), 1.5));
@@ -504,7 +504,7 @@ void MainWindow::makeLoft()
     myOccView->getContext()->Display(anAisSolid);
 }
 
-void MainWindow::testCut()
+void StartWindow::testCut()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 90.0, 0.0));
@@ -537,7 +537,7 @@ void MainWindow::testCut()
     myOccView->getContext()->Display(anAisCuttedShape2);
 }
 
-void MainWindow::testFuse()
+void StartWindow::testFuse()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 100.0, 0.0));
@@ -563,7 +563,7 @@ void MainWindow::testFuse()
     myOccView->getContext()->Display(anAisFusedShape);
 }
 
-void MainWindow::testCommon()
+void StartWindow::testCommon()
 {
     gp_Ax2 anAxis;
     anAxis.SetLocation(gp_Pnt(0.0, 110.0, 0.0));
@@ -589,7 +589,7 @@ void MainWindow::testCommon()
     myOccView->getContext()->Display(anAisCommonShape);
 }
 
-void MainWindow::testHelix()
+void StartWindow::testHelix()
 {
     makeCylindricalHelix();
 
@@ -598,7 +598,7 @@ void MainWindow::testHelix()
     makeToroidalHelix();
 }
 
-void MainWindow::makeCylindricalHelix()
+void StartWindow::makeCylindricalHelix()
 {
     Standard_Real aRadius = 3.0;
     Standard_Real aPitch = 1.0;
@@ -653,7 +653,7 @@ void MainWindow::makeCylindricalHelix()
  * make conical helix, it is the same as the cylindrical helix,
  * the only different is the surface.
  */
-void MainWindow::makeConicalHelix()
+void StartWindow::makeConicalHelix()
 {
     Standard_Real aRadius = 3.0;
     Standard_Real aPitch = 1.0;
@@ -704,7 +704,7 @@ void MainWindow::makeConicalHelix()
     }
 }
 
-void MainWindow::makeToroidalHelix()
+void StartWindow::makeToroidalHelix()
 {
     Standard_Real aRadius = 1.0;
     Standard_Real aSlope = 0.05;

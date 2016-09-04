@@ -35,6 +35,8 @@
 #include <Aspect_Handle.hxx>
 #include <Aspect_DisplayConnection.hxx>
 
+#include <Aspect_Grid.hxx>
+
 #ifdef WNT
   #include <WNT_Window.hxx>
 #elif defined(__APPLE__) && !defined(MACOSX_USE_GLX)
@@ -111,6 +113,14 @@ void OccView::init()
     // Set up lights etc
     myViewer->SetDefaultLights();
     myViewer->SetLightOn();
+    
+    //GRID
+    myViewer->ActivateGrid( Aspect_GT_Rectangular , Aspect_GDM_Lines );
+    myViewer->SetGridEcho ( Standard_True );
+    myViewer->Grid()->SetColors( Quantity_NOC_RED4, Quantity_NOC_GRAY90 );
+    gp_Ax3 aPlane(gp_Pnt( 0., 0., 0. ),gp_Dir(0., 0., 1.));
+    myViewer->SetPrivilegedPlane( aPlane );
+
 
     myView->SetBackgroundColor(Quantity_NOC_BLACK);
     myView->MustBeResized();

@@ -13,12 +13,15 @@
 #ifndef _OCCVIEW_H_
 #define _OCCVIEW_H_
 
+//QT5
 #include <QGLWidget>
-
+//OCC
 #include <AIS_InteractiveContext.hxx>
 
 class QMenu;
 class QRubberBand;
+class QWidget;
+
 
 //! adapted a QGLWidget for OpenCASCADE viewer.
 class OccView : public QGLWidget

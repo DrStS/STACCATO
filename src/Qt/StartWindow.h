@@ -8,12 +8,14 @@
 
 // forward declaration
 class OccView;
+class QTextEdit;
+
 
 namespace Ui {
-class StartWindow;
+	class StartWindow;
 }
 
-class StartWindow: public QMainWindow {
+class StartWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
@@ -30,7 +32,13 @@ protected:
 	//! create the toolbar.
 	void createToolBars(void);
 
-private slots:
+	//! create dockable windows.
+	void createDockWindows(void);
+
+	private slots:
+	//! show about box.
+	void readSTL(void);
+
 	//! show about box.
 	void about(void);
 
@@ -92,6 +100,10 @@ private:
 	//! the exit action.
 	QAction* mExitAction;
 
+	//! the actions for reading files
+	QAction* mReadSTLAction;
+
+
 	//! the actions for the view: pan, reset, fitall.
 	QAction* mViewZoomAction;
 	QAction* mViewPanAction;
@@ -132,11 +144,15 @@ private:
 	QMenu* mHelpMenu;
 
 	//! the toolbars of the application.
+	QToolBar* mFileToolBar;
 	QToolBar* mViewToolBar;
 	QToolBar* mNavigateToolBar;
 	QToolBar* mPrimitiveToolBar;
 	QToolBar* mModelingToolBar;
 	QToolBar* mHelpToolBar;
+
+	//! the dockable widgets
+	QTextEdit* textOutput;
 
 	// wrapped the widget for occ.
 	OccView* myOccView;

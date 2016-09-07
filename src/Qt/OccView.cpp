@@ -22,12 +22,13 @@
 #undef FontChange
 #undef Expose
 
-#include "OccView.h"
+#include "occView.h"
 
 #include <QMenu>
 #include <QMouseEvent>
 #include <QRubberBand>
 #include <QStyleFactory>
+
 
 // occ header files.
 #include <V3d_View.hxx>

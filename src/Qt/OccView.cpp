@@ -22,7 +22,7 @@
 #undef FontChange
 #undef Expose
 
-#include "occView.h"
+#include "OccView.h"
 
 #include <QMenu>
 #include <QMouseEvent>

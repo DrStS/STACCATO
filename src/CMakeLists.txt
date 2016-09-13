@@ -14,7 +14,6 @@ ENDFOREACH()
 #------------------------------------------------------------------------------------#
 get_property(STACCATO_INCLUDES GLOBAL PROPERTY STACCATO_INCLUDES) 
 get_property(STACCATO_SOURCES GLOBAL PROPERTY STACCATO_SOURCES) 
-get_property(STACCATO_QT_SOURCES GLOBAL PROPERTY STACCATO_QT_SOURCES)  
 #------------------------------------------------------------------------------------#
 # SET OCCT
 IF (${USE_OCCT})
@@ -28,19 +27,16 @@ IF (${USE_INTEL_MKL})
 ENDIF()
 # SET QT5 
 IF (${USE_QT5})
-  SET(STACCATO_LIBS ${STACCATO_LIBS})
 ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-add_library(STACCATOLib STATIC ${STACCATO_SOURCES})
 #------------------------------------------------------------------------------------#
-# STACCATO_QT_SOURCES ARE EXTRA TREATED FOR CMAKE_AUTOMOC AND CMAKE_AUTOUIC
-add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_QT_SOURCES} resources.qrc)
-target_link_libraries(STACCATO STACCATOLib ${STACCATO_LIBS})
+add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)
+target_link_libraries(STACCATO ${STACCATO_LIBS} )
 qt5_use_modules(STACCATO Widgets OpenGL)
 #------------------------------------------------------------------------------------#
-add_dependencies(STACCATO STACCATOLib)
+#
 #------------------------------------------------------------------------------------#
 MESSAGE("C Compiler Flags are:\t${CMAKE_C_FLAGS} \nC++ Compiler Flags are:\t${CMAKE_CXX_FLAGS}")
 MESSAGE("STACCATO_LIBS: ${STACCATO_LIBS}")

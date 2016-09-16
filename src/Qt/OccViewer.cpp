@@ -161,7 +161,22 @@ void OccViewer::initOccViewer(){
 	}
 
         Handle_Aspect_Window myWindow;
+        
+        #if OCC_VERSION_HEX >= 0x070800
         myWindow = new OcctWindow(this);
+        #else
+        #if defined _WIN32 || defined __WIN32__
+        myWindow = new WNT_Window((Aspect_Handle)winId());
+        #elif defined __APPLE__
+        myWindow = new Cocoa_Window((NSView *)winId());
+        #else
+        Aspect_Handle windowHandle = (Aspect_Handle)winId();
+        myWindow = new Xw_Window(myContext->CurrentViewer()->Driver()->GetDisplayConnection(),
+                                 windowHandle);
+        #endif
+        #endif // OCC_VERSION_HEX >= 0x060800
+        
+        
     
  	myView->SetWindow(myWindow);
 	if (!myWindow->IsMapped())

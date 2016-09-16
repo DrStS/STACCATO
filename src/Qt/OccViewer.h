@@ -33,11 +33,7 @@
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_View.hxx>
 #include <AIS_Shape.hxx>
-#if OCC_VERSION_HEX < 0x070000
-#include <Visual3d_Layer.hxx>
-#else
 #include <AIS_RubberBand.hxx>
-#endif
 
 #define Handle_AIS_RubberBand Handle(AIS_RubberBand)
 /** the key for multi selection */

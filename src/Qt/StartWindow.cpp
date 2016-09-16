@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2016, Stefan Sicklinger, Munich
+﻿/*  Copyright &copy; 2016, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -28,9 +28,8 @@
 #include <QDockWidget>
 #include <QtWidgets>
 
-
 //OCC 7
-#include <StlMesh_Mesh.hxx>
+#include <StlMesh_Mesh.hxx> 
 #include <MeshVS_Mesh.hxx>
 #include <XSDRAWSTLVRML_DataSource.hxx>
 #include <MeshVS_MeshPrsBuilder.hxx>
@@ -39,6 +38,8 @@
 #include <MeshVS_DrawerAttribute.hxx>
 #include <Graphic3d_MaterialAspect.hxx>
 #include <OSD_Path.hxx>
+#include <Geom_CartesianPoint.hxx>
+#include <AIS_Line.hxx>
 
 
 StartWindow::StartWindow(QWidget *parent) :
@@ -67,11 +68,16 @@ void StartWindow::createActions(void)
 	mExitAction->setStatusTip(tr("Exit the application"));
 	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-	mReadSTLAction = new QAction(tr("ReadSTL"), this);
+	mReadSTLAction = new QAction(tr("Read STL file"), this);
 	mReadSTLAction->setShortcut(tr("Ctrl+R"));
 	mReadSTLAction->setIcon(QIcon(":/Qt/resources/close.png"));
 	mReadSTLAction->setStatusTip(tr("Read STL file"));
 	connect(mReadSTLAction, SIGNAL(triggered()), this, SLOT(readSTL()));
+
+	mDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
+	mDrawCantileverAction->setIcon(QIcon(":/Qt/resources/torus.png"));
+	mDrawCantileverAction->setStatusTip(tr("Draw Cantilever"));
+	connect(mDrawCantileverAction, SIGNAL(triggered()), this, SLOT(drawCantilever()));
 
 	mAboutAction = new QAction(tr("About"), this);
 	mAboutAction->setStatusTip(tr("About the application"));
@@ -83,6 +89,10 @@ void StartWindow::createMenus(void)
 {
 	mFileMenu = menuBar()->addMenu(tr("&File"));
 	mFileMenu->addAction(mExitAction);
+
+	mCreateMenu = menuBar()->addMenu(tr("Create"));
+	mCreateMenu->addAction(mDrawCantileverAction);
+
 	mFileMenu->addAction(mReadSTLAction);
 	mHelpMenu = menuBar()->addMenu(tr("&Help"));
 	mHelpMenu->addAction(mAboutAction);
@@ -99,8 +109,6 @@ void StartWindow::createToolBars(void)
 
 void StartWindow::about()
 {
-	cout << sizeof(QApplication::topLevelWidgets()) << endl;
-
 	myOccViewer->showGrid(Standard_True);
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
@@ -116,26 +124,30 @@ void StartWindow::readSTL(void)
 
 	if (!fileNameSTL.isEmpty() && !fileNameSTL.isNull()){
 		OSD_Path aFile(fileNameSTL.toUtf8().constData());
-
 		Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile);
-
-
 		Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 		Handle(XSDRAWSTLVRML_DataSource) aDS = new XSDRAWSTLVRML_DataSource(aSTLMesh);
-
 		aMesh->SetDataSource(aDS);
 		aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
-
 		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
 		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
 		aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
-
 		aMesh->SetColor(Quantity_NOC_AZURE);
 		aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
 		aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
-
 		myOccViewer->getContext()->Display(aMesh);
 	}
 
 }
 
+void StartWindow::drawCantilever(void){
+
+	Handle(Geom_CartesianPoint) start, end;
+	start = new Geom_CartesianPoint(gp_Pnt(1., 0., 0.));    
+	end = new Geom_CartesianPoint(gp_Pnt(0., 1., 1.));      
+	Handle(AIS_Line) aisSegment = new AIS_Line(start, end);
+	aisSegment->SetColor(Quantity_NOC_GREEN);  
+	aisSegment->SetWidth(2.);                 
+	myOccViewer->getContext()->Display(aisSegment);
+
+};  

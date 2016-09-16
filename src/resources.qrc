@@ -14,6 +14,7 @@
         <file>Qt/resources/fillet.png</file>
         <file>Qt/resources/lamp.png</file>
         <file>Qt/resources/common.png</file>
+		<file>Qt/resources/close.png</file>
         <file>Qt/resources/cut.png</file>
         <file>Qt/resources/fuse.png</file>
         <file>Qt/resources/extrude.png</file>

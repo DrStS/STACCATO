@@ -58,10 +58,9 @@ protected:
 
 	private slots:
 
-	//! show about box.
 	void about(void);
-
 	void readSTL(void);
+	void drawCantilever(void);
 
 private:
 	Ui::StartWindow *ui;
@@ -73,11 +72,12 @@ private:
 
 	//! show the about info action.
 	QAction* mAboutAction;
-
 	QAction* mReadSTLAction;
+	QAction* mDrawCantileverAction;
 
 	//! the menus of the application.
 	QMenu* mFileMenu;
+	QMenu* mCreateMenu;
 	QMenu* mHelpMenu;
 
 	QToolBar* mFileToolBar;

@@ -78,7 +78,7 @@ int main(int argc, char **argv) {
    // qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
 
     QApplication a(argc, argv);
-    StartWindow w;
-    w.show();
+    StartWindow* mSW= new StartWindow();
+	mSW->show();
     return a.exec();
 }

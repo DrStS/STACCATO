@@ -17,6 +17,16 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
+#include <OpenGl_GraphicDriver.hxx>
+#undef Bool
+#undef CursorShape
+#undef None
+#undef KeyPress
+#undef KeyRelease
+#undef FocusIn
+#undef FocusOut
+#undef FontChange
+#undef Expose
 #include <OccViewer.h>
 #include <OcctWindow.h>
 
@@ -29,15 +39,27 @@
 #include <QMessageBox>
 #include <QInputDialog>
 
-
 //OCC 7
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
-#include <OpenGl_GraphicDriver.hxx>
 #include <TCollection_AsciiString.hxx>
 #include <Aspect_Grid.hxx>
 #include <IntAna_IntConicQuad.hxx>
+
+#if defined _WIN32 || defined __WIN32__
+  #include <WNT_Window.hxx>
+  #include <gl/GL.h>
+  #include <gl/GLU.h>
+#elif defined __APPLE__
+  #include <Cocoa_Window.hxx>
+  #include <OpenGL/gl.h>
+  #include <OpenGL/glu.h>
+#else
+  #include <Xw_Window.hxx>
+  #include <GL/gl.h>
+  #include <GL/glu.h>
+#endif
 
 // the key for multi selection :
 #define MULTISELECTIONKEY Qt::ShiftModifier
@@ -137,11 +159,14 @@ void OccViewer::initOccViewer(){
 	if (myView.IsNull()){
 		myView = myContext->CurrentViewer()->CreateView();
 	}
-	Handle(OcctWindow) hWnd = new OcctWindow(this);
- 	myView->SetWindow(hWnd);
-	if (!hWnd->IsMapped())
+
+        Handle_Aspect_Window myWindow;
+        myWindow = new OcctWindow(this);
+    
+ 	myView->SetWindow(myWindow);
+	if (!myWindow->IsMapped())
 	{
-		hWnd->Map();
+		myWindow->Map();
 	}
 	myView->SetScale(2);
 	myView->SetBackgroundColor(Quantity_NOC_BLACK);
@@ -158,6 +183,7 @@ void OccViewer::initOccViewer(){
 	setBackgroundGradient(myBGColor.red(), myBGColor.green(), myBGColor.blue());
 	myContext->SetDisplayMode(AIS_Shaded);
 	myViewInitialized = Standard_True;
+        
 }
 
 OccViewer::~OccViewer()

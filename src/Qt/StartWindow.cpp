@@ -1,3 +1,22 @@
+/*  Copyright &copy; 2016, Stefan Sicklinger, Munich
+*
+*  All rights reserved.
+*
+*  This file is part of STACCATO.
+*
+*  EMPIRE is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  EMPIRE is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
+*/
 #include <StartWindow.h>
 #include <ui_StartWindow.h>
 #include <OccViewer.h>
@@ -9,10 +28,8 @@
 #include <QDockWidget>
 #include <QtWidgets>
 
-//OCC 7
-#include <Graphic3d_GraphicDriver.hxx>
-#include <OpenGl_GraphicDriver.hxx>
 
+//OCC 7
 #include <StlMesh_Mesh.hxx>
 #include <MeshVS_Mesh.hxx>
 #include <XSDRAWSTLVRML_DataSource.hxx>
@@ -22,6 +39,7 @@
 #include <MeshVS_DrawerAttribute.hxx>
 #include <Graphic3d_MaterialAspect.hxx>
 #include <OSD_Path.hxx>
+
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),

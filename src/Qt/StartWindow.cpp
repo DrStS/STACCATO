@@ -4,12 +4,12 @@
 *
 *  This file is part of STACCATO.
 *
-*  EMPIRE is free software: you can redistribute it and/or modify
+*  STACCATO is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
 *  the Free Software Foundation, either version 3 of the License, or
 *  (at your option) any later version.
 *
-*  EMPIRE is distributed in the hope that it will be useful,
+*  STACCATO is distributed in the hope that it will be useful,
 *  but WITHOUT ANY WARRANTY; without even the implied warranty of
 *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 *  GNU General Public License for more details.
@@ -40,7 +40,16 @@
 #include <OSD_Path.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <AIS_Line.hxx>
-
+#include <AIS_Point.hxx>
+#include <TopoDS_Vertex.hxx>
+#include <BRepBuilderAPI_MakeVertex.hxx>
+#include <Prs3d_PointAspect.hxx>
+#include <GC_MakeSegment.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <TopoDS_Edge.hxx>
+#include <AIS_InteractiveContext.hxx>
+#include <BRep_Tool.hxx>
+#include <TopoDS.hxx>
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -53,7 +62,8 @@ ui(new Ui::StartWindow)
 	createActions();
 	createMenus();
 	createToolBars();
-	setAttribute(Qt::WA_QuitOnClose,Standard_False);
+	createDockWindows();
+	setAttribute(Qt::WA_QuitOnClose, Standard_False);
 }
 
 StartWindow::~StartWindow()
@@ -83,6 +93,9 @@ void StartWindow::createActions(void)
 	mAboutAction->setStatusTip(tr("About the application"));
 	mAboutAction->setIcon(QIcon(":/Qt/resources/lamp.png"));
 	connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
+
+	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
+
 }
 
 void StartWindow::createMenus(void)
@@ -118,7 +131,7 @@ void StartWindow::about()
 
 void StartWindow::readSTL(void)
 {
-	
+
 	QString fileNameSTL = QFileDialog::getOpenFileName(this,
 		tr("Import STL File"), "", tr("STL Files (*.stl)"));
 
@@ -140,14 +153,90 @@ void StartWindow::readSTL(void)
 
 }
 
+void StartWindow::createDockWindows()
+{
+	QDockWidget *dock = new QDockWidget(tr("Output"), this);
+	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+	textOutput = new QTextEdit(dock);
+	textOutput->setText("STACCATO");
+	dock->setWidget(textOutput);
+	addDockWidget(Qt::BottomDockWidgetArea, dock);
+
+	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
+
+}
+
 void StartWindow::drawCantilever(void){
 
-	Handle(Geom_CartesianPoint) start, end;
-	start = new Geom_CartesianPoint(gp_Pnt(1., 0., 0.));    
-	end = new Geom_CartesianPoint(gp_Pnt(0., 1., 1.));      
-	Handle(AIS_Line) aisSegment = new AIS_Line(start, end);
-	aisSegment->SetColor(Quantity_NOC_GREEN);  
-	aisSegment->SetWidth(2.);                 
-	myOccViewer->getContext()->Display(aisSegment);
 
-};  
+	myOccViewer->getContext()->OpenLocalContext(Standard_False);
+	myOccViewer->getContext()->ActivateStandardMode(TopAbs_VERTEX);
+
+
+
+	//3D cartesian point
+	gp_Pnt mGp_Pnt_Start = gp_Pnt(1., 0., 0.);
+	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 1., 1.);
+
+	//Geom_CartesianPoint
+	Handle(Geom_CartesianPoint)  start = new Geom_CartesianPoint(mGp_Pnt_Start);
+	Handle(Geom_CartesianPoint)    end = new Geom_CartesianPoint(mGp_Pnt_End);
+
+	Handle(AIS_Line) aisSegmentA = new AIS_Line(start, end);
+	aisSegmentA->SetColor(Quantity_NOC_GREEN);
+	aisSegmentA->SetWidth(2.);
+	//	myOccViewer->getContext()->Display(aisSegmentA);
+
+
+	Handle(Geom_TrimmedCurve) aTrimmedCurve = GC_MakeSegment(mGp_Pnt_Start, mGp_Pnt_End);
+	TopoDS_Edge mTopoEdge = BRepBuilderAPI_MakeEdge(aTrimmedCurve);
+
+	Handle(AIS_Shape) aisSegmentB = new AIS_Shape(mTopoEdge);
+	aisSegmentB->SetColor(Quantity_NOC_RED);
+	aisSegmentB->SetWidth(2.);
+	myOccViewer->getContext()->Display(aisSegmentB);
+
+
+	myOccViewer->getContext()->Deactivate(aisSegmentB, 0);
+	myOccViewer->getContext()->Activate(aisSegmentB, 1);
+
+
+
+	//Draw vertex
+	Handle(AIS_Point) aPointA = new AIS_Point(start);
+	// Set the vertex shape, color, and size
+	Handle_Prs3d_PointAspect myPointAspectA = new Prs3d_PointAspect(Aspect_TOM_O, Quantity_NOC_RED, 2);
+	aPointA->Attributes()->SetPointAspect(myPointAspectA);
+	//myOccViewer->getContext()->Display(aPointA);
+
+	// Create the AIS_Shape
+	TopoDS_Vertex V1 = BRepBuilderAPI_MakeVertex(mGp_Pnt_End);
+	Handle(AIS_Shape) aPointB = new AIS_Shape(V1);
+	Handle_Prs3d_PointAspect myPointAspectB = new Prs3d_PointAspect(Aspect_TOM_O, Quantity_NOC_GREEN, 2);
+	aPointB->Attributes()->SetPointAspect(myPointAspectB);
+	myOccViewer->getContext()->Display(aPointB);
+}
+
+void StartWindow::handleSelectionChanged(void){
+
+	//myOccViewer->getContext()->OpenLocalContext();
+	//myOccViewer->getContext()->ActivateStandardMode(TopAbs_VERTEX);
+
+	bool aHasSelected = false;
+	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected() && !aHasSelected; myOccViewer->getContext()->NextSelected())
+	{
+		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
+		TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
+
+		//if (TopAbs_VERTEX == vertexShape.ShapeType())
+		{
+			gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
+			cout << "=========="<< endl;
+			cout << "X: " << myPoint.X() << endl;
+			cout << "Y: " << myPoint.Y() << endl;
+			cout << "Z: " << myPoint.Z() << endl;
+			cout << "==========" << endl;
+		}
+	}
+
+}

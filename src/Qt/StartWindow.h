@@ -4,12 +4,12 @@
 *
 *  This file is part of STACCATO.
 *
-*  EMPIRE is free software: you can redistribute it and/or modify
+*  STACCATO is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
 *  the Free Software Foundation, either version 3 of the License, or
 *  (at your option) any later version.
 *
-*  EMPIRE is distributed in the hope that it will be useful,
+*  STACCATO is distributed in the hope that it will be useful,
 *  but WITHOUT ANY WARRANTY; without even the implied warranty of
 *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 *  GNU General Public License for more details.
@@ -47,26 +47,20 @@ public:
 	~StartWindow();
 
 protected:
-	//! create all the actions.
 	void createActions(void);
-
-	//! create all the menus.
 	void createMenus(void);
-
-	//! create the toolbar.
 	void createToolBars(void);
+	void createDockWindows(void);
 
-	private slots:
-
+private slots:
 	void about(void);
 	void readSTL(void);
 	void drawCantilever(void);
+	void handleSelectionChanged(void);
 
 private:
 	Ui::StartWindow *ui;
 
-
-private:
 	//! the exit action.
 	QAction* mExitAction;
 
@@ -85,6 +79,9 @@ private:
 
 	// wrapped the widget for occ.
 	OccViewer* myOccViewer;
+
+	//! the dockable widgets
+	QTextEdit* textOutput;
 
 };
 

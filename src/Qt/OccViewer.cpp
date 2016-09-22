@@ -4,12 +4,12 @@
 *
 *  This file is part of STACCATO.
 *
-*  EMPIRE is free software: you can redistribute it and/or modify
+*  STACCATO is free software: you can redistribute it and/or modify
 *  it under the terms of the GNU General Public License as published by
 *  the Free Software Foundation, either version 3 of the License, or
 *  (at your option) any later version.
 *
-*  EMPIRE is distributed in the hope that it will be useful,
+*  STACCATO is distributed in the hope that it will be useful,
 *  but WITHOUT ANY WARRANTY; without even the implied warranty of
 *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 *  GNU General Public License for more details.
@@ -928,7 +928,6 @@ AIS_StatusOfPick OccViewer::dragEvent(const QPoint startPoint, const QPoint endP
 {
 	using namespace std;
 	AIS_StatusOfPick pick = AIS_SOP_NothingSelected;
-
 	if (myContext.IsNull()) {
 		return pick;
 	}

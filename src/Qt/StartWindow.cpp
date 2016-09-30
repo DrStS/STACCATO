@@ -50,7 +50,8 @@
 #include <AIS_InteractiveContext.hxx>
 #include <BRep_Tool.hxx>
 #include <TopoDS.hxx>
-
+#include <Geom2d_CartesianPoint.hxx>
+#include <ElCLib.hxx>
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
 ui(new Ui::StartWindow)
@@ -123,6 +124,8 @@ void StartWindow::createToolBars(void)
 void StartWindow::about()
 {
 	myOccViewer->showGrid(Standard_True);
+	myOccViewer->viewTop();
+	myOccViewer->viewGrid();
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
 		"<p>Copyright &copy; 2016 "
@@ -168,15 +171,9 @@ void StartWindow::createDockWindows()
 
 void StartWindow::drawCantilever(void){
 
-
-	myOccViewer->getContext()->OpenLocalContext(Standard_False);
-	myOccViewer->getContext()->ActivateStandardMode(TopAbs_VERTEX);
-
-
-
 	//3D cartesian point
-	gp_Pnt mGp_Pnt_Start = gp_Pnt(1., 0., 0.);
-	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 1., 1.);
+	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
+	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
 
 	//Geom_CartesianPoint
 	Handle(Geom_CartesianPoint)  start = new Geom_CartesianPoint(mGp_Pnt_Start);
@@ -194,12 +191,7 @@ void StartWindow::drawCantilever(void){
 	Handle(AIS_Shape) aisSegmentB = new AIS_Shape(mTopoEdge);
 	aisSegmentB->SetColor(Quantity_NOC_RED);
 	aisSegmentB->SetWidth(2.);
-	myOccViewer->getContext()->Display(aisSegmentB);
-
-
-	myOccViewer->getContext()->Deactivate(aisSegmentB, 0);
-	myOccViewer->getContext()->Activate(aisSegmentB, 1);
-
+	//myOccViewer->getContext()->Display(aisSegmentB,1,1);
 
 
 	//Draw vertex
@@ -214,21 +206,29 @@ void StartWindow::drawCantilever(void){
 	Handle(AIS_Shape) aPointB = new AIS_Shape(V1);
 	Handle_Prs3d_PointAspect myPointAspectB = new Prs3d_PointAspect(Aspect_TOM_O, Quantity_NOC_GREEN, 2);
 	aPointB->Attributes()->SetPointAspect(myPointAspectB);
-	myOccViewer->getContext()->Display(aPointB);
+	//myOccViewer->getContext()->Display(aPointB);
+
+	//============ 2D Stuff
+	gp_Pnt2d mGp_Pnt_Start_2D = gp_Pnt2d(0., 0.);
+	Handle(Geom2d_CartesianPoint) myGeom2d_Point = new Geom2d_CartesianPoint(mGp_Pnt_Start_2D);
+	gp_Ax3	curCoordinateSystem = gp_Ax3();
+	Handle(Geom_CartesianPoint) myGeom_Point = new Geom_CartesianPoint(ElCLib::To3d(curCoordinateSystem.Ax2(), mGp_Pnt_Start_2D));
+	Handle(AIS_Point) myAIS_Point = new AIS_Point(myGeom_Point);	
+	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
 void StartWindow::handleSelectionChanged(void){
 
-	//myOccViewer->getContext()->OpenLocalContext();
-	//myOccViewer->getContext()->ActivateStandardMode(TopAbs_VERTEX);
 
 	bool aHasSelected = false;
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected() && !aHasSelected; myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
-		TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
+		//TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
 
-		//if (TopAbs_VERTEX == vertexShape.ShapeType())
+		cout << "anIO: " << anIO->Signature() << endl;
+		/*cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
+		if (TopAbs_VERTEX == vertexShape.ShapeType())
 		{
 			gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
 			cout << "=========="<< endl;
@@ -236,7 +236,7 @@ void StartWindow::handleSelectionChanged(void){
 			cout << "Y: " << myPoint.Y() << endl;
 			cout << "Z: " << myPoint.Z() << endl;
 			cout << "==========" << endl;
-		}
+		}*/
 	}
 
 }

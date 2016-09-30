@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
     cout << "Hello STACCATO is fired up!" << endl;
     cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
-    //qputenv("CASROOT", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0");
-    //qputenv("CSF_ShadersDirectory", "/home/stefan/software/tools/opencascade-7.0.0/opencascade-7.0.0/src/Shaders");
+    qputenv("CASROOT", "C:\\software\\libs\\OpenCASCADE7.0.0-vc12-64\\opencascade-7.0.0");
+    qputenv("CSF_ShadersDirectory", "C:\\software\\libs\\OpenCASCADE7.0.0-vc12-64\\opencascade-7.0.0\\src\\Shaders");
 
     QApplication a(argc, argv);
     StartWindow* mSW= new StartWindow();

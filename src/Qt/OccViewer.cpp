@@ -81,7 +81,7 @@ OccViewer::OccViewer(QWidget* parent )
 	myViewResized(Standard_False),
 	myViewInitialized(Standard_False),
 	myMode(CurAction3d_Undefined),
-	myGridSnap(Standard_False),
+	myGridSnap(Standard_True),
 	myDetection(AIS_SOD_Nothing),
 	myPrecision(0.001),
 	myViewPrecision(0.0),
@@ -277,6 +277,7 @@ void OccViewer::mouseMoveEvent(QMouseEvent* e)
 
 	myCurrentPoint = e->pos();
 	//Check if the grid is active and that we're snapping to it
+	cout << "BEFORE" << endl;
 	if (myContext->CurrentViewer()->Grid()->IsActive() && myGridSnap) {
 		myView->ConvertToGrid(myCurrentPoint.x(),
 			myCurrentPoint.y(),
@@ -284,6 +285,7 @@ void OccViewer::mouseMoveEvent(QMouseEvent* e)
 			myV3dY,
 			myV3dZ);
 		emit mouseMoved(myV3dX, myV3dY, myV3dZ);
+		cout << "INSIDE" << endl;
 	}
 	else {
 		bool success = convertToPlane(myCurrentPoint.x(),
@@ -967,7 +969,7 @@ AIS_StatusOfPick OccViewer::inputEvent(bool multi)
 		pick = myContext->Select();
 	}
 	if (pick != AIS_SOP_NothingSelected) {
-		emit selectionChanged();
+//		emit selectionChanged();
 	}
 	return pick;
 }
@@ -1178,14 +1180,22 @@ bool OccViewer::makeScreenshot(const QString& filename, bool whiteBGEnabled, int
 void OccViewer::showGrid(Standard_Boolean show){
 	//GRID
 	if (show){
-	myViewer->ActivateGrid(Aspect_GT_Rectangular, Aspect_GDM_Lines);
 	myViewer->SetGridEcho(Standard_True);
 	myViewer->Grid()->SetColors(Quantity_NOC_RED4, Quantity_NOC_GRAY90);
+	Quantity_Length X = 0.0;
+	Quantity_Length Y = 0.0;
+	Quantity_Length SX = 100.0;
+	Quantity_Length SY = 100.0;
+	Quantity_Length D = 0.0;
+	myViewer->SetRectangularGridValues(X, Y, SX, SY, D);
+	myViewer->SetRectangularGridGraphicValues(100, 100, 0);
 	gp_Ax3 aPlane(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.));
 	myViewer->SetPrivilegedPlane(aPlane);
+	myViewer->ActivateGrid(Aspect_GT_Rectangular, Aspect_GDM_Points);
 	}
 	else{
 	myViewer->DeactivateGrid();
 	myViewer->SetGridEcho(Standard_False);
 	}
+	myContext->CurrentViewer()->RedrawImmediate();
 }

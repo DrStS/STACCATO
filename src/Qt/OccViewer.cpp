@@ -277,15 +277,15 @@ void OccViewer::mouseMoveEvent(QMouseEvent* e)
 
 	myCurrentPoint = e->pos();
 	//Check if the grid is active and that we're snapping to it
-	cout << "BEFORE" << endl;
 	if (myContext->CurrentViewer()->Grid()->IsActive() && myGridSnap) {
 		myView->ConvertToGrid(myCurrentPoint.x(),
 			myCurrentPoint.y(),
 			myV3dX,
 			myV3dY,
 			myV3dZ);
+		myView->Viewer()->ShowGridEcho(myView, Graphic3d_Vertex(myV3dX, myV3dY, myV3dZ));
+		myView->RedrawImmediate();
 		emit mouseMoved(myV3dX, myV3dY, myV3dZ);
-		cout << "INSIDE" << endl;
 	}
 	else {
 		bool success = convertToPlane(myCurrentPoint.x(),

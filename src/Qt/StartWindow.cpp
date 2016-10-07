@@ -20,6 +20,7 @@
 #include <StartWindow.h>
 #include <ui_StartWindow.h>
 #include <OccViewer.h>
+#include <QtProcessIndicator.h>
 
 //QT5
 #include <QToolBar>
@@ -139,14 +140,18 @@ void StartWindow::readSTL(void)
 		tr("Import STL File"), "", tr("STL Files (*.stl)"));
 
 	if (!fileNameSTL.isEmpty() && !fileNameSTL.isNull()){
+
+		Handle(Message_ProgressIndicator) aIndicator = new QtProcessIndicator(this);
+		aIndicator->SetRange(0, 100);
+
 		OSD_Path aFile(fileNameSTL.toUtf8().constData());
-		Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile);
+		Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile, aIndicator);
 		Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 		Handle(XSDRAWSTLVRML_DataSource) aDS = new XSDRAWSTLVRML_DataSource(aSTLMesh);
 		aMesh->SetDataSource(aDS);
 		aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_True); //MeshVS_DrawerAttribute
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_True);
 		aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 		aMesh->SetColor(Quantity_NOC_AZURE);
 		aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut

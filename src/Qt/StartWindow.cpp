@@ -53,6 +53,10 @@
 #include <TopoDS.hxx>
 #include <Geom2d_CartesianPoint.hxx>
 #include <ElCLib.hxx>
+#include <MeshVS_SelectionModeFlags.hxx>
+#include <TColStd_HPackedMapOfInteger.hxx>
+
+
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
 ui(new Ui::StartWindow)
@@ -150,13 +154,34 @@ void StartWindow::readSTL(void)
 		Handle(XSDRAWSTLVRML_DataSource) aDS = new XSDRAWSTLVRML_DataSource(aSTLMesh);
 		aMesh->SetDataSource(aDS);
 		aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_True); //MeshVS_DrawerAttribute
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_True);
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
+		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
 		aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 		aMesh->SetColor(Quantity_NOC_AZURE);
 		aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
 		aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
+
+		aMesh->GetDrawer()->SetColor(MeshVS_DA_EdgeColor, Quantity_NOC_YELLOW);
+
+		/*
+		// Hide all nodes by default
+		Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+		Standard_Integer aLen = aSTLMesh->Vertices().Length();
+		for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
+			aNodes->ChangeMap().Add(anIndex);
+		}
+		aMesh->SetHiddenNodes(aNodes);
+		aMesh->SetSelectableNodes(aNodes); */
+
 		myOccViewer->getContext()->Display(aMesh);
+
+		myOccViewer->getContext()->Deactivate(aMesh);
+		myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
+		myOccViewer->getContext()->Activate(aMesh, 8);
+
+		
+
+	
 	}
 
 }

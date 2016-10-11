@@ -55,6 +55,7 @@
 #include <ElCLib.hxx>
 #include <MeshVS_SelectionModeFlags.hxx>
 #include <TColStd_HPackedMapOfInteger.hxx>
+#include <Select3D_SensitiveTriangle.hxx>
 
 
 StartWindow::StartWindow(QWidget *parent) :
@@ -250,12 +251,34 @@ void StartWindow::drawCantilever(void){
 void StartWindow::handleSelectionChanged(void){
 
 
+	Handle(StdSelect_ViewerSelector3d) aSelector = myOccViewer->getContext()->HasOpenedContext() ? myOccViewer->getContext()->LocalSelector() : myOccViewer->getContext()->MainSelector();
+	SelectMgr_SelectingVolumeManager aMgr = aSelector->GetManager();
+	for (aSelector->InitDetected(); aSelector->MoreDetected(); aSelector->NextDetected())
+	{
+		const Handle(SelectBasics_SensitiveEntity)& anEntity = aSelector->DetectedEntity();
+
+		if (anEntity->DynamicType() == STANDARD_TYPE(Select3D_SensitiveTriangle))
+		{
+			Handle(Select3D_SensitiveTriangle) Str = Handle(Select3D_SensitiveTriangle)::DownCast(anEntity);
+			gp_Pnt P1, P2, P3;
+			Str->Points3D(P1, P2, P3);
+
+			cout << "P1 X: " << P1.X() << "P2 X: " << P2.X() << "P3 X: " << P3.X() << endl;
+
+		 }
+
+		cout  << " (" << anEntity->DynamicType()->Name() << ")"
+			<< "\n";
+
+	}
+
+
 	bool aHasSelected = false;
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected() && !aHasSelected; myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
-		//TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
 
+		//TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
 		cout << "anIO: " << anIO->Signature() << endl;
 		/*cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
 		if (TopAbs_VERTEX == vertexShape.ShapeType())

@@ -56,7 +56,11 @@
 #include <MeshVS_SelectionModeFlags.hxx>
 #include <TColStd_HPackedMapOfInteger.hxx>
 #include <Select3D_SensitiveTriangle.hxx>
-
+#include <MeshVS_MeshEntityOwner.hxx>
+#include <Select3D_SensitiveTriangulation.hxx>
+#include <Select3D_SensitiveFace.hxx>
+#include <MeshVS_CommonSensitiveEntity.hxx>
+#include <MeshVS_Buffer.hxx>
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -251,12 +255,14 @@ void StartWindow::drawCantilever(void){
 void StartWindow::handleSelectionChanged(void){
 
 
+
 	Handle(StdSelect_ViewerSelector3d) aSelector = myOccViewer->getContext()->HasOpenedContext() ? myOccViewer->getContext()->LocalSelector() : myOccViewer->getContext()->MainSelector();
-	SelectMgr_SelectingVolumeManager aMgr = aSelector->GetManager();
 	for (aSelector->InitDetected(); aSelector->MoreDetected(); aSelector->NextDetected())
 	{
+		
 		const Handle(SelectBasics_SensitiveEntity)& anEntity = aSelector->DetectedEntity();
-
+		cout << anEntity->DynamicType() << endl;
+		cout << Select3D_SensitiveTriangle::get_type_descriptor() << endl;
 		if (anEntity->DynamicType() == STANDARD_TYPE(Select3D_SensitiveTriangle))
 		{
 			Handle(Select3D_SensitiveTriangle) Str = Handle(Select3D_SensitiveTriangle)::DownCast(anEntity);
@@ -265,18 +271,94 @@ void StartWindow::handleSelectionChanged(void){
 
 			cout << "P1 X: " << P1.X() << "P2 X: " << P2.X() << "P3 X: " << P3.X() << endl;
 
-		 }
+		}
 
-		cout  << " (" << anEntity->DynamicType()->Name() << ")"
+		cout << " (" << anEntity->DynamicType()->Name() << ")"
 			<< "\n";
 
 	}
 
 
-	bool aHasSelected = false;
-	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected() && !aHasSelected; myOccViewer->getContext()->NextSelected())
+
+
+
+
+
+	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
+		cout << anIO->DynamicType() << endl;
+		Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
+		cout << aSelection->DynamicType() << endl;
+		Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
+		cout << "=================" << endl;
+		cout << aEntOwn->DynamicType() << endl;
+		Handle(SelectMgr_SensitiveEntity) aHSenEntity = aSelection->Sensitive();
+		Handle(SelectBasics_SensitiveEntity) entity = aHSenEntity->BaseSensitive();
+		//Handle(SelectMgr_EntityOwner) owner = Handle(SelectMgr_EntityOwner)::DownCast(entity->OwnerId());
+		//cout << owner->DynamicType() << endl;
+		cout << "=================" << endl;
+
+		Handle(SelectMgr_SensitiveEntity)  aSenEn = aSelection->Sensitive();
+
+		if (!aSenEn.IsNull()){
+			Handle(SelectBasics_SensitiveEntity) aSelBas = aSenEn->BaseSensitive();
+			if (!aSelBas.IsNull()){;
+				cout << aSelBas->DynamicType() << endl;
+				Handle(Select3D_SensitiveEntity) Ent = Handle(Select3D_SensitiveEntity)::DownCast(aSelBas);
+				cout << Ent->DynamicType() << endl;
+				cout << Select3D_SensitiveEntity::get_type_descriptor() << endl;
+				cout << MeshVS_CommonSensitiveEntity::get_type_descriptor() << endl;
+				cout << Select3D_SensitiveSet::get_type_descriptor() << endl;
+				if (Ent->DynamicType() == STANDARD_TYPE(Select3D_SensitiveEntity)){
+					cout << "Checkpot" << endl;
+				}
+			}
+		}
+
+		//=====
+		Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
+
+		if (owner->Type() == MeshVS_ET_Face)
+		{
+			cout << "Checkpot 2" << endl;
+
+			Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
+
+			Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
+			Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
+			int maxFaceNodes;
+			if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
+			{
+				MeshVS_Buffer coordsBuf(3 * maxFaceNodes * sizeof(Standard_Real));
+				TColStd_Array1OfReal coords(coordsBuf, 1, 3 * maxFaceNodes);
+
+				int nbNodes = 0;
+				MeshVS_EntityType entityType;
+				if (source->GetGeom(owner->ID(), true, coords, nbNodes, entityType))
+				{
+					if (nbNodes >= 3)
+					{
+						gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+						gp_Pnt p2 = gp_Pnt(coords(4), coords(5), coords(6));
+						gp_Pnt p3 = gp_Pnt(coords(7), coords(8), coords(9));
+
+						cout << "==========" << endl;
+						cout << "X: " << p1.X() << endl;
+						cout << "Y: " << p2.Y() << endl;
+						cout << "Z: " << p3.Z() << endl;
+						cout << "==========" << endl;
+
+						// do something with p1, p2 and p3
+					}
+				}
+			}
+
+		}
+		//=====
+
+
+
 
 		//TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
 		cout << "anIO: " << anIO->Signature() << endl;

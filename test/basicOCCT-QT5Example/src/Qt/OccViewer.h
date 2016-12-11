@@ -79,75 +79,14 @@ public:
 	Handle_V3d_View                  getView(void)    { return myView; }
 	Handle_AIS_InteractiveContext    getContext(void)    { return myContext; }
 
-	//Overrides
-	QPaintEngine*   paintEngine() const;
-	class QToolBar* myToolBar;
-	void redraw(bool isPainting = false);
+	virtual QPaintEngine*         paintEngine() const;
 
-	void onClose(void);
 
-signals:
+protected:
+	virtual void                  paintEvent(QPaintEvent*);
+	virtual void                  resizeEvent(QResizeEvent*);
 
-	void initialized();
-	void selectionChanged();
-	void mouseMoved(V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z);
-	void pointClicked(V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z);
-	void sendStatus(const QString aMessage);
-
-	void error(int errorCode, QString& errorDescription);
-
-	public slots:
-
-	void idle();
-	void fitExtents();
-	void fitAll();
-	void fitArea();
-	void zoom();
-	void zoomIn();
-	void zoomOut();
-	void pan();
-	void globalPan();
-	void rotation();
-	void selecting();
-	void hiddenLineOn();
-	void hiddenLineOff();
-	void setBackgroundGradient(int r, int g, int b);
-	void setBackgroundColor(int r, int g, int b);
-	void setBGImage(const QString&);
-	void viewFront();
-	void viewBack();
-	void viewTop();
-	void viewBottom();
-	void viewLeft();
-	void viewRight();
-	void viewAxo();
-	void viewTopFront();
-	void viewGrid();
-	void viewReset();
-	void setReset();
-	void eraseSelected();
-	void setTransparency();
-	void setTransparency(int);
-	void setObjectsWireframe();
-	void setObjectsShading();
-	void setObjectsColor();
-	void setObjectsMaterial();
-	bool makeScreenshot(const QString& filename, bool whiteBGEnabled = true, int width = 0, int height = 0, int quality = 90);
-	void showGrid(Standard_Boolean show);
-
-protected: // methods
-
-	virtual void paintEvent(QPaintEvent* e);
-	virtual void resizeEvent(QResizeEvent* e);
-	virtual void mousePressEvent(QMouseEvent* e);
-	virtual void mouseReleaseEvent(QMouseEvent* e);
-	virtual void mouseMoveEvent(QMouseEvent* e);
-	virtual void wheelEvent(QWheelEvent* e);
-	virtual void keyPressEvent(QKeyEvent* e);
-
-	virtual void leaveEvent(QEvent *);
-
-private: // members
+private: //variables
 	Handle_V3d_View                 myView;
 	Handle_V3d_Viewer               myViewer;
 	Handle_AIS_InteractiveContext   myContext;
@@ -176,42 +115,13 @@ private: // members
 	QColor                          myBGColor;
 
 private: // methods
-	void initOccViewer();
-	Handle(V3d_Viewer) viewer(const Standard_ExtString theName,
-		const Standard_CString theDomain,
-		const Standard_Real theViewSize,
-		const V3d_TypeOfOrientation theViewProj,
-		const Standard_Boolean theComputedMode,
-		const Standard_Boolean theDefaultComputedMode);
-	
-
-	void onLeftButtonDown(Qt::KeyboardModifiers nFlags, const QPoint point);
-	void onMiddleButtonDown(Qt::KeyboardModifiers nFlags, const QPoint point);
-	void onRightButtonDown(Qt::KeyboardModifiers nFlags, const QPoint point);
-	void onLeftButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point);
-	void onMiddleButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point);
-	void onRightButtonUp(Qt::KeyboardModifiers nFlags, const QPoint point);
-
-	void onMouseMove(Qt::MouseButtons buttons,
-		Qt::KeyboardModifiers nFlags, const QPoint point);
-
-	AIS_StatusOfPick        dragEvent(const QPoint startPoint, const QPoint endPoint, const bool multi = false);
-	AIS_StatusOfPick        inputEvent(const bool multi = false);
-	AIS_StatusOfDetection   moveEvent(const QPoint point);
-
-	void setMode(const CurrentAction3d mode);
-
-	Standard_Real precision(Standard_Real aReal);
-	Standard_Real viewPrecision(bool resized = false);
-
-	void drawRubberBand(const QPoint origin, const QPoint position);
-	void hideRubberBand(void);
-
-	Standard_Boolean convertToPlane(Standard_Integer Xs,
-		Standard_Integer Ys,
-		Standard_Real& X,
-		Standard_Real& Y,
-		Standard_Real& Z);
+	void initOccView(void);
+	Handle(V3d_Viewer) createViewer(const Standard_ExtString theName,
+	const Standard_CString theDomain,
+	const Standard_Real theViewSize,
+	const V3d_TypeOfOrientation theViewProj,
+	const Standard_Boolean theComputedMode,
+	const Standard_Boolean theDefaultComputedMode);
 
 
 };

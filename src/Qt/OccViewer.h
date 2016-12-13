@@ -91,7 +91,6 @@ signals:
 	void mouseMoved(V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z);
 	void pointClicked(V3d_Coordinate X, V3d_Coordinate Y, V3d_Coordinate Z);
 	void sendStatus(const QString aMessage);
-
 	void error(int errorCode, QString& errorDescription);
 
 public slots:

@@ -87,7 +87,7 @@ void StartWindow::createActions(void)
 	mExitAction->setShortcut(tr("Ctrl+Q"));
 	mExitAction->setIcon(QIcon(":/Qt/resources/close.png"));
 	mExitAction->setStatusTip(tr("Exit the application"));
-	connect(mExitAction, SIGNAL(triggered()), this, SLOT(onCloseWindow()));
+	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
 	mReadSTLAction = new QAction(tr("Read STL file"), this);
 	mReadSTLAction->setShortcut(tr("Ctrl+R"));

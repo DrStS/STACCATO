@@ -92,17 +92,18 @@ OccViewer::OccViewer(QWidget* parent )
 	blackRect = new AIS_RubberBand(Quantity_Color(Quantity_NOC_BLACK), Aspect_TOL_DOT, 1.0);
 
 	myMode = CurAction3d_Nothing;
+	///Setup QT5
 	setMouseTracking(true);
 	setAutoFillBackground(false);
 	setAttribute(Qt::WA_NoSystemBackground);
 	setAttribute(Qt::WA_PaintOnScreen);
+
 	// Here's a modified pick point cursor from AutoQ3D
 	QBitmap curb1(48, 48);
 	QBitmap curb2(48, 48);
 	curb1.fill(QColor(255, 255, 255));
 	curb2.fill(QColor(255, 255, 255));
 	QPainter p;
-
 	p.begin(&curb1);
 	p.drawLine(24, 0, 24, 47);
 	p.drawLine(0, 24, 47, 24);
@@ -112,14 +113,13 @@ OccViewer::OccViewer(QWidget* parent )
 	myCrossCursor = QCursor(curb2, curb1, 24, 24);
 
 	// create win id, this is required on qt 5
-	// without winid, the view can't be properly initialized
-	
+	// without winid, the view can't be properly initialized	
 	winId();
 
 }
 
 
-Handle(V3d_Viewer) OccViewer::viewer(const Standard_ExtString theName,
+Handle(V3d_Viewer) OccViewer::createViewer(const Standard_ExtString theName,
 	const Standard_CString theDomain,
 	const Standard_Real theViewSize,
 	const V3d_TypeOfOrientation theViewProj,
@@ -132,57 +132,62 @@ Handle(V3d_Viewer) OccViewer::viewer(const Standard_ExtString theName,
 	{
 		Handle(Aspect_DisplayConnection) aDisplayConnection;
 #if !defined(_WIN32) && !defined(__WIN32__) && (!defined(__APPLE__) || defined(MACOSX_USE_GLX))
-		aDisplayConnection = new Aspect_DisplayConnection(qgetenv("DISPLAY").constData());
+		aDisplayConnection = new Aspect_DisplayConnection (qgetenv ("DISPLAY").constData());
 #endif
 		aGraphicDriver = new OpenGl_GraphicDriver(aDisplayConnection);
 	}
 
-	return new V3d_Viewer(aGraphicDriver,
-		theName,
-		theDomain,
-		theViewSize,
-		theViewProj,
-		Quantity_NOC_GRAY30,
-		V3d_ZBUFFER,
-		V3d_GOURAUD,
-		V3d_WAIT,
-		theComputedMode,
-		theDefaultComputedMode);
+	Handle(V3d_Viewer) aViewer = new V3d_Viewer(aGraphicDriver);
+	aViewer->SetDefaultViewSize(theViewSize);
+	aViewer->SetDefaultViewProj(theViewProj);
+	aViewer->SetComputedMode(theComputedMode);
+	aViewer->SetDefaultComputedMode(theDefaultComputedMode);
+	return aViewer;
 }
 
 
-void OccViewer::initOccViewer(){
+void OccViewer::initOccView(){
 	myBGColor = QColor(255, 235, 100);
+	/// Create 3D Viewer
 	TCollection_ExtendedString a3DName("STACCATO");
-	myViewer = viewer(a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
-	myContext = new AIS_InteractiveContext(myViewer);
-	if (myView.IsNull()){
-		myView = myContext->CurrentViewer()->CreateView();
-	}
+	myViewer = createViewer(a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
+	myViewer->SetDefaultLights();
+	// activates all the lights defined in this viewer
+	myViewer->SetLightOn();
+	// set background color to black
+	myViewer->SetDefaultBackgroundColor(Quantity_NOC_BLACK);
 
-        Handle_Aspect_Window myWindow;
-        
-        #if OCC_VERSION_HEX >= 0x070800
-        myWindow = new OcctWindow(this);
-        #else
-        #if defined _WIN32 || defined __WIN32__
-        myWindow = new WNT_Window((Aspect_Handle)winId());
-        #elif defined __APPLE__
-        myWindow = new Cocoa_Window((NSView *)winId());
-        #else
-        Aspect_Handle windowHandle = (Aspect_Handle)winId();
-        myWindow = new Xw_Window(myContext->CurrentViewer()->Driver()->GetDisplayConnection(),
-                                 windowHandle);
-        #endif
-        #endif // OCC_VERSION_HEX >= 0x060800
-        
-        
-    
- 	myView->SetWindow(myWindow);
+	/// Create 3D View
+	if (myView.IsNull()){
+		myView = myViewer->CreateView();
+	}
+	Handle_Aspect_Window myWindow;
+#if OCC_VERSION_HEX >= 0x070000 
+	myWindow = new OcctWindow( this );
+#else
+#if defined _WIN32 || defined __WIN32__
+	myWindow = new WNT_Window((Aspect_Handle)winId());
+#elif defined __APPLE__
+	myWindow = new Cocoa_Window((NSView *)winId());
+#else
+	Aspect_Handle windowHandle = (Aspect_Handle)winId();
+	myWindow = new Xw_Window(myContext->CurrentViewer()->Driver()->GetDisplayConnection(), windowHandle);
+#endif
+#endif // OCC_VERSION_HEX >= 0x070000
+
+
+	myView->SetWindow(myWindow);
 	if (!myWindow->IsMapped())
 	{
 		myWindow->Map();
 	}
+	myView->SetBackgroundColor(Quantity_NOC_BLACK);
+	myView->MustBeResized();
+	myView->ChangeRenderingParams().Method = Graphic3d_RM_RAYTRACING;
+
+	/// Create an interactive context
+	myContext = new AIS_InteractiveContext(myViewer);
+
 	myView->SetScale(2);
 	myView->SetBackgroundColor(Quantity_NOC_BLACK);
 	myView->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_GOLD, 0.08, V3d_ZBUFFER);
@@ -190,17 +195,13 @@ void OccViewer::initOccViewer(){
 	Graphic3d_RenderingParams& RenderParams = myView->ChangeRenderingParams();
 	RenderParams.NbMsaaSamples = 8;
 
-	myViewer->SetDefaultLights();
-	myViewer->SetLightOn();
-
 	// Force a redraw to the new window on next paint event
 	myViewResized = Standard_True;
 	// Set default cursor as a cross
 	setMode(CurAction3d_Nothing);
 	setBackgroundGradient(myBGColor.red(), myBGColor.green(), myBGColor.blue());
 	myContext->SetDisplayMode(AIS_Shaded);
-	myViewInitialized = Standard_True;
-        
+	myViewInitialized = Standard_True;      
 }
 
 OccViewer::~OccViewer()
@@ -217,7 +218,7 @@ void OccViewer::paintEvent(QPaintEvent * /* e */)
 {
 	if (!myViewInitialized) {
 		if (winId()) {
-			initOccViewer();
+			initOccView();
 		}
 	}
 	if (!myViewer.IsNull()) {

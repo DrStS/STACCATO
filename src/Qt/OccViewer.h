@@ -174,8 +174,8 @@ private: // members
 	QColor                          myBGColor;
 
 private: // methods
-	void initOccViewer();
-	Handle(V3d_Viewer) viewer(const Standard_ExtString theName,
+	void initOccView(void);
+	Handle(V3d_Viewer) createViewer(const Standard_ExtString theName,
 		const Standard_CString theDomain,
 		const Standard_Real theViewSize,
 		const V3d_TypeOfOrientation theViewProj,

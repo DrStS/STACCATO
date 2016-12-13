@@ -113,6 +113,7 @@ OccViewer::OccViewer(QWidget* parent )
 
 	// create win id, this is required on qt 5
 	// without winid, the view can't be properly initialized
+	
 	winId();
 
 }
@@ -146,8 +147,7 @@ Handle(V3d_Viewer) OccViewer::viewer(const Standard_ExtString theName,
 		V3d_GOURAUD,
 		V3d_WAIT,
 		theComputedMode,
-		theDefaultComputedMode,
-		V3d_TEX_NONE);
+		theDefaultComputedMode);
 }
 
 
@@ -186,7 +186,9 @@ void OccViewer::initOccViewer(){
 	myView->SetScale(2);
 	myView->SetBackgroundColor(Quantity_NOC_BLACK);
 	myView->TriedronDisplay(Aspect_TOTP_LEFT_LOWER, Quantity_NOC_GOLD, 0.08, V3d_ZBUFFER);
-	myView->SetAntialiasingOn();
+
+	Graphic3d_RenderingParams& RenderParams = myView->ChangeRenderingParams();
+	RenderParams.NbMsaaSamples = 8;
 
 	myViewer->SetDefaultLights();
 	myViewer->SetLightOn();

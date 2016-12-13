@@ -106,6 +106,9 @@ void OccViewer::initOccView(){
 	// set background color to black
 	myViewer->SetDefaultBackgroundColor(Quantity_NOC_BLACK);
 
+	///Setup QT5
+	setAttribute(Qt::WA_PaintOnScreen);
+
 	/// Create 3D View
 	if (myView.IsNull()){
 		myView = myViewer->CreateView();

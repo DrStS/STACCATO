@@ -60,7 +60,6 @@ private slots:
 
 private:
 	Ui::StartWindow *ui;
-
 	//! the exit action.
 	QAction* mExitAction;
 

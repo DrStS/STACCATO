@@ -94,7 +94,7 @@ signals:
 
 	void error(int errorCode, QString& errorDescription);
 
-	public slots:
+public slots:
 
 	void idle();
 	void fitExtents();

@@ -21,6 +21,7 @@
 #include <ui_StartWindow.h>
 #include <OccViewer.h>
 #include <QtProcessIndicator.h>
+#include <STLVRML_DataSource.h>
 
 //QT5
 #include <QToolBar>
@@ -32,7 +33,6 @@
 //OCC 7
 #include <StlMesh_Mesh.hxx> 
 #include <MeshVS_Mesh.hxx>
-#include <XSDRAWSTLVRML_DataSource.hxx>
 #include <MeshVS_MeshPrsBuilder.hxx>
 #include <MeshVS_Drawer.hxx>
 #include <RWStl.hxx>
@@ -74,11 +74,11 @@ ui(new Ui::StartWindow)
 	createMenus();
 	createToolBars();
 	createDockWindows();
-	setAttribute(Qt::WA_QuitOnClose, Standard_False);
 }
 
 StartWindow::~StartWindow()
 {
+	delete myOccViewer;
 }
 
 void StartWindow::createActions(void)
@@ -87,7 +87,7 @@ void StartWindow::createActions(void)
 	mExitAction->setShortcut(tr("Ctrl+Q"));
 	mExitAction->setIcon(QIcon(":/Qt/resources/close.png"));
 	mExitAction->setStatusTip(tr("Exit the application"));
-	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
+	connect(mExitAction, SIGNAL(triggered()), this, SLOT(onCloseWindow()));
 
 	mReadSTLAction = new QAction(tr("Read STL file"), this);
 	mReadSTLAction->setShortcut(tr("Ctrl+R"));
@@ -130,11 +130,25 @@ void StartWindow::createToolBars(void)
 	mHelpToolBar->addAction(mAboutAction);
 }
 
+void StartWindow::createDockWindows()
+{
+	QDockWidget *dock = new QDockWidget(tr("Output"), this);
+	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+	textOutput = new QTextEdit(dock);
+	textOutput->setText("STACCATO");
+	dock->setWidget(textOutput);
+	addDockWidget(Qt::BottomDockWidgetArea, dock);
+
+	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
+
+}
+
 
 void StartWindow::about()
 {
 	myOccViewer->showGrid(Standard_True);
 	myOccViewer->viewTop();
+	myOccViewer->fitAll();
 	myOccViewer->viewGrid();
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
@@ -149,26 +163,22 @@ void StartWindow::readSTL(void)
 		tr("Import STL File"), "", tr("STL Files (*.stl)"));
 
 	if (!fileNameSTL.isEmpty() && !fileNameSTL.isNull()){
-
 		Handle(Message_ProgressIndicator) aIndicator = new QtProcessIndicator(this);
 		aIndicator->SetRange(0, 100);
-
 		OSD_Path aFile(fileNameSTL.toUtf8().constData());
 		Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile, aIndicator);
 		Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-		Handle(XSDRAWSTLVRML_DataSource) aDS = new XSDRAWSTLVRML_DataSource(aSTLMesh);
+    	Handle(STLVRML_DataSource) aDS = new STLVRML_DataSource(aSTLMesh);
 		aMesh->SetDataSource(aDS);
-		aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
+	    aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
 		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
 		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
 		aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 		aMesh->SetColor(Quantity_NOC_AZURE);
 		aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
 		aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
-
 		aMesh->GetDrawer()->SetColor(MeshVS_DA_EdgeColor, Quantity_NOC_YELLOW);
 
-		/*
 		// Hide all nodes by default
 		Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
 		Standard_Integer aLen = aSTLMesh->Vertices().Length();
@@ -176,36 +186,17 @@ void StartWindow::readSTL(void)
 			aNodes->ChangeMap().Add(anIndex);
 		}
 		aMesh->SetHiddenNodes(aNodes);
-		aMesh->SetSelectableNodes(aNodes); */
-
+		aMesh->SetSelectableNodes(aNodes);
 		myOccViewer->getContext()->Display(aMesh);
-
 		myOccViewer->getContext()->Deactivate(aMesh);
 		myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
-		myOccViewer->getContext()->Activate(aMesh, 8);
-
-		
-
-	
+		//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
+		myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
 	}
-
 }
 
-void StartWindow::createDockWindows()
-{
-	QDockWidget *dock = new QDockWidget(tr("Output"), this);
-	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-	textOutput = new QTextEdit(dock);
-	textOutput->setText("STACCATO");
-	dock->setWidget(textOutput);
-	addDockWidget(Qt::BottomDockWidgetArea, dock);
-
-	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
-
-}
 
 void StartWindow::drawCantilever(void){
-
 	//3D cartesian point
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
@@ -248,85 +239,27 @@ void StartWindow::drawCantilever(void){
 	Handle(Geom2d_CartesianPoint) myGeom2d_Point = new Geom2d_CartesianPoint(mGp_Pnt_Start_2D);
 	gp_Ax3	curCoordinateSystem = gp_Ax3();
 	Handle(Geom_CartesianPoint) myGeom_Point = new Geom_CartesianPoint(ElCLib::To3d(curCoordinateSystem.Ax2(), mGp_Pnt_Start_2D));
-	Handle(AIS_Point) myAIS_Point = new AIS_Point(myGeom_Point);	
+	Handle(AIS_Point) myAIS_Point = new AIS_Point(myGeom_Point);
 	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
 void StartWindow::handleSelectionChanged(void){
 
-
-
-	Handle(StdSelect_ViewerSelector3d) aSelector = myOccViewer->getContext()->HasOpenedContext() ? myOccViewer->getContext()->LocalSelector() : myOccViewer->getContext()->MainSelector();
-	for (aSelector->InitDetected(); aSelector->MoreDetected(); aSelector->NextDetected())
-	{
-		
-		const Handle(SelectBasics_SensitiveEntity)& anEntity = aSelector->DetectedEntity();
-		cout << anEntity->DynamicType() << endl;
-		cout << Select3D_SensitiveTriangle::get_type_descriptor() << endl;
-		if (anEntity->DynamicType() == STANDARD_TYPE(Select3D_SensitiveTriangle))
-		{
-			Handle(Select3D_SensitiveTriangle) Str = Handle(Select3D_SensitiveTriangle)::DownCast(anEntity);
-			gp_Pnt P1, P2, P3;
-			Str->Points3D(P1, P2, P3);
-
-			cout << "P1 X: " << P1.X() << "P2 X: " << P2.X() << "P3 X: " << P3.X() << endl;
-
-		}
-
-		cout << " (" << anEntity->DynamicType()->Name() << ")"
-			<< "\n";
-
-	}
-
-
-
-
-
-
-
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
-		cout << anIO->DynamicType() << endl;
 		Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
-		cout << aSelection->DynamicType() << endl;
 		Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
-		cout << "=================" << endl;
-		cout << aEntOwn->DynamicType() << endl;
-		Handle(SelectMgr_SensitiveEntity) aHSenEntity = aSelection->Sensitive();
-		Handle(SelectBasics_SensitiveEntity) entity = aHSenEntity->BaseSensitive();
-		//Handle(SelectMgr_EntityOwner) owner = Handle(SelectMgr_EntityOwner)::DownCast(entity->OwnerId());
-		//cout << owner->DynamicType() << endl;
-		cout << "=================" << endl;
 
-		Handle(SelectMgr_SensitiveEntity)  aSenEn = aSelection->Sensitive();
-
-		if (!aSenEn.IsNull()){
-			Handle(SelectBasics_SensitiveEntity) aSelBas = aSenEn->BaseSensitive();
-			if (!aSelBas.IsNull()){;
-				cout << aSelBas->DynamicType() << endl;
-				Handle(Select3D_SensitiveEntity) Ent = Handle(Select3D_SensitiveEntity)::DownCast(aSelBas);
-				cout << Ent->DynamicType() << endl;
-				cout << Select3D_SensitiveEntity::get_type_descriptor() << endl;
-				cout << MeshVS_CommonSensitiveEntity::get_type_descriptor() << endl;
-				cout << Select3D_SensitiveSet::get_type_descriptor() << endl;
-				if (Ent->DynamicType() == STANDARD_TYPE(Select3D_SensitiveEntity)){
-					cout << "Checkpot" << endl;
-				}
-			}
-		}
-
-		//=====
+		// If statement to check for valid for DownCast
 		Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
+		Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
+		Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
+		Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
+
 
 		if (owner->Type() == MeshVS_ET_Face)
 		{
-			cout << "Checkpot 2" << endl;
-
-			Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
-
-			Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
-			Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
 			int maxFaceNodes;
 			if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
 			{
@@ -335,7 +268,7 @@ void StartWindow::handleSelectionChanged(void){
 
 				int nbNodes = 0;
 				MeshVS_EntityType entityType;
-				if (source->GetGeom(owner->ID(), true, coords, nbNodes, entityType))
+				if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
 				{
 					if (nbNodes >= 3)
 					{
@@ -355,6 +288,26 @@ void StartWindow::handleSelectionChanged(void){
 			}
 
 		}
+		else if (owner->Type() == MeshVS_ET_Node){
+			cout << "A Node" << endl;
+			int maxNodes = 1;
+			MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
+			TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
+			int nbNodes = 0;
+			MeshVS_EntityType entityType;
+			if (source->GetGeom(owner->ID(), Standard_False, coords, nbNodes, entityType))
+			{
+				if (nbNodes == 1)
+				{
+					gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+					cout << "==========" << endl;
+					cout << "X: " << p1.X() << endl;
+					cout << "Y: " << p1.Y() << endl;
+					cout << "Z: " << p1.Z() << endl;
+					cout << "==========" << endl;
+				}
+			}
+		}
 		//=====
 
 
@@ -365,13 +318,13 @@ void StartWindow::handleSelectionChanged(void){
 		/*cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
 		if (TopAbs_VERTEX == vertexShape.ShapeType())
 		{
-			gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
-			cout << "=========="<< endl;
-			cout << "X: " << myPoint.X() << endl;
-			cout << "Y: " << myPoint.Y() << endl;
-			cout << "Z: " << myPoint.Z() << endl;
-			cout << "==========" << endl;
+		gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
+		cout << "=========="<< endl;
+		cout << "X: " << myPoint.X() << endl;
+		cout << "Y: " << myPoint.Y() << endl;
+		cout << "Z: " << myPoint.Z() << endl;
+		cout << "==========" << endl;
 		}*/
 	}
 
-}
+ }

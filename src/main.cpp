@@ -54,7 +54,7 @@
  **************************************************************************************************/
 /***********************************************************************************************//**
  * \file main.cpp
- * This file holds the main function of Emperor.
+ * This file holds the main function of STACCATO.
  * \author Stefan Sicklinger
  * \date 4/2/2016
  * \version alpha
@@ -63,7 +63,7 @@
 #include <iostream>
 //Qt5
 #include <QApplication>
-//OCC
+//OCC7
 #include <OSD_Environment.hxx>
 //USER
 #include <AuxiliaryParameters.h>
@@ -73,9 +73,6 @@ int main(int argc, char **argv) {
   
     cout << "Hello STACCATO is fired up!" << endl;
     cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
-
-    qputenv("CASROOT", "C:\\software\\libs\\OpenCASCADE7.0.0-vc12-64\\opencascade-7.0.0");
-    qputenv("CSF_ShadersDirectory", "C:\\software\\libs\\OpenCASCADE7.0.0-vc12-64\\opencascade-7.0.0\\src\\Shaders");
 
     QApplication a(argc, argv);
     StartWindow* mSW= new StartWindow();

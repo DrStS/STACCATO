@@ -51,6 +51,10 @@ protected:
 private:
 	Ui::StartWindow *ui;
 	OccViewer* myOccViewer;
+
+
+public :
+	void readSTL(void);
 };
 
 #endif // STARTWINDOW_H 

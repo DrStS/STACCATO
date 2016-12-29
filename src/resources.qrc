@@ -4,7 +4,6 @@
         <file>Qt/resources/pan.png</file>
         <file>Qt/resources/rotate.png</file>
         <file>Qt/resources/zoom.png</file>
-        <file>Qt/resources/cone.png</file>
 		<file>Qt/resources/closeDoc.png</file>
 		<file>Qt/resources/openDoc.png</file>
 		<file>Qt/resources/STACCATO.png</file>

@@ -99,18 +99,22 @@ void StartWindow::createActions(void)
 	mPanAction = new QAction(tr("Pan"), this);
 	mPanAction->setIcon(QIcon(":/Qt/resources/pan.png"));
 	mPanAction->setStatusTip(tr("Panning the view"));
+	connect(mPanAction, SIGNAL(triggered()), myOccViewer, SLOT(pan()));
 
 	mZoomAction = new QAction(tr("Zoom"), this);
 	mZoomAction->setIcon(QIcon(":/Qt/resources/zoom.png"));
 	mZoomAction->setStatusTip(tr("Zooming the view"));
+	connect(mZoomAction, SIGNAL(triggered()), myOccViewer, SLOT(zoom()));
 
 	mFitAllAction = new QAction(tr("Zoom fit all"), this);
 	mFitAllAction->setIcon(QIcon(":/Qt/resources/fitAll.png"));
 	mFitAllAction->setStatusTip(tr("Fit the view to show all"));
+	connect(mFitAllAction, SIGNAL(triggered()), myOccViewer, SLOT(fitAll()));
 
 	mRotateAction = new QAction(tr("Rotate"), this);
 	mRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
 	mRotateAction->setStatusTip(tr("Rotate the view"));
+	connect(mRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
 	
 
 	// Create actions

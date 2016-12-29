@@ -5,7 +5,7 @@ STACCATO: STefAn's Computational vibroaCoustics Analysis TOol
 Finite-Element based software tool including an interactive geometric 
 modeling kernel (using Open CASCADE Technology).
 #---------------------------------------------------------------------#
-![STACCATO](http://sicklinger.com/images/STACCATO.PNG)
+![STACCATO](http://sicklinger.com/images/STACCATO.png)
 #---------------------------------------------------------------------#
 # Building
 Run cmake on Win64

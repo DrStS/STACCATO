@@ -68,12 +68,19 @@ private:
 	QAction* mReadSTLAction;
 	QAction* mDrawCantileverAction;
 
+	//! View action
+	QAction* mPanAction;
+	QAction* mZoomAction;
+	QAction* mFitAllAction;
+	QAction* mRotateAction;
+
 	//! the menus of the application.
 	QMenu* mFileMenu;
 	QMenu* mCreateMenu;
 	QMenu* mHelpMenu;
 
 	QToolBar* mFileToolBar;
+	QToolBar* mViewToolBar;
 	QToolBar* mHelpToolBar;
 
 	// wrapped the widget for occ.

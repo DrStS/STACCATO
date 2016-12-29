@@ -67,7 +67,7 @@ QMainWindow(parent),
 ui(new Ui::StartWindow)
 {
 	ui->setupUi(this);
-	setWindowIcon(QIcon(":/Qt/resources/FitAll.png"));
+	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	myOccViewer = new OccViewer(this);
 	setCentralWidget(myOccViewer);
 	createActions();
@@ -83,26 +83,46 @@ StartWindow::~StartWindow()
 
 void StartWindow::createActions(void)
 {
+	// File actions
 	mExitAction = new QAction(tr("Exit"), this);
 	mExitAction->setShortcut(tr("Ctrl+Q"));
-	mExitAction->setIcon(QIcon(":/Qt/resources/close.png"));
+	mExitAction->setIcon(QIcon(":/Qt/resources/closeDoc.png"));
 	mExitAction->setStatusTip(tr("Exit the application"));
 	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
 	mReadSTLAction = new QAction(tr("Read STL file"), this);
-	mReadSTLAction->setShortcut(tr("Ctrl+R"));
-	mReadSTLAction->setIcon(QIcon(":/Qt/resources/close.png"));
+	mReadSTLAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
 	mReadSTLAction->setStatusTip(tr("Read STL file"));
 	connect(mReadSTLAction, SIGNAL(triggered()), this, SLOT(readSTL()));
 
+	// View actions
+	mPanAction = new QAction(tr("Pan"), this);
+	mPanAction->setIcon(QIcon(":/Qt/resources/pan.png"));
+	mPanAction->setStatusTip(tr("Panning the view"));
+
+	mZoomAction = new QAction(tr("Zoom"), this);
+	mZoomAction->setIcon(QIcon(":/Qt/resources/zoom.png"));
+	mZoomAction->setStatusTip(tr("Zooming the view"));
+
+	mFitAllAction = new QAction(tr("Zoom fit all"), this);
+	mFitAllAction->setIcon(QIcon(":/Qt/resources/fitAll.png"));
+	mFitAllAction->setStatusTip(tr("Fit the view to show all"));
+
+	mRotateAction = new QAction(tr("Rotate"), this);
+	mRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
+	mRotateAction->setStatusTip(tr("Rotate the view"));
+	
+
+	// Create actions
 	mDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
 	mDrawCantileverAction->setIcon(QIcon(":/Qt/resources/torus.png"));
 	mDrawCantileverAction->setStatusTip(tr("Draw Cantilever"));
 	connect(mDrawCantileverAction, SIGNAL(triggered()), this, SLOT(drawCantilever()));
 
+	//Help actions
 	mAboutAction = new QAction(tr("About"), this);
 	mAboutAction->setStatusTip(tr("About the application"));
-	mAboutAction->setIcon(QIcon(":/Qt/resources/lamp.png"));
+	mAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
 	connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
 	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
@@ -126,6 +146,11 @@ void StartWindow::createToolBars(void)
 {
 	mFileToolBar = addToolBar(tr("&File"));
 	mFileToolBar->addAction(mReadSTLAction);
+	mViewToolBar = addToolBar(tr("View"));
+	mViewToolBar->addAction(mPanAction);
+	mViewToolBar->addAction(mZoomAction);
+	mViewToolBar->addAction(mFitAllAction);
+	mViewToolBar->addAction(mRotateAction);
 	mHelpToolBar = addToolBar(tr("Help"));
 	mHelpToolBar->addAction(mAboutAction);
 }

@@ -162,7 +162,7 @@ void OccViewer::initOccView(){
 		myView = myViewer->CreateView();
 	}
 	Handle_Aspect_Window myWindow;
-#if OCC_VERSION_HEX >= 0x070000 
+#if OCC_VERSION_HEX >= 0x071000 
 	myWindow = new OcctWindow( this );
 #else
 #if defined _WIN32 || defined __WIN32__

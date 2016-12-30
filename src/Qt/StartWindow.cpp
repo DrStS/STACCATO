@@ -22,6 +22,9 @@
 #include <OccViewer.h>
 #include <QtProcessIndicator.h>
 #include <STLVRML_DataSource.h>
+#include <AuxiliaryParameters.h>
+#include <RedirectStreams.h>
+
 
 //QT5
 #include <QToolBar>
@@ -68,6 +71,7 @@ ui(new Ui::StartWindow)
 {
 	ui->setupUi(this);
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
+	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
 	myOccViewer = new OccViewer(this);
 	setCentralWidget(myOccViewer);
 	createActions();
@@ -90,10 +94,10 @@ void StartWindow::createActions(void)
 	mExitAction->setStatusTip(tr("Exit the application"));
 	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-	mReadSTLAction = new QAction(tr("Read STL file"), this);
+	mReadSTLAction = new QAction(tr("Import file"), this);
 	mReadSTLAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
-	mReadSTLAction->setStatusTip(tr("Read STL file"));
-	connect(mReadSTLAction, SIGNAL(triggered()), this, SLOT(readSTL()));
+	mReadSTLAction->setStatusTip(tr("Import 3D file"));
+	connect(mReadSTLAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
 	// View actions
 	mPanAction = new QAction(tr("Pan"), this);
@@ -115,7 +119,7 @@ void StartWindow::createActions(void)
 	mRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
 	mRotateAction->setStatusTip(tr("Rotate the view"));
 	connect(mRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
-	
+
 
 	// Create actions
 	mDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
@@ -164,9 +168,11 @@ void StartWindow::createDockWindows()
 	QDockWidget *dock = new QDockWidget(tr("Output"), this);
 	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
 	textOutput = new QTextEdit(dock);
-	textOutput->setText("STACCATO");
+	textOutput->setText("STACCATO\n");
 	dock->setWidget(textOutput);
 	addDockWidget(Qt::BottomDockWidgetArea, dock);
+	new RedirectStreams(std::cout, textOutput); //Redirect Console output to QTextEdit
+	RedirectStreams::registerQDebugMessageHandler(); //Redirect qDebug() output to QTextEdit
 
 	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
 
@@ -185,43 +191,74 @@ void StartWindow::about()
 		"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
-void StartWindow::readSTL(void)
+void StartWindow::importFile(void)
 {
 
-	QString fileNameSTL = QFileDialog::getOpenFileName(this,
-		tr("Import STL File"), "", tr("STL Files (*.stl)"));
+	QString myWorkingFolder = "";
+	QString fileType;
+	QFileInfo fileInfo;
 
-	if (!fileNameSTL.isEmpty() && !fileNameSTL.isNull()){
-		Handle(Message_ProgressIndicator) aIndicator = new QtProcessIndicator(this);
-		aIndicator->SetRange(0, 100);
-		OSD_Path aFile(fileNameSTL.toUtf8().constData());
-		Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile, aIndicator);
-		Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-    	Handle(STLVRML_DataSource) aDS = new STLVRML_DataSource(aSTLMesh);
-		aMesh->SetDataSource(aDS);
-	    aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
-		aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
-		aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
-		aMesh->SetColor(Quantity_NOC_AZURE);
-		aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
-		aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
-		aMesh->GetDrawer()->SetColor(MeshVS_DA_EdgeColor, Quantity_NOC_YELLOW);
+	QString fileName = QFileDialog::getOpenFileName(this,
+		tr("Import file"), myWorkingFolder, tr(
+		"STEP (*.step *.stp);;"
+		"IGES (*.iges *.igs);;"
+		"STL  (*.stl)"));
 
-		// Hide all nodes by default
-		Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
-		Standard_Integer aLen = aSTLMesh->Vertices().Length();
-		for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
-			aNodes->ChangeMap().Add(anIndex);
+	fileInfo.setFile(fileName);
+	fileType = fileInfo.suffix();
+	if (!fileName.isEmpty() && !fileName.isNull()){
+		if (fileType.toLower() == tr("step") || fileType.toLower() == tr("stp")) {
+			readSTEP(fileName);
 		}
-		aMesh->SetHiddenNodes(aNodes);
-		aMesh->SetSelectableNodes(aNodes);
-		myOccViewer->getContext()->Display(aMesh);
-		myOccViewer->getContext()->Deactivate(aMesh);
-		myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
-		//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
-		myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
+		if (fileType.toLower() == tr("iges") || fileType.toLower() == tr("igs")) {
+			readIGES(fileName);
+		}
+		if (fileType.toLower() == tr("stl")) {
+			readSTL(fileName);
+		}
+
 	}
+}
+
+void StartWindow::readSTEP(QString fileName){
+
+}
+
+void StartWindow::readIGES(QString fileName){
+
+}
+
+
+void StartWindow::readSTL(QString fileName){
+	Handle(Message_ProgressIndicator) aIndicator = new QtProcessIndicator(this);
+	aIndicator->SetRange(0, 100);
+	OSD_Path aFile(fileName.toUtf8().constData());
+	Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile, aIndicator);
+	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
+	Handle(STLVRML_DataSource) aDS = new STLVRML_DataSource(aSTLMesh);
+	aMesh->SetDataSource(aDS);
+	aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
+	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
+	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
+	aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
+	aMesh->SetColor(Quantity_NOC_AZURE);
+	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
+	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
+	aMesh->GetDrawer()->SetColor(MeshVS_DA_EdgeColor, Quantity_NOC_YELLOW);
+
+	// Hide all nodes by default
+	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+	Standard_Integer aLen = aSTLMesh->Vertices().Length();
+	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
+		aNodes->ChangeMap().Add(anIndex);
+	}
+	aMesh->SetHiddenNodes(aNodes);
+	aMesh->SetSelectableNodes(aNodes);
+	myOccViewer->getContext()->Display(aMesh);
+	myOccViewer->getContext()->Deactivate(aMesh);
+	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
+	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
+	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
 }
 
 
@@ -261,10 +298,10 @@ void StartWindow::drawCantilever(void){
 	Handle(AIS_Shape) aPointB = new AIS_Shape(V1);
 	Handle_Prs3d_PointAspect myPointAspectB = new Prs3d_PointAspect(Aspect_TOM_O, Quantity_NOC_GREEN, 2);
 	aPointB->Attributes()->SetPointAspect(myPointAspectB);
-	//myOccViewer->getContext()->Display(aPointB);
+	myOccViewer->getContext()->Display(aPointB);
 
 	//============ 2D Stuff
-	gp_Pnt2d mGp_Pnt_Start_2D = gp_Pnt2d(0., 0.);
+	gp_Pnt2d mGp_Pnt_Start_2D = gp_Pnt2d(11., 10.);
 	Handle(Geom2d_CartesianPoint) myGeom2d_Point = new Geom2d_CartesianPoint(mGp_Pnt_Start_2D);
 	gp_Ax3	curCoordinateSystem = gp_Ax3();
 	Handle(Geom_CartesianPoint) myGeom_Point = new Geom_CartesianPoint(ElCLib::To3d(curCoordinateSystem.Ax2(), mGp_Pnt_Start_2D));
@@ -277,83 +314,115 @@ void StartWindow::handleSelectionChanged(void){
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
-		Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
-		Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
+		cout << "anIO->Type() : " << anIO->Type() << endl;
 
-		// If statement to check for valid for DownCast
-		Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
-		Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
-		Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
-		Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
+		if (anIO->Type() == AIS_KOI_None){
+				Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
+				Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
+
+				// If statement to check for valid for DownCast
+				Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
+				Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
+				Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
+				Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
 
 
-		if (owner->Type() == MeshVS_ET_Face)
-		{
-			int maxFaceNodes;
-			if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
-			{
-				MeshVS_Buffer coordsBuf(3 * maxFaceNodes * sizeof(Standard_Real));
-				TColStd_Array1OfReal coords(coordsBuf, 1, 3 * maxFaceNodes);
-
-				int nbNodes = 0;
-				MeshVS_EntityType entityType;
-				if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
+				if (owner->Type() == MeshVS_ET_Face)
 				{
-					if (nbNodes >= 3)
+					int maxFaceNodes;
+					if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
 					{
-						gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
-						gp_Pnt p2 = gp_Pnt(coords(4), coords(5), coords(6));
-						gp_Pnt p3 = gp_Pnt(coords(7), coords(8), coords(9));
+						MeshVS_Buffer coordsBuf(3 * maxFaceNodes * sizeof(Standard_Real));
+						TColStd_Array1OfReal coords(coordsBuf, 1, 3 * maxFaceNodes);
 
-						cout << "==========" << endl;
-						cout << "X: " << p1.X() << endl;
-						cout << "Y: " << p2.Y() << endl;
-						cout << "Z: " << p3.Z() << endl;
-						cout << "==========" << endl;
+						int nbNodes = 0;
+						MeshVS_EntityType entityType;
+						if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
+						{
+							if (nbNodes >= 3)
+							{
+								gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+								gp_Pnt p2 = gp_Pnt(coords(4), coords(5), coords(6));
+								gp_Pnt p3 = gp_Pnt(coords(7), coords(8), coords(9));
 
-						// do something with p1, p2 and p3
+								cout << "==========" << endl;
+								cout << "X: " << p1.X() << endl;
+								cout << "Y: " << p2.Y() << endl;
+								cout << "Z: " << p3.Z() << endl;
+								cout << "==========" << endl;
+
+								// do something with p1, p2 and p3
+							}
+						}
+					}
+
+				}
+				else if (owner->Type() == MeshVS_ET_Node){
+					cout << "A Node" << endl;
+					int maxNodes = 1;
+					MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
+					TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
+					int nbNodes = 0;
+					MeshVS_EntityType entityType;
+					if (source->GetGeom(owner->ID(), Standard_False, coords, nbNodes, entityType))
+					{
+						if (nbNodes == 1)
+						{
+							gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+							cout << "==========" << endl;
+							cout << "X: " << p1.X() << endl;
+							cout << "Y: " << p1.Y() << endl;
+							cout << "Z: " << p1.Z() << endl;
+							cout << "==========" << endl;
+						}
 					}
 				}
-			}
 
 		}
-		else if (owner->Type() == MeshVS_ET_Node){
-			cout << "A Node" << endl;
-			int maxNodes = 1;
-			MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
-			TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
-			int nbNodes = 0;
-			MeshVS_EntityType entityType;
-			if (source->GetGeom(owner->ID(), Standard_False, coords, nbNodes, entityType))
+		else if (anIO->Type() == AIS_KOI_Datum){
+			cout << "anIO: " << anIO->Signature() << endl;
+			if (anIO->Signature() == 1){//datum point
+				Handle(AIS_Point) aAISPoint = Handle(AIS_Point)::DownCast(anIO);
+				TopoDS_Vertex vertex = aAISPoint->Vertex();
+				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertex));
+				textOutput->append("==========");
+				textOutput->append("X: " + QString::number(myPoint.X()));
+				textOutput->append("Y: " + QString::number(myPoint.Y()));
+				textOutput->append("Z: " + QString::number(myPoint.Z()));
+				textOutput->append("==========");
+			}
+			else if (anIO->Signature() == 1){//datum axis
+
+			}
+		}
+		else if (anIO->Type() == AIS_KOI_Shape){
+			TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
+			cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
+			if (TopAbs_VERTEX == vertexShape.ShapeType())
 			{
-				if (nbNodes == 1)
-				{
-					gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
-					cout << "==========" << endl;
-					cout << "X: " << p1.X() << endl;
-					cout << "Y: " << p1.Y() << endl;
-					cout << "Z: " << p1.Z() << endl;
-					cout << "==========" << endl;
-				}
+				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
+				cout << "==========" << endl;
+				cout << "X: " << myPoint.X() << endl;
+				cout << "Y: " << myPoint.Y() << endl;
+				cout << "Z: " << myPoint.Z() << endl;
+				cout << "==========" << endl;
 			}
+
 		}
-		//=====
+		else if (anIO->Type() == AIS_KOI_Object){
+
+		}
+		else if (anIO->Type() == AIS_KOI_Relation){
+
+		}
+		else if (anIO->Type() == AIS_KOI_Dimension){
+
+		}
 
 
 
 
-		//TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
-		cout << "anIO: " << anIO->Signature() << endl;
-		/*cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
-		if (TopAbs_VERTEX == vertexShape.ShapeType())
-		{
-		gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
-		cout << "=========="<< endl;
-		cout << "X: " << myPoint.X() << endl;
-		cout << "Y: " << myPoint.Y() << endl;
-		cout << "Z: " << myPoint.Z() << endl;
-		cout << "==========" << endl;
-		}*/
+
 	}
 
- }
+}

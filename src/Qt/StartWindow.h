@@ -51,10 +51,13 @@ protected:
 	void createMenus(void);
 	void createToolBars(void);
 	void createDockWindows(void);
+	void readSTEP(QString);
+	void readIGES(QString);
+	void readSTL(QString);
 
 private slots:
 	void about(void);
-	void readSTL(void);
+	void importFile(void);
 	void drawCantilever(void);
 	void handleSelectionChanged(void);
 

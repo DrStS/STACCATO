@@ -66,13 +66,12 @@
 //OCC7
 #include <OSD_Environment.hxx>
 //USER
-#include <AuxiliaryParameters.h>
 #include <StartWindow.h>
 
 int main(int argc, char **argv) {
   
-    cout << "Hello STACCATO is fired up!" << endl;
-    cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
+    //cout << "Hello STACCATO is fired up!" << endl;
+    //cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
     QApplication a(argc, argv);
     StartWindow* mSW= new StartWindow();

@@ -168,11 +168,18 @@ void StartWindow::createDockWindows()
 	QDockWidget *dock = new QDockWidget(tr("Output"), this);
 	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
 	textOutput = new QTextEdit(dock);
-	textOutput->setText("STACCATO\n");
+	QPalette pal;
+	pal.setColor(QPalette::Base, Qt::gray);
+	pal.setColor(QPalette::WindowText, Qt::green);
+	pal.setColor(QPalette::Text, Qt::green);
+	textOutput->setPalette(pal);
+	textOutput->setText("Hello STACCATO is fired up!\n");
 	dock->setWidget(textOutput);
 	addDockWidget(Qt::BottomDockWidgetArea, dock);
 	new RedirectStreams(std::cout, textOutput); //Redirect Console output to QTextEdit
 	RedirectStreams::registerQDebugMessageHandler(); //Redirect qDebug() output to QTextEdit
+	cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
+	
 
 	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
 
@@ -389,7 +396,7 @@ void StartWindow::handleSelectionChanged(void){
 				textOutput->append("X: " + QString::number(myPoint.X()));
 				textOutput->append("Y: " + QString::number(myPoint.Y()));
 				textOutput->append("Z: " + QString::number(myPoint.Z()));
-				textOutput->append("==========");
+				textOutput->append("==========\n");
 			}
 			else if (anIO->Signature() == 1){//datum axis
 

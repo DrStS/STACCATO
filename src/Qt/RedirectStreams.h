@@ -52,13 +52,12 @@ protected:
         QString str(p);
         if(str.contains("\n")){
             QStringList strSplitted = str.split("\n");
-
             log_window->moveCursor (QTextCursor::End);
             log_window->insertPlainText (strSplitted.at(0)); //Index 0 is still on the same old line
-
             for(int i = 1; i < strSplitted.size(); i++){
                 log_window->append(strSplitted.at(i));
             }
+
         }else{
             log_window->moveCursor (QTextCursor::End);
             log_window->insertPlainText (str);

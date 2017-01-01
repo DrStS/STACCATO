@@ -64,6 +64,9 @@
 #include <Select3D_SensitiveFace.hxx>
 #include <MeshVS_CommonSensitiveEntity.hxx>
 #include <MeshVS_Buffer.hxx>
+#include <STEPControl_Reader.hxx>
+#include <STEPConstruct.hxx>
+#include <IGESControl_Reader.hxx>
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -228,10 +231,48 @@ void StartWindow::importFile(void)
 }
 
 void StartWindow::readSTEP(QString fileName){
+	// create additional log file
+	STEPControl_Reader aReader;
+	IFSelect_ReturnStatus status = aReader.ReadFile(fileName.toUtf8().constData());
+	if (status != IFSelect_RetDone){
+		return;
+	}
+		
+
+	aReader.WS();// ->TransferReader()->TransientProcess()->SetTraceLevel(2); // increase default trace level
+
+	Standard_Boolean failsonly = Standard_False;
+	aReader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity);
+
+	// Root transfers
+	Standard_Integer nbr = aReader.NbRootsForTransfer();
+	aReader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity);
+	for (Standard_Integer n = 1; n <= nbr; n++) {
+		/*Standard_Boolean ok =*/ aReader.TransferRoot(n);
+	}
+
+	// Collecting resulting entities
+	Standard_Integer nbs = aReader.NbShapes();
+	if (nbs == 0) {
+		return;
+	}
+	for (Standard_Integer i = 1; i <= nbs; i++) {
+		Handle(AIS_Shape) aisShape = new AIS_Shape(aReader.Shape(i));
+		myOccViewer->getContext()->Display(aisShape);
+	}
 
 }
 
 void StartWindow::readIGES(QString fileName){
+
+	IGESControl_Reader Reader;
+
+	Standard_Integer status = Reader.ReadFile(fileName.toUtf8().constData());
+
+	if (status != IFSelect_RetDone) return;
+	Reader.TransferRoots();
+	Handle(AIS_Shape) aisShape = new AIS_Shape(Reader.OneShape());
+	myOccViewer->getContext()->Display(aisShape);
 
 }
 

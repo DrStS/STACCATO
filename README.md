@@ -8,6 +8,7 @@ SPILOT:	  Stefan's PowertraIn anaLysis and Optimization Tool
 Finite-Element based software tool including an interactive geometric 
 modeling kernel (using Open CASCADE Technology).
 #---------------------------------------------------------------------#
+![STACCATO](http://sicklinger.com/images/SPILOT03.png)
 ![STACCATO](http://sicklinger.com/images/STACCATO.png)
 ![STACCATO](http://sicklinger.com/images/SPILOT01.png)
 ![STACCATO](http://sicklinger.com/images/SPILOT02.png)

@@ -18,8 +18,8 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file OccView.h
-* This file holds the class of OccView.
+* \file OccViewer.h
+* This file holds the class of OccViewer.
 * \date 9/15/2016
 **************************************************************************************************/
 #ifndef _OCCVIEWER_H_

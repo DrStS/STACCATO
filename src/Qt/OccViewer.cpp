@@ -1187,14 +1187,14 @@ void OccViewer::showGrid(Standard_Boolean show){
 	myViewer->Grid()->SetColors(Quantity_NOC_RED4, Quantity_NOC_GRAY90);
 	Quantity_Length X = 0.0;
 	Quantity_Length Y = 0.0;
-	Quantity_Length SX = 100.0;
-	Quantity_Length SY = 100.0;
+	Quantity_Length SX = 10.0;
+	Quantity_Length SY = 10.0;
 	Quantity_Length D = 0.0;
 	myViewer->SetRectangularGridValues(X, Y, SX, SY, D);
 	myViewer->SetRectangularGridGraphicValues(100, 100, 0);
 	gp_Ax3 aPlane(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.));
 	myViewer->SetPrivilegedPlane(aPlane);
-	myViewer->ActivateGrid(Aspect_GT_Rectangular, Aspect_GDM_Points);
+	myViewer->ActivateGrid(Aspect_GT_Rectangular, Aspect_GDM_Lines);
 	}
 	else{
 	myViewer->DeactivateGrid();

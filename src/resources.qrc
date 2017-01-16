@@ -8,5 +8,6 @@
 		<file>Qt/resources/openDoc.png</file>
 		<file>Qt/resources/STACCATO.png</file>
 		<file>Qt/resources/about.png</file>
+		<file>Qt/resources/dataflow.png</file>
     </qresource>
 </RCC>

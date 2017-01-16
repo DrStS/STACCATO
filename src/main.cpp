@@ -73,6 +73,13 @@ int main(int argc, char **argv) {
     //cout << "Hello STACCATO is fired up!" << endl;
     //cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
+	//TODO
+	// Outputhandling
+	// statusBar coordinate
+	// 2D mode
+	// interactive points 2D
+	// interactive lines 2D
+
     QApplication a(argc, argv);
     StartWindow* mSW= new StartWindow();
 	mSW->show();

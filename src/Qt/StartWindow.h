@@ -60,37 +60,39 @@ private slots:
 	void importFile(void);
 	void drawCantilever(void);
 	void handleSelectionChanged(void);
+	void openDataFlowWindow(void);
 
 private:
 	Ui::StartWindow *ui;
-	//! the exit action.
+	//! File action.
 	QAction* mExitAction;
-
-	//! show the about info action.
-	QAction* mAboutAction;
-	QAction* mReadSTLAction;
+    QAction* mReadFileAction;
+	//! Create action.
 	QAction* mDrawCantileverAction;
-
+	QAction* mDataFlowAction;
 	//! View action
 	QAction* mPanAction;
 	QAction* mZoomAction;
 	QAction* mFitAllAction;
 	QAction* mRotateAction;
-
-	//! the menus of the application.
+	//! Help action.
+	QAction* mAboutAction;
+	//! Menus.
 	QMenu* mFileMenu;
 	QMenu* mCreateMenu;
 	QMenu* mHelpMenu;
-
+	//! Toolbars
 	QToolBar* mFileToolBar;
 	QToolBar* mViewToolBar;
+	QToolBar* mCreateToolBar;
 	QToolBar* mHelpToolBar;
 
 	// wrapped the widget for occ.
 	OccViewer* myOccViewer;
-
 	//! the dockable widgets
 	QTextEdit* textOutput;
+
+	QMainWindow* newWin;
 
 };
 

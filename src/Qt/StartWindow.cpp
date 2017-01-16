@@ -23,7 +23,8 @@
 #include <QtProcessIndicator.h>
 #include <STLVRML_DataSource.h>
 #include <AuxiliaryParameters.h>
-#include <RedirectStreams.h>
+#include <Message.h>
+#include <qnemainwindow.h>
 
 
 //QT5
@@ -88,6 +89,11 @@ StartWindow::~StartWindow()
 	delete myOccViewer;
 }
 
+void StartWindow::openDataFlowWindow(void){
+	newWin = new QNEMainWindow();
+	newWin->show();
+}
+
 void StartWindow::createActions(void)
 {
 	// File actions
@@ -97,10 +103,10 @@ void StartWindow::createActions(void)
 	mExitAction->setStatusTip(tr("Exit the application"));
 	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-	mReadSTLAction = new QAction(tr("Import file"), this);
-	mReadSTLAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
-	mReadSTLAction->setStatusTip(tr("Import 3D file"));
-	connect(mReadSTLAction, SIGNAL(triggered()), this, SLOT(importFile()));
+	mReadFileAction = new QAction(tr("Import file"), this);
+	mReadFileAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
+	mReadFileAction->setStatusTip(tr("Import 3D file"));
+	connect(mReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
 	// View actions
 	mPanAction = new QAction(tr("Pan"), this);
@@ -130,6 +136,11 @@ void StartWindow::createActions(void)
 	mDrawCantileverAction->setStatusTip(tr("Draw Cantilever"));
 	connect(mDrawCantileverAction, SIGNAL(triggered()), this, SLOT(drawCantilever()));
 
+	mDataFlowAction = new QAction(tr("Dataflow manager"), this);
+	mDataFlowAction->setIcon(QIcon(":/Qt/resources/dataflow.png"));
+	mDataFlowAction->setStatusTip(tr("Open dataflow manager"));
+	connect(mDataFlowAction, SIGNAL(triggered()), this, SLOT(openDataFlowWindow()));
+
 	//Help actions
 	mAboutAction = new QAction(tr("About"), this);
 	mAboutAction->setStatusTip(tr("About the application"));
@@ -143,12 +154,13 @@ void StartWindow::createActions(void)
 void StartWindow::createMenus(void)
 {
 	mFileMenu = menuBar()->addMenu(tr("&File"));
+	mFileMenu->addAction(mReadFileAction);
 	mFileMenu->addAction(mExitAction);
 
 	mCreateMenu = menuBar()->addMenu(tr("Create"));
+	mCreateMenu->addAction(mDataFlowAction);
 	mCreateMenu->addAction(mDrawCantileverAction);
 
-	mFileMenu->addAction(mReadSTLAction);
 	mHelpMenu = menuBar()->addMenu(tr("&Help"));
 	mHelpMenu->addAction(mAboutAction);
 }
@@ -156,7 +168,9 @@ void StartWindow::createMenus(void)
 void StartWindow::createToolBars(void)
 {
 	mFileToolBar = addToolBar(tr("&File"));
-	mFileToolBar->addAction(mReadSTLAction);
+	mFileToolBar->addAction(mReadFileAction);
+	mCreateToolBar = addToolBar(tr("Create"));
+	mCreateToolBar->addAction(mDataFlowAction);
 	mViewToolBar = addToolBar(tr("View"));
 	mViewToolBar->addAction(mPanAction);
 	mViewToolBar->addAction(mZoomAction);
@@ -170,21 +184,33 @@ void StartWindow::createDockWindows()
 {
 	QDockWidget *dock = new QDockWidget(tr("Output"), this);
 	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+	
+	//Create dockable widget
 	textOutput = new QTextEdit(dock);
 	QPalette pal;
 	pal.setColor(QPalette::Base, Qt::gray);
 	pal.setColor(QPalette::WindowText, Qt::green);
 	pal.setColor(QPalette::Text, Qt::green);
 	textOutput->setPalette(pal);
-	textOutput->setText("Hello STACCATO is fired up!\n");
+	textOutput->setEnabled(false);
 	dock->setWidget(textOutput);
 	addDockWidget(Qt::BottomDockWidgetArea, dock);
-	new RedirectStreams(std::cout, textOutput); //Redirect Console output to QTextEdit
-	RedirectStreams::registerQDebugMessageHandler(); //Redirect qDebug() output to QTextEdit
-	cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
-	
 
-	//connect(textOutput, SIGNAL(currentTextChanged(QString)),this, SLOT(insertCustomer(QString)));
+
+	//Set textOutput to message streams 
+	debugOut.setQTextEditReference(textOutput);
+	infoOut.setQTextEditReference(textOutput);
+	warningOut.setQTextEditReference(textOutput);
+	errorOut.setQTextEditReference(textOutput);
+
+
+	infoOut << "Hello STACCATO is fired up!" << std::endl;
+	debugOut << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;
+
+	debugOut << "debugOut" << std::endl;
+	infoOut << "infoOut" << std::endl;
+	warningOut << "warningOut" << std::endl;
+	errorOut << "errorOut" << std::endl;
 
 }
 
@@ -237,9 +263,6 @@ void StartWindow::readSTEP(QString fileName){
 	if (status != IFSelect_RetDone){
 		return;
 	}
-		
-
-	aReader.WS();// ->TransferReader()->TransientProcess()->SetTraceLevel(2); // increase default trace level
 
 	Standard_Boolean failsonly = Standard_False;
 	aReader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity);
@@ -309,6 +332,8 @@ void StartWindow::readSTL(QString fileName){
 	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
 }
 
+//void StartWindow::drawInt2DLine(void){
+//}
 
 void StartWindow::drawCantilever(void){
 	//3D cartesian point
@@ -347,6 +372,8 @@ void StartWindow::drawCantilever(void){
 	Handle_Prs3d_PointAspect myPointAspectB = new Prs3d_PointAspect(Aspect_TOM_O, Quantity_NOC_GREEN, 2);
 	aPointB->Attributes()->SetPointAspect(myPointAspectB);
 	myOccViewer->getContext()->Display(aPointB);
+
+
 
 	//============ 2D Stuff
 	gp_Pnt2d mGp_Pnt_Start_2D = gp_Pnt2d(11., 10.);
@@ -393,11 +420,12 @@ void StartWindow::handleSelectionChanged(void){
 								gp_Pnt p2 = gp_Pnt(coords(4), coords(5), coords(6));
 								gp_Pnt p3 = gp_Pnt(coords(7), coords(8), coords(9));
 
-								cout << "==========" << endl;
-								cout << "X: " << p1.X() << endl;
-								cout << "Y: " << p2.Y() << endl;
-								cout << "Z: " << p3.Z() << endl;
-								cout << "==========" << endl;
+
+								infoOut << "==========" << std::endl;
+								infoOut << "X: " << p1.X() << std::endl;
+								infoOut << "Y: " << p2.Y() << std::endl;
+								infoOut << "Z: " << p3.Z() << std::endl;
+								infoOut << "==========" << std::endl;
 
 								// do something with p1, p2 and p3
 							}
@@ -406,7 +434,7 @@ void StartWindow::handleSelectionChanged(void){
 
 				}
 				else if (owner->Type() == MeshVS_ET_Node){
-					cout << "A Node" << endl;
+					infoOut << "A Node" << endl;
 					int maxNodes = 1;
 					MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
 					TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
@@ -417,11 +445,11 @@ void StartWindow::handleSelectionChanged(void){
 						if (nbNodes == 1)
 						{
 							gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
-							cout << "==========" << endl;
-							cout << "X: " << p1.X() << endl;
-							cout << "Y: " << p1.Y() << endl;
-							cout << "Z: " << p1.Z() << endl;
-							cout << "==========" << endl;
+							infoOut << "==========" << std::endl;
+							infoOut << "X: " << p1.X() << std::endl;
+							infoOut << "Y: " << p1.Y() << std::endl;
+							infoOut << "Z: " << p1.Z() << std::endl;
+							infoOut << "==========" << std::endl;
 						}
 					}
 				}
@@ -433,11 +461,11 @@ void StartWindow::handleSelectionChanged(void){
 				Handle(AIS_Point) aAISPoint = Handle(AIS_Point)::DownCast(anIO);
 				TopoDS_Vertex vertex = aAISPoint->Vertex();
 				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertex));
-				textOutput->append("==========");
-				textOutput->append("X: " + QString::number(myPoint.X()));
-				textOutput->append("Y: " + QString::number(myPoint.Y()));
-				textOutput->append("Z: " + QString::number(myPoint.Z()));
-				textOutput->append("==========\n");
+				infoOut << "==========" << std::endl;
+				infoOut << "X: " << myPoint.X() << std::endl;
+				infoOut << "Y: " << myPoint.Y() << std::endl;
+				infoOut << "Z: " << myPoint.Z() << std::endl;
+				infoOut << "==========" << std::endl;
 			}
 			else if (anIO->Signature() == 1){//datum axis
 
@@ -449,11 +477,11 @@ void StartWindow::handleSelectionChanged(void){
 			if (TopAbs_VERTEX == vertexShape.ShapeType())
 			{
 				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));
-				cout << "==========" << endl;
-				cout << "X: " << myPoint.X() << endl;
-				cout << "Y: " << myPoint.Y() << endl;
-				cout << "Z: " << myPoint.Z() << endl;
-				cout << "==========" << endl;
+				infoOut << "==========" << std::endl;
+				infoOut << "X: " << myPoint.X() << std::endl;
+				infoOut << "Y: " << myPoint.Y() << std::endl;
+				infoOut << "Z: " << myPoint.Z() << std::endl;
+				infoOut << "==========" << std::endl;
 			}
 
 		}

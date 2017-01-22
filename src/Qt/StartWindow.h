@@ -61,12 +61,14 @@ private slots:
 	void drawCantilever(void);
 	void handleSelectionChanged(void);
 	void openDataFlowWindow(void);
+	void openOBDFile();
 
 private:
 	Ui::StartWindow *ui;
 	//! File action.
 	QAction* mExitAction;
     QAction* mReadFileAction;
+	QAction* mReadOBDFileAction;
 	//! Create action.
 	QAction* mDrawCantileverAction;
 	QAction* mDataFlowAction;

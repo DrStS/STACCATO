@@ -62,7 +62,7 @@ option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 #2. Macros
 ######################################################################################
 # Add STACCATO cmake modules
-set(CMAKE_MODULE_PATH ${STACCATO_SOURCE_DIR}/cmake/modules)
+set(CMAKE_MODULE_PATH C:/software/repos/STACCATO/cmake/modules)
 include(MacroOutOfSourceBuild)
 include(MacroAppendGlobalVariable)
 include(ExternalProject)
@@ -145,10 +145,6 @@ ENDIF()
 ######################################################################################
 #4. Configure
 ######################################################################################
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-git_describe(GIT_TAG --tags)
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/tools/AuxiliaryParameters.cpp.in" 
-"${CMAKE_CURRENT_SOURCE_DIR}/src/tools/AuxiliaryParameters.cpp" @ONLY)
 ######################################################################################
 #5. Subdirectories THE ORDER IS IMPORTANT, BECAUSE THEY ARE COMPILED IN THAT ORDER
 ######################################################################################

@@ -38,7 +38,7 @@ include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 #------------------------------------------------------------------------------------#
 IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-add_executable(STACCATO WIN32 ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc winResources.rc)
+add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES})
 ENDIF()
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)

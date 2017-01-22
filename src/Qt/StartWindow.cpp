@@ -17,14 +17,15 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <StartWindow.h>
-#include <ui_StartWindow.h>
-#include <OccViewer.h>
-#include <QtProcessIndicator.h>
-#include <STLVRML_DataSource.h>
-#include <AuxiliaryParameters.h>
-#include <Message.h>
-#include <qnemainwindow.h>
+#include "StartWindow.h"
+#include "ui_StartWindow.h"
+#include "OccViewer.h"
+#include "QtProcessIndicator.h"
+#include "STLVRML_DataSource.h"
+#include "AuxiliaryParameters.h"
+#include "Message.h"
+#include "SimuliaODB.h"
+#include "qnemainwindow.h"
 
 
 //QT5
@@ -69,6 +70,8 @@
 #include <STEPConstruct.hxx>
 #include <IGESControl_Reader.hxx>
 
+
+
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
 ui(new Ui::StartWindow)
@@ -102,6 +105,10 @@ void StartWindow::createActions(void)
 	mExitAction->setIcon(QIcon(":/Qt/resources/closeDoc.png"));
 	mExitAction->setStatusTip(tr("Exit the application"));
 	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
+
+	mReadOBDFileAction = new QAction(tr("Open OBD file"), this);
+	mReadOBDFileAction->setStatusTip(tr("Read Abaqus OBD file"));
+	connect(mReadOBDFileAction, SIGNAL(triggered()), this, SLOT(openOBDFile()));
 
 	mReadFileAction = new QAction(tr("Import file"), this);
 	mReadFileAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
@@ -155,6 +162,7 @@ void StartWindow::createMenus(void)
 {
 	mFileMenu = menuBar()->addMenu(tr("&File"));
 	mFileMenu->addAction(mReadFileAction);
+	mFileMenu->addAction(mReadOBDFileAction);
 	mFileMenu->addAction(mExitAction);
 
 	mCreateMenu = menuBar()->addMenu(tr("Create"));
@@ -192,7 +200,7 @@ void StartWindow::createDockWindows()
 	pal.setColor(QPalette::WindowText, Qt::green);
 	pal.setColor(QPalette::Text, Qt::green);
 	textOutput->setPalette(pal);
-	textOutput->setEnabled(false);
+	//textOutput->setEnabled(false);
 	dock->setWidget(textOutput);
 	addDockWidget(Qt::BottomDockWidgetArea, dock);
 
@@ -211,6 +219,7 @@ void StartWindow::createDockWindows()
 	infoOut << "infoOut" << std::endl;
 	warningOut << "warningOut" << std::endl;
 	errorOut << "errorOut" << std::endl;
+	infoOut << QThread::currentThread() << endl;
 
 }
 
@@ -225,6 +234,27 @@ void StartWindow::about()
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
 		"<p>Copyright &copy; 2016 "
 		"<p>STACCATO is using Qt and OpenCASCADE."));
+}
+
+
+void StartWindow::openOBDFile(void){
+	QString myWorkingFolder = "";
+	QString fileType;
+	QFileInfo fileInfo;
+
+	QString fileName = QFileDialog::getOpenFileName(this,
+		tr("Open odb file"), myWorkingFolder, tr("ODB (*.odb)"));
+
+	fileInfo.setFile(fileName);
+	fileType = fileInfo.suffix();
+	if (!fileName.isEmpty() && !fileName.isNull()){
+		if (fileType.toLower() == tr("odb") ) {
+			infoOut << "ODB file: " << fileName.toStdString() << endl;
+		}
+
+	}
+	SimuliaODB myODB = SimuliaODB();
+	myODB.openODBFile(fileName.toStdString());
 }
 
 void StartWindow::importFile(void)

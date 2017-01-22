@@ -68,13 +68,15 @@
 //USER
 #include <StartWindow.h>
 
+
+
 int main(int argc, char **argv) {
   
     //cout << "Hello STACCATO is fired up!" << endl;
     //cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
+
 	//TODO
-	// Outputhandling
 	// statusBar coordinate
 	// 2D mode
 	// interactive points 2D

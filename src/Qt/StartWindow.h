@@ -61,7 +61,8 @@ private slots:
 	void drawCantilever(void);
 	void handleSelectionChanged(void);
 	void openDataFlowWindow(void);
-	void openOBDFile();
+	void openOBDFile(void);
+	void animateObject(void);
 
 private:
 	Ui::StartWindow *ui;
@@ -72,6 +73,7 @@ private:
 	//! Create action.
 	QAction* mDrawCantileverAction;
 	QAction* mDataFlowAction;
+	QAction* mAnimationAction;
 	//! View action
 	QAction* mPanAction;
 	QAction* mZoomAction;

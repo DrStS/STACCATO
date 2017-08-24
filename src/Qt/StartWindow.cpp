@@ -25,8 +25,8 @@
 #include "AuxiliaryParameters.h"
 #include "Message.h"
 #include "SimuliaODB.h"
+#include "HMeshToMeshVS_DataSource.h"
 #include "qnemainwindow.h"
-
 
 //QT5
 #include <QToolBar>
@@ -69,7 +69,10 @@
 #include <STEPControl_Reader.hxx>
 #include <STEPConstruct.hxx>
 #include <IGESControl_Reader.hxx>
-
+#include <Geom_Plane.hxx>
+#include <AIS_Plane.hxx>
+#include <Prs3d_PlaneAspect.hxx>
+#include <BRepPrimAPI_MakeBox.hxx>
 
 
 StartWindow::StartWindow(QWidget *parent) :
@@ -148,6 +151,10 @@ void StartWindow::createActions(void)
 	mDataFlowAction->setStatusTip(tr("Open dataflow manager"));
 	connect(mDataFlowAction, SIGNAL(triggered()), this, SLOT(openDataFlowWindow()));
 
+	mAnimationAction = new QAction(tr("Animate object"), this);
+	mAnimationAction->setStatusTip(tr("Animate object"));
+	connect(mAnimationAction, SIGNAL(triggered()), this, SLOT(animateObject()));
+
 	//Help actions
 	mAboutAction = new QAction(tr("About"), this);
 	mAboutAction->setStatusTip(tr("About the application"));
@@ -168,6 +175,7 @@ void StartWindow::createMenus(void)
 	mCreateMenu = menuBar()->addMenu(tr("Create"));
 	mCreateMenu->addAction(mDataFlowAction);
 	mCreateMenu->addAction(mDrawCantileverAction);
+	mCreateMenu->addAction(mAnimationAction);
 
 	mHelpMenu = menuBar()->addMenu(tr("&Help"));
 	mHelpMenu->addAction(mAboutAction);
@@ -215,11 +223,11 @@ void StartWindow::createDockWindows()
 	infoOut << "Hello STACCATO is fired up!" << std::endl;
 	debugOut << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;
 
-	debugOut << "debugOut" << std::endl;
-	infoOut << "infoOut" << std::endl;
-	warningOut << "warningOut" << std::endl;
-	errorOut << "errorOut" << std::endl;
-	infoOut << QThread::currentThread() << endl;
+	//debugOut << "debugOut" << std::endl;
+	//infoOut << "infoOut" << std::endl;
+	//warningOut << "warningOut" << std::endl;
+	//errorOut << "errorOut" << std::endl;
+	//infoOut << QThread::currentThread() << std::endl;
 
 }
 
@@ -232,12 +240,14 @@ void StartWindow::about()
 	myOccViewer->viewGrid();
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
-		"<p>Copyright &copy; 2016 "
+		"<p>Copyright &copy; 2017 "
 		"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
 
 void StartWindow::openOBDFile(void){
+	
+	
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -249,12 +259,37 @@ void StartWindow::openOBDFile(void){
 	fileType = fileInfo.suffix();
 	if (!fileName.isEmpty() && !fileName.isNull()){
 		if (fileType.toLower() == tr("odb") ) {
-			infoOut << "ODB file: " << fileName.toStdString() << endl;
+			infoOut << "ODB file: " << fileName.toStdString() << std::endl;
 		}
 
 	}
-	SimuliaODB myODB = SimuliaODB();
-	myODB.openODBFile(fileName.toStdString());
+	SimuliaODB myOBD =  SimuliaODB();
+	myOBD.openODBFile(fileName.toStdString());
+	Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
+	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
+	aMesh->SetDataSource(aDataSource);
+	aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
+	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
+	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
+	aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
+	aMesh->SetColor(Quantity_NOC_AZURE);
+	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
+	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
+
+	// Hide all nodes by default
+	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+	Standard_Integer aLen = 4;
+	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
+		aNodes->ChangeMap().Add(anIndex);
+	}
+	aMesh->SetHiddenNodes(aNodes);
+	aMesh->SetSelectableNodes(aNodes);
+	myOccViewer->getContext()->Display(aMesh);
+	myOccViewer->getContext()->Deactivate(aMesh);
+	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
+	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
+	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
+
 }
 
 void StartWindow::importFile(void)
@@ -358,8 +393,8 @@ void StartWindow::readSTL(QString fileName){
 	myOccViewer->getContext()->Display(aMesh);
 	myOccViewer->getContext()->Deactivate(aMesh);
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
-	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
-	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
+	myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
+	//myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
 }
 
 //void StartWindow::drawInt2DLine(void){
@@ -414,12 +449,97 @@ void StartWindow::drawCantilever(void){
 	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
+void StartWindow::animateObject(void){
+
+	gp_Pnt mGp_Pnt_Start = gp_Pnt(-150., -150., -0.0001);
+	gp_Pnt mGp_Pnt_End = gp_Pnt(150., 150., 0.);
+	TopoDS_Solid theBox = BRepPrimAPI_MakeBox(mGp_Pnt_Start, mGp_Pnt_End);
+	Handle(AIS_Shape) aisBox = new AIS_Shape(theBox);
+
+	Quantity_Color TUMblue(0, 0.3960, 0.7411, Quantity_TOC_RGB);
+
+	aisBox->SetColor(TUMblue);
+	myOccViewer->getContext()->Display(aisBox);
+	myOccViewer->getContext()->SetDeviationCoefficient(0.0001);
+	Handle(AIS_Shape) aisShape;
+
+	STEPControl_Reader aReader;
+	IFSelect_ReturnStatus status = aReader.ReadFile("KreiselTrafo.stp");
+	if (status != IFSelect_RetDone){
+		return;
+	}
+
+	Standard_Boolean failsonly = Standard_False;
+	aReader.PrintCheckLoad(failsonly, IFSelect_ItemsByEntity);
+
+	// Root transfers
+	Standard_Integer nbr = aReader.NbRootsForTransfer();
+	aReader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity);
+	for (Standard_Integer n = 1; n <= nbr; n++) {
+		 aReader.TransferRoot(n);
+	}
+
+	// Collecting resulting entities
+	Standard_Integer nbs = aReader.NbShapes();
+	if (nbs == 0) {
+		return;
+	}
+	for (Standard_Integer i = 1; i <= nbs; i++) {
+		aisShape = new AIS_Shape(aReader.Shape(i));
+		myOccViewer->getContext()->Display(aisShape);
+	}
+
+	int numSteps = 2000;
+
+	Standard_Real  a11;
+	Standard_Real  a12;
+	Standard_Real  a13;
+	Standard_Real  a14 = 0.0;
+	Standard_Real  a21;
+	Standard_Real  a22;
+	Standard_Real  a23;
+	Standard_Real  a24 = 0.0;
+	Standard_Real  a31;
+	Standard_Real  a32;
+	Standard_Real  a33;
+	Standard_Real  a34 = 0.0;
+	Standard_Real  phi;
+	Standard_Real  alpha;
+	Standard_Real  gamma=asin(5.0/12.0);
+
+	for (int i = 0; i < numSteps; i++){
+		gp_Trsf myTrafo;
+		phi = ((double)i / numSteps) * 3600 * (M_PI / 180);
+		alpha = (12 / (5*cos(gamma)))*phi;
+
+		a11 = cos(phi)*cos(-gamma);
+		a12 = -sin(phi)*cos(-alpha) + cos(phi)*sin(-gamma)*sin(-alpha);
+		a13 = sin(phi)*sin(-alpha) + cos(phi)*sin(-gamma)*cos(-alpha);;
+		a14 = 0.0;
+		a21 = sin(phi)*cos(-gamma);
+		a22 = cos(phi)*cos(-alpha) + sin(phi)*sin(-gamma)*sin(-alpha);
+		a23 = -cos(phi)*sin(-alpha) + sin(phi)*sin(-gamma)*cos(-alpha);
+		a24 = 0.0;
+		a31 = -sin(-gamma);
+		a32 = cos(-gamma)*sin(-alpha);
+		a33 = cos(-gamma)*cos(-alpha);
+		a34 = 0.0;
+		myTrafo.SetValues(a11, a12, a13, a14, a21, a22, a23, a24, a31, a32, a33, a34);
+		myOccViewer->getContext()->SetLocation(aisShape, myTrafo);
+		myOccViewer->getContext()->UpdateCurrentViewer();
+		QCoreApplication::processEvents();
+
+	}
+
+}
+
+
 void StartWindow::handleSelectionChanged(void){
 
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
-		cout << "anIO->Type() : " << anIO->Type() << endl;
+		infoOut << "anIO->Type() : " << anIO->Type() << std::endl;
 
 		if (anIO->Type() == AIS_KOI_None){
 				Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
@@ -431,6 +551,7 @@ void StartWindow::handleSelectionChanged(void){
 				Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
 				Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
 
+				infoOut << "AIS_KOI_None -> owner->Type(): " << owner->Type() << std::endl;
 
 				if (owner->Type() == MeshVS_ET_Face)
 				{
@@ -442,22 +563,23 @@ void StartWindow::handleSelectionChanged(void){
 
 						int nbNodes = 0;
 						MeshVS_EntityType entityType;
+						infoOut << "A Element" << std::endl;
 						if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
 						{
 							if (nbNodes >= 3)
 							{
-								gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
-								gp_Pnt p2 = gp_Pnt(coords(4), coords(5), coords(6));
-								gp_Pnt p3 = gp_Pnt(coords(7), coords(8), coords(9));
-
-
 								infoOut << "==========" << std::endl;
-								infoOut << "X: " << p1.X() << std::endl;
-								infoOut << "Y: " << p2.Y() << std::endl;
-								infoOut << "Z: " << p3.Z() << std::endl;
+								infoOut << "ID: " << owner->ID() << std::endl;
+								int i;
+								for (i = 0; i < nbNodes; i++)
+								{
+									infoOut << "Node: " << i << std::endl;
+									gp_Pnt p = gp_Pnt(coords((i * 3) + 1), coords((i * 3) + 2), coords((i * 3) + 3));
+									infoOut << "X: " << p.X() << std::endl;
+									infoOut << "Y: " << p.Y() << std::endl;
+									infoOut << "Z: " << p.Z() << std::endl;
+								}
 								infoOut << "==========" << std::endl;
-
-								// do something with p1, p2 and p3
 							}
 						}
 					}
@@ -475,6 +597,7 @@ void StartWindow::handleSelectionChanged(void){
 						if (nbNodes == 1)
 						{
 							gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+							infoOut << "ID: " << owner->ID() << std::endl;
 							infoOut << "==========" << std::endl;
 							infoOut << "X: " << p1.X() << std::endl;
 							infoOut << "Y: " << p1.Y() << std::endl;
@@ -486,7 +609,7 @@ void StartWindow::handleSelectionChanged(void){
 
 		}
 		else if (anIO->Type() == AIS_KOI_Datum){
-			cout << "anIO: " << anIO->Signature() << endl;
+			infoOut << "anIO: " << anIO->Signature() << endl;
 			if (anIO->Signature() == 1){//datum point
 				Handle(AIS_Point) aAISPoint = Handle(AIS_Point)::DownCast(anIO);
 				TopoDS_Vertex vertex = aAISPoint->Vertex();
@@ -503,7 +626,7 @@ void StartWindow::handleSelectionChanged(void){
 		}
 		else if (anIO->Type() == AIS_KOI_Shape){
 			TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
-			cout << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
+			infoOut << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
 			if (TopAbs_VERTEX == vertexShape.ShapeType())
 			{
 				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertexShape));

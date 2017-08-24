@@ -64,7 +64,6 @@
 //Qt5
 #include <QApplication>
 //OCC7
-#include <OSD_Environment.hxx>
 //USER
 #include <StartWindow.h>
 

@@ -28,6 +28,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include "STACCATO_Enum.h"
 
 class Message;
@@ -101,16 +102,27 @@ public:
 	***********/
 	std::vector<int> getElementTopology(){ return elementsTopology; }
 	/***********************************************************************************************
-	* \brief convert element label to element index
-	* \param[in] element label
-	* \param[out] element index
+	* \brief convert node label to node index
+	* \param[in] node label
+	* \param[out] node index [0..nNodes]
 	* \author Stefan Sicklinger
 	***********/
 	int convertNodeLabelToNodeIndex(int _nodeLabel){
-		std::vector<int>::iterator it;
-		it = std::find(nodeLabels.begin(), nodeLabels.end(), _nodeLabel);
-		return distance(nodeLabels.begin(), it);
+		//std::vector<int>::iterator it;
+		//it = std::find(nodeLabels.begin(), nodeLabels.end(), _nodeLabel);
+		//return distance(nodeLabels.begin(), it);
+		return nodeLabelToNodeIndexMap[_nodeLabel];
 	}
+	/***********************************************************************************************
+	* \brief build datastructure
+	* \author Stefan Sicklinger
+	***********/
+	void buildDataStructure(void){
+		for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
+			nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
+		}
+	}
+
 
 private:
 	/// mesh name
@@ -127,8 +139,15 @@ private:
 	std::vector<int> elementLabels;
 	/// Store element type
 	std::vector<STACCATO_Element_type> elementTyps;
+	/// Map node label to node index
+	std::map<int, int> nodeLabelToNodeIndexMap;
     /// unit test class
     friend class TestFEMesh;
+private:
+	/// Avoid copy of a HMesh object copy constructor 
+	HMesh(const HMesh&);
+	/// Avoid copy of a HMesh object assignment operator
+	HMesh& operator=(const HMesh&);
 };
 /***********************************************************************************************
  * \brief Print the mesh at once

@@ -18,50 +18,44 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file SimuliaODB.h
- * This file holds the class SimuliaODb which adds the capability to read Abaqus odb files
- * \date 1/18/2017
+ * \file FeElement.h
+ * This file holds the class FeElement; Base class for a Fe element
+ * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef SIMULIAODB_H_
-#define SIMULIAODB_H_
+#ifndef FEELEMENT_H_
+#define FEELEMENT_H_
 
-#include <string>
 #include <assert.h>
+#include <math.h>
 
-class HMesh;
 /********//**
- * \brief This handles the output handling with Abaqus ODB
+ *
  **************************************************************************************************/
-class SimuliaODB{
+class FeElement{
 public:
-    /***********************************************************************************************
-     * \brief Constructor
-     * \param[in] _obdFilePath string which holds the path to the obd file
-     * \author Stefan Sicklinger
-     ***********/
-	SimuliaODB(void);
-    /***********************************************************************************************
-     * \brief Destructor
-     *
-     * \author Stefan Sicklinger
-     ***********/
-	virtual ~SimuliaODB(void);
 	/***********************************************************************************************
-	* \brief Open die odb file
-	* \param[in] _obdFilePath string which holds the path to the obd file
+	 * \brief Constructor
+	 * \author Stefan Sicklinger
+	 ***********/
+	FeElement(void);
+	/***********************************************************************************************
+	 * \brief Destructor
+	 *
+	 * \author Stefan Sicklinger
+	 ***********/
+	virtual ~FeElement(void);
+	/***********************************************************************************************
+	* \brief Evalute derivative of local shape functions for bi-linear element
+	* \param[in] xi
+	* \param[in] eta
+	* \param[in] eleCoords
+	* \param[out] d_N_d_xi_eta
 	* \author Stefan Sicklinger
 	***********/
-	void openODBFile(const std::string _obdFilePath);
-	/***********************************************************************************************
-	* \brief get HMesh
-	* \author Stefan Sicklinger
-	***********/
-	HMesh* getHMeshHandle(void){ return myHMesh; }
+	void evalQuad4IsoPShapeFunDer(const double* eleCoords, const double xi, const double eta, double *N, double *dNx, double *dNy, double &Jdet);
 private:
-	/// HMesh object 
-	HMesh *myHMesh;
 };
 
 
-#endif /* SIMULIAODB_H_ */
+#endif /* FEELEMENT_H_ */

@@ -18,50 +18,38 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file SimuliaODB.h
- * This file holds the class SimuliaODb which adds the capability to read Abaqus odb files
- * \date 1/18/2017
+ * \file FeMetaDatabase.h
+ * This file holds the class FeMetaDatabase which holds all meta data for the FE analysis
+ * i.e. lightweight descriptive data, e.g. material, section, anaylsis type, solver properties
+ * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef SIMULIAODB_H_
-#define SIMULIAODB_H_
+#ifndef FEMETADATABASE_H_
+#define FEMETADATABASE_H_
 
 #include <string>
 #include <assert.h>
 
-class HMesh;
 /********//**
  * \brief This handles the output handling with Abaqus ODB
  **************************************************************************************************/
-class SimuliaODB{
+class FeMetaDatabase{
 public:
     /***********************************************************************************************
      * \brief Constructor
      * \param[in] _obdFilePath string which holds the path to the obd file
      * \author Stefan Sicklinger
      ***********/
-	SimuliaODB(void);
+	FeMetaDatabase(void);
     /***********************************************************************************************
      * \brief Destructor
      *
      * \author Stefan Sicklinger
      ***********/
-	virtual ~SimuliaODB(void);
-	/***********************************************************************************************
-	* \brief Open die odb file
-	* \param[in] _obdFilePath string which holds the path to the obd file
-	* \author Stefan Sicklinger
-	***********/
-	void openODBFile(const std::string _obdFilePath);
-	/***********************************************************************************************
-	* \brief get HMesh
-	* \author Stefan Sicklinger
-	***********/
-	HMesh* getHMeshHandle(void){ return myHMesh; }
+	virtual ~FeMetaDatabase(void);
 private:
-	/// HMesh object 
-	HMesh *myHMesh;
+
 };
 
 
-#endif /* SIMULIAODB_H_ */
+#endif /* FEMETADATABASE_H_ */

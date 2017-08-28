@@ -289,7 +289,6 @@ void StartWindow::openOBDFile(void){
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
 	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
 	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
-
 }
 
 void StartWindow::importFile(void)

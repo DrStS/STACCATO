@@ -33,9 +33,20 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	for (int i = 0; i < numElements; i++)
 	{
 		double Emat[9];
+
+
+		c = E / (1 - vu*vu);
+
+		D = c*[1  vu  0; vu  1    0; 0    0   0.5*(1 - vu)];
+
+
 		double Ke[64];
 		FeElement* oneEle = new FeElement();
-		oneEle->computeElementStiffness(&(_hMesh.getNodeCoords()[0]), Emat, Ke);
+
+		//3D -> 2D
+		double eleCorrds[8] = { _hMesh.getNodeCoords()[0], _hMesh.getNodeCoords()[1], _hMesh.getNodeCoords()[3], _hMesh.getNodeCoords()[4], _hMesh.getNodeCoords()[9], _hMesh.getNodeCoords()[10], _hMesh.getNodeCoords()[6], _hMesh.getNodeCoords()[7] };
+		//&(_hMesh.getNodeCoords()[0])
+		oneEle->computeElementStiffness(eleCorrds, Emat, Ke);
 	}
 
 }

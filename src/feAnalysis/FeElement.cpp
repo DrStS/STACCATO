@@ -37,7 +37,7 @@ void FeElement::computeElementStiffness(const double* _eleCoords, const double *
 	double dNx[4];
 	double dNy[4];
 	double Jdet;
-	double B[24];
+	double B[24] = { 0 };
 
 	for (int k = 0; k < 8; k++) {
 		evalQuad4IsoPShapeFunDer(_eleCoords, quadGaussPoints2DBiLinear[2 * k], quadGaussPoints2DBiLinear[(2 * k) + 1], N, dNx, dNy, Jdet);
@@ -58,18 +58,19 @@ void FeElement::evalQuad4IsoPShapeFunDer(const double* _eleCoords, const double 
 	_N[1] = (1 + _xi)*(1 - _eta) / 4;
 	_N[2] = (1 + _xi)*(1 + _eta) / 4;
 	_N[3] = (1 - _xi)*(1 + _eta) / 4;
-	double x21 = _eleCoords[1] - _eleCoords[0];
-	double x31 = _eleCoords[2] - _eleCoords[0];
-	double x41 = _eleCoords[3] - _eleCoords[0];
-	double x32 = _eleCoords[2] - _eleCoords[1];
-	double x42 = _eleCoords[3] - _eleCoords[1];
-	double x43 = _eleCoords[3] - _eleCoords[2];
-	double y21 = _eleCoords[5] - _eleCoords[4];
-	double y31 = _eleCoords[6] - _eleCoords[4];
-	double y41 = _eleCoords[7] - _eleCoords[4];
-	double y32 = _eleCoords[6] - _eleCoords[5];
-	double y42 = _eleCoords[7] - _eleCoords[5];
-	double y43 = _eleCoords[7] - _eleCoords[6];
+	double x21 = _eleCoords[2] - _eleCoords[0];
+	double x31 = _eleCoords[4] - _eleCoords[0];
+	double x41 = _eleCoords[6] - _eleCoords[0];
+	double x32 = _eleCoords[4] - _eleCoords[2];
+	double x42 = _eleCoords[6] - _eleCoords[2];
+	double x43 = _eleCoords[6] - _eleCoords[4];
+	double y21 = _eleCoords[3] - _eleCoords[1];
+	double y31 = _eleCoords[5] - _eleCoords[1];
+	double y41 = _eleCoords[7] - _eleCoords[1];
+	double y32 = _eleCoords[5] - _eleCoords[3];
+	double y42 = _eleCoords[7] - _eleCoords[3];
+	double y43 = _eleCoords[7] - _eleCoords[5];
+
 	double Jdet8 = -y31*x42 + x31*y42 + (y21*x43 - x21*y43)*_xi + (x32*y41 - x41*y32)*_eta;
 	_Jdet = Jdet8 / 8;
 	_dNx[0] = (-y42 + y43*_xi + y32*_eta) / Jdet8;

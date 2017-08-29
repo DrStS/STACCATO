@@ -21,18 +21,21 @@
 #include "Message.h"
 #include "HMesh.h"
 #include "FeMetaDatabase.h"
+#include "FeElement.h"
 #include "MathLibrary.h"
 
 
-FeAnalysis::FeAnalysis(HMesh& _HMesh, FeMetaDatabase& _FeMetaDatabase) : myHMesh(&_HMesh), myFeMetaDatabase(&_FeMetaDatabase) {
+FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh(&_hMesh), myFeMetaDatabase(& _feMetaDatabase) {
 
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
-	unsigned int i = 0;
-	MathLibrary::SparseMatrix<double> * Adyn = new MathLibrary::SparseMatrix<double>(2 * numNodes * 2, true);
-	for (i = 0; i < numElements; i++)
-	{
 
+	for (int i = 0; i < numElements; i++)
+	{
+		double Emat[9];
+		double Ke[64];
+		FeElement* oneEle = new FeElement();
+		oneEle->computeElementStiffness(&(_hMesh.getNodeCoords()[0]), Emat, Ke);
 	}
 
 }

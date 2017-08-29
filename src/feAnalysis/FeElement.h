@@ -30,7 +30,7 @@
 #include <math.h>
 
 /********//**
- *
+* \brief Class FeElement 
  **************************************************************************************************/
 class FeElement{
 public:
@@ -47,14 +47,24 @@ public:
 	virtual ~FeElement(void);
 	/***********************************************************************************************
 	* \brief Evalute derivative of local shape functions for bi-linear element
-	* \param[in] xi
-	* \param[in] eta
-	* \param[in] eleCoords
-	* \param[out] d_N_d_xi_eta
+	* \param[in] eleCoords Element cooord vector
+	* \param[in] E elasticity matrix
+	* \param[out] Ke element stiffness matrix
 	* \author Stefan Sicklinger
 	***********/
-	void evalQuad4IsoPShapeFunDer(const double* eleCoords, const double xi, const double eta, double *N, double *dNx, double *dNy, double &Jdet);
+	void computeElementStiffness(const double* _eleCoords, const double *_Emat, double *_Ke);
 private:
+	/***********************************************************************************************
+	* \brief Evalute derivative of local shape functions for bi-linear element
+	* \param[in] _xi
+	* \param[in] _eta
+	* \param[in] _eleCoords
+	* \param[out] _dNx
+	* \param[out] _dNy
+	* \param[out] _Jdet
+	* \author Stefan Sicklinger
+	***********/
+	void evalQuad4IsoPShapeFunDer(const double* _eleCoords, const double _xi, const double _eta, double *_N, double *_dNx, double *_dNy, double &_Jdet);
 };
 
 

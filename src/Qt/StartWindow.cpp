@@ -26,6 +26,8 @@
 #include "Message.h"
 #include "SimuliaODB.h"
 #include "HMeshToMeshVS_DataSource.h"
+#include "FeMetaDatabase.h"
+#include "FeAnalysis.h"
 #include "qnemainwindow.h"
 
 //QT5
@@ -289,6 +291,12 @@ void StartWindow::openOBDFile(void){
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
 	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
 	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
+
+
+	//Run FE Analysis
+	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
+
 }
 
 void StartWindow::importFile(void)

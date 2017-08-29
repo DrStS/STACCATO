@@ -38,15 +38,29 @@ class QTextEdit;
 namespace Ui {
 	class StartWindow;
 }
-
+/********//**
+* \brief Class StartWindow the core of the GUI
+***********/
 class StartWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
 	explicit StartWindow(QWidget *parent = 0);
+	/***********************************************************************************************
+	* \brief Destructor
+	* \author Stefan Sicklinger
+	***********/
 	~StartWindow();
 
 protected:
+	/***********************************************************************************************
+	* \brief Creat all Actions of Qt
+	* \author Stefan Sicklinger
+	***********/
 	void createActions(void);
 	void createMenus(void);
 	void createToolBars(void);
@@ -66,38 +80,38 @@ private slots:
 
 private:
 	Ui::StartWindow *ui;
-	//! File action.
+	/// File action.
 	QAction* mExitAction;
     QAction* mReadFileAction;
 	QAction* mReadOBDFileAction;
-	//! Create action.
+	/// Create action.
 	QAction* mDrawCantileverAction;
 	QAction* mDataFlowAction;
 	QAction* mAnimationAction;
-	//! View action
+	/// View action
 	QAction* mPanAction;
 	QAction* mZoomAction;
 	QAction* mFitAllAction;
 	QAction* mRotateAction;
-	//! Help action.
+	/// Help action.
 	QAction* mAboutAction;
-	//! Menus.
+	/// Menus.
 	QMenu* mFileMenu;
 	QMenu* mCreateMenu;
 	QMenu* mHelpMenu;
-	//! Toolbars
+	/// Toolbars
 	QToolBar* mFileToolBar;
 	QToolBar* mViewToolBar;
 	QToolBar* mCreateToolBar;
 	QToolBar* mHelpToolBar;
 
-	// wrapped the widget for occ.
+	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;
-	//! the dockable widgets
+	/// the dockable widgets
 	QTextEdit* textOutput;
 
 	QMainWindow* newWin;
 
 };
 
-#endif // STARTWINDOW_H 
+#endif /* STARTWINDOW_H */

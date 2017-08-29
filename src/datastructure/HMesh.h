@@ -85,22 +85,22 @@ public:
 	int getNumElements(){ return elementLabels.size(); }
 	/***********************************************************************************************
 	* \brief get node coords
-	* \param[out] std vector
+	* \param[out] reference to std vector double
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<double> getNodeCoords(){ return nodeCoords; }
+	std::vector<double>& getNodeCoords(){ return nodeCoords; }
 	/***********************************************************************************************
 	* \brief get element types
-	* \param[out] std vector
+	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<STACCATO_Element_type> getElementTypes(){ return elementTyps; }
+	std::vector<STACCATO_Element_type>& getElementTypes(){ return elementTyps; }
 	/***********************************************************************************************
 	* \brief get element topology
-	* \param[out] std vector
+	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<int> getElementTopology(){ return elementsTopology; }
+	std::vector<int>& getElementTopology(){ return elementsTopology; }
 	/***********************************************************************************************
 	* \brief convert node label to node index
 	* \param[in] node label

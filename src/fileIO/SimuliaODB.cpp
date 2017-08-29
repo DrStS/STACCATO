@@ -57,7 +57,6 @@ void SimuliaODB::openODBFile(std::string _obdFilePath) {
 			int numOfElements = elements.size();
 
 			// Works for one instance only
-
 			myHMesh = new HMesh("default");
 
 			//Nodes

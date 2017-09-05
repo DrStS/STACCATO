@@ -37,8 +37,9 @@ ENDIF()
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
 #------------------------------------------------------------------------------------#
-IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-add_executable(STACCATO WIN32 ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc winResources.rc)
+IF (CMAKE_SYSTEM_NAME MATCHES "Windows") 
+# WIN32
+add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc winResources.rc)
 ENDIF()
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)
@@ -55,6 +56,7 @@ MESSAGE("Linker Flags are: ${CMAKE_EXE_LINKER_FLAGS}")
 MESSAGE("STACCATO_LIBS: ${STACCATO_LIBS}")
 MESSAGE("STACCATO_INCLUDES: ${STACCATO_INCLUDES}")
 MESSAGE("STACCATO_SOURCES: ${STACCATO_SOURCES}")
+MESSAGE("MKL_LIBRARIES: ${MKL_LIBRARIES}")
 #------------------------------------------------------------------------------------#
 # Where to put EXECUTABLE
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin64)

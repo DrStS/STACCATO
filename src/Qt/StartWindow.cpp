@@ -267,6 +267,7 @@ void StartWindow::openOBDFile(void){
 	}
 	SimuliaODB myOBD =  SimuliaODB();
 	myOBD.openODBFile(fileName.toStdString());
+
 	Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 	aMesh->SetDataSource(aDataSource);

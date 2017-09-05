@@ -28,28 +28,57 @@ FeElement::FeElement() {
 FeElement::~FeElement() {
 }
 
-void FeElement::computeElementStiffness(const double* _eleCoords, const double *_Emat, double *_Ke){
-	static const double tmpSqrt13 = sqrt(1.0 / 3.0);
-	const double quadGaussPoints2DBiLinear[8] = { tmpSqrt13, tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13,- tmpSqrt13, tmpSqrt13, -tmpSqrt13 };
+void FeElement::computeElementMatrix(const double* _eleCoords, const double *_Emat, double *_Ke, double *_Me, double _De){
 
-	// allocate local memory on the stack
+	//Allocate local memory on the stack
 	double N[4];
 	double dNx[4];
 	double dNy[4];
 	double Jdet;
-	double B[24] = { 0 };
+	double B[24] = {0};
+	double B_T_times_Emat[24] = {0};
 
-	for (int k = 0; k < 8; k++) {
-		evalQuad4IsoPShapeFunDer(_eleCoords, quadGaussPoints2DBiLinear[2 * k], quadGaussPoints2DBiLinear[(2 * k) + 1], N, dNx, dNy, Jdet);
+	//Gauss integration loop
+	for (int k = 0; k < 4; k++) {
+		evalQuad4IsoPShapeFunDer(_eleCoords, MathLibrary::quadGaussPoints2DBiLinear[2 * k], MathLibrary::quadGaussPoints2DBiLinear[(2 * k) + 1], N, dNx, dNy, Jdet);
 
+		//Compute element stiffness matrix
+		//B matrix 3 x 8
 		for (int i = 0; i < 4; i++) {
-			B[2 * i]     = dNx[i];
-			B[((2 * i)+1)+8] = dNy[i];
-			B[((2 * i)) + 16] = dNy[i];
+			B[2 * i]              = dNx[i];
+			B[((2 * i)+1)+8]      = dNy[i];
+			B[((2 * i)) + 16]     = dNy[i];
 			B[((2 * i) + 1) + 16] = dNx[i];
 		}
+		//Weights are 1 and thickness is assumed to be 1
+		double t = 1.0;
+		//Compute Ke=+det(J)*t*Wi*Wj*transpose(B)*Emat*B;
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 3, 3, B, _Emat, B_T_times_Emat, true, false, 1.0, false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 3, B_T_times_Emat, B, _Ke, false, true, Jdet*t, true);
+		
+		//Compute mass matrix
+		double rho = 7.85e-09;
+
+		memset(B, 0, 24*sizeof(double));
+		//N matrix 2 x 8
+		for (int i = 0; i < 4; i++) {
+			B[2 * i] = N[i];
+			B[((2 * i) + 1) + 8] = N[i];
+		}
+		//Weights are 1 and thickness is assumed to be 1
+		//Compute Me=+det(J)*t*Wi*Wj*rho*transpose(N)*N;
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 2, B, B, _Me, true, true, Jdet*rho*t, true);
+		//Compute viscous damping matrix ...
 	}
 
+	//Lumping
+	double b[8]={ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+	double c[8];
+	MathLibrary::computeDenseMatrixVectorMultiplication(8, 8, _Me, b, c);
+	memset(_Me, 0, 64 * sizeof(double));
+	for (int i = 0; i < 8; i++) {
+		_Me[i * 8 + i] = c[i];
+	}
 }
 
 void FeElement::evalQuad4IsoPShapeFunDer(const double* _eleCoords, const double _xi, const double _eta, double *_N, double *_dNx, double *_dNy, double &_Jdet)

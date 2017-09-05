@@ -18,6 +18,7 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include <assert.h>
+#include <numeric>
 #include "HMesh.h"
 #include "Message.h"
 
@@ -40,10 +41,66 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	for (std::vector<int>::size_type i = 0; i != _elementTopology.size(); i++) {
 		elementsTopology.push_back(_elementTopology[i]);
 	}
-	
+
 }
 
 void HMesh::plot(){
 	infoOut << "Element size vector: " << elementLabels.size() << std::endl;
+}
+
+void HMesh::buildDataStructure(void){
+	//Node loop	
+	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
+		nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
+	}
+
+
+	//Element loop
+	nodeIndexToElementIndices.resize(getNumNodes());
+	numDoFsPerNode.resize(getNumNodes());
+	elementIndexToNodesIndices.resize(getNumElements());
+	numNodesPerElem.resize(getNumElements());
+
+	int lastIndexInElementTopology = -1;
+
+	for (std::vector<int>::size_type i = 0; i != elementLabels.size(); i++) {
+		elementLabelToElementIndexMap[elementLabels[i]] = i;
+
+		int numDoFsPerNodeCurrent;
+		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D){
+			numNodesPerElem[i]=4;
+
+			//1. DoF -> u_x
+			//2. DoF -> u_y
+			numDoFsPerNodeCurrent = 2;
+		}
+
+		for (int j = 0; j < numNodesPerElem[i]; j++){
+			lastIndexInElementTopology++;
+			int nodeLabel = getElementTopology()[lastIndexInElementTopology];
+			int nodeIndex = convertNodeLabelToNodeIndex(nodeLabel);
+			nodeIndexToElementIndices[nodeIndex].push_back(i);
+			elementIndexToNodesIndices[i].push_back(nodeIndex);	
+
+			if (numDoFsPerNodeCurrent > numDoFsPerNode[nodeIndex]){
+				numDoFsPerNode[nodeIndex] = numDoFsPerNodeCurrent;
+			}
+
+		}
+	}
+
+	//Node loop for DoFs
+	int globalDoFIndex = 0;
+	nodeIndexToDoFIndices.resize(getNumNodes());
+
+	// Generate DoFPerEle -> DoFGlob 
+	for (int i = 0; i < getNumNodes(); i++) {
+		for (int j = 0; j < getNumDoFsPerNode(i); j++) {
+			nodeIndexToDoFIndices[i].push_back(globalDoFIndex);
+			globalDoFIndex++;
+		}
+	}
+	//Total number of DoF without internal DoFs and BCs
+	totalNumOfDoFsRaw = globalDoFIndex;
 
 }

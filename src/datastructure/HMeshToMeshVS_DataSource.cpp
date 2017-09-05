@@ -36,7 +36,6 @@
 HMeshToMeshVS_DataSource::HMeshToMeshVS_DataSource(HMesh& _HMesh)
 {
   Standard_Integer numNodes = _HMesh.getNumNodes();
-  warningOut << "Step 0: " << std::endl;
 
   for (Standard_Integer aNodeID = 1; aNodeID <= numNodes; aNodeID++)
   {
@@ -44,7 +43,6 @@ HMeshToMeshVS_DataSource::HMeshToMeshVS_DataSource(HMesh& _HMesh)
   }
 
   Standard_Integer numElements = _HMesh.getNumElements();
-  warningOut << "Step 1" << std::endl;
 
   for (Standard_Integer anElemID = 1; anElemID <= numElements; anElemID++)
   {
@@ -62,13 +60,12 @@ HMeshToMeshVS_DataSource::HMeshToMeshVS_DataSource(HMesh& _HMesh)
   myElemNbNodes = new TColStd_HArray1OfInteger(1, numElements);
   for (Standard_Integer i = 0; i < numElements; i++)
   {
-	  if (_HMesh.getElementTypes()[i] == STACCATO_PlainStrain4Node2D || _HMesh.getElementTypes()[i] == STACCATO_PlainStress4Node2D){
-		  myElemNbNodes->SetValue(i+1, 4);
-	  }
+	  myElemNbNodes->SetValue(i + 1, _HMesh.getNumNodesPerElement()[i]);
   }
  
   myElemNodes = new TColStd_HArray2OfInteger(1, numElements, 1, 4);
   myElemNormals = new TColStd_HArray2OfReal(1, numElements, 1, 3);
+
 
   int index = 0;
   for (Standard_Integer i = 0; i < numElements; i++)
@@ -99,7 +96,6 @@ TColStd_Array1OfReal& Coords, Standard_Integer& NbNodes,
 MeshVS_EntityType& Type) const
 {
 
-	errorOut << "ID: " << ID << std::endl;
 	if (IsElement)
 	{
 		if (ID >= 1 && ID <= myElements.Extent())

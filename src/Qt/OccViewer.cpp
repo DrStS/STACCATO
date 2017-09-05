@@ -93,7 +93,7 @@ OccViewer::OccViewer(QWidget* parent )
 
 	myMode = CurAction3d_Nothing;
 	///Setup QT5
-	setMouseTracking(true);
+	setMouseTracking(false);
 	setAutoFillBackground(false);
 	setAttribute(Qt::WA_NoSystemBackground);
 	setAttribute(Qt::WA_PaintOnScreen);
@@ -201,7 +201,11 @@ void OccViewer::initOccView(){
 	setMode(CurAction3d_Nothing);
 	setBackgroundGradient(myBGColor.red(), myBGColor.green(), myBGColor.blue());
 	myContext->SetDisplayMode(AIS_Shaded);
-	myViewInitialized = Standard_True;      
+	myViewInitialized = Standard_True; 
+
+	//
+	///Setup QT5
+	setMouseTracking(true);
 }
 
 OccViewer::~OccViewer()

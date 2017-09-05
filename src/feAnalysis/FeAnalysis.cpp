@@ -17,6 +17,9 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include "FeAnalysis.h"
 #include "Message.h"
 #include "HMesh.h"
@@ -30,25 +33,107 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 
-	for (int i = 0; i < numElements; i++)
-	{
-		double Emat[9];
+	//Hack mat class is missing
+	double ni = 0.3;
+	double E = 210000;
+	double tmp = E / (1 - ni*ni);
+	double Emat[9] = { tmp, tmp*ni, 0, tmp*ni, tmp, 0, 0, 0, tmp*0.5*(1 - ni) };
 
+	int totalDoF = myHMesh->getTotalNumOfDoFsRaw();
+	int dimension;
+	MathLibrary::SparseMatrix<double> *A = new MathLibrary::SparseMatrix<double>(totalDoF, true);
+	std::vector<double> b;
+	std::vector<double> sol;
 
-		c = E / (1 - vu*vu);
+	b.resize(totalDoF);
+	sol.resize(totalDoF);
+	
 
-		D = c*[1  vu  0; vu  1    0; 0    0   0.5*(1 - vu)];
-
-
-		double Ke[64];
-		FeElement* oneEle = new FeElement();
-
-		//3D -> 2D
-		double eleCorrds[8] = { _hMesh.getNodeCoords()[0], _hMesh.getNodeCoords()[1], _hMesh.getNodeCoords()[3], _hMesh.getNodeCoords()[4], _hMesh.getNodeCoords()[9], _hMesh.getNodeCoords()[10], _hMesh.getNodeCoords()[6], _hMesh.getNodeCoords()[7] };
-		//&(_hMesh.getNodeCoords()[0])
-		oneEle->computeElementStiffness(eleCorrds, Emat, Ke);
+	if (myHMesh->getElementTypes()[0] == STACCATO_PlainStrain4Node2D || myHMesh->getElementTypes()[0] == STACCATO_PlainStress4Node2D){
+		dimension = 2;
 	}
 
+	const int maxDoFsPerElement = 128;
+	int eleDoFs[maxDoFsPerElement];
+	int numDoFsPerElement = 0;
+
+	FeElement* oneEle = new FeElement();
+	for (int i = 0; i < numElements; i++)
+	{
+		double Ke[64] = { 0 };
+		double Me[64] = { 0 }; 
+		int numNodesPerElement = myHMesh->getNumNodesPerElement()[i];
+		double * eleCoord = new double[numNodesPerElement*dimension];
+		numDoFsPerElement = 0;
+
+		//Loop over nodes of current element
+		for (int j = 0; j < numNodesPerElement; j++)
+		{
+			int nodeIndex = myHMesh->getElementIndexToNodesIndices()[i][j];
+			if (dimension == 2){
+				// Extract x and y coord only; for 2D; z=0
+				eleCoord[j*dimension + 0] = myHMesh->getNodeCoords()[nodeIndex * 3 + 0];
+				eleCoord[j*dimension + 1] = myHMesh->getNodeCoords()[nodeIndex * 3 + 1];
+			}
+
+			// Generate DoF table
+			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(nodeIndex);
+			for (int l = 0; l < numDoFsPerNode; l++){
+				eleDoFs[j*numDoFsPerNode+l] = myHMesh->getNodeIndexToDoFIndices()[nodeIndex][l];
+				numDoFsPerElement++;
+			}
+
+		}
+		oneEle->computeElementMatrix(eleCoord, Emat, Ke, Me);
+		delete eleCoord;
+
+		double freq = 101;
+		double omega = 2 * M_PI*freq;
+		//Assembly routine symmetric stiffness
+		for (int i = 0; i < numDoFsPerElement; i++){
+			for (int j = 0; j < numDoFsPerElement; j++){
+				if(eleDoFs[j]>= eleDoFs[i]){
+					(*A)(eleDoFs[i], eleDoFs[j]) += Ke[i*numDoFsPerElement + j];
+				}
+			}
+		}
+		//K - omega*omega*M
+		//Assembly routine symmetric mass
+		for (int i = 0; i < numDoFsPerElement; i++){
+			for (int j = 0; j < numDoFsPerElement; j++){
+				if (eleDoFs[j] >= eleDoFs[i]) {
+					(*A)(eleDoFs[i], eleDoFs[j]) -= Me[i*numDoFsPerElement + j] * omega*omega;
+					//std::cout << "A(" << eleDoFs[i] << "," << eleDoFs[j] << ")=" << (*A)(eleDoFs[i], eleDoFs[j]) << std::endl;
+				}
+			}
+		}
+
+	}
+
+	//Add cload rhs contribution 
+	double cload = 1.0;
+	for (int j = 0; j < numNodes; j++)
+	{	
+		int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
+		for (int l = 0; l < numDoFsPerNode; l++) {
+			if (myHMesh->getNodeLabels()[j] == 16) {
+				int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+				b[dofIndex] =+ cload;
+				cload++;
+
+				std::cout << dofIndex << std::endl;
+			}
+		}
+	}
+
+
+	(*A).check();
+	(*A).factorize();
+	(*A).solve(&sol[0], &b[0]);
+
+	infoOut<<sol[0]<<std::endl;
+
+	delete A;
 }
 
 FeAnalysis::~FeAnalysis() {

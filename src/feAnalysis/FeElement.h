@@ -26,8 +26,10 @@
 #ifndef FEELEMENT_H_
 #define FEELEMENT_H_
 
+#include <cstddef>
 #include <assert.h>
 #include <math.h>
+
 
 /********//**
 * \brief Class FeElement 
@@ -50,9 +52,10 @@ public:
 	* \param[in] eleCoords Element cooord vector
 	* \param[in] E elasticity matrix
 	* \param[out] Ke element stiffness matrix
+	* TODO
 	* \author Stefan Sicklinger
 	***********/
-	void computeElementStiffness(const double* _eleCoords, const double *_Emat, double *_Ke);
+	void computeElementMatrix(const double* _eleCoords, const double *_Emat, double *_Ke, double *_Me = NULL, double _De = NULL);
 private:
 	/***********************************************************************************************
 	* \brief Evalute derivative of local shape functions for bi-linear element

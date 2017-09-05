@@ -78,6 +78,12 @@ public:
 	***********/
 	int getNumNodes(){ return nodeLabels.size(); }
 	/***********************************************************************************************
+	* \brief get node labels
+	* \param[out] reference to std vector int
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<int>& getNodeLabels() { return nodeLabels; }
+	/***********************************************************************************************
 	* \brief get total number of elements
 	* \param[out] total number of elements
 	* \author Stefan Sicklinger
@@ -102,45 +108,93 @@ public:
 	***********/
 	std::vector<int>& getElementTopology(){ return elementsTopology; }
 	/***********************************************************************************************
+	* \brief get number of nodes per element
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<int>& getNumNodesPerElement(){ return numNodesPerElem; }
+	/***********************************************************************************************
+	* \brief get number of DoFs per element
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<int>& getTypeDoFsPerElement() { return typeDoFsPerElement; }
+	/***********************************************************************************************
+	* \brief get relation of node index to element indexes: 1 to nn
+	* \param[out] reference to std::vector<std::vector<int>>
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<std::vector<int>>& getNodeIndexToElementIndices(){ return nodeIndexToElementIndices; }
+	/***********************************************************************************************
+	* \brief get relation of element index to node indexes
+	* \param[out] reference to std::vector<std::vector<int>>
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<std::vector<int>>& getElementIndexToNodesIndices(){ return elementIndexToNodesIndices; }
+	/***********************************************************************************************
+	* \brief get relation of node index to DoF indexes
+	* \param[out] reference to std::vector<std::vector<int>>
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<std::vector<int>>& getNodeIndexToDoFIndices(){ return nodeIndexToDoFIndices; }
+	/***********************************************************************************************
+	* \brief get number of DoFs of each node using node index
+	* \param[out] number of DoF 
+	* \author Stefan Sicklinger
+	***********/
+	int getNumDoFsPerNode(int _nodeIndex){ return numDoFsPerNode[_nodeIndex]; }
+	/***********************************************************************************************
 	* \brief convert node label to node index
 	* \param[in] node label
 	* \param[out] node index [0..nNodes]
 	* \author Stefan Sicklinger
 	***********/
 	int convertNodeLabelToNodeIndex(int _nodeLabel){
-		//std::vector<int>::iterator it;
-		//it = std::find(nodeLabels.begin(), nodeLabels.end(), _nodeLabel);
-		//return distance(nodeLabels.begin(), it);
 		return nodeLabelToNodeIndexMap[_nodeLabel];
 	}
+	/***********************************************************************************************
+	* \brief Total number of DoF without internal DoFs and BCs
+	* \param[out] reference to std vector double
+	* \author Stefan Sicklinger
+	***********/
+	int getTotalNumOfDoFsRaw(){ return totalNumOfDoFsRaw; }
 	/***********************************************************************************************
 	* \brief build datastructure
 	* \author Stefan Sicklinger
 	***********/
-	void buildDataStructure(void){
-		for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
-			nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
-		}
-	}
-
+	void buildDataStructure(void);
 
 private:
 	/// mesh name
 	std::string name;
     /// coordinates of all nodes
     std::vector<double> nodeCoords;
-    /// IDs of all nodes
+    /// Labels of all nodes
 	std::vector<int> nodeLabels;
     /// number of nodes of each element
 	std::vector<int> numNodesPerElem;
-    /// nodes connectivity inside all elements
+	/// type of DoFs of each element
+	std::vector<int> typeDoFsPerElement;
+	/// number of DoFs of each node
+	std::vector<int> numDoFsPerNode;
+    /// nodes connectivity inside all elements using node labels
 	std::vector<int> elementsTopology;
-    /// IDs of all elements (now it is not received from clients, therefore it is fixed as 1,2,3...)
+    /// Labels of all elements
 	std::vector<int> elementLabels;
-	/// Store element type
+	/// Store element type by index
 	std::vector<STACCATO_Element_type> elementTyps;
 	/// Map node label to node index
 	std::map<int, int> nodeLabelToNodeIndexMap;
+	/// Map element label to element index
+	std::map<int, int> elementLabelToElementIndexMap;
+	/// Relation of node index to element indexes: 1 to nn
+	std::vector<std::vector<int>> nodeIndexToElementIndices;
+	/// Relation of element index to node indexes: 1 to ne
+	std::vector<std::vector<int>> elementIndexToNodesIndices;
+	/// Total number of DoF without internal DoFs and BCs
+	int totalNumOfDoFsRaw;
+	/// Relation of node index to DoF indexes: 1 to nd
+	std::vector<std::vector<int>> nodeIndexToDoFIndices;
     /// unit test class
     friend class TestFEMesh;
 private:

@@ -17,8 +17,10 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
+#include "AuxiliaryParameters.h"
 #include "SimuliaODB.h"
 #include "Message.h"
+#include "memWatcher.h"
 #include "HMesh.h"
 
 
@@ -105,7 +107,11 @@ void SimuliaODB::openODBFile(std::string _obdFilePath) {
 				myHMesh->addElement(aElement.label(), STACCATO_PlainStrain4Node2D, elementTopo);
 			}
 		}
+
+		debugOut << "SimuliaODB::openODBFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		myHMesh->buildDataStructure();
+		debugOut << "SimuliaODB::openODBFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		odb.close();//Change datastrc here HMesh should node be a member of odb
 	}
 	catch (odb_BaseException& exc) {
 		errorOut << "odbBaseException caught" << std::endl;

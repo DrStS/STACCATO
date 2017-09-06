@@ -314,7 +314,7 @@ namespace MathLibrary {
 			pardiso_error = 0; //Initialize error flag 
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = 1; // number of right hand side
-			pardiso_phase = 11; // analysis and factorization
+			pardiso_phase = 12; // analysis and factorization
 			mkl_set_num_threads(1);
 
 
@@ -327,27 +327,13 @@ namespace MathLibrary {
 					<< std::endl;
 				exit(EXIT_FAILURE);
 			}
-			infoOut << "Reordering completed ..." << std::endl;
-			infoOut << "Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
-			infoOut << "Number of factorization MFLOPS = " << pardiso_iparm[18] << std::endl;
-			infoOut << "Peak memory on numerical factorization and solution (Mb) = " << pardiso_iparm[16]/1000 << std::endl;
-			infoOut << "Number of negative eigenvalues = " << pardiso_iparm[21] << std::endl;
-
-
-			pardiso_phase = 22; // analysis and factorization
-			mkl_set_num_threads(1);
-
-			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
-				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
-				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
-				&pardiso_error);
-			if (pardiso_error != 0) {
-				errorOut << "Error pardiso factorization failed with error code: " << pardiso_error
-					<< std::endl;
-				exit(EXIT_FAILURE);
-			}
-
-
+			infoOut << "Reordering and factorization completed" << std::endl;
+			infoOut << "Info: Number of equation = " << pardiso_neq << std::endl;
+			infoOut << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
+			infoOut << "Info: Number of factorization MFLOPS = " << pardiso_iparm[18] << std::endl;
+			infoOut << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14]+ pardiso_iparm[15]+pardiso_iparm[16])/1000 << std::endl;
+			infoOut << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
+			infoOut << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
 #endif
 		}
 		/***********************************************************************************************
@@ -404,10 +390,11 @@ namespace MathLibrary {
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, _b, _x, &pardiso_error);
 			if (pardiso_error != 0)
 			{
-				printf("\nERROR during solution: %d", pardiso_error);
-				exit(3);
+				errorOut << "Error pardiso forward and backward substitution failed with error code: " << pardiso_error
+					<< std::endl;
+				exit(EXIT_FAILURE);
 			}
-			printf("\nSolve completed ... ");
+			infoOut << "Forward and backward substitution completed" << std::endl;
 #endif
 		}
 
@@ -424,7 +411,7 @@ namespace MathLibrary {
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 				&pardiso_error);
 			if (pardiso_error != 0) {
-				std::cerr << "Error deallocation of pardiso failed with error code: " << pardiso_error
+				errorOut << "Error deallocation of pardiso failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
 			}
@@ -539,6 +526,11 @@ namespace MathLibrary {
 				}
 				(*rowIndex)[m] = (ele_row + 1);
 			}
+			// This will free the memory
+			mat->clear();
+			mat_t dummyMat;
+			mat->swap(dummyMat);
+
 			alreadyCalled = true;
 		}
 	};

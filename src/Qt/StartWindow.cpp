@@ -28,6 +28,8 @@
 #include "HMeshToMeshVS_DataSource.h"
 #include "FeMetaDatabase.h"
 #include "FeAnalysis.h"
+#include "Timer.h"
+#include "MemWatcher.h"
 #include "qnemainwindow.h"
 
 //QT5
@@ -266,9 +268,19 @@ void StartWindow::openOBDFile(void){
 
 	}
 	SimuliaODB myOBD =  SimuliaODB();
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
+	anaysisTimer02.start();
 	myOBD.openODBFile(fileName.toStdString());
-
+	anaysisTimer01.stop();
+	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
 	Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
+	anaysisTimer01.stop();
+	debugOut << "Duration for reading HMeshToMeshVS_DataSource " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 	aMesh->SetDataSource(aDataSource);
 	aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
@@ -292,11 +304,16 @@ void StartWindow::openOBDFile(void){
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
 	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
 	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
-
-
+	anaysisTimer01.stop();
+	debugOut << "Duration for build and display Hmesh: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	//Run FE Analysis
 	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
 	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
+
+	anaysisTimer02.stop();
+	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 }
 

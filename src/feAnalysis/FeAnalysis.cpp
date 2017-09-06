@@ -26,6 +26,8 @@
 #include "FeMetaDatabase.h"
 #include "FeElement.h"
 #include "MathLibrary.h"
+#include "Timer.h"
+#include "MemWatcher.h"
 
 
 FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh(&_hMesh), myFeMetaDatabase(& _feMetaDatabase) {
@@ -56,6 +58,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	const int maxDoFsPerElement = 128;
 	int eleDoFs[maxDoFsPerElement];
 	int numDoFsPerElement = 0;
+
+
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
 
 	FeElement* oneEle = new FeElement();
 	for (int i = 0; i < numElements; i++)
@@ -126,11 +132,27 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		}
 	}
 
-
+	anaysisTimer01.stop();
+	infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() <<" milliSec"<<std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
+	anaysisTimer02.start();
 	(*A).check();
+	anaysisTimer01.stop();
+	infoOut << "Duration for direct solver check: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
 	(*A).factorize();
+	anaysisTimer01.stop();
+	infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
 	(*A).solve(&sol[0], &b[0]);
-
+	anaysisTimer01.stop();
+	anaysisTimer02.stop();
+	infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
+	infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	infoOut<<sol[0]<<std::endl;
 
 	delete A;

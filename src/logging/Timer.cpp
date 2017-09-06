@@ -17,25 +17,8 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <iostream>
-#include <stddef.h>
+#include "Timer.h"
 
-///Tp 
-//#define BUFLEN 16
-int mkl_progress_( int* ithr, int* step, char* stage, int lstage )
-{
-	static size_t counter = 0;
-
-	if (counter % 1000 == 0)
-	{
-		std::cout << "Hello" << std::endl;
-	}
-
-	counter++;
-	/*char buf[BUFLEN];
-  if( lstage >= BUFLEN ) lstage = BUFLEN-1;
-  strncpy( buf, stage, lstage );
-  buf[lstage] = '\0';
-  printf( "In thread %i, at stage %s, steps passed %i\n", *ithr, buf, *step );*/
-  return 0;
-}
+//Instantiate the timer object
+Timer   anaysisTimer01;
+Timer   anaysisTimer02;

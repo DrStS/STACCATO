@@ -142,10 +142,14 @@ IF (${USE_SIMULIA_ODB})
   ENDIF()
 ENDIF()
 #------------------------------------------------------------------------------------#
-IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+# Global compiler flags
+IF (${USE_GCC_COMPILERS_LINUX})
 SET (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -std=c99")
 SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-# Try to
+ENDIF()
+IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
+SET (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS} -Tp")
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Tp")
 ENDIF()
 ######################################################################################
 #4. Configure

@@ -91,5 +91,6 @@ private:
 
 extern Timer anaysisTimer01;
 extern Timer anaysisTimer02;
+extern Timer anaysisTimer03;
 
 #endif /* TIMER_H_ */

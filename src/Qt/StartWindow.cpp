@@ -270,7 +270,7 @@ void StartWindow::openOBDFile(void){
 	SimuliaODB myOBD =  SimuliaODB();
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
-	anaysisTimer02.start();
+	anaysisTimer03.start();
 	myOBD.openODBFile(fileName.toStdString());
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -311,8 +311,8 @@ void StartWindow::openOBDFile(void){
 	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
 	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
 
-	anaysisTimer02.stop();
-	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
+	anaysisTimer03.stop();
+	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 }

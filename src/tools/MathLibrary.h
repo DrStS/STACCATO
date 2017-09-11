@@ -309,7 +309,7 @@ namespace MathLibrary {
 			pardiso_iparm[18] = -1; //Report Mflops 
 			pardiso_maxfct = 1; // max number of factorizations
 			pardiso_mnum = 1; // which factorization to use
-			pardiso_msglvl = 1; // do NOT print statistical information
+			pardiso_msglvl = 0; // do NOT print statistical information
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.

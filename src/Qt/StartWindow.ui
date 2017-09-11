@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>680</width>
-    <height>500</height>
+    <width>1280</width>
+    <height>1024</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,13 +16,13 @@
     <property name="toolTip">
    <string extracomment="STACCATO: STefAn's Computational vibroaCoustics Analysis TOol"/>
   </property>
-  <widget class="QWidget" name="centralWidget"/>
+  <widget class="VtkViewer" name="centralWidget"/>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>680</width>
+     <width>1280</width>
      <height>21</height>
     </rect>
    </property>

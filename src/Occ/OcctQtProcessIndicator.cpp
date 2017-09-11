@@ -17,7 +17,7 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <QtProcessIndicator.h>
+#include <OcctQtProcessIndicator.h>
 #include <assert.h> 
 
 //QT5
@@ -25,12 +25,11 @@
 
 //OCCT 7
 #include <TCollection_HAsciiString.hxx>
-#include <Message_ProgressIndicator.hxx>
 /*! Creates a widget using specified paramters to initialize QProgressIndicator.
 \a theMin and \a theMax are also used to set the range for \a this progress
 indicator.
 */
-QtProcessIndicator::QtProcessIndicator(QWidget* theParent,
+OcctQtProcessIndicator::OcctQtProcessIndicator(QWidget* theParent,
 	int theMinVal, int theMaxVal,
 	Qt::WindowFlags theFlags)
 {
@@ -45,7 +44,7 @@ QtProcessIndicator::QtProcessIndicator(QWidget* theParent,
 }
 
 /*! Destroys the associated progress dialog.*/
-QtProcessIndicator::~QtProcessIndicator()
+OcctQtProcessIndicator::~OcctQtProcessIndicator()
 {
 	if (myProgress) {
 		delete myProgress;
@@ -58,7 +57,7 @@ The text label is updated according to the name of a current step.
 
 Always returns TRUE to signal that the presentation has been updated.
 */
-Standard_Boolean QtProcessIndicator::Show(const Standard_Boolean theForce)
+Standard_Boolean OcctQtProcessIndicator::Show(const Standard_Boolean theForce)
 {
 	Handle(TCollection_HAsciiString) aName = GetScope(1).GetName(); //current step
 	if (!aName.IsNull())
@@ -73,9 +72,24 @@ Standard_Boolean QtProcessIndicator::Show(const Standard_Boolean theForce)
 	return Standard_True;
 }
 
+Standard_Boolean OcctQtProcessIndicator::Show(const Standard_Boolean theForce, std::string aName)
+{
+	//Handle(TCollection_HAsciiString) aName = GetScope(1).GetName(); //current step
+	if (aName.size()>0)
+		myProgress->setLabelText(aName.c_str());
+
+	Standard_Real aPc = GetPosition(); //always within [0,1]
+	int aVal = myProgress->minimum() + aPc *
+		(myProgress->maximum() - myProgress->minimum());
+	myProgress->setValue(aVal);
+	QApplication::processEvents(); //to let redraw and keep GUI responsive
+
+	return Standard_True;
+}
+
 /*! Returns True if the user has clicked the Cancel button in QProgressDialog.
 */
-Standard_Boolean QtProcessIndicator::UserBreak()
+Standard_Boolean OcctQtProcessIndicator::UserBreak()
 {
 	return myProgress->wasCanceled();
 }

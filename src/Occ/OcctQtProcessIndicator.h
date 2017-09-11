@@ -18,12 +18,14 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file ProcessIndicator.h
-* This file holds the class of StartWindow.
+* \file OcctQtProcessIndicator.h
+* This file holds the class of OcctQtProcessIndicator.
 * \date 10/7/2016
 **************************************************************************************************/
-#ifndef QTPROCESSINDICATOR_H
-#define QTPROCESSINDICATOR_H
+#ifndef OCCTQTPROCESSINDICATOR_H
+#define OCCTQTPROCESSINDICATOR_H
+
+#include <string>
 
 // QT5
 #include <QProgressDialog>
@@ -32,21 +34,25 @@
 #include <Message_ProgressIndicator.hxx>
 
 
-class QtProcessIndicator : public Message_ProgressIndicator
+class OcctQtProcessIndicator : public Message_ProgressIndicator
 {
 public:
 	//! Creates an object.
-	Standard_EXPORT QtProcessIndicator(QWidget* theParent,
+	Standard_EXPORT OcctQtProcessIndicator(QWidget* theParent,
 		int theMinVal = 0, int theMaxVal = 100, Qt::WindowFlags theFlags = 0);
 
 	//! Deletes the object.
-	Standard_EXPORT virtual ~QtProcessIndicator();
+	Standard_EXPORT virtual ~OcctQtProcessIndicator();
 
 	//! Updates presentation of the object.
 	Standard_EXPORT virtual Standard_Boolean Show(const Standard_Boolean theForce);
 
+	Standard_Boolean Show(const Standard_Boolean theForce, std::string aName);
+
 	//! Returns True if the user has signaled to cancel the process.
 	Standard_EXPORT virtual Standard_Boolean UserBreak();
+
+	QProgressDialog * getQProgressDialogHandle(void) { return myProgress; };
 
 
 protected:

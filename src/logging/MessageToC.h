@@ -17,27 +17,25 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <stdio.h>
-#include <string.h>
-#include "MessageToC.h"
+/***********************************************************************************************//**
+ * \file MessageToC.h
+ * Adapter C++ -> C for MKL
+ * \date 1/10/2017
+ **************************************************************************************************/
 
-int mkl_progress( int* ithr, int* step, char* stage, int lstage )
-{
-	static int previousStep = -1;
-	int currentStatusUserBreak = 100;
-	if (previousStep == -1)
-	{
-		initMKLProgressBar();
-		previousStep = 0;
-	}
-	if (*step!= previousStep)
-	{
-		updateMKLProgressBar(*step);
-		previousStep = *step;
-		currentStatusUserBreak = userBreakProgressBar();
-		if(currentStatusUserBreak){
-			printf("HELLO %d", currentStatusUserBreak);
-		}
-	}
-  return currentStatusUserBreak;
+#ifndef MESSAGETOC_H_
+#define MESSAGETOC_H_
+
+#ifdef __cplusplus
+extern "C" { ///Define extern C if C++ compiler is used
+#endif
+		void printInfo(char* _message);
+		void printInfoNewLine(void);
+		void initMKLProgressBar(void);
+		void updateMKLProgressBar(int status);
+		int  userBreakProgressBar(void);
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* MESSAGETOC_H_ */

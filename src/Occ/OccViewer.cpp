@@ -156,7 +156,7 @@ void OccViewer::initOccView(){
 	myViewer->SetLightOn();
 	// set background color to black
 	myViewer->SetDefaultBackgroundColor(Quantity_NOC_BLACK);
-
+	myViewer->SetDefaultShadingModel(V3d_GOURAUD);
 	/// Create 3D View
 	if (myView.IsNull()){
 		myView = myViewer->CreateView();

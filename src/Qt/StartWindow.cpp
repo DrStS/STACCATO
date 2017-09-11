@@ -20,7 +20,8 @@
 #include "StartWindow.h"
 #include "ui_StartWindow.h"
 #include "OccViewer.h"
-#include "QtProcessIndicator.h"
+#include "VtkViewer.h"
+#include "OcctQtProcessIndicator.h"
 #include "STLVRML_DataSource.h"
 #include "AuxiliaryParameters.h"
 #include "Message.h"
@@ -31,6 +32,7 @@
 #include "Timer.h"
 #include "MemWatcher.h"
 #include "qnemainwindow.h"
+#include "HMesh.h"
 
 //QT5
 #include <QToolBar>
@@ -77,7 +79,8 @@
 #include <AIS_Plane.hxx>
 #include <Prs3d_PlaneAspect.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
-
+#include <MeshVS_NodalColorPrsBuilder.hxx>
+#include <AIS_ColorScale.hxx>
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -86,17 +89,21 @@ ui(new Ui::StartWindow)
 	ui->setupUi(this);
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
-	myOccViewer = new OccViewer(this);
-	setCentralWidget(myOccViewer);
+	//myOccViewer = new OccViewer(this);
+	myVtkViewer = new VtkViewer(this);
+	setCentralWidget(myVtkViewer);
 	createActions();
 	createMenus();
 	createToolBars();
 	createDockWindows();
+	myVtkViewer->demo();
+	resize(QDesktopWidget().availableGeometry(this).size() * 0.8);
 }
 
 StartWindow::~StartWindow()
 {
-	delete myOccViewer;
+	//delete myOccViewer;
+	delete myVtkViewer;
 }
 
 void StartWindow::openDataFlowWindow(void){
@@ -122,6 +129,7 @@ void StartWindow::createActions(void)
 	mReadFileAction->setStatusTip(tr("Import 3D file"));
 	connect(mReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
+/*
 	// View actions
 	mPanAction = new QAction(tr("Pan"), this);
 	mPanAction->setIcon(QIcon(":/Qt/resources/pan.png"));
@@ -143,6 +151,8 @@ void StartWindow::createActions(void)
 	mRotateAction->setStatusTip(tr("Rotate the view"));
 	connect(mRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
 
+	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
+*/
 
 	// Create actions
 	mDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
@@ -165,7 +175,7 @@ void StartWindow::createActions(void)
 	mAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
 	connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
-	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
+	
 
 }
 
@@ -251,7 +261,6 @@ void StartWindow::about()
 
 void StartWindow::openOBDFile(void){
 	
-	
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -265,8 +274,8 @@ void StartWindow::openOBDFile(void){
 		if (fileType.toLower() == tr("odb") ) {
 			infoOut << "ODB file: " << fileName.toStdString() << std::endl;
 		}
-
 	}
+
 	SimuliaODB myOBD =  SimuliaODB();
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
@@ -283,22 +292,63 @@ void StartWindow::openOBDFile(void){
 	anaysisTimer01.start();
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 	aMesh->SetDataSource(aDataSource);
-	aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
+	
+	/*aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
 	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
 	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
 	aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 	aMesh->SetColor(Quantity_NOC_AZURE);
 	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
-	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
+	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode*/
+
+
+	// assign nodal builder to the mesh
+	Handle(MeshVS_NodalColorPrsBuilder) aBuilder = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask); 
+	aBuilder->UseTexture(Standard_True);
+	// prepare color map
+	Aspect_SequenceOfColor  aColorMap;
+	aColorMap.Append((Quantity_NameOfColor)Quantity_NOC_RED);
+	aColorMap.Append((Quantity_NameOfColor)Quantity_NOC_BLUE1);
+	// assign color scale map  values (0..1) to nodes
+	TColStd_DataMapOfIntegerReal  aScaleMap;
+	// iterate through the  nodes and add an node id and an appropriate value to the map
+
+	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+	Standard_Integer aLen = (myOBD.getHMeshHandle())->getNumNodes();
+	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++) {
+		double someNumber = (double)rand() / (RAND_MAX);
+		aScaleMap.Bind(anIndex, someNumber);
+	}
+
+	// pass color map and color scale values to the builder
+	aBuilder->SetColorMap(aColorMap);
+	aBuilder->SetInvalidColor(Quantity_NOC_BLACK);
+	aBuilder->SetTextureCoords(aScaleMap);
+	aMesh->AddBuilder(aBuilder, Standard_True);
+	aMesh->SetDisplayMode(MeshVS_DMF_NodalColorDataPrs); // Mode as defaut
+
+	Handle(AIS_ColorScale) aCS = new AIS_ColorScale();
+	// configuring
+	Standard_Integer aWidth, aHeight;
+	myOccViewer->getView()->Window()->Size(aWidth, aHeight);
+	aCS->SetSize(aWidth, aHeight);
+	aCS->SetRange(0.0, 10.0);
+	aCS->SetNumberOfIntervals(10);
+	// displaying
+	aCS->SetZLayer(Graphic3d_ZLayerId_TopOSD);
+	aCS->SetTransformPersistence(Graphic3d_TMF_2d, gp_Pnt(-1, -1, 0));
+	aCS->SetToUpdate();
+	myOccViewer->getContext()->Display(aCS);
 
 	// Hide all nodes by default
-	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
-	Standard_Integer aLen = 4;
+	/*Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+	Standard_Integer aLen = (myOBD.getHMeshHandle())->getNumNodes();
 	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
 		aNodes->ChangeMap().Add(anIndex);
-	}
-	aMesh->SetHiddenNodes(aNodes);
-	aMesh->SetSelectableNodes(aNodes);
+	}*/
+
+	//aMesh->SetHiddenNodes(aNodes);
+	//aMesh->SetSelectableNodes(aNodes);
 	myOccViewer->getContext()->Display(aMesh);
 	myOccViewer->getContext()->Deactivate(aMesh);
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
@@ -391,7 +441,7 @@ void StartWindow::readIGES(QString fileName){
 
 
 void StartWindow::readSTL(QString fileName){
-	Handle(Message_ProgressIndicator) aIndicator = new QtProcessIndicator(this);
+	Handle(Message_ProgressIndicator) aIndicator = new OcctQtProcessIndicator(this);
 	aIndicator->SetRange(0, 100);
 	OSD_Path aFile(fileName.toUtf8().constData());
 	Handle(StlMesh_Mesh) aSTLMesh = RWStl::ReadFile(aFile, aIndicator);

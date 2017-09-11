@@ -64,6 +64,8 @@
 //Qt5
 #include <QApplication>
 //OCC7
+//VTK
+#include <QVTKOpenGLWidget.h>
 //USER
 #include <StartWindow.h>
 
@@ -74,15 +76,17 @@ int main(int argc, char **argv) {
     //cout << "Hello STACCATO is fired up!" << endl;
     //cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
 
-
 	//TODO
 	// statusBar coordinate
 	// 2D mode
 	// interactive points 2D
 	// interactive lines 2D
 
+	QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
+
     QApplication a(argc, argv);
     StartWindow* mSW= new StartWindow();
 	mSW->show();
     return a.exec();
 }
+

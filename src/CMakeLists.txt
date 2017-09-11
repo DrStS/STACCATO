@@ -20,6 +20,11 @@ IF (${USE_OCCT})
   include_directories(${OCCT_INCLUDE_DIR})
   SET(STACCATO_LIBS ${STACCATO_LIBS}  ${OCCT_LIBRARIES})
 ENDIF()
+# SET VTK
+IF (${USE_VTK})
+  include_directories(${VTK_INCLUDE_DIR})
+  SET(STACCATO_LIBS ${STACCATO_LIBS}  ${VTK_LIBRARIES})
+ENDIF()
 # SET Intel MKL 
 IF (${USE_INTEL_MKL})
   include_directories(${MKL_INCLUDE_DIR})

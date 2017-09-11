@@ -32,6 +32,7 @@
 
 // forward declaration
 class OccViewer;
+class VtkViewer;
 class QTextEdit;
 
 
@@ -107,6 +108,8 @@ private:
 
 	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;
+
+	VtkViewer* myVtkViewer;
 	/// the dockable widgets
 	QTextEdit* textOutput;
 

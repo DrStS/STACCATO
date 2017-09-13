@@ -39,7 +39,11 @@ public:
   * \author Stefan Sicklinger
   ***********/
   HMeshToVtkUnstructuredGrid(HMesh& _HMesh);
-
+  /***********************************************************************************************
+  * \brief Return reference to smart pointer
+  * \author Stefan Sicklinger
+  ***********/
+  vtkSmartPointer<vtkUnstructuredGrid> &  getVtkUnstructuredGrid(void) { return myVtkUnstructuredGrid; }
 
 protected:
 

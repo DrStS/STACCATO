@@ -28,7 +28,6 @@
 #include <vtkUnstructuredGrid.h>
 #include <vtkQuad.h>
 
-
 //================================================================
 // Function : Constructor
 // Purpose  :
@@ -37,7 +36,6 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 {
 		int numNodes = _HMesh.getNumNodes();
 		vtkSmartPointer< vtkPoints > myNodes =vtkSmartPointer< vtkPoints > ::New();
-
 		// Node loop
 		for (int i = 0; i < numNodes; i++)
 		{

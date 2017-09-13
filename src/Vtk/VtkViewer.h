@@ -41,7 +41,7 @@ public:
 	***********/
 	explicit VtkViewer(QWidget* parent);
 	/***********************************************************************************************
-	* \brief Return reference to samrt pointer
+	* \brief Return reference to smart pointer
 	* \author Stefan Sicklinger
 	***********/
 	vtkSmartPointer<vtkRenderer> &  getRenderer(void) { return myRenderer; }

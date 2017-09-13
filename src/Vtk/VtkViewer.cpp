@@ -43,6 +43,7 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	// Renderer
 	myRenderer = vtkSmartPointer<vtkRenderer>::New();
 	myRenderer->SetActiveCamera(camera);
+
 	// Setup the background gradient
 	myRenderer->GradientBackgroundOn();
 	myBGColor = QColor(255, 235, 100);

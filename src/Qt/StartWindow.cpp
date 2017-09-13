@@ -83,6 +83,13 @@
 #include <MeshVS_NodalColorPrsBuilder.hxx>
 #include <AIS_ColorScale.hxx>
 
+//VTK
+#include <vtkDataSetMapper.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
+#include <vtkScalarBarActor.h>
+#include <vtkLookupTable.h>
+
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
 ui(new Ui::StartWindow)
@@ -201,10 +208,10 @@ void StartWindow::createToolBars(void)
 	mCreateToolBar = addToolBar(tr("Create"));
 	mCreateToolBar->addAction(mDataFlowAction);
 	mViewToolBar = addToolBar(tr("View"));
-	mViewToolBar->addAction(mPanAction);
-	mViewToolBar->addAction(mZoomAction);
-	mViewToolBar->addAction(mFitAllAction);
-	mViewToolBar->addAction(mRotateAction);
+//	mViewToolBar->addAction(mPanAction);
+//	mViewToolBar->addAction(mZoomAction);
+//	mViewToolBar->addAction(mFitAllAction);
+//	mViewToolBar->addAction(mRotateAction);
 	mHelpToolBar = addToolBar(tr("Help"));
 	mHelpToolBar->addAction(mAboutAction);
 }
@@ -286,6 +293,52 @@ void StartWindow::openOBDFile(void){
 	anaysisTimer01.start();
 	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
 
+	
+	int numPts = myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPoints()->GetNumberOfPoints();
+	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
+	scalars->SetNumberOfValues(numPts);
+	for (int i = 0; i < numPts; ++i)
+	{
+		float someNumber = (float)rand() / (RAND_MAX);
+		scalars->SetValue(i, someNumber);
+	}
+	myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPointData()->SetScalars(scalars);
+
+	vtkSmartPointer<vtkDataSetMapper> mapper = vtkSmartPointer<vtkDataSetMapper>::New();
+	mapper->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+
+	mapper->ScalarVisibilityOn();
+	mapper->SetScalarModeToUsePointData();
+	mapper->SetColorModeToMapScalars();
+
+	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
+	actor->SetMapper(mapper);
+
+	vtkSmartPointer<vtkScalarBarActor> scalarBar =
+		vtkSmartPointer<vtkScalarBarActor>::New();
+	scalarBar->SetLookupTable(mapper->GetLookupTable());
+	scalarBar->SetTitle("Title");
+	scalarBar->SetNumberOfLabels(4);
+
+	// Create a lookup table to share between the mapper and the scalarbar
+	vtkSmartPointer<vtkLookupTable> hueLut =
+		vtkSmartPointer<vtkLookupTable>::New();
+	hueLut->SetTableRange(0, 1);
+	hueLut->SetHueRange(0, 1);
+	hueLut->SetSaturationRange(1, 1);
+	hueLut->SetValueRange(1, 1);
+	hueLut->Build();
+
+	mapper->SetLookupTable(hueLut);
+	scalarBar->SetLookupTable(hueLut);
+
+	myVtkViewer->getRenderer()->AddActor(actor);
+	myVtkViewer->getRenderer()->AddActor2D(scalarBar);
+	myVtkViewer->getRenderer()->ResetCamera();
+
+
+
+/*
 //  Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading HMeshToMeshVS_DataSource " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -294,13 +347,13 @@ void StartWindow::openOBDFile(void){
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 //	aMesh->SetDataSource(aDataSource);
 	
-	/*aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
+	/Mesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
 	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
 	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
 	aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
 	aMesh->SetColor(Quantity_NOC_AZURE);
 	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
-	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode*/
+	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
 
 
 	// assign nodal builder to the mesh
@@ -342,11 +395,11 @@ void StartWindow::openOBDFile(void){
 	myOccViewer->getContext()->Display(aCS);
 
 	// Hide all nodes by default
-	/*Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
+	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
 	Standard_Integer aLen = (myOBD.getHMeshHandle())->getNumNodes();
 	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
 		aNodes->ChangeMap().Add(anIndex);
-	}*/
+	}
 
 	//aMesh->SetHiddenNodes(aNodes);
 	//aMesh->SetSelectableNodes(aNodes);
@@ -365,7 +418,7 @@ void StartWindow::openOBDFile(void){
 	anaysisTimer03.stop();
 	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
+*/
 }
 
 void StartWindow::importFile(void)

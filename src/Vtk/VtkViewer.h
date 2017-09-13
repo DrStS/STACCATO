@@ -39,7 +39,7 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	explicit VtkViewer(QWidget *parent = 0);
+	explicit VtkViewer(QWidget* parent);
 	/***********************************************************************************************
 	* \brief Return reference to samrt pointer
 	* \author Stefan Sicklinger
@@ -61,5 +61,7 @@ public slots:
 	//! Zoom to the extent of the data set in the scene
 	void zoomToExtent();
 };
+
+Q_DECLARE_METATYPE(VtkViewer*)
 
 #endif // _VTKVIEWER_H_

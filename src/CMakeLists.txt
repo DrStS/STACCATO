@@ -49,9 +49,8 @@ ENDIF()
 IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)
 ENDIF()
-
-target_link_libraries(STACCATO ${STACCATO_LIBS} )
-qt5_use_modules(STACCATO Widgets OpenGL)
+target_link_libraries(STACCATO ${STACCATO_LIBS})
+qt5_use_modules(STACCATO Core Gui)
 #------------------------------------------------------------------------------------#
 #
 #------------------------------------------------------------------------------------#

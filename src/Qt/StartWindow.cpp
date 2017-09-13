@@ -33,6 +33,7 @@
 #include "MemWatcher.h"
 #include "qnemainwindow.h"
 #include "HMesh.h"
+#include "HMeshToVtkUnstructuredGrid.h"
 
 //QT5
 #include <QToolBar>
@@ -96,8 +97,8 @@ ui(new Ui::StartWindow)
 	createMenus();
 	createToolBars();
 	createDockWindows();
+
 	myVtkViewer->demo();
-	resize(QDesktopWidget().availableGeometry(this).size() * 0.8);
 }
 
 StartWindow::~StartWindow()
@@ -174,8 +175,6 @@ void StartWindow::createActions(void)
 	mAboutAction->setStatusTip(tr("About the application"));
 	mAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
 	connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
-
-	
 
 }
 
@@ -285,13 +284,15 @@ void StartWindow::openOBDFile(void){
 	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
-	Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
+	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
+
+//  Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading HMeshToMeshVS_DataSource " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-	aMesh->SetDataSource(aDataSource);
+//	aMesh->SetDataSource(aDataSource);
 	
 	/*aMesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
 	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute

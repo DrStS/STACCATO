@@ -29,7 +29,8 @@
 #include <vtkPolyDataMapper.h>
 #include <vtkSphereSource.h>
 
-VtkViewer::VtkViewer(QWidget *parent):QVTKOpenGLWidget(parent){
+VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
+	
 	vtkNew<vtkGenericOpenGLRenderWindow> window;
 	SetRenderWindow(window.Get());
 

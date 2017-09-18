@@ -108,6 +108,7 @@ void VtkViewer::displayCompass(void) {
 
 
 void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
+
 	// The button mappings can be used as a mask. This code prevents conflicts
 	// when more than one button pressed simultaneously.
 	if (_event->button() & Qt::LeftButton) {
@@ -137,12 +138,7 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 			ids->SetNumberOfComponents(1);
 			
 //ids->InsertNextValue(picker->GetCellId());
-
 			ids->InsertNextValue(picker->GetPointId());
-
-			vtkIndent vd(1);
-
-			ids->PrintSelf(std::cout, vd);
 
 			vtkSmartPointer<vtkSelectionNode> selectionNode =
 				vtkSmartPointer<vtkSelectionNode>::New();
@@ -182,6 +178,7 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 			mySelectedActor->GetProperty()->SetPointSize(4.0);
 			mySelectedMapper->ScalarVisibilityOff();
 
+			
 			myRenderer->AddActor(mySelectedActor);
 			myRenderer->GetRenderWindow()->Render();
 			myRenderer->RemoveActor(mySelectedActor);
@@ -195,5 +192,5 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 	else if (_event->button() & Qt::MidButton) {
 
 	}
-	
+	QVTKOpenGLWidget::mouseReleaseEvent(_event);
 }

@@ -24,9 +24,12 @@
 
 //VTK
 #include <vtkPoints.h>
+#include <vtkPointData.h>
 #include <vtkCellArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkQuad.h>
+#include <vtkFloatArray.h>
+#include <vtkWarpVector.h>
 
 //================================================================
 // Function : Constructor
@@ -68,3 +71,36 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 
 }
 
+void HMeshToVtkUnstructuredGrid::setScalarFieldAtNodes(std::vector<double> _scalarField) {
+
+	int numPts = myVtkUnstructuredGrid->GetPoints()->GetNumberOfPoints();
+	vtkSmartPointer<vtkFloatArray> scalarField = vtkSmartPointer<vtkFloatArray>::New();
+	scalarField->SetNumberOfValues(numPts);
+	for (int i = 0; i < numPts; ++i)
+	{
+		scalarField->SetValue(i, _scalarField[i]);
+	}
+	myVtkUnstructuredGrid->GetPointData()->SetScalars(scalarField);
+}
+
+void HMeshToVtkUnstructuredGrid::setVectorFieldAtNodes(std::vector<double> _x, std::vector<double> _y, std::vector<double> _z) {
+
+	int numPts = myVtkUnstructuredGrid->GetPoints()->GetNumberOfPoints();
+	vtkSmartPointer<vtkFloatArray> vectorField = vtkSmartPointer<vtkFloatArray>::New();
+	vectorField->SetNumberOfComponents(3);
+	vectorField->SetName("warpData");
+
+	float vec[3] = { 0.0, 0.0, 0.0 };
+	for (int i = 0; i < numPts; ++i)
+	{
+		vec[0] = _x[i];
+		vec[1] = _y[i];
+		vec[2] = _z[i];
+		//std::cout << "DefoWeg " << vec[0] << " : "<< vec[1] << " : " << vec[2] << std::endl;
+		vectorField->InsertNextTuple(vec);
+	}
+
+	myVtkUnstructuredGrid->GetPointData()->AddArray(vectorField);
+	myVtkUnstructuredGrid->GetPointData()->SetActiveVectors(vectorField->GetName());
+
+}

@@ -93,7 +93,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		oneEle->computeElementMatrix(eleCoord, Emat, Ke, Me);
 		delete eleCoord;
 
-		double freq = 101;
+		double freq = 1001;
 		double omega = 2 * M_PI*freq;
 		//Assembly routine symmetric stiffness
 		for (int i = 0; i < numDoFsPerElement; i++){
@@ -131,7 +131,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			}
 		}
 	}
-
 	anaysisTimer01.stop();
 	infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() <<" milliSec"<<std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -153,6 +152,23 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	infoOut << "Duration for direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+
+	// Store results
+	for (int j = 0; j < numNodes; j++)
+	{
+		int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
+		for (int l = 0; l < numDoFsPerNode; l++) {
+			int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+			if (l == 0) {
+				myHMesh->addResultScalarFieldAtNodes(STACCATO_Ux_Re, sol[dofIndex]);
+			}
+			if (l == 1) {
+				myHMesh->addResultScalarFieldAtNodes(STACCATO_Uy_Re, sol[dofIndex]);
+			}
+		}
+		myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Re, 0.0);
+	}
 	infoOut<<sol[0]<<std::endl;
 
 	delete A;

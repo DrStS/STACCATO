@@ -82,6 +82,8 @@
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <MeshVS_NodalColorPrsBuilder.hxx>
 #include <AIS_ColorScale.hxx>
+#include <IVtkOCC_Shape.hxx>
+#include <IVtkTools_ShapeDataSource.hxx>
 
 //VTK
 #include <vtkDataSetMapper.h>
@@ -89,6 +91,13 @@
 #include <vtkPointData.h>
 #include <vtkScalarBarActor.h>
 #include <vtkLookupTable.h>
+#include <vtkRenderWindow.h>
+#include <vtkRenderer.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkWarpVector.h>
+#include <vtkProperty.h>
+#include <vtkPolyDataMapper.h>
+
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -104,8 +113,6 @@ ui(new Ui::StartWindow)
 	createMenus();
 	createToolBars();
 	createDockWindows();
-
-	myVtkViewer->demo();
 }
 
 StartWindow::~StartWindow()
@@ -292,18 +299,21 @@ void StartWindow::openOBDFile(void){
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
+	anaysisTimer01.stop();
+	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
+	//Run FE Analysis
+	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
+	anaysisTimer03.stop();
+	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
+
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re));
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re));
 	
-	int numPts = myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPoints()->GetNumberOfPoints();
-	vtkSmartPointer<vtkFloatArray> scalars = vtkSmartPointer<vtkFloatArray>::New();
-	scalars->SetNumberOfValues(numPts);
-	for (int i = 0; i < numPts; ++i)
-	{
-		float someNumber = (float)rand() / (RAND_MAX);
-		scalars->SetValue(i, someNumber);
-	}
-	myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPointData()->SetScalars(scalars);
-
 	vtkSmartPointer<vtkDataSetMapper> mapper = vtkSmartPointer<vtkDataSetMapper>::New();
 	mapper->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
 
@@ -314,35 +324,72 @@ void StartWindow::openOBDFile(void){
 	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
 	actor->SetMapper(mapper);
 
-	vtkSmartPointer<vtkScalarBarActor> scalarBar =
-		vtkSmartPointer<vtkScalarBarActor>::New();
-	scalarBar->SetLookupTable(mapper->GetLookupTable());
-	scalarBar->SetTitle("Title");
-	scalarBar->SetNumberOfLabels(4);
+	double scalarRange[2];
+	myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPointData()->GetScalars()->GetRange(scalarRange);
+	
+	// Set the color for edges of the sphere
+	actor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
+	actor->GetProperty()->EdgeVisibilityOn();
 
+	//
+	vtkSmartPointer<vtkWarpVector> warpFilter = vtkSmartPointer<vtkWarpVector>::New();
+	warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+	warpFilter->SetScaleFactor(1000.0);
+	warpFilter->Update();
+	mapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
+	//
+
+
+	mapper->UseLookupTableScalarRangeOn();
 	// Create a lookup table to share between the mapper and the scalarbar
 	vtkSmartPointer<vtkLookupTable> hueLut =
 		vtkSmartPointer<vtkLookupTable>::New();
-	hueLut->SetTableRange(0, 1);
-	hueLut->SetHueRange(0, 1);
-	hueLut->SetSaturationRange(1, 1);
+	hueLut->SetTableRange(scalarRange[0], scalarRange[1]);
+	hueLut->SetHueRange(0.667, 0.0);
 	hueLut->SetValueRange(1, 1);
 	hueLut->Build();
 
 	mapper->SetLookupTable(hueLut);
+	vtkSmartPointer<vtkScalarBarActor> scalarBar =
+	vtkSmartPointer<vtkScalarBarActor>::New();
+	scalarBar->SetTitle("Title");
+	scalarBar->SetNumberOfLabels(4);
 	scalarBar->SetLookupTable(hueLut);
 
 	myVtkViewer->getRenderer()->AddActor(actor);
 	myVtkViewer->getRenderer()->AddActor2D(scalarBar);
 	myVtkViewer->getRenderer()->ResetCamera();
+	myVtkViewer->GetRenderWindow()->Render();
 
+	anaysisTimer01.stop();
+	debugOut << "Duration for display Hmesh and results: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+
+
+	/*Test VTK
+
+	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
+	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
+	//Geom_CartesianPoint
+	Handle(Geom_CartesianPoint)  start = new Geom_CartesianPoint(mGp_Pnt_Start);
+	Handle(Geom_CartesianPoint)    end = new Geom_CartesianPoint(mGp_Pnt_End);
+	Handle(Geom_TrimmedCurve) aTrimmedCurve = GC_MakeSegment(mGp_Pnt_Start, mGp_Pnt_End);
+	TopoDS_Edge mTopoEdge = BRepBuilderAPI_MakeEdge(aTrimmedCurve);
+
+
+	// Initialize aShape variable: e.g. load it from BREP file
+	IVtkOCC_Shape::Handle aShapeImpl = new IVtkOCC_Shape(mTopoEdge);
+	vtkSmartPointer<IVtkTools_ShapeDataSource> DS = vtkSmartPointer<IVtkTools_ShapeDataSource>::New();
+	DS->SetShape(aShapeImpl);
+	vtkSmartPointer<vtkPolyDataMapper> Mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(DS->GetOutputPort());
+	vtkSmartPointer<vtkActor> Actor = vtkSmartPointer<vtkActor>::New();
+	Actor->SetMapper(mapper);
+	*/
 
 
 /*
-//  Handle(MeshVS_DataSource) aDataSource = new HMeshToMeshVS_DataSource(*myOBD.getHMeshHandle());
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading HMeshToMeshVS_DataSource " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
 //	aMesh->SetDataSource(aDataSource);
@@ -408,16 +455,6 @@ void StartWindow::openOBDFile(void){
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
 	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
 	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
-	anaysisTimer01.stop();
-	debugOut << "Duration for build and display Hmesh: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	//Run FE Analysis
-	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
-
-	anaysisTimer03.stop();
-	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 */
 }
 
@@ -510,7 +547,6 @@ void StartWindow::readSTL(QString fileName){
 	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
 	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
 	aMesh->GetDrawer()->SetColor(MeshVS_DA_EdgeColor, Quantity_NOC_YELLOW);
-
 	// Hide all nodes by default
 	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
 	Standard_Integer aLen = aSTLMesh->Vertices().Length();

@@ -27,9 +27,15 @@
 //VTK
 #include <QVTKOpenGLWidget.h>
 #include <vtkSmartPointer.h>
-#include <vtkRenderer.h>
-//QT5
-#include <Quantity_Color.hxx>
+
+
+class QVTKOpenGLWidget;
+class vtkOrientationMarkerWidget;
+class vtkRenderer;
+class vtkDataSetMapper;
+class vtkActor;
+class QColor;
+
 
 class VtkViewer : public QVTKOpenGLWidget
 {
@@ -51,11 +57,21 @@ public:
 	***********/
 	void setBackgroundGradient(int r, int g, int b);
 
-	void demo(void);
-
 private:
+	/***********************************************************************************************
+	* \brief Show compass
+	* \author Stefan Sicklinger
+	***********/
+	void displayCompass(void);
+protected:
+	virtual void mousePressEvent(QMouseEvent * _event);
+private:
+	///
 	vtkSmartPointer<vtkRenderer> myRenderer;
+	vtkSmartPointer<vtkOrientationMarkerWidget> myOrientationMarkerWidget;
 	QColor                        myBGColor;
+	vtkSmartPointer<vtkActor>     mySelectedActor;
+	vtkSmartPointer<vtkDataSetMapper> mySelectedMapper;
 
 public slots:
 	//! Zoom to the extent of the data set in the scene

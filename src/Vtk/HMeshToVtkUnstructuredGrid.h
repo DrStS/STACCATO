@@ -25,10 +25,13 @@
 #ifndef HMESHTOVTKUNSTRUCTUREDGRID
 #define HMESHTOVTKUNSTRUCTUREDGRID
 
+#include <vector>
+
 //VTK
-#include <vtkUnstructuredGrid.h>
 #include <vtkSmartPointer.h>
+
 class HMesh;
+class vtkUnstructuredGrid;
 
 class HMeshToVtkUnstructuredGrid
 {
@@ -44,6 +47,12 @@ public:
   * \author Stefan Sicklinger
   ***********/
   vtkSmartPointer<vtkUnstructuredGrid> &  getVtkUnstructuredGrid(void) { return myVtkUnstructuredGrid; }
+  /***********************************************************************************************
+  * \brief Set scalar field for dispay
+  * \author Stefan Sicklinger
+  ***********/
+  void setScalarFieldAtNodes(std::vector<double> _scalarField);
+  void setVectorFieldAtNodes(std::vector<double> _x, std::vector<double> _y, std::vector<double> _z);
 
 protected:
 

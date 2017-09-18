@@ -19,15 +19,24 @@
 */
 #include <VtkViewer.h>
 
+//VTK
 #include <vtkCamera.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkRenderWindowInteractor.h>
 #include <vtkProperty.h>
 #include <vtkDataSetMapper.h>
-
-#include <vtkPolyData.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkSphereSource.h>
+#include <vtkOrientationMarkerWidget.h>
+#include <vtkAxesActor.h>
+#include <vtkRenderer.h>
+#include <vtkCellPicker.h>
+#include <vtkActor.h>
+#include <vtkIdTypeArray.h>
+#include <vtkSelectionNode.h>
+#include <vtkSelection.h>
+#include <vtkExtractSelection.h>
+#include <vtkUnstructuredGrid.h>
+//QT5
+#include <QInputEvent>
 
 VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	
@@ -49,6 +58,13 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	myBGColor = QColor(255, 235, 100);
 	setBackgroundGradient(myBGColor.red(), myBGColor.green(), myBGColor.blue());
 	GetRenderWindow()->AddRenderer(myRenderer);
+
+	//Draw compass
+	displayCompass();
+
+	// Some members
+	mySelectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
+	mySelectedActor =  vtkSmartPointer<vtkActor>::New();
 }
 
 void VtkViewer::zoomToExtent()
@@ -74,21 +90,110 @@ void VtkViewer::setBackgroundGradient(int r, int g, int b)
 		myRenderer->SetBackground2(R1*fu > 1 ? 1. : R1*fu, G1*fu > 1 ? 1. : G1*fu, B1*fu > 1 ? 1. : B1*fu);
 }
 
-void VtkViewer::demo(void) {
-	// Create a sphere
-	vtkSmartPointer<vtkSphereSource> sphereSource =
-		vtkSmartPointer<vtkSphereSource>::New();
-	sphereSource->Update();
 
-	// Create a mapper and actor
-	vtkSmartPointer<vtkPolyDataMapper> mapper =
-		vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(sphereSource->GetOutputPort());
 
-	vtkSmartPointer<vtkActor> actor =
-		vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
+void VtkViewer::displayCompass(void) {
+	vtkSmartPointer<vtkAxesActor> axes =
+		vtkSmartPointer<vtkAxesActor>::New();
+	myOrientationMarkerWidget = vtkSmartPointer<vtkOrientationMarkerWidget>::New();
+	myOrientationMarkerWidget->SetOutlineColor(0.9300, 0.5700, 0.1300);
+	myOrientationMarkerWidget->SetOrientationMarker(axes);
+	myOrientationMarkerWidget->SetInteractor(GetRenderWindow()->GetInteractor());
+	myOrientationMarkerWidget->SetViewport(0.0, 0.0, 0.4, 0.4);
+	myOrientationMarkerWidget->SetEnabled(1);
+	myOrientationMarkerWidget->InteractiveOff();
+	myRenderer->ResetCamera();
+	myRenderer->GetRenderWindow()->Render();
+}
 
-	myRenderer->AddActor(actor);
 
+void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
+	// The button mappings can be used as a mask. This code prevents conflicts
+	// when more than one button pressed simultaneously.
+	if (_event->button() & Qt::LeftButton) {
+
+		// Get the location of the click (in window coordinates)
+		int* pos = GetRenderWindow()->GetInteractor()->GetEventPosition();
+
+		vtkSmartPointer<vtkCellPicker> picker =
+			vtkSmartPointer<vtkCellPicker>::New();
+		picker->SetTolerance(0.005);
+
+		// Pick from this location.
+		picker->Pick(pos[0], pos[1], 0, myRenderer);
+
+		double* worldPosition = picker->GetPickPosition();
+		std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
+		std::cout << "Node id is: " << picker->GetPointId() << std::endl;
+
+		if (picker->GetCellId() != -1)
+		{
+
+			std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
+				<< " " << worldPosition[2] << endl;
+
+			vtkSmartPointer<vtkIdTypeArray> ids =
+				vtkSmartPointer<vtkIdTypeArray>::New();
+			ids->SetNumberOfComponents(1);
+			
+//ids->InsertNextValue(picker->GetCellId());
+
+			ids->InsertNextValue(picker->GetPointId());
+
+			vtkIndent vd(1);
+
+			ids->PrintSelf(std::cout, vd);
+
+			vtkSmartPointer<vtkSelectionNode> selectionNode =
+				vtkSmartPointer<vtkSelectionNode>::New();
+//			selectionNode->SetFieldType(vtkSelectionNode::CELL);
+			selectionNode->SetFieldType(vtkSelectionNode::POINT);
+			selectionNode->SetContentType(vtkSelectionNode::INDICES);
+			selectionNode->SetSelectionList(ids);
+
+			vtkSmartPointer<vtkSelection> selection =
+				vtkSmartPointer<vtkSelection>::New();
+			selection->AddNode(selectionNode);
+
+			vtkSmartPointer<vtkExtractSelection> extractSelection =
+				vtkSmartPointer<vtkExtractSelection>::New();
+
+			extractSelection->SetInputData(0, myRenderer->GetActors()->GetLastActor()->GetMapper()->GetInput());
+			extractSelection->SetInputData(1, selection);
+			extractSelection->Update();
+
+			// In selection
+			vtkSmartPointer<vtkUnstructuredGrid> selected =
+				vtkSmartPointer<vtkUnstructuredGrid>::New();
+			selected->ShallowCopy(extractSelection->GetOutput());
+
+			std::cout << "There are " << selected->GetNumberOfPoints()
+				<< " points in the selection." << std::endl;
+			std::cout << "There are " << selected->GetNumberOfCells()
+				<< " cells in the selection." << std::endl;
+
+			mySelectedMapper->SetInputData(selected);
+			mySelectedActor->SetMapper(mySelectedMapper);
+			mySelectedActor->GetProperty()->EdgeVisibilityOn();
+			mySelectedActor->GetProperty()->SetEdgeColor(0, 0, 1);
+			mySelectedActor->GetProperty()->SetLineWidth(3);
+
+			mySelectedActor->GetProperty()->SetColor(0, 0, 1);
+			mySelectedActor->GetProperty()->SetPointSize(4.0);
+			mySelectedMapper->ScalarVisibilityOff();
+
+			myRenderer->AddActor(mySelectedActor);
+			myRenderer->GetRenderWindow()->Render();
+			myRenderer->RemoveActor(mySelectedActor);
+		}
+
+
+	}
+	else if (_event->button() & Qt::RightButton) {
+
+	}
+	else if (_event->button() & Qt::MidButton) {
+
+	}
+	
 }

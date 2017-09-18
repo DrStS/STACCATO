@@ -35,4 +35,11 @@ enum STACCATO_Element_type {
 	STACCATO_PlainStrain3Node2D
 };
 
+enum STACCATO_Result_type {
+	STACCATO_Ux_Re,
+	STACCATO_Uy_Re,
+	STACCATO_Uz_Re
+};
+
+
 #endif /* STACCATO_ENUM_H_ */

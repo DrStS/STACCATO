@@ -163,6 +163,20 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void buildDataStructure(void);
+	/***********************************************************************************************
+	* \brief Add a result to database
+	* \param[in] _type
+	* \param[in] _value
+	* \author Stefan Sicklinger
+	***********/
+	void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, double _value);
+	/***********************************************************************************************
+	* \brief Add a result to database
+	* \param[in] _type
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double>& HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type);
 
 private:
 	/// mesh name
@@ -195,6 +209,12 @@ private:
 	int totalNumOfDoFsRaw;
 	/// Relation of node index to DoF indexes: 1 to nd
 	std::vector<std::vector<int>> nodeIndexToDoFIndices;
+	/// Result Vector node index to result value
+	std::vector<double> resultUxRe;
+	/// Result Vector node index to result value
+	std::vector<double> resultUyRe;
+	/// Result Vector node index to result value
+	std::vector<double> resultUzRe;
     /// unit test class
     friend class TestFEMesh;
 private:

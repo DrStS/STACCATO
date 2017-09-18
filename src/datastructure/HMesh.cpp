@@ -41,7 +41,31 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	for (std::vector<int>::size_type i = 0; i != _elementTopology.size(); i++) {
 		elementsTopology.push_back(_elementTopology[i]);
 	}
+}
 
+void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, double _value) {
+	// Needs to be called for every node in the sequence nodeIndex = 0..nNodes
+	if (_type == STACCATO_Ux_Re) {
+		resultUxRe.push_back(_value);
+	}
+	else if (_type == STACCATO_Uy_Re) {
+		resultUyRe.push_back(_value);
+	}
+	else if (_type == STACCATO_Uz_Re) {
+		resultUzRe.push_back(_value);
+	}
+}
+
+std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type) {
+	if (_type == STACCATO_Ux_Re){
+		return resultUxRe;
+	}
+	else if(_type == STACCATO_Uy_Re){
+		return resultUyRe;
+	}
+	else if (_type == STACCATO_Uz_Re) {
+		return resultUzRe;
+	}
 }
 
 void HMesh::plot(){
@@ -53,7 +77,6 @@ void HMesh::buildDataStructure(void){
 	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
 		nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
 	}
-
 
 	//Element loop
 	nodeIndexToElementIndices.resize(getNumNodes());
@@ -69,7 +92,6 @@ void HMesh::buildDataStructure(void){
 		int numDoFsPerNodeCurrent;
 		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D){
 			numNodesPerElem[i]=4;
-
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			numDoFsPerNodeCurrent = 2;
@@ -85,7 +107,6 @@ void HMesh::buildDataStructure(void){
 			if (numDoFsPerNodeCurrent > numDoFsPerNode[nodeIndex]){
 				numDoFsPerNode[nodeIndex] = numDoFsPerNodeCurrent;
 			}
-
 		}
 	}
 

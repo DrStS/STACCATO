@@ -1,9 +1,6 @@
 #---------------------------------------------------------------------#
 # STACCATO
 STACCATO: STefAn's Computational vibroaCoustics Analysis TOol
-COPILOT:  COmputational PowertraIn anaLysis and Optimization Tool
-PILOT:	  PowertraIn anaLysis and Optimization Tool
-SPILOT:	  Stefan's PowertraIn anaLysis and Optimization Tool
 #---------------------------------------------------------------------#
 Finite-Element based software tool including an interactive geometric 
 modeling kernel (using Open CASCADE Technology).
@@ -15,8 +12,12 @@ modeling kernel (using Open CASCADE Technology).
 #---------------------------------------------------------------------#
 # Building
 Run cmake on Win64
+```
 cmake .. -G "Visual Studio 14 2015 Win64"
+```
 #---------------------------------------------------------------------#
-# QT 5 deployment 
+# QT 5 deployment
+``` 
 cd C:\software\repos\STACCATO\bin64\Release
 C:\software\libs\QT\Qt591\5.9.1\msvc2015_64\bin\windeployqt.exe STACCATO.exe
+```

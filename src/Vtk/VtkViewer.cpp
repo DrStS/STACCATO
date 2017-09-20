@@ -64,7 +64,8 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 
 	// Some members
 	mySelectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
-	mySelectedActor =  vtkSmartPointer<vtkActor>::New();
+	mySelectedActor = vtkSmartPointer<vtkActor>::New();
+	//mySelectedProperty = vtkSmartPointer<vtkProperty>::New();
 }
 
 void VtkViewer::zoomToExtent()
@@ -111,6 +112,13 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 
 	// The button mappings can be used as a mask. This code prevents conflicts
 	// when more than one button pressed simultaneously.
+
+	// Remove selectionActor
+	static bool mySelectedActorActive = false;
+	if (mySelectedActorActive) {
+		myRenderer->RemoveActor(mySelectedActor);
+	}
+
 	if (_event->button() & Qt::LeftButton) {
 
 		// Get the location of the click (in window coordinates)
@@ -124,7 +132,7 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 		picker->Pick(pos[0], pos[1], 0, myRenderer);
 
 		double* worldPosition = picker->GetPickPosition();
-		std::cout << "Cell id is: " << picker->GetCellId() << std::endl;
+		std::cout << "Element id is: " << picker->GetCellId() << std::endl;
 		std::cout << "Node id is: " << picker->GetPointId() << std::endl;
 
 		if (picker->GetCellId() != -1)
@@ -136,14 +144,22 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 			vtkSmartPointer<vtkIdTypeArray> ids =
 				vtkSmartPointer<vtkIdTypeArray>::New();
 			ids->SetNumberOfComponents(1);
-			
-//ids->InsertNextValue(picker->GetCellId());
-			ids->InsertNextValue(picker->GetPointId());
 
+			if (myCurrentPickerType == STACCATO_Picker_Element) {
+				ids->InsertNextValue(picker->GetCellId());
+			}
+			else if (myCurrentPickerType == STACCATO_Picker_Node) {
+				ids->InsertNextValue(picker->GetPointId());
+			}
+			
 			vtkSmartPointer<vtkSelectionNode> selectionNode =
 				vtkSmartPointer<vtkSelectionNode>::New();
-//			selectionNode->SetFieldType(vtkSelectionNode::CELL);
-			selectionNode->SetFieldType(vtkSelectionNode::POINT);
+			if (myCurrentPickerType == STACCATO_Picker_Element) {
+				selectionNode->SetFieldType(vtkSelectionNode::CELL);
+			}
+			else if (myCurrentPickerType == STACCATO_Picker_Node) {
+				selectionNode->SetFieldType(vtkSelectionNode::POINT);
+			}
 			selectionNode->SetContentType(vtkSelectionNode::INDICES);
 			selectionNode->SetSelectionList(ids);
 
@@ -170,18 +186,21 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 
 			mySelectedMapper->SetInputData(selected);
 			mySelectedActor->SetMapper(mySelectedMapper);
-			mySelectedActor->GetProperty()->EdgeVisibilityOn();
-			mySelectedActor->GetProperty()->SetEdgeColor(0, 0, 1);
-			mySelectedActor->GetProperty()->SetLineWidth(3);
-
-			mySelectedActor->GetProperty()->SetColor(0, 0, 1);
-			mySelectedActor->GetProperty()->SetPointSize(4.0);
-			mySelectedMapper->ScalarVisibilityOff();
-
-			
+			if (myCurrentPickerType == STACCATO_Picker_Element) {
+				mySelectedActor->GetProperty()->SetColor(0.5, 0.5, 0.5);
+				mySelectedActor->GetProperty()->EdgeVisibilityOn();
+				mySelectedActor->GetProperty()->SetEdgeColor(0, 0, 1);
+				mySelectedActor->GetProperty()->SetLineWidth(3);
+				mySelectedMapper->ScalarVisibilityOff();
+			}
+			else if (myCurrentPickerType == STACCATO_Picker_Node) {
+				mySelectedActor->GetProperty()->SetColor(0, 0, 1);
+				mySelectedActor->GetProperty()->SetPointSize(8.0);
+				mySelectedMapper->ScalarVisibilityOff();
+			}
 			myRenderer->AddActor(mySelectedActor);
+			mySelectedActorActive = true;
 			myRenderer->GetRenderWindow()->Render();
-			myRenderer->RemoveActor(mySelectedActor);
 		}
 
 
@@ -193,4 +212,9 @@ void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
 
 	}
 	QVTKOpenGLWidget::mouseReleaseEvent(_event);
+	
+}
+
+void VtkViewer::setPickerMode(STACCATO_Picker_type _currentPickerType) {
+	myCurrentPickerType = _currentPickerType;
 }

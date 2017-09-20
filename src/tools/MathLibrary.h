@@ -32,8 +32,10 @@
 
 #include "AuxiliaryParameters.h"
 #ifdef USE_INTEL_MKL
+#define MKL_DIRECT_CALL 1
 #include <mkl.h>
 #endif
+
 
 namespace MathLibrary {
 	/***********************************************************************************************
@@ -102,7 +104,7 @@ namespace MathLibrary {
 	* \param[in] false-> C=A*B true -> C+=A*B
 	* \author Stefan Sicklinger
 	***********/
-	void computeDenseMatrixMatrixMultiplication(int _m, int _n, int _k, const double *_A, const double *_B, double *_C, const bool _transposeA, const bool _multByScalar, const double _alpha, const bool _addPrevious);
+	void computeDenseMatrixMatrixMultiplication(int _m, int _n, int _k, const double *_A, const double *_B, double *_C, const bool _transposeA, const bool _multByScalar, const double _alpha, const bool _addPrevious, const bool _useIntelSmall);
 	/***********************************************************************************************
 	* \brief Compute dense matrix-vector product
 	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
@@ -305,17 +307,17 @@ namespace MathLibrary {
 			// set pardiso default parameters
 			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 
-			pardiso_iparm[2] = 0; //The parallel (OpenMP) version of the nested dissection algorithm
+			pardiso_iparm[1] = 3; //The parallel (OpenMP) version of the nested dissection algorithm
 			pardiso_iparm[18] = -1; //Report Mflops 
 			pardiso_maxfct = 1; // max number of factorizations
 			pardiso_mnum = 1; // which factorization to use
-			pardiso_msglvl = 0; // do NOT print statistical information
+			pardiso_msglvl = 1; // do NOT print statistical information
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = 1; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
-			mkl_set_num_threads(1);
+			mkl_set_num_threads(4);
 
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,

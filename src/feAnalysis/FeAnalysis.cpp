@@ -93,7 +93,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		oneEle->computeElementMatrix(eleCoord, Emat, Ke, Me);
 		delete eleCoord;
 
-		double freq = 1001;
+		double freq = 101;
 		double omega = 2 * M_PI*freq;
 		//Assembly routine symmetric stiffness
 		for (int i = 0; i < numDoFsPerElement; i++){
@@ -113,7 +113,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 				}
 			}
 		}
-
 	}
 
 	//Add cload rhs contribution 

@@ -129,20 +129,20 @@ void StartWindow::openDataFlowWindow(void){
 void StartWindow::createActions(void)
 {
 	// File actions
-	mExitAction = new QAction(tr("Exit"), this);
-	mExitAction->setShortcut(tr("Ctrl+Q"));
-	mExitAction->setIcon(QIcon(":/Qt/resources/closeDoc.png"));
-	mExitAction->setStatusTip(tr("Exit the application"));
-	connect(mExitAction, SIGNAL(triggered()), this, SLOT(close()));
+	myExitAction = new QAction(tr("Exit"), this);
+	myExitAction->setShortcut(tr("Ctrl+Q"));
+	myExitAction->setIcon(QIcon(":/Qt/resources/closeDoc.png"));
+	myExitAction->setStatusTip(tr("Exit the application"));
+	connect(myExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-	mReadOBDFileAction = new QAction(tr("Open OBD file"), this);
-	mReadOBDFileAction->setStatusTip(tr("Read Abaqus OBD file"));
-	connect(mReadOBDFileAction, SIGNAL(triggered()), this, SLOT(openOBDFile()));
+	myReadOBDFileAction = new QAction(tr("Open OBD file"), this);
+	myReadOBDFileAction->setStatusTip(tr("Read Abaqus OBD file"));
+	connect(myReadOBDFileAction, SIGNAL(triggered()), this, SLOT(openOBDFile()));
 
-	mReadFileAction = new QAction(tr("Import file"), this);
-	mReadFileAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
-	mReadFileAction->setStatusTip(tr("Import 3D file"));
-	connect(mReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
+	myReadFileAction = new QAction(tr("Import file"), this);
+	myReadFileAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
+	myReadFileAction->setStatusTip(tr("Import 3D file"));
+	connect(myReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
 /*
 	// View actions
@@ -170,57 +170,75 @@ void StartWindow::createActions(void)
 */
 
 	// Create actions
-	mDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
-	mDrawCantileverAction->setIcon(QIcon(":/Qt/resources/torus.png"));
-	mDrawCantileverAction->setStatusTip(tr("Draw Cantilever"));
-	connect(mDrawCantileverAction, SIGNAL(triggered()), this, SLOT(drawCantilever()));
+	myDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
+	myDrawCantileverAction->setIcon(QIcon(":/Qt/resources/torus.png"));
+	myDrawCantileverAction->setStatusTip(tr("Draw Cantilever"));
+	connect(myDrawCantileverAction, SIGNAL(triggered()), this, SLOT(drawCantilever()));
 
-	mDataFlowAction = new QAction(tr("Dataflow manager"), this);
-	mDataFlowAction->setIcon(QIcon(":/Qt/resources/dataflow.png"));
-	mDataFlowAction->setStatusTip(tr("Open dataflow manager"));
-	connect(mDataFlowAction, SIGNAL(triggered()), this, SLOT(openDataFlowWindow()));
+	myDataFlowAction = new QAction(tr("Dataflow manager"), this);
+	myDataFlowAction->setIcon(QIcon(":/Qt/resources/dataflow.png"));
+	myDataFlowAction->setStatusTip(tr("Open dataflow manager"));
+	connect(myDataFlowAction, SIGNAL(triggered()), this, SLOT(openDataFlowWindow()));
 
-	mAnimationAction = new QAction(tr("Animate object"), this);
-	mAnimationAction->setStatusTip(tr("Animate object"));
-	connect(mAnimationAction, SIGNAL(triggered()), this, SLOT(animateObject()));
+	myAnimationAction = new QAction(tr("Animate object"), this);
+	myAnimationAction->setStatusTip(tr("Animate object"));
+	connect(myAnimationAction, SIGNAL(triggered()), this, SLOT(animateObject()));
+
+	// Selection actions
+	mySetSelectionModeNoneAction = new QAction(tr("Reset selection"), this);
+	mySetSelectionModeNoneAction->setStatusTip(tr("Reset selection"));
+	connect(mySetSelectionModeNoneAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeNone()));
+
+	mySetSelectionModeNodeAction = new QAction(tr("Select a node"), this);
+	mySetSelectionModeNodeAction->setStatusTip(tr("Select a node"));
+	connect(mySetSelectionModeNodeAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeNode()));
+
+	mySetSelectionModeElementAction = new QAction(tr("Select an element"), this);
+	mySetSelectionModeElementAction->setStatusTip(tr("Select an element"));
+	connect(mySetSelectionModeElementAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeElement()));
 
 	//Help actions
-	mAboutAction = new QAction(tr("About"), this);
-	mAboutAction->setStatusTip(tr("About the application"));
-	mAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
-	connect(mAboutAction, SIGNAL(triggered()), this, SLOT(about()));
+	myAboutAction = new QAction(tr("About"), this);
+	myAboutAction->setStatusTip(tr("About the application"));
+	myAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
+	connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
 }
 
 void StartWindow::createMenus(void)
 {
-	mFileMenu = menuBar()->addMenu(tr("&File"));
-	mFileMenu->addAction(mReadFileAction);
-	mFileMenu->addAction(mReadOBDFileAction);
-	mFileMenu->addAction(mExitAction);
+	myFileMenu = menuBar()->addMenu(tr("&File"));
+	myFileMenu->addAction(myReadFileAction);
+	myFileMenu->addAction(myReadOBDFileAction);
+	myFileMenu->addAction(myExitAction);
 
-	mCreateMenu = menuBar()->addMenu(tr("Create"));
-	mCreateMenu->addAction(mDataFlowAction);
-	mCreateMenu->addAction(mDrawCantileverAction);
-	mCreateMenu->addAction(mAnimationAction);
+	myCreateMenu = menuBar()->addMenu(tr("Create"));
+	myCreateMenu->addAction(myDataFlowAction);
+	myCreateMenu->addAction(myDrawCantileverAction);
+	myCreateMenu->addAction(myAnimationAction);
 
-	mHelpMenu = menuBar()->addMenu(tr("&Help"));
-	mHelpMenu->addAction(mAboutAction);
+	mySelectionMenu = menuBar()->addMenu(tr("Selection"));
+	mySelectionMenu->addAction(mySetSelectionModeNoneAction);
+	mySelectionMenu->addAction(mySetSelectionModeNodeAction);
+	mySelectionMenu->addAction(mySetSelectionModeElementAction);
+
+	myHelpMenu = menuBar()->addMenu(tr("&Help"));
+	myHelpMenu->addAction(myAboutAction);
 }
 
 void StartWindow::createToolBars(void)
 {
-	mFileToolBar = addToolBar(tr("&File"));
-	mFileToolBar->addAction(mReadFileAction);
-	mCreateToolBar = addToolBar(tr("Create"));
-	mCreateToolBar->addAction(mDataFlowAction);
-	mViewToolBar = addToolBar(tr("View"));
+	myFileToolBar = addToolBar(tr("&File"));
+	myFileToolBar->addAction(myReadFileAction);
+	myCreateToolBar = addToolBar(tr("Create"));
+	myCreateToolBar->addAction(myDataFlowAction);
+	myViewToolBar = addToolBar(tr("View"));
 //	mViewToolBar->addAction(mPanAction);
 //	mViewToolBar->addAction(mZoomAction);
 //	mViewToolBar->addAction(mFitAllAction);
 //	mViewToolBar->addAction(mRotateAction);
-	mHelpToolBar = addToolBar(tr("Help"));
-	mHelpToolBar->addAction(mAboutAction);
+	myHelpToolBar = addToolBar(tr("Help"));
+	myHelpToolBar->addAction(myAboutAction);
 }
 
 void StartWindow::createDockWindows()
@@ -331,14 +349,11 @@ void StartWindow::openOBDFile(void){
 	actor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
 	actor->GetProperty()->EdgeVisibilityOn();
 
-	//
 	vtkSmartPointer<vtkWarpVector> warpFilter = vtkSmartPointer<vtkWarpVector>::New();
 	warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
 	warpFilter->SetScaleFactor(1000.0);
 	warpFilter->Update();
 	mapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
-	//
-
 
 	mapper->UseLookupTableScalarRangeOn();
 	// Create a lookup table to share between the mapper and the scalarbar

@@ -24,6 +24,8 @@
 **************************************************************************************************/
 #ifndef _VTKVIEWER_H_
 #define _VTKVIEWER_H_
+
+#include <STACCATO_Enum.h>
 //VTK
 #include <QVTKOpenGLWidget.h>
 #include <vtkSmartPointer.h>
@@ -51,11 +53,6 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	vtkSmartPointer<vtkRenderer> &  getRenderer(void) { return myRenderer; }
-	/***********************************************************************************************
-	* \brief Set background color gradient
-	* \author Stefan Sicklinger
-	***********/
-	void setBackgroundGradient(int r, int g, int b);
 
 private:
 	/***********************************************************************************************
@@ -63,19 +60,37 @@ private:
 	* \author Stefan Sicklinger
 	***********/
 	void displayCompass(void);
+	/***********************************************************************************************
+	* \brief Set background color gradient
+	* \author Stefan Sicklinger
+	***********/
+	void setBackgroundGradient(int r, int g, int b);
+	/***********************************************************************************************
+	* \brief Set picker mode (adapter for public slots)
+	* \author Stefan Sicklinger
+	***********/
+	void setPickerMode(STACCATO_Picker_type _currentPickerType);
 protected:
+	/***********************************************************************************************
+	* \brief Custom mouse press event
+	* \author Stefan Sicklinger
+	***********/
 	virtual void mousePressEvent(QMouseEvent * _event);
 private:
-	///
 	vtkSmartPointer<vtkRenderer> myRenderer;
 	vtkSmartPointer<vtkOrientationMarkerWidget> myOrientationMarkerWidget;
-	QColor                        myBGColor;
-	vtkSmartPointer<vtkActor>     mySelectedActor;
+	QColor myBGColor;
+	vtkSmartPointer<vtkActor> mySelectedActor;
+	//vtkSmartPointer<vtkProperty> mySelectedProperty;
 	vtkSmartPointer<vtkDataSetMapper> mySelectedMapper;
+	STACCATO_Picker_type myCurrentPickerType;
 
 public slots:
 	//! Zoom to the extent of the data set in the scene
 	void zoomToExtent();
+	void setPickerModeNone() { setPickerMode(STACCATO_Picker_None); }
+	void setPickerModeNode() { setPickerMode(STACCATO_Picker_Node); }
+	void setPickerModeElement() { setPickerMode(STACCATO_Picker_Element); }
 };
 
 Q_DECLARE_METATYPE(VtkViewer*)

@@ -53,8 +53,8 @@ void FeElement::computeElementMatrix(const double* _eleCoords, const double *_Em
 		//Weights are 1 and thickness is assumed to be 1
 		double t = 1.0;
 		//Compute Ke=+det(J)*t*Wi*Wj*transpose(B)*Emat*B;
-		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 3, 3, B, _Emat, B_T_times_Emat, true, false, 1.0, false);
-		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 3, B_T_times_Emat, B, _Ke, false, true, Jdet*t, true);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 3, 3, B, _Emat, B_T_times_Emat, true, false, 1.0, false,false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 3, B_T_times_Emat, B, _Ke, false, true, Jdet*t, true,false);
 		
 		//Compute mass matrix
 		double rho = 7.85e-09;
@@ -67,7 +67,7 @@ void FeElement::computeElementMatrix(const double* _eleCoords, const double *_Em
 		}
 		//Weights are 1 and thickness is assumed to be 1
 		//Compute Me=+det(J)*t*Wi*Wj*rho*transpose(N)*N;
-		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 2, B, B, _Me, true, true, Jdet*rho*t, true);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 2, B, B, _Me, true, true, Jdet*rho*t, true,false);
 		//Compute viscous damping matrix ...
 	}
 

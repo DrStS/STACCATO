@@ -30,14 +30,19 @@ int mkl_progress( int* ithr, int* step, char* stage, int lstage )
 		initMKLProgressBar();
 		previousStep = 0;
 	}
-	if (*step!= previousStep)
+	if (*step> previousStep)
 	{
+		// Hack MKL Parallel 2017 step ends at 99%
+		if (*step >= 99) {
+			*step = 100;
+		}
 		updateMKLProgressBar(*step);
 		previousStep = *step;
 		currentStatusUserBreak = userBreakProgressBar();
 		if(currentStatusUserBreak){
 			printf("HELLO %d", currentStatusUserBreak);
 		}
+		//printf("Status %d\n", *step);
 	}
   return currentStatusUserBreak;
 }

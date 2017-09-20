@@ -183,7 +183,7 @@ private:
 	std::string name;
     /// coordinates of all nodes
     std::vector<double> nodeCoords;
-    /// Labels of all nodes
+    /// labels of all nodes
 	std::vector<int> nodeLabels;
     /// number of nodes of each element
 	std::vector<int> numNodesPerElem;
@@ -193,27 +193,27 @@ private:
 	std::vector<int> numDoFsPerNode;
     /// nodes connectivity inside all elements using node labels
 	std::vector<int> elementsTopology;
-    /// Labels of all elements
+    /// labels of all elements
 	std::vector<int> elementLabels;
-	/// Store element type by index
+	/// store element type by index
 	std::vector<STACCATO_Element_type> elementTyps;
-	/// Map node label to node index
+	/// map node label to node index
 	std::map<int, int> nodeLabelToNodeIndexMap;
-	/// Map element label to element index
+	/// map element label to element index
 	std::map<int, int> elementLabelToElementIndexMap;
-	/// Relation of node index to element indexes: 1 to nn
+	/// relation of node index to element indexes: 1 to nn
 	std::vector<std::vector<int>> nodeIndexToElementIndices;
-	/// Relation of element index to node indexes: 1 to ne
+	/// relation of element index to node indexes: 1 to ne
 	std::vector<std::vector<int>> elementIndexToNodesIndices;
-	/// Total number of DoF without internal DoFs and BCs
+	/// total number of DoF without internal DoFs and BCs
 	int totalNumOfDoFsRaw;
-	/// Relation of node index to DoF indexes: 1 to nd
+	/// relation of node index to DoF indexes: 1 to nd
 	std::vector<std::vector<int>> nodeIndexToDoFIndices;
-	/// Result Vector node index to result value
+	/// result Vector node index to result value
 	std::vector<double> resultUxRe;
-	/// Result Vector node index to result value
+	/// result Vector node index to result value
 	std::vector<double> resultUyRe;
-	/// Result Vector node index to result value
+	/// result Vector node index to result value
 	std::vector<double> resultUzRe;
     /// unit test class
     friend class TestFEMesh;

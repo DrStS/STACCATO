@@ -41,5 +41,10 @@ enum STACCATO_Result_type {
 	STACCATO_Uz_Re
 };
 
+enum STACCATO_Picker_type {
+	STACCATO_Picker_None,
+	STACCATO_Picker_Node,
+	STACCATO_Picker_Element
+};
 
 #endif /* STACCATO_ENUM_H_ */

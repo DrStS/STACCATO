@@ -82,29 +82,34 @@ private slots:
 private:
 	Ui::StartWindow *ui;
 	/// File action.
-	QAction* mExitAction;
-    QAction* mReadFileAction;
-	QAction* mReadOBDFileAction;
+	QAction* myExitAction;
+    QAction* myReadFileAction;
+	QAction* myReadOBDFileAction;
 	/// Create action.
-	QAction* mDrawCantileverAction;
-	QAction* mDataFlowAction;
-	QAction* mAnimationAction;
+	QAction* myDrawCantileverAction;
+	QAction* myDataFlowAction;
+	QAction* myAnimationAction;
 	/// View action
-	QAction* mPanAction;
-	QAction* mZoomAction;
-	QAction* mFitAllAction;
-	QAction* mRotateAction;
+	QAction* myPanAction;
+	QAction* myZoomAction;
+	QAction* myFitAllAction;
+	QAction* myRotateAction;
+	/// Selection action
+	QAction* mySetSelectionModeNoneAction;
+	QAction* mySetSelectionModeNodeAction;
+	QAction* mySetSelectionModeElementAction;
 	/// Help action.
-	QAction* mAboutAction;
+	QAction* myAboutAction;
 	/// Menus.
-	QMenu* mFileMenu;
-	QMenu* mCreateMenu;
-	QMenu* mHelpMenu;
+	QMenu* myFileMenu;
+	QMenu* myCreateMenu;
+	QMenu* mySelectionMenu;
+	QMenu* myHelpMenu;
 	/// Toolbars
-	QToolBar* mFileToolBar;
-	QToolBar* mViewToolBar;
-	QToolBar* mCreateToolBar;
-	QToolBar* mHelpToolBar;
+	QToolBar* myFileToolBar;
+	QToolBar* myViewToolBar;
+	QToolBar* myCreateToolBar;
+	QToolBar* myHelpToolBar;
 
 	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;

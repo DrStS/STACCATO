@@ -74,8 +74,8 @@ void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords){
 		}
 		//Compute Ke=+det(J)*Wi*transpose(B)*Emat*B;
 
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, false, 1.0, false,false);
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, Jdet*MathLibrary::tetGaussWeights3D4Points, true,false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, true, 1/Jdet, false,false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, MathLibrary::tetGaussWeights3D4Points, true,false);
 		//Compute mass matrix
 		double rho = myMaterial->getDensity();
 		memset(B, 0, 24*sizeof(double));

@@ -41,8 +41,8 @@ void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords){
 	double B[180] = {0};
 	double B_T_times_Emat[180] = {0};
 
-	double ni = 0.;// myMaterial->getPoissonsRatio();
-	double E = 1;// myMaterial->getYoungsModulus();
+	double ni = 1./3.;// myMaterial->getPoissonsRatio();
+	double E = 480.0;// myMaterial->getYoungsModulus();
 	double tmp = E / ((1 + ni)*(1 - 2*ni));
 	double Emat[36] = { 
 	tmp*(1-ni), tmp*ni,   tmp*ni, 0. , 0. , 0.,	
@@ -59,23 +59,23 @@ void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords){
 		//Compute element stiffness matrix
 		//B matrix 6 x 30
 		for (int i = 0; i < 10; i++) {
-			B[((3 * i) + 0)+0] = dNx[i];
-			B[((3 * i) + 1)+30] = dNy[i];
-			B[((3 * i) + 2)+60] = dNz[i];
+			B[((3 * i) + 0)+0] = dNx[i] ;
+			B[((3 * i) + 1)+30] = dNy[i] ;
+			B[((3 * i) + 2)+60] = dNz[i] ;
 
-			B[((3 * i) + 0) + 90] = dNy[i];
-			B[((3 * i) + 1) + 90] = dNx[i];
+			B[((3 * i) + 0) + 90] = dNy[i] ;
+			B[((3 * i) + 1) + 90] = dNx[i] ;
 
-			B[((3 * i) + 1) + 120] = dNz[i];
-			B[((3 * i) + 2) + 120] = dNy[i];
+			B[((3 * i) + 1) + 120] = dNz[i] ;
+			B[((3 * i) + 2) + 120] = dNy[i] ;
 
-			B[((3 * i) + 0) + 150] = dNz[i];
-			B[((3 * i) + 2) + 150] = dNx[i];
+			B[((3 * i) + 0) + 150] = dNz[i] ;
+			B[((3 * i) + 2) + 150] = dNx[i] ;
 		}
 		//Compute Ke=+det(J)*Wi*transpose(B)*Emat*B;
 
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, true, 1/Jdet, false,false);
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, MathLibrary::tetGaussWeights3D4Points, true,false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, false, 1.0, false,false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, MathLibrary::tetGaussWeights3D4Points/(6.0*Jdet), true,false);
 		//Compute mass matrix
 		double rho = myMaterial->getDensity();
 		memset(B, 0, 24*sizeof(double));

@@ -517,8 +517,8 @@ namespace MathLibrary {
 	* \brief Gauss points for 3D quadratic tet element
 	* \author Stefan Sicklinger
 	***********/
-	static const double tmpA = (5 + 3 * sqrt(5.0))/20;
-	static const double tmpB = (5 - sqrt(5.0)) / 20;
+	static const double tmpA = (5 + 3 * sqrt(5.0))/20.0;
+	static const double tmpB = (5 - sqrt(5.0)) / 20.0;
 	const double tetGaussPoints3D4Points[16] = { 
 	tmpA, tmpB, tmpB, tmpB,
 	tmpB, tmpA, tmpB, tmpB,

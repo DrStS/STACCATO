@@ -29,6 +29,14 @@
 #include <odb_Coupling.h>
 #include <odb_MPC.h>
 #include <odb_ShellSolidCoupling.h>
+#include <odb_Enum.h>
+//UMA
+#include <ads_CoreFESystemC.h>
+#include <uma_System.h>
+#include <uma_IncoreMatrix.h>
+#include <uma_Matrix.h>
+#include <uma_Enum.h>
+#include <uma_ArrayInt.h>
 
 //#define DEBUG
 
@@ -88,13 +96,16 @@ void SimuliaODB::openODBFile(std::string _obdFilePath) {
 			for (int i = 0; i < numOfElements; i++)
 			{
 				const odb_Element aElement = elements.element(i);
+
+
+
 #ifdef DEBUG_OUTPUT
 				infoOut << aElement.label() << " " << aElement.type().CStr() << " [";
 #endif
 				int elemConSize;
 				const int* const conn = aElement.connectivity(elemConSize);
 				std::vector<int> elementTopo;
-				elementTopo.resize(4);
+				elementTopo.resize(elemConSize);
 				for (int j = 0; j < elemConSize; j++){
 #ifdef DEBUG_OUTPUT
 					infoOut << " " << conn[j];
@@ -104,7 +115,15 @@ void SimuliaODB::openODBFile(std::string _obdFilePath) {
 #ifdef DEBUG_OUTPUT
 				infoOut << " ] " << std::endl;
 #endif
-				myHMesh->addElement(aElement.label(), STACCATO_PlainStrain4Node2D, elementTopo);
+				if (aElement.geometry() == odb_Enum::QUAD4) {
+					myHMesh->addElement(aElement.label(), STACCATO_PlainStress4Node2D, elementTopo);
+
+				}
+				else if (aElement.geometry() == odb_Enum::TETRA10) {
+					myHMesh->addElement(aElement.label(), STACCATO_Tetrahedron10Node3D, elementTopo);
+				}
+				
+				
 			}
 		}
 

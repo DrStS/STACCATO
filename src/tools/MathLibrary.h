@@ -262,35 +262,6 @@ namespace MathLibrary {
 		}
 
 		/***********************************************************************************************
-		 * \brief This function is a fast alternative to the operator overloading alternative
-		 * \param[in] x vector to be multiplied
-		 * \param[out] y result vector
-		 * \param[in] elements are the number of entries in the vector
-		 * \author Chenshen Wu
-		 ***********/
-		void transposeMulitplyVec(const T* x, T* y, const size_t elements) { //Computes y=A*x
-			if (this->m != elements)
-				assert(0);
-			if (isSymmetric) {
-				mulitplyVec(x, y, elements);
-				return;
-			}
-
-			size_t iter;
-			for (iter = 0; iter < this->n; iter++) {
-				y[iter] = 0;
-			}
-
-			row_iter ii;
-			col_iter jj;
-
-			for (ii = 0; ii < m; ii++)
-				for (jj = (*mat)[ii].begin(); jj != (*mat)[ii].end(); jj++)
-					y[(*jj).first] += (*jj).second * x[ii];
-		}
-
-
-		/***********************************************************************************************
 		 * \brief This function analysis and factorize the matrix
 		 * \author Stefan Sicklinger
 		 ***********/
@@ -311,7 +282,7 @@ namespace MathLibrary {
 			pardiso_iparm[18] = -1; //Report Mflops 
 			pardiso_maxfct = 1; // max number of factorizations
 			pardiso_mnum = 1; // which factorization to use
-			pardiso_msglvl = 1; // do NOT print statistical information
+			pardiso_msglvl = 0; // do NOT print statistical information
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
@@ -540,8 +511,21 @@ namespace MathLibrary {
 	* \brief Gauss points for 2D bilinear elements
 	* \author Stefan Sicklinger
 	***********/
-	static const double tmpSqrt13 = sqrt(1.0 / 3.0);
-	const double quadGaussPoints2DBiLinear[8] = { tmpSqrt13, tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13 };
+	static const double tmpSqrt13 = sqrt(1.0 / 3.0); 
+	const double quadGaussPoints2D4Point[8] = { tmpSqrt13, tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13 };
+	/***********************************************************************************************
+	* \brief Gauss points for 3D quadratic tet element
+	* \author Stefan Sicklinger
+	***********/
+	static const double tmpA = (5 + 3 * sqrt(5.0))/20;
+	static const double tmpB = (5 - sqrt(5.0)) / 20;
+	const double tetGaussPoints3D4Points[16] = { 
+	tmpA, tmpB, tmpB, tmpB,
+	tmpB, tmpA, tmpB, tmpB,
+	tmpB, tmpB, tmpA, tmpB,
+	tmpB, tmpB, tmpB, tmpA
+	};
+	const double tetGaussWeights3D4Points = 1.0/4.0;
 
 } /* namespace Math */
 #endif /* MATHLIBRARY_H_ */

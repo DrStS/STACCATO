@@ -65,12 +65,7 @@ public:
 	* \param[in] _zCoord
 	* \author Stefan Sicklinger
 	***********/
-	void addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology);
-	/***********************************************************************************************
-	* \brief plot the mesh
-	* \author Stefan Sicklinger
-	***********/
-	void plot(void);		
+	void addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology);	
 	/***********************************************************************************************
 	* \brief get total number of nodes
 	* \param[out] total number of nodes
@@ -223,9 +218,5 @@ private:
 	/// Avoid copy of a HMesh object assignment operator
 	HMesh& operator=(const HMesh&);
 };
-/***********************************************************************************************
- * \brief Print the mesh at once
- * \author Stefan Sicklinger
- ***********/
 
 #endif /* HMESH_H_ */

@@ -18,58 +18,56 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file FeElement.h
- * This file holds the class FeElement; Base class for a Fe element
+ * \file Material.h
+ * This file holds the class Material; Base class for a material
  * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef FEELEMENT_H_
-#define FEELEMENT_H_
+#ifndef MATERIAL_H_
+#define MATERIAL_H_
 
 #include <cstddef>
 #include <assert.h>
 #include <math.h>
-#include <vector>
-class Material;
+
+
 /********//**
-* \brief Class FeElement 
+* \brief Class Material 
  **************************************************************************************************/
-class FeElement{
+class Material {
 public:
 	/***********************************************************************************************
 	 * \brief Constructor
 	 * \author Stefan Sicklinger
 	 ***********/
-	FeElement(Material *_material);
+	Material(void);
 	/***********************************************************************************************
 	 * \brief Destructor
+	 *
 	 * \author Stefan Sicklinger
 	 ***********/
-	virtual ~FeElement(void);
+	virtual ~Material(void);
 	/***********************************************************************************************
-	* \brief  Compute stiffness, mass and damping matrices  (interface)
-	* \param[in] _eleCoords Element cooord vector
+	* \brief Return youngs modulus
 	* \author Stefan Sicklinger
 	***********/
-	virtual void computeElementMatrix(const double* _eleCoords) = 0;
+	double getYoungsModulus(void) const  { return myYoungsModulus; }
 	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
+	* \brief Return Poisson's ratio
 	* \author Stefan Sicklinger
 	***********/
-	virtual const std::vector<double> &  getStiffnessMatrix(void) const = 0;
-	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
-	* \author Stefan Sicklinger
-	***********/
-	virtual const std::vector<double> & getMassMatrix(void) const = 0;
-protected:
-	/// Stiffness matrix
-	std::vector<double> myKe;
-	/// Mass matrix
-	std::vector<double> myMe;
-	/// Material
-	Material * myMaterial;
+	 double getPoissonsRatio(void) const  { return myPoissonsRatio; }
+	 /***********************************************************************************************
+	 * \brief Return density
+	 * \author Stefan Sicklinger
+	 ***********/
+	 double getDensity(void) const { return myDensity; }
+private:
+    ///
+	double myYoungsModulus;
+	double myPoissonsRatio;
+	double myDensity;
 };
 
 
-#endif /* FEELEMENT_H_ */
+#endif /* MATERIAL_H_ */

@@ -17,14 +17,14 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "FeElement.h"
 #include "Material.h"
-#include "Message.h"
-#include "MathLibrary.h"
 
 
-FeElement::FeElement(Material *_material) : myMaterial(_material) {
+Material::Material() {
+	myYoungsModulus= 210000;
+	myPoissonsRatio= 0.3;
+	myDensity = 7.85e-09;;
 }
 
-FeElement::~FeElement() {
+Material::~Material() {
 }

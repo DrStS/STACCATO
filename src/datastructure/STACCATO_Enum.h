@@ -32,7 +32,8 @@ enum STACCATO_Element_type {
 	STACCATO_Truss3D,
 	STACCATO_PlainStrain4Node2D,
 	STACCATO_PlainStress4Node2D,
-	STACCATO_PlainStrain3Node2D
+	STACCATO_PlainStrain3Node2D,
+	STACCATO_Tetrahedron10Node3D
 };
 
 enum STACCATO_Result_type {

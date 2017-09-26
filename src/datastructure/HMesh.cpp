@@ -68,10 +68,6 @@ std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _t
 	}
 }
 
-void HMesh::plot(){
-	infoOut << "Element size vector: " << elementLabels.size() << std::endl;
-}
-
 void HMesh::buildDataStructure(void){
 	//Node loop	
 	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
@@ -95,6 +91,13 @@ void HMesh::buildDataStructure(void){
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			numDoFsPerNodeCurrent = 2;
+		}
+		else if (elementTyps[i] == STACCATO_Tetrahedron10Node3D) {
+			numNodesPerElem[i] = 10;
+			//1. DoF -> u_x
+			//2. DoF -> u_y
+			//3. DoF -> u_z
+			numDoFsPerNodeCurrent = 3;
 		}
 
 		for (int j = 0; j < numNodesPerElem[i]; j++){

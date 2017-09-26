@@ -20,11 +20,15 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include "FeAnalysis.h"
 #include "Message.h"
+#include "FeAnalysis.h"
 #include "HMesh.h"
 #include "FeMetaDatabase.h"
 #include "FeElement.h"
+#include "FePlainStress4NodeElement.h"
+#include "FeTetrahedron10NodeElement.h"
+#include "Material.h"
+
 #include "MathLibrary.h"
 #include "Timer.h"
 #include "MemWatcher.h"
@@ -35,14 +39,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 
-	//Hack mat class is missing
-	double ni = 0.3;
-	double E = 210000;
-	double tmp = E / (1 - ni*ni);
-	double Emat[9] = { tmp, tmp*ni, 0, tmp*ni, tmp, 0, 0, 0, tmp*0.5*(1 - ni) };
+
+	Material * elasticMaterial = new Material();
 
 	int totalDoF = myHMesh->getTotalNumOfDoFsRaw();
-	int dimension;
+	int dimension=3;
 	MathLibrary::SparseMatrix<double> *A = new MathLibrary::SparseMatrix<double>(totalDoF, true);
 	std::vector<double> b;
 	std::vector<double> sol;
@@ -63,20 +64,33 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 
-	FeElement* oneEle = new FeElement();
-	for (int i = 0; i < numElements; i++)
+	
+	
+	std::vector<FeElement*> allElements(numElements);
+
+
+	for (int iElement = 0; iElement < numElements; iElement++)
 	{
-		double Ke[64] = { 0 };
-		double Me[64] = { 0 }; 
-		int numNodesPerElement = myHMesh->getNumNodesPerElement()[i];
+	if (myHMesh->getElementTypes()[iElement] == STACCATO_PlainStress4Node2D) {
+			allElements[iElement] = new FePlainStress4NodeElement(elasticMaterial);		
+    } else	if (myHMesh->getElementTypes()[iElement] == STACCATO_Tetrahedron10Node3D) {
+		allElements[iElement] = new FeTetrahedron10NodeElement(elasticMaterial);
+	}
+
+		int numNodesPerElement = myHMesh->getNumNodesPerElement()[iElement];
 		double * eleCoord = new double[numNodesPerElement*dimension];
 		numDoFsPerElement = 0;
 
 		//Loop over nodes of current element
 		for (int j = 0; j < numNodesPerElement; j++)
 		{
-			int nodeIndex = myHMesh->getElementIndexToNodesIndices()[i][j];
-			if (dimension == 2){
+			int nodeIndex = myHMesh->getElementIndexToNodesIndices()[iElement][j];
+			if (dimension == 3){
+				eleCoord[j*dimension + 0] = myHMesh->getNodeCoords()[nodeIndex * 3 + 0];
+				eleCoord[j*dimension + 1] = myHMesh->getNodeCoords()[nodeIndex * 3 + 1];
+				eleCoord[j*dimension + 2] = myHMesh->getNodeCoords()[nodeIndex * 3 + 2];
+			}
+			else if (dimension == 2) {
 				// Extract x and y coord only; for 2D; z=0
 				eleCoord[j*dimension + 0] = myHMesh->getNodeCoords()[nodeIndex * 3 + 0];
 				eleCoord[j*dimension + 1] = myHMesh->getNodeCoords()[nodeIndex * 3 + 1];
@@ -90,7 +104,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			}
 
 		}
-		oneEle->computeElementMatrix(eleCoord, Emat, Ke, Me);
+		allElements[iElement]->computeElementMatrix(eleCoord);
 		delete eleCoord;
 
 		double freq = 101;
@@ -99,7 +113,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		for (int i = 0; i < numDoFsPerElement; i++){
 			for (int j = 0; j < numDoFsPerElement; j++){
 				if(eleDoFs[j]>= eleDoFs[i]){
-					(*A)(eleDoFs[i], eleDoFs[j]) += Ke[i*numDoFsPerElement + j];
+					(*A)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
 				}
 			}
 		}
@@ -108,7 +122,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		for (int i = 0; i < numDoFsPerElement; i++){
 			for (int j = 0; j < numDoFsPerElement; j++){
 				if (eleDoFs[j] >= eleDoFs[i]) {
-					(*A)(eleDoFs[i], eleDoFs[j]) -= Me[i*numDoFsPerElement + j] * omega*omega;
+					(*A)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
 					//std::cout << "A(" << eleDoFs[i] << "," << eleDoFs[j] << ")=" << (*A)(eleDoFs[i], eleDoFs[j]) << std::endl;
 				}
 			}

@@ -18,58 +18,65 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file FeElement.h
- * This file holds the class FeElement; Base class for a Fe element
+ * \file FePlainStress4NodeElement.h
+ * This file holds the class of linear four node plane stress element
  * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef FEELEMENT_H_
-#define FEELEMENT_H_
+#ifndef FEPLAINSTRESS4NODEELEMENT_H_
+#define FEPLAINSTRESS4NODEELEMENT_H_
 
 #include <cstddef>
 #include <assert.h>
 #include <math.h>
 #include <vector>
-class Material;
+#include <FeElement.h>
+
 /********//**
-* \brief Class FeElement 
+* \brief Class FePlainStress4NodeElement 
  **************************************************************************************************/
-class FeElement{
+class FePlainStress4NodeElement : public FeElement {
 public:
 	/***********************************************************************************************
 	 * \brief Constructor
 	 * \author Stefan Sicklinger
 	 ***********/
-	FeElement(Material *_material);
+	FePlainStress4NodeElement(Material *_material);
 	/***********************************************************************************************
 	 * \brief Destructor
+	 *
 	 * \author Stefan Sicklinger
 	 ***********/
-	virtual ~FeElement(void);
+	virtual ~FePlainStress4NodeElement(void);
 	/***********************************************************************************************
-	* \brief  Compute stiffness, mass and damping matrices  (interface)
+	* \brief Compute stiffness, mass and damping matrices
 	* \param[in] _eleCoords Element cooord vector
 	* \author Stefan Sicklinger
 	***********/
-	virtual void computeElementMatrix(const double* _eleCoords) = 0;
+	void computeElementMatrix(const double* _eleCoords);
 	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
+	* \brief Return pointer to double array
 	* \author Stefan Sicklinger
 	***********/
-	virtual const std::vector<double> &  getStiffnessMatrix(void) const = 0;
+	 const std::vector<double> &  getStiffnessMatrix(void) const  { return myKe; }
 	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
+	* \brief Return pointer to double array
 	* \author Stefan Sicklinger
 	***********/
-	virtual const std::vector<double> & getMassMatrix(void) const = 0;
-protected:
-	/// Stiffness matrix
-	std::vector<double> myKe;
-	/// Mass matrix
-	std::vector<double> myMe;
-	/// Material
-	Material * myMaterial;
+	 const std::vector<double> & getMassMatrix(void) const  { return myMe; }
+private:
+	/***********************************************************************************************
+	* \brief Evalute derivative of local shape functions for bi-linear element
+	* \param[in] _xi
+	* \param[in] _eta
+	* \param[in] _eleCoords
+	* \param[out] _dNx
+	* \param[out] _dNy
+	* \param[out] _Jdet
+	* \author Stefan Sicklinger
+	***********/
+	void evalQuad4IsoPShapeFunDer(const double* _eleCoords, const double _xi, const double _eta, double *_N, double *_dNx, double *_dNy, double &_Jdet);
 };
 
 
-#endif /* FEELEMENT_H_ */
+#endif /* FEPLAINSTRESS4NODEELEMENT_H_ */

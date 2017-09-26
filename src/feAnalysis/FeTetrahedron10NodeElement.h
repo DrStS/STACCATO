@@ -18,58 +18,67 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file FeElement.h
- * This file holds the class FeElement; Base class for a Fe element
+ * \file FeTetrahedron10NodeElement.h
+ * This file holds the class of quadratic tetrahedron element
  * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef FEELEMENT_H_
-#define FEELEMENT_H_
+#ifndef FETETRAHEDRON10NODEELEMENT_H_
+#define FETETRAHEDRON10NODEELEMENT_H_
 
 #include <cstddef>
 #include <assert.h>
 #include <math.h>
 #include <vector>
-class Material;
+#include <FeElement.h>
+
 /********//**
-* \brief Class FeElement 
+* \brief Class FeTetrahedron10NodeElement 
  **************************************************************************************************/
-class FeElement{
+class FeTetrahedron10NodeElement : public FeElement {
 public:
 	/***********************************************************************************************
 	 * \brief Constructor
 	 * \author Stefan Sicklinger
 	 ***********/
-	FeElement(Material *_material);
+	FeTetrahedron10NodeElement(Material *_material);
 	/***********************************************************************************************
 	 * \brief Destructor
 	 * \author Stefan Sicklinger
 	 ***********/
-	virtual ~FeElement(void);
+	virtual ~FeTetrahedron10NodeElement(void);
 	/***********************************************************************************************
-	* \brief  Compute stiffness, mass and damping matrices  (interface)
+	* \brief Compute stiffness, mass and damping matrices
 	* \param[in] _eleCoords Element cooord vector
 	* \author Stefan Sicklinger
 	***********/
-	virtual void computeElementMatrix(const double* _eleCoords) = 0;
+	void computeElementMatrix(const double* _eleCoords);
 	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
+	* \brief Return pointer to double array
 	* \author Stefan Sicklinger
 	***********/
-	virtual const std::vector<double> &  getStiffnessMatrix(void) const = 0;
+	 const std::vector<double> &  getStiffnessMatrix(void) const  { return myKe; }
 	/***********************************************************************************************
-	* \brief Return pointer to double array (interface)
+	* \brief Return pointer to double array
 	* \author Stefan Sicklinger
 	***********/
-	virtual const std::vector<double> & getMassMatrix(void) const = 0;
-protected:
-	/// Stiffness matrix
-	std::vector<double> myKe;
-	/// Mass matrix
-	std::vector<double> myMe;
-	/// Material
-	Material * myMaterial;
+	 const std::vector<double> & getMassMatrix(void) const  { return myMe; }
+private:
+	/***********************************************************************************************
+	* \brief Evalute derivative of local shape functions for 10 node ted element
+	* \param[in] _eleCoords
+	* \param[in] _xi1
+	* \param[in] _xi2
+	* \param[in] _xi3
+	* \param[out] _N
+	* \param[out] _dNx
+	* \param[out] _dNy
+	* \param[out] _dNz
+	* \param[out] _Jdet
+	* \author Stefan Sicklinger
+	***********/
+	void evalTet10IsoPShapeFunDer(const double* _eleCoords, const double _xi1, const double _xi2, const double _xi3, const double _xi4, double *_N, double *_dNx, double *_dNy, double *_dNz, double &_Jdet);
 };
 
 
-#endif /* FEELEMENT_H_ */
+#endif /* FETETRAHEDRON10NODEELEMENT_H_ */

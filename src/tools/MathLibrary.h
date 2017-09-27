@@ -527,5 +527,75 @@ namespace MathLibrary {
 	};
 	const double tetGaussWeights3D4Points = 1.0/4.0;
 
+	static const double tmpG1A = (7. - sqrt(15.0)) / 34.;
+	static const double tmpG1B = 1. - 3. * tmpG1A;
+	static const double tmpG2A = 7. / 17. - tmpG1A;
+	static const double tmpG2B = 1. - 3. * tmpG2A;
+	static const double tmpG3A = (10. - 2. * sqrt(15.0)) / 40.;
+	static const double tmpG3B = 1. / 2. - tmpG3A;
+	static const double tmpG4A = 1. / 4.;
+	static const double tmpW1 = (2665. + 14. * sqrt(15.0)) / 37800.;
+	static const double tmpW2 = (2665. - 14. * sqrt(15.0)) / 37800.;
+	static const double tmpW3 = 10. / 189.;
+	static const double tmpW4 = 16. / 135.;
+
+	const double tetGaussPoints3D15Points[60] = {
+		tmpG1B, tmpG1A, tmpG1A, tmpG1A,
+		tmpG1A, tmpG1B, tmpG1A, tmpG1A,
+		tmpG1A, tmpG1A, tmpG1B, tmpG1A,
+		tmpG1A, tmpG1A, tmpG1A, tmpG1B,
+
+		tmpG2B, tmpG2A, tmpG2A, tmpG2A,
+		tmpG2A, tmpG2B, tmpG2A, tmpG2A,
+		tmpG2A, tmpG2A, tmpG2B, tmpG2A,
+		tmpG2A, tmpG2A, tmpG2A, tmpG2B,	
+
+		tmpG3B, tmpG3B, tmpG3A, tmpG3A,
+		tmpG3B, tmpG3A, tmpG3B, tmpG3A,
+		tmpG3B, tmpG3A, tmpG3A, tmpG3B,
+		tmpG4A, tmpG3B, tmpG3B, tmpG3A,		
+		tmpG3A, tmpG3B, tmpG3A, tmpG3B,
+		tmpG3A, tmpG3A, tmpG3B, tmpG3B,
+
+		tmpG4A, tmpG4A, tmpG4A, tmpG4A
+	};
+	const double tetGaussWeights3D15Points[15] = {tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4};
+
+/*
+	static const double tmpG1A = (7. - sqrt(15.0)) / 34.;
+	static const double tmpG1B = (13. + 3.*sqrt(15.0)) / 34.;
+	static const double tmpG2A = (7. + sqrt(15.0)) / 34.;
+	static const double tmpG2B = (13. - 3.*sqrt(15.0)) / 34.;
+	static const double tmpG3A = (10. - 2. * sqrt(15.0)) / 40.;
+	static const double tmpG3B = (10. + 2. * sqrt(15.0)) / 40.;
+	static const double tmpG4A = 1. / 4.;
+	static const double tmpW1 = (2665. + 14. * sqrt(15.0)) / 226800.;
+	static const double tmpW2 = (2665. - 14. * sqrt(15.0)) / 226800.;
+	static const double tmpW3 = 22. / 2268.;
+	static const double tmpW4 = 16. / 810.;
+
+	const double tetGaussPoints3D15Points[60] = {
+		tmpG1B, tmpG1A, tmpG1A, tmpG1A,
+		tmpG1A, tmpG1B, tmpG1A, tmpG1A,
+		tmpG1A, tmpG1A, tmpG1B, tmpG1A,
+		tmpG1A, tmpG1A, tmpG1A, tmpG1B,
+
+		tmpG2B, tmpG2A, tmpG2A, tmpG2A,
+		tmpG2A, tmpG2B, tmpG2A, tmpG2A,
+		tmpG2A, tmpG2A, tmpG2B, tmpG2A,
+		tmpG2A, tmpG2A, tmpG2A, tmpG2B,
+
+		tmpG3B, tmpG3B, tmpG3A, tmpG3A,
+		tmpG3B, tmpG3A, tmpG3B, tmpG3A,
+		tmpG3B, tmpG3A, tmpG3A, tmpG3B,
+		tmpG4A, tmpG3B, tmpG3B, tmpG3A,
+		tmpG3A, tmpG3B, tmpG3A, tmpG3B,
+		tmpG3A, tmpG3A, tmpG3B, tmpG3B,
+
+		tmpG4A, tmpG4A, tmpG4A, tmpG4A
+	};
+	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
+	*/
+
 } /* namespace Math */
 #endif /* MATHLIBRARY_H_ */

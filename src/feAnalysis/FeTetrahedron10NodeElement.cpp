@@ -31,79 +31,145 @@ FeTetrahedron10NodeElement::FeTetrahedron10NodeElement(Material *_material) : Fe
 FeTetrahedron10NodeElement::~FeTetrahedron10NodeElement() {
 }
 
-void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords){
+void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords) {
 	//Allocate local memory on the stack
 	double   N[10];
 	double dNx[10];
 	double dNy[10];
 	double dNz[10];
 	double Jdet;
-	double B[180] = {0};
-	double B_T_times_Emat[180] = {0};
+	double B[180] = { 0 };
+	double B_T_times_Emat[180] = { 0 };
 
-	double ni = 1./3.;// myMaterial->getPoissonsRatio();
+	double ni = 1.0/3.0;// myMaterial->getPoissonsRatio();
 	double E = 480.0;// myMaterial->getYoungsModulus();
-	double tmp = E / ((1 + ni)*(1 - 2*ni));
-	double Emat[36] = { 
-	tmp*(1-ni), tmp*ni,   tmp*ni, 0. , 0. , 0.,	
+	double tmp = E / ((1 + ni)*(1 - 2 * ni));
+	double Emat[36] = {
+	tmp*(1 - ni), tmp*ni,   tmp*ni, 0. , 0. , 0.,
 	tmp*ni, tmp*(1 - ni), tmp*ni, 0. , 0. , 0.,
-	tmp*ni, tmp*ni,   tmp*(1-ni), 0. , 0. , 0.,
+	tmp*ni, tmp*ni,   tmp*(1 - ni), 0. , 0. , 0.,
 	0.,         0.,           0., tmp*(0.5 - ni) , 0. , 0.,
 	0.,         0.,           0., 0. , tmp*(0.5 - ni) , 0.,
 	0.,         0.,           0., 0. , 0. ,tmp*(0.5 - ni) };
 
-	//Gauss integration loop
+	//Gauss integration loop stiffness
 	for (int k = 0; k < 4; k++) {
+
+		memset(B, 0, 180 * sizeof(double));
+		memset(B_T_times_Emat, 0, 180 * sizeof(double));
+		memset(dNx, 0, 10 * sizeof(double));
+		memset(dNy, 0, 10 * sizeof(double));
+		memset(dNz, 0, 10 * sizeof(double));
 
 		evalTet10IsoPShapeFunDer(_eleCoords, MathLibrary::tetGaussPoints3D4Points[(4 * k) + 0], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 1], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 2], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 3], N, dNx, dNy, dNz, Jdet);
 		//Compute element stiffness matrix
 		//B matrix 6 x 30
 		for (int i = 0; i < 10; i++) {
-			B[((3 * i) + 0)+0] = dNx[i] ;
-			B[((3 * i) + 1)+30] = dNy[i] ;
-			B[((3 * i) + 2)+60] = dNz[i] ;
+			B[((3 * i) + 0) + 0] = dNx[i];
+			B[((3 * i) + 1) + 30] = dNy[i];
+			B[((3 * i) + 2) + 60] = dNz[i];
 
-			B[((3 * i) + 0) + 90] = dNy[i] ;
-			B[((3 * i) + 1) + 90] = dNx[i] ;
+			B[((3 * i) + 0) + 90] = dNy[i];
+			B[((3 * i) + 1) + 90] = dNx[i];
 
-			B[((3 * i) + 1) + 120] = dNz[i] ;
-			B[((3 * i) + 2) + 120] = dNy[i] ;
+			B[((3 * i) + 1) + 120] = dNz[i];
+			B[((3 * i) + 2) + 120] = dNy[i];
 
-			B[((3 * i) + 0) + 150] = dNz[i] ;
-			B[((3 * i) + 2) + 150] = dNx[i] ;
+			B[((3 * i) + 0) + 150] = dNz[i];
+			B[((3 * i) + 2) + 150] = dNx[i];
 		}
 		//Compute Ke=+det(J)*Wi*transpose(B)*Emat*B;
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, false, 1.0, false, false);
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, MathLibrary::tetGaussWeights3D4Points / (6.0*Jdet), true, false);
 
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 6, 6, B, Emat, B_T_times_Emat, true, false, 1.0, false,false);
-		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 6, B_T_times_Emat, B, &myKe[0], false, true, MathLibrary::tetGaussWeights3D4Points/(6.0*Jdet), true,false);
+	}
+
+
+	for (int k = 0; k < 15; k++) {
 		//Compute mass matrix
-		double rho = myMaterial->getDensity();
-		memset(B, 0, 24*sizeof(double));
-		//N matrix 2 x 8
-		for (int i = 0; i < 4; i++) {
-			B[2 * i] = N[i];
-			B[((2 * i) + 1) + 8] = N[i];
+		double rho = 1;// myMaterial->getDensity();
+		memset(B, 0, 180 * sizeof(double));
+		evalTet10IsoPShapeFunDer(_eleCoords, MathLibrary::tetGaussPoints3D15Points[(4 * k) + 0], MathLibrary::tetGaussPoints3D15Points[(4 * k) + 1], MathLibrary::tetGaussPoints3D15Points[(4 * k) + 2], MathLibrary::tetGaussPoints3D15Points[(4 * k) + 3], N, dNx, dNy, dNz, Jdet);
+		//N matrix 3 x 30
+		for (int i = 0; i < 10; i++) {
+			B[((3 * i) + 0) + 0]  = N[i];
+			B[((3 * i) + 1) + 30] = N[i];
+			B[((3 * i) + 2) + 60] = N[i];
 		}
-		//Weights are 1 and thickness is assumed to be 1
-		//Compute Me=+det(J)*t*Wi*Wj*rho*transpose(N)*N;
-		//MathLibrary::computeDenseMatrixMatrixMultiplication(8, 8, 2, B, B, &myMe[0], true, true, Jdet*rho*t, true,false);
+		//Compute Me=+det(J)*W*rho*transpose(N)*N;
+		MathLibrary::computeDenseMatrixMatrixMultiplication(30, 30, 3, B, B, &myMe[0], true, true, Jdet*rho*MathLibrary::tetGaussWeights3D15Points[k]/6.0, true,false);
 		//Compute viscous damping matrix ...
 	}
 
+
+
+	std::cout << "Ke[0]: " << myKe[0] << std::endl;
+	std::cout << "Ke[1]: " << myKe[1] << std::endl;
+	std::cout << "Ke[2]: " << myKe[2] << std::endl;
+
+	std::cout << "Ke[30]: " << myKe[30] << std::endl;
+	std::cout << "Ke[31]: " << myKe[31] << std::endl;
+	std::cout << "Ke[32]: " << myKe[32] << std::endl;
+
 	//Lumping
-	double b[8]={ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-	double c[8];
-	//MathLibrary::computeDenseMatrixVectorMultiplication(8, 8, &myMe[0], b, c);
-	//std::fill(myMe.begin(), myMe.end(), 0.0);
-	//for (int i = 0; i < 8; i++) {
-	//	myMe[i * 8 + i] = c[i];
-	//}
+	double b[30]={ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+	double c[30];
+	MathLibrary::computeDenseMatrixVectorMultiplication(30, 30, &myMe[0], b, c);
+	std::fill(myMe.begin(), myMe.end(), 0.0);
+	for (int i = 0; i < 30; i++) {
+		myMe[i * 30 + i] = c[i];
+	}
 
 
 }
 
 void FeTetrahedron10NodeElement::evalTet10IsoPShapeFunDer(const double* _eleCoords, const double _xi1, const double _xi2,  const double _xi3, const double _xi4, double *_N, double *_dNx, double *_dNy, double *_dNz, double &_Jdet)
 {
+/*
+	std::cout << "X_1: " << _eleCoords[0] << std::endl;
+	std::cout << "Y_1: " << _eleCoords[1] << std::endl;
+	std::cout << "Z_1: " << _eleCoords[2] << std::endl;
+
+	std::cout << "X_2: " << _eleCoords[3] << std::endl;
+	std::cout << "Y_2: " << _eleCoords[4] << std::endl;
+	std::cout << "Z_2: " << _eleCoords[5] << std::endl;
+
+	std::cout << "X_3: " << _eleCoords[6] << std::endl;
+	std::cout << "Y_3: " << _eleCoords[7] << std::endl;
+	std::cout << "Z_3: " << _eleCoords[8] << std::endl;
+
+	std::cout << "X_4: " << _eleCoords[9] << std::endl;
+	std::cout << "Y_4: " << _eleCoords[10] << std::endl;
+	std::cout << "Z_4: " << _eleCoords[11] << std::endl;
+
+	std::cout << "X_5: " << _eleCoords[12] << std::endl;
+	std::cout << "Y_5: " << _eleCoords[13] << std::endl;
+	std::cout << "Z_5: " << _eleCoords[14] << std::endl;
+
+	std::cout << "X_6: " << _eleCoords[15] << std::endl;
+	std::cout << "Y_6: " << _eleCoords[16] << std::endl;
+	std::cout << "Z_6: " << _eleCoords[17] << std::endl;
+
+	std::cout << "X_7: " << _eleCoords[18] << std::endl;
+	std::cout << "Y_7: " << _eleCoords[19] << std::endl;
+	std::cout << "Z_7: " << _eleCoords[20] << std::endl;
+
+	std::cout << "X_8: " << _eleCoords[21] << std::endl;
+	std::cout << "Y_8: " << _eleCoords[22] << std::endl;
+	std::cout << "Z_8: " << _eleCoords[23] << std::endl;
+
+	std::cout << "X_9: " << _eleCoords[24] << std::endl;
+	std::cout << "Y_9: " << _eleCoords[25] << std::endl;
+	std::cout << "Z_9: " << _eleCoords[26] << std::endl;
+
+	std::cout << "X_10: " << _eleCoords[27] << std::endl;
+	std::cout << "Y_10: " << _eleCoords[28] << std::endl;
+	std::cout << "Z_10: " << _eleCoords[29] << std::endl;
+
+	std::cout << "_xi1: " << _xi1 << std::endl;
+	std::cout << "_xi2: " << _xi2 << std::endl;
+	std::cout << "_xi3: " << _xi3 << std::endl;
+	std::cout << "_xi4: " << _xi4 << std::endl;*/
 	/*    _eleCoords[0]  -> x1
 		_eleCoords[1]  -> y1
 		_eleCoords[2]  -> z1
@@ -136,19 +202,19 @@ void FeTetrahedron10NodeElement::evalTet10IsoPShapeFunDer(const double* _eleCoor
 		_eleCoords[29] -> z10*/
 
 
-	double Jx1 = 4 * (_eleCoords[0]*(_xi1 - 1 / 4) + _eleCoords[12] *_xi2 + _eleCoords[18] *_xi3 + _eleCoords[21] *_xi4);	
-	double Jy1 = 4 * (_eleCoords[1]*(_xi1 - 1 / 4) + _eleCoords[13] *_xi2 + _eleCoords[19] *_xi3 + _eleCoords[22] *_xi4);
-	double Jz1 = 4 * (_eleCoords[2] *(_xi1 - 1 / 4) + _eleCoords[14] * _xi2 + _eleCoords[20] *_xi3 + _eleCoords[23] *_xi4);
-	double Jx2 = 4 * (_eleCoords[12] *_xi1 + _eleCoords[3] *(_xi2 - 1 / 4) + _eleCoords[15] *_xi3 + _eleCoords[24] *_xi4);
-	double Jy2 = 4 * (_eleCoords[13] *_xi1 + _eleCoords[4] *(_xi2 - 1 / 4) + _eleCoords[16] *_xi3 + _eleCoords[25] *_xi4);
-	double Jz2 = 4 * (_eleCoords[14] *_xi1 + _eleCoords[5] *(_xi2 - 1 / 4) + _eleCoords[17] *_xi3 + _eleCoords[26] *_xi4);
-	double Jx3 = 4 * (_eleCoords[18] *_xi1 + _eleCoords[15] *_xi2 + _eleCoords[6] *(_xi3 - 1 / 4) + _eleCoords[27] *_xi4);
-	double Jy3 = 4 * (_eleCoords[19] *_xi1 + _eleCoords[16] *_xi2 + _eleCoords[7] *(_xi3 - 1 / 4) + _eleCoords[28] *_xi4);
-	double Jz3 = 4 * (_eleCoords[20] *_xi1 + _eleCoords[17] *_xi2 + _eleCoords[8] *(_xi3 - 1 / 4) + _eleCoords[29] *_xi4);
-	double Jx4 = 4 * (_eleCoords[21] *_xi1 + _eleCoords[24] *_xi2 + _eleCoords[27] *_xi3 + _eleCoords[9] *(_xi4 - 1 / 4));
-	double Jy4 = 4 * (_eleCoords[22] *_xi1 + _eleCoords[25] *_xi2 + _eleCoords[28] *_xi3 + _eleCoords[10] *(_xi4 - 1 / 4));
-	double Jz4 = 4 * (_eleCoords[23] *_xi1 + _eleCoords[26] *_xi2 + _eleCoords[29] *_xi3 + _eleCoords[11] *(_xi4 - 1 / 4));
-	
+	double oneOverFour = 1 / 4.;
+	double Jx1 = 4 * (_eleCoords[0]*(_xi1 - oneOverFour) + _eleCoords[12] *_xi2 + _eleCoords[18] *_xi3 + _eleCoords[21] *_xi4);
+	double Jy1 = 4 * (_eleCoords[1]*(_xi1 - oneOverFour) + _eleCoords[13] *_xi2 + _eleCoords[19] *_xi3 + _eleCoords[22] *_xi4);
+	double Jz1 = 4 * (_eleCoords[2] *(_xi1 - oneOverFour) + _eleCoords[14] * _xi2 + _eleCoords[20] *_xi3 + _eleCoords[23] *_xi4);
+	double Jx2 = 4 * (_eleCoords[12] *_xi1 + _eleCoords[3] *(_xi2 - oneOverFour) + _eleCoords[15] *_xi3 + _eleCoords[24] *_xi4);
+	double Jy2 = 4 * (_eleCoords[13] *_xi1 + _eleCoords[4] *(_xi2 - oneOverFour) + _eleCoords[16] *_xi3 + _eleCoords[25] *_xi4);
+	double Jz2 = 4 * (_eleCoords[14] *_xi1 + _eleCoords[5] *(_xi2 - oneOverFour) + _eleCoords[17] *_xi3 + _eleCoords[26] *_xi4);
+	double Jx3 = 4 * (_eleCoords[18] *_xi1 + _eleCoords[15] *_xi2 + _eleCoords[6] *(_xi3 - oneOverFour) + _eleCoords[27] *_xi4);
+	double Jy3 = 4 * (_eleCoords[19] *_xi1 + _eleCoords[16] *_xi2 + _eleCoords[7] *(_xi3 - oneOverFour) + _eleCoords[28] *_xi4);
+	double Jz3 = 4 * (_eleCoords[20] *_xi1 + _eleCoords[17] *_xi2 + _eleCoords[8] *(_xi3 - oneOverFour) + _eleCoords[29] *_xi4);
+	double Jx4 = 4 * (_eleCoords[21] *_xi1 + _eleCoords[24] *_xi2 + _eleCoords[27] *_xi3 + _eleCoords[9] *(_xi4 - oneOverFour));
+	double Jy4 = 4 * (_eleCoords[22] *_xi1 + _eleCoords[25] *_xi2 + _eleCoords[28] *_xi3 + _eleCoords[10] *(_xi4 - oneOverFour));
+	double Jz4 = 4 * (_eleCoords[23] *_xi1 + _eleCoords[26] *_xi2 + _eleCoords[29] *_xi3 + _eleCoords[11] *(_xi4 - oneOverFour));
 	
 	double Jx12 = Jx1 - Jx2; 
 	double Jx13 = Jx1 - Jx3; 
@@ -210,6 +276,7 @@ void FeTetrahedron10NodeElement::evalTet10IsoPShapeFunDer(const double* _eleCoor
 	_N[7] = 4 * _xi1*_xi4;
 	_N[8] = 4 * _xi2*_xi4;
 	_N[9] = 4 * _xi3*_xi4;
+	// Scaled by Jdet
 	_dNx[0] = (4 * _xi1 - 1)*a1;
 	_dNx[1] = (4 * _xi2 - 1)*a2;
     _dNx[2] = (4 * _xi3 - 1)*a3;

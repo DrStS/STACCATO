@@ -135,7 +135,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	{	
 		int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 		for (int l = 0; l < numDoFsPerNode; l++) {
-			if (myHMesh->getNodeLabels()[j] == 16) {
+			if (myHMesh->getNodeLabels()[j] == 1) {//16
 				int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
 				b[dofIndex] =+ cload;
 				cload++;
@@ -144,6 +144,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			}
 		}
 	}
+
 	anaysisTimer01.stop();
 	infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() <<" milliSec"<<std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -179,11 +180,18 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			if (l == 1) {
 				myHMesh->addResultScalarFieldAtNodes(STACCATO_Uy_Re, sol[dofIndex]);
 			}
+			if (l == 2) {
+				myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Re, sol[dofIndex]);
+			}
 		}
-		myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Re, 0.0);
+		if (dimension==2) {
+			myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Re, 0.0);
+		}
+		
 	}
-	infoOut<<sol[0]<<std::endl;
-
+	infoOut	<<	sol[0]	<<	std::endl;
+	infoOut << sol[1] << std::endl;
+	infoOut << sol[2] << std::endl;
 	delete A;
 }
 

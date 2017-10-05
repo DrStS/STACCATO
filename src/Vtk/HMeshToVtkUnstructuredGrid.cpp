@@ -28,6 +28,7 @@
 #include <vtkCellArray.h>
 #include <vtkUnstructuredGrid.h>
 #include <vtkQuad.h>
+#include <vtkQuadraticTetra.h>
 #include <vtkFloatArray.h>
 #include <vtkWarpVector.h>
 
@@ -50,7 +51,9 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 		// Element loop
 		int numElements = _HMesh.getNumElements();
 		vtkSmartPointer<vtkQuad> aLinearQuad = vtkSmartPointer<vtkQuad>::New();
-		vtkSmartPointer<vtkCellArray> cellArray = vtkSmartPointer<vtkCellArray>::New();
+		vtkSmartPointer<vtkCellArray> cellArrayLinearQuad = vtkSmartPointer<vtkCellArray>::New();
+		vtkSmartPointer<vtkQuadraticTetra> aQuadTet = vtkSmartPointer<vtkQuadraticTetra>::New();
+		vtkSmartPointer<vtkCellArray> cellArrayQuadTed = vtkSmartPointer<vtkCellArray>::New();
 		int index = 0;
 		for (int i = 0; i < numElements; i++)
 		{
@@ -60,14 +63,34 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 				aLinearQuad->GetPointIds()->SetId(1, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 1]));
 				aLinearQuad->GetPointIds()->SetId(2, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 2]));
 				aLinearQuad->GetPointIds()->SetId(3, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 3]));
-				cellArray->InsertNextCell(aLinearQuad);
+				cellArrayLinearQuad->InsertNextCell(aLinearQuad);
 				index = index + 4;
+			}
+			if (_HMesh.getElementTypes()[i] == STACCATO_Tetrahedron10Node3D) {
+
+				aQuadTet->GetPointIds()->SetId(0, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 0]));
+				aQuadTet->GetPointIds()->SetId(1, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 1]));
+				aQuadTet->GetPointIds()->SetId(2, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 2]));
+				aQuadTet->GetPointIds()->SetId(3, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 3]));
+				aQuadTet->GetPointIds()->SetId(4, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 4]));
+				aQuadTet->GetPointIds()->SetId(5, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 5]));
+				aQuadTet->GetPointIds()->SetId(6, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 6]));
+				aQuadTet->GetPointIds()->SetId(7, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 7]));
+				aQuadTet->GetPointIds()->SetId(8, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 8]));
+				aQuadTet->GetPointIds()->SetId(9, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 9]));
+				cellArrayQuadTed->InsertNextCell(aQuadTet);
+				index = index + 10;
 			}
 		}
 
 		 myVtkUnstructuredGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 		 myVtkUnstructuredGrid->SetPoints(myNodes);
-		 myVtkUnstructuredGrid->SetCells(VTK_QUAD, cellArray);
+		 if (cellArrayLinearQuad->GetNumberOfCells() != 0) {
+			 myVtkUnstructuredGrid->SetCells(VTK_QUAD, cellArrayLinearQuad);
+		 }
+		 if (cellArrayQuadTed->GetNumberOfCells() != 0) {
+			 myVtkUnstructuredGrid->SetCells(VTK_QUADRATIC_TETRA, cellArrayQuadTed);
+		 }
 
 }
 

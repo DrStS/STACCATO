@@ -278,17 +278,17 @@ namespace MathLibrary {
 			// set pardiso default parameters
 			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 
-			pardiso_iparm[1] = 3; //The parallel (OpenMP) version of the nested dissection algorithm
+			pardiso_iparm[1] = 2; //The parallel (OpenMP) version of the nested dissection algorithm
 			pardiso_iparm[18] = -1; //Report Mflops 
 			pardiso_maxfct = 1; // max number of factorizations
 			pardiso_mnum = 1; // which factorization to use
-			pardiso_msglvl = 0; // do NOT print statistical information
+			pardiso_msglvl = 1; // do NOT print statistical information
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = 1; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
-			mkl_set_num_threads(4);
+			mkl_set_num_threads(1);
 
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
@@ -303,7 +303,7 @@ namespace MathLibrary {
 			infoOut << "Reordering and factorization completed" << std::endl;
 			infoOut << "Info: Number of equation = " << pardiso_neq << std::endl;
 			infoOut << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
-			infoOut << "Info: Number of factorization MFLOPS = " << pardiso_iparm[18] << std::endl;
+			infoOut << "Info: Number of factorization FLOPS = " << pardiso_iparm[18]*1000000.0 << std::endl;
 			infoOut << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14]+ pardiso_iparm[15]+pardiso_iparm[16])/1000 << std::endl;
 			infoOut << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
 			infoOut << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
@@ -553,49 +553,12 @@ namespace MathLibrary {
 		tmpG3B, tmpG3B, tmpG3A, tmpG3A,
 		tmpG3B, tmpG3A, tmpG3B, tmpG3A,
 		tmpG3B, tmpG3A, tmpG3A, tmpG3B,
-		tmpG4A, tmpG3B, tmpG3B, tmpG3A,		
+		tmpG3A, tmpG3B, tmpG3B, tmpG3A,
 		tmpG3A, tmpG3B, tmpG3A, tmpG3B,
 		tmpG3A, tmpG3A, tmpG3B, tmpG3B,
 
 		tmpG4A, tmpG4A, tmpG4A, tmpG4A
 	};
 	const double tetGaussWeights3D15Points[15] = {tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4};
-
-/*
-	static const double tmpG1A = (7. - sqrt(15.0)) / 34.;
-	static const double tmpG1B = (13. + 3.*sqrt(15.0)) / 34.;
-	static const double tmpG2A = (7. + sqrt(15.0)) / 34.;
-	static const double tmpG2B = (13. - 3.*sqrt(15.0)) / 34.;
-	static const double tmpG3A = (10. - 2. * sqrt(15.0)) / 40.;
-	static const double tmpG3B = (10. + 2. * sqrt(15.0)) / 40.;
-	static const double tmpG4A = 1. / 4.;
-	static const double tmpW1 = (2665. + 14. * sqrt(15.0)) / 226800.;
-	static const double tmpW2 = (2665. - 14. * sqrt(15.0)) / 226800.;
-	static const double tmpW3 = 22. / 2268.;
-	static const double tmpW4 = 16. / 810.;
-
-	const double tetGaussPoints3D15Points[60] = {
-		tmpG1B, tmpG1A, tmpG1A, tmpG1A,
-		tmpG1A, tmpG1B, tmpG1A, tmpG1A,
-		tmpG1A, tmpG1A, tmpG1B, tmpG1A,
-		tmpG1A, tmpG1A, tmpG1A, tmpG1B,
-
-		tmpG2B, tmpG2A, tmpG2A, tmpG2A,
-		tmpG2A, tmpG2B, tmpG2A, tmpG2A,
-		tmpG2A, tmpG2A, tmpG2B, tmpG2A,
-		tmpG2A, tmpG2A, tmpG2A, tmpG2B,
-
-		tmpG3B, tmpG3B, tmpG3A, tmpG3A,
-		tmpG3B, tmpG3A, tmpG3B, tmpG3A,
-		tmpG3B, tmpG3A, tmpG3A, tmpG3B,
-		tmpG4A, tmpG3B, tmpG3B, tmpG3A,
-		tmpG3A, tmpG3B, tmpG3A, tmpG3B,
-		tmpG3A, tmpG3A, tmpG3B, tmpG3B,
-
-		tmpG4A, tmpG4A, tmpG4A, tmpG4A
-	};
-	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
-	*/
-
 } /* namespace Math */
 #endif /* MATHLIBRARY_H_ */

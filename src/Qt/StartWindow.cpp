@@ -97,7 +97,8 @@
 #include <vtkWarpVector.h>
 #include <vtkProperty.h>
 #include <vtkPolyDataMapper.h>
-
+#include <vtkExtractEdges.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -345,13 +346,14 @@ void StartWindow::openOBDFile(void){
 	double scalarRange[2];
 	myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPointData()->GetScalars()->GetRange(scalarRange);
 	
+
 	// Set the color for edges of the sphere
 	actor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
-	actor->GetProperty()->EdgeVisibilityOn();
+	actor->GetProperty()->EdgeVisibilityOff();
 
 	vtkSmartPointer<vtkWarpVector> warpFilter = vtkSmartPointer<vtkWarpVector>::New();
 	warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	warpFilter->SetScaleFactor(1000.0);
+	warpFilter->SetScaleFactor(0.0);
 	warpFilter->Update();
 	mapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
 
@@ -371,16 +373,34 @@ void StartWindow::openOBDFile(void){
 	scalarBar->SetNumberOfLabels(4);
 	scalarBar->SetLookupTable(hueLut);
 
+
+	//Edge vis
+	vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
+	edgeExtractor->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+	vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
+	edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
+	vtkSmartPointer<vtkActor> edgeActor = vtkActor::New();
+	edgeActor->SetMapper(edgeMapper);
+	edgeActor->GetProperty()->SetColor(0., 0., 0.);
+	edgeActor->GetProperty()->SetLineWidth(3);
+	edgeMapper->ScalarVisibilityOff();
+	myVtkViewer->getRenderer()->AddActor(edgeActor);
+
 	myVtkViewer->getRenderer()->AddActor(actor);
 	myVtkViewer->getRenderer()->AddActor2D(scalarBar);
 	myVtkViewer->getRenderer()->ResetCamera();
 	myVtkViewer->GetRenderWindow()->Render();
 
+	vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+	writer->SetFileName("3dTestGrid");
+	writer->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+	writer->Write();
+
+
 	anaysisTimer01.stop();
 	debugOut << "Duration for display Hmesh and results: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-
 
 	/*Test VTK
 

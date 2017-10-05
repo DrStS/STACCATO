@@ -69,6 +69,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	std::vector<FeElement*> allElements(numElements);
 
 
+	std::ofstream dynStiffFile;
+	dynStiffFile.open("dynStiff.txt");
+
+	dynStiffFile.precision(std::numeric_limits<double>::digits10 + 1);
+
+	dynStiffFile << std::scientific;
+
 	for (int iElement = 0; iElement < numElements; iElement++)
 	{
 	if (myHMesh->getElementTypes()[iElement] == STACCATO_PlainStress4Node2D) {
@@ -127,7 +134,19 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 				}
 			}
 		}
+
+		//Write Matrix to file
+		for (int i = 0; i < numDoFsPerElement; i++) {
+			for (int j = 0; j < numDoFsPerElement; j++) {
+				if (eleDoFs[j] >= eleDoFs[i]) {
+					dynStiffFile  << eleDoFs[i] << "\t" << eleDoFs[j] << "\t" << (*A)(eleDoFs[i], eleDoFs[j]) << std::endl;
+				}
+			}
+		}
+
 	}
+
+	dynStiffFile.close();
 
 	//Add cload rhs contribution 
 	double cload = 1.0;

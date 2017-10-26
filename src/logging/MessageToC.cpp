@@ -41,6 +41,7 @@ extern "C" {
 		mklProgressbar = new OcctQtProcessIndicator(0);
 		mklProgressbar->SetRange(0, 100);
 		mklProgressbar->Show(true, "PARDISO");
+		std::cout << "initMKLProgressBar" << std::endl;
 	}
 	void updateMKLProgressBar(int _status) {
 		mklProgressbar->getQProgressDialogHandle()->setValue(_status);

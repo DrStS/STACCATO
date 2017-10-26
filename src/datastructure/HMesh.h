@@ -91,6 +91,12 @@ public:
 	***********/
 	std::vector<double>& getNodeCoords(){ return nodeCoords; }
 	/***********************************************************************************************
+	* \brief get node coords sorted
+	* \param[out] reference to std vector double
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> & getNodeCoordsSortElement() { return nodeCoordsSortElementIndices; }
+	/***********************************************************************************************
 	* \brief get element types
 	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
@@ -113,7 +119,19 @@ public:
 	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<int>& getTypeDoFsPerElement() { return typeDoFsPerElement; }
+	std::vector<int>& getNumDoFsPerElement() { return numDoFsPerElem; }
+	/***********************************************************************************************
+	* \brief get number of DoFs per element
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<int>& getElementDoFList() { return elementDoFList; }
+	/***********************************************************************************************
+	* \brief get number of DoFs per element
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+//	std::vector<int>& getTypeDoFsPerElement() { return typeDoFsPerElement; }
 	/***********************************************************************************************
 	* \brief get relation of node index to element indexes: 1 to nn
 	* \param[out] reference to std::vector<std::vector<int>>
@@ -154,6 +172,12 @@ public:
 	***********/
 	int getTotalNumOfDoFsRaw(){ return totalNumOfDoFsRaw; }
 	/***********************************************************************************************
+	* \brief Get domain dimension
+	* \param[out] domain dimension
+	* \author Stefan Sicklinger
+	***********/
+	int getDomainDimension() { return domainDimension; }
+	/***********************************************************************************************
 	* \brief build datastructure
 	* \author Stefan Sicklinger
 	***********/
@@ -161,10 +185,16 @@ public:
 	/***********************************************************************************************
 	* \brief Add a result to database
 	* \param[in] _type
-	* \param[in] _value
+	* \param[in] _valueVec
 	* \author Stefan Sicklinger
 	***********/
-	void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, double _value);
+	void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec);
+	/***********************************************************************************************
+	* \brief Add a result time description
+	* \param[in] _resultsTimeDescription
+	* \author Stefan Sicklinger
+	***********/
+	void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription);
 	/***********************************************************************************************
 	* \brief Add a result to database
 	* \param[in] _type
@@ -172,18 +202,30 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	std::vector<double>& HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type);
+	/***********************************************************************************************
+	* \brief build DOF graph and local element coord vectors
+	* \author Stefan Sicklinger
+	***********/
+	void buildDoFGraph(void);
+	
 
 private:
 	/// mesh name
 	std::string name;
     /// coordinates of all nodes
     std::vector<double> nodeCoords;
+	/// coordinates of all nodes sorted for parallel mem access element index 0..ne
+	std::vector<double> nodeCoordsSortElementIndices;
+	/// DoF list sorted  element index 0..ne
+	std::vector<int> elementDoFList;
     /// labels of all nodes
 	std::vector<int> nodeLabels;
     /// number of nodes of each element
-	std::vector<int> numNodesPerElem;
+	std::vector<int> numNodesPerElem; 
+	/// number of DoFs of each element
+	std::vector<int> numDoFsPerElem;
 	/// type of DoFs of each element
-	std::vector<int> typeDoFsPerElement;
+	//std::vector<int> typeDoFsPerEle;
 	/// number of DoFs of each node
 	std::vector<int> numDoFsPerNode;
     /// nodes connectivity inside all elements using node labels
@@ -202,14 +244,18 @@ private:
 	std::vector<std::vector<int>> elementIndexToNodesIndices;
 	/// total number of DoF without internal DoFs and BCs
 	int totalNumOfDoFsRaw;
+	/// domain dimension 1D, 2D or 3D
+	int domainDimension;
 	/// relation of node index to DoF indexes: 1 to nd
 	std::vector<std::vector<int>> nodeIndexToDoFIndices;
 	/// result Vector node index to result value
-	std::vector<double> resultUxRe;
+	std::vector<std::vector<double>> resultsUxRe;
 	/// result Vector node index to result value
-	std::vector<double> resultUyRe;
+	std::vector<std::vector<double>> resultsUyRe;
 	/// result Vector node index to result value
-	std::vector<double> resultUzRe;
+	std::vector<std::vector<double>> resultsUzRe;
+	/// result vector description in time domain 
+	std::vector<std::string> resultsTimeDescription;
     /// unit test class
     friend class TestFEMesh;
 private:

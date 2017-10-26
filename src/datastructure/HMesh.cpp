@@ -43,29 +43,33 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	}
 }
 
-void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, double _value) {
-	// Needs to be called for every node in the sequence nodeIndex = 0..nNodes
+void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec) {
 	if (_type == STACCATO_Ux_Re) {
-		resultUxRe.push_back(_value);
+		resultsUxRe.push_back(_valueVec);
 	}
 	else if (_type == STACCATO_Uy_Re) {
-		resultUyRe.push_back(_value);
+		resultsUyRe.push_back(_valueVec);
 	}
 	else if (_type == STACCATO_Uz_Re) {
-		resultUzRe.push_back(_value);
+		resultsUzRe.push_back(_valueVec);
 	}
 }
 
+
 std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type) {
 	if (_type == STACCATO_Ux_Re){
-		return resultUxRe;
+		return resultsUxRe[0];
 	}
 	else if(_type == STACCATO_Uy_Re){
-		return resultUyRe;
+		return resultsUyRe[0];
 	}
 	else if (_type == STACCATO_Uz_Re) {
-		return resultUzRe;
+		return resultsUzRe[0];
 	}
+}
+
+void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription) {
+	resultsTimeDescription.push_back(_resultsTimeDescription);
 }
 
 void HMesh::buildDataStructure(void){
@@ -91,6 +95,7 @@ void HMesh::buildDataStructure(void){
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			numDoFsPerNodeCurrent = 2;
+			domainDimension = 2;
 		}
 		else if (elementTyps[i] == STACCATO_Tetrahedron10Node3D) {
 			numNodesPerElem[i] = 10;
@@ -98,6 +103,7 @@ void HMesh::buildDataStructure(void){
 			//2. DoF -> u_y
 			//3. DoF -> u_z
 			numDoFsPerNodeCurrent = 3;
+			domainDimension = 3;
 		}
 
 		for (int j = 0; j < numNodesPerElem[i]; j++){
@@ -128,3 +134,44 @@ void HMesh::buildDataStructure(void){
 	totalNumOfDoFsRaw = globalDoFIndex;
 
 }
+
+void HMesh::buildDoFGraph(void) {
+	int domainDimension = 3;
+	int numDoFsPerElement;
+	//nodeCoordsSortElementIndices.resize(getNumNodes()*domainDimension);
+	numDoFsPerElem.resize(getNumElements());
+	//elementDoFList.resize(totalNumOfDoFsRaw);
+	int lastIndex = 0;
+
+	for (std::vector<int>::size_type iElement = 0; iElement < elementLabels.size(); iElement++) {
+		int numNodesPerElement = numNodesPerElem[iElement];
+		double * eleCoord = new double[numNodesPerElement*domainDimension];
+		numDoFsPerElement = 0;
+		//Loop over nodes of current element
+		for (int j = 0; j < numNodesPerElement; j++)
+		{
+			int nodeIndex = elementIndexToNodesIndices[iElement][j];
+			if (domainDimension == 3) {
+				nodeCoordsSortElementIndices.push_back(nodeCoords[nodeIndex * 3 + 0]);
+				nodeCoordsSortElementIndices.push_back(nodeCoords[nodeIndex * 3 + 1]);
+				nodeCoordsSortElementIndices.push_back(nodeCoords[nodeIndex * 3 + 2]);
+			}
+			else if (domainDimension == 2) {
+				// Extract x and y coord only; for 2D; z=0
+				nodeCoordsSortElementIndices.push_back(nodeCoords[nodeIndex * 3 + 0]);
+				nodeCoordsSortElementIndices.push_back(nodeCoords[nodeIndex * 3 + 1]);
+			}
+
+			// Generate DoF table
+			for (int l = 0; l < numDoFsPerNode[nodeIndex]; l++) {
+				elementDoFList.push_back(nodeIndexToDoFIndices[nodeIndex][l]);
+				numDoFsPerElement++;
+			}
+
+		}
+		numDoFsPerElem[iElement] = numDoFsPerElement;
+	}
+}
+
+
+

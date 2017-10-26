@@ -42,6 +42,9 @@ int mkl_progress( int* ithr, int* step, char* stage, int lstage )
 		if(currentStatusUserBreak){
 			printf("HELLO %d", currentStatusUserBreak);
 		}
+		if (*step == 100) {
+			previousStep = -1;
+		}
 		//printf("Status %d\n", *step);
 	}
   return currentStatusUserBreak;

@@ -62,6 +62,11 @@ void FeTetrahedron10NodeElement::computeElementMatrix(const double* _eleCoords) 
 		memset(dNz, 0, 10 * sizeof(double));
 
 		evalTet10IsoPShapeFunDer(_eleCoords, MathLibrary::tetGaussPoints3D4Points[(4 * k) + 0], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 1], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 2], MathLibrary::tetGaussPoints3D4Points[(4 * k) + 3], N, dNx, dNy, dNz, Jdet);
+		
+		if (Jdet < 0) {
+			std::cout << "Jdet negative!" << std::endl;
+		}
+
 		//Compute element stiffness matrix
 		//B matrix 6 x 30
 		for (int i = 0; i < 10; i++) {

@@ -353,7 +353,7 @@ void StartWindow::openOBDFile(void){
 
 	vtkSmartPointer<vtkWarpVector> warpFilter = vtkSmartPointer<vtkWarpVector>::New();
 	warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	warpFilter->SetScaleFactor(0.0);
+	warpFilter->SetScaleFactor(1000.0);
 	warpFilter->Update();
 	mapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
 

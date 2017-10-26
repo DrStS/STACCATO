@@ -138,6 +138,7 @@ namespace MathLibrary {
 			n = _m;
 			isSquare = true;
 			isSymmetric = _isSymmetric;
+			alreadyCalled = false;
 			if (!((typeid(T) == typeid(double)) || (typeid(T) == typeid(float)))) {
 				assert(0);
 			}
@@ -156,6 +157,7 @@ namespace MathLibrary {
 			n = _n;
 			isSquare = false;
 			isSymmetric = false;
+			alreadyCalled = false;
 			mat = new mat_t(m);
 			rowIndex = new std::vector<int>(m + 1);
 		}
@@ -419,15 +421,16 @@ namespace MathLibrary {
 			size_t jj_counter;
 
 			std::ofstream myfile;
-			myfile.open("matrix.dat");
+			myfile.open("dynStiff.dat");
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
 			myfile << std::scientific;
 			for (ii_counter = 0; ii_counter < m; ii_counter++) {
 				for (jj_counter = 0; jj_counter < n; jj_counter++) {
 					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << '\t' << (*mat)[ii_counter].find(jj_counter)->second;
+						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
 					}
 					else {
-						myfile << '\t' << 0.0;
+						//myfile << '\t' << 0.0;
 					}
 				}
 				myfile << std::endl;
@@ -476,13 +479,15 @@ namespace MathLibrary {
 		MKL_INT pardiso_idum;
 		/// pardiso variable
 		MKL_INT pardiso_error;
+		/// determineCSR already called
+		bool alreadyCalled;
 		/***********************************************************************************************
 		 * \brief This fills the three vectors of the CSR format (one-based)
 		 * \author Stefan Sicklinger
 		 ***********/
 		void determineCSR() {
-			static bool alreadyCalled = false;
 			if (!alreadyCalled) {
+				std::cout << "!alreadyCalled" << std::endl;
 				row_iter ii;
 				col_iter jj;
 				size_t ele_row = 0; //elements in current row

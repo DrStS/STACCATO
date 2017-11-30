@@ -1,0 +1,1 @@
+pyinstaller.exe --onefile --windowed --name STACCATO --icon=STACCATO.ico main.py

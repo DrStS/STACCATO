@@ -19,6 +19,12 @@
 */
 #include <VtkViewer.h>
 
+#include "Timer.h"
+#include "MemWatcher.h"
+
+#include "VisualizerWindow.h"
+#include "HMesh.h"
+
 //VTK
 #include <vtkCamera.h>
 #include <vtkGenericOpenGLRenderWindow.h>
@@ -35,11 +41,22 @@
 #include <vtkSelection.h>
 #include <vtkExtractSelection.h>
 #include <vtkUnstructuredGrid.h>
+#include <vtkFloatArray.h>
+#include <vtkPointData.h>
+#include <vtkScalarBarActor.h>
+#include <vtkScalarBarWidget.h>
+#include <vtkLookupTable.h>
+#include <vtkRenderWindow.h>
+#include <vtkWarpVector.h>
+#include <vtkPolyDataMapper.h>
+#include <vtkExtractEdges.h>
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkPointPicker.h>
 //QT5
 #include <QInputEvent>
 
+
 VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
-	
 	vtkNew<vtkGenericOpenGLRenderWindow> window;
 	SetRenderWindow(window.Get());
 
@@ -65,7 +82,18 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	// Some members
 	mySelectedMapper = vtkSmartPointer<vtkDataSetMapper>::New();
 	mySelectedActor = vtkSmartPointer<vtkActor>::New();
+	myScalarBarWidget = vtkSmartPointer<vtkScalarBarWidget>::New();
+	selectedPickActor = vtkActor::New();
 	//mySelectedProperty = vtkSmartPointer<vtkProperty>::New();
+	myEdgeActor = vtkActor::New();
+
+	//Properties
+	myEdgeVisibility = false;
+	mySurfaceVisiiblity = true;
+	myScalarBarVisibility = true;
+	myInteractivePickerVM = false;
+	myTitle = "u_x";
+	myScaleFactor = 1;
 }
 
 void VtkViewer::zoomToExtent()
@@ -109,112 +137,288 @@ void VtkViewer::displayCompass(void) {
 
 
 void VtkViewer::mousePressEvent(QMouseEvent * 	_event) {
+	
+		// The button mappings can be used as a mask. This code prevents conflicts
+		// when more than one button pressed simultaneously.
+		if (_event->button() & Qt::LeftButton && !myRotateMode) {
+			// Some Picker VtkObjects
+			vtkSmartPointer<vtkDataSetMapper> selectedPickMapper = vtkDataSetMapper::New();
 
-	// The button mappings can be used as a mask. This code prevents conflicts
-	// when more than one button pressed simultaneously.
-
-	// Remove selectionActor
-	static bool mySelectedActorActive = false;
-	if (mySelectedActorActive) {
-		myRenderer->RemoveActor(mySelectedActor);
-	}
-
-	if (_event->button() & Qt::LeftButton) {
-
-		// Get the location of the click (in window coordinates)
-		int* pos = GetRenderWindow()->GetInteractor()->GetEventPosition();
-
-		vtkSmartPointer<vtkCellPicker> picker =
-			vtkSmartPointer<vtkCellPicker>::New();
-		picker->SetTolerance(0.005);
-
-		// Pick from this location.
-		picker->Pick(pos[0], pos[1], 0, myRenderer);
-
-		double* worldPosition = picker->GetPickPosition();
-		std::cout << "Element id is: " << picker->GetCellId() << std::endl;
-		std::cout << "Node id is: " << picker->GetPointId() << std::endl;
-
-		if (picker->GetCellId() != -1)
-		{
-
-			std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
-				<< " " << worldPosition[2] << endl;
-
-			vtkSmartPointer<vtkIdTypeArray> ids =
-				vtkSmartPointer<vtkIdTypeArray>::New();
-			ids->SetNumberOfComponents(1);
-
-			if (myCurrentPickerType == STACCATO_Picker_Element) {
-				ids->InsertNextValue(picker->GetCellId());
+			// Remove selectionPickActor
+			static bool mySelectedActorActive = false;
+			if (mySelectedActorActive) {
+				myRenderer->RemoveActor(selectedPickActor);
+				myRenderer->GetRenderWindow()->Render();
 			}
-			else if (myCurrentPickerType == STACCATO_Picker_Node) {
-				ids->InsertNextValue(picker->GetPointId());
-			}
-			
-			vtkSmartPointer<vtkSelectionNode> selectionNode =
-				vtkSmartPointer<vtkSelectionNode>::New();
-			if (myCurrentPickerType == STACCATO_Picker_Element) {
-				selectionNode->SetFieldType(vtkSelectionNode::CELL);
-			}
-			else if (myCurrentPickerType == STACCATO_Picker_Node) {
-				selectionNode->SetFieldType(vtkSelectionNode::POINT);
-			}
-			selectionNode->SetContentType(vtkSelectionNode::INDICES);
-			selectionNode->SetSelectionList(ids);
 
-			vtkSmartPointer<vtkSelection> selection =
-				vtkSmartPointer<vtkSelection>::New();
-			selection->AddNode(selectionNode);
+			// Get the location of the click (in window coordinates)
+			int* pos = GetRenderWindow()->GetInteractor()->GetEventPosition();
 
-			vtkSmartPointer<vtkExtractSelection> extractSelection =
-				vtkSmartPointer<vtkExtractSelection>::New();
+			vtkSmartPointer<vtkPointPicker> pointPicker = vtkSmartPointer<vtkPointPicker>::New();
+			vtkSmartPointer<vtkCellPicker> cellPicker = vtkSmartPointer<vtkCellPicker>::New();
+			pointPicker->SetTolerance(0.05);
+			cellPicker->SetTolerance(1e-6);
 
-			extractSelection->SetInputData(0, myRenderer->GetActors()->GetLastActor()->GetMapper()->GetInput());
-			extractSelection->SetInputData(1, selection);
-			extractSelection->Update();
-
-			// In selection
-			vtkSmartPointer<vtkUnstructuredGrid> selected =
-				vtkSmartPointer<vtkUnstructuredGrid>::New();
-			selected->ShallowCopy(extractSelection->GetOutput());
-
-			std::cout << "There are " << selected->GetNumberOfPoints()
-				<< " points in the selection." << std::endl;
-			std::cout << "There are " << selected->GetNumberOfCells()
-				<< " cells in the selection." << std::endl;
-
-			mySelectedMapper->SetInputData(selected);
-			mySelectedActor->SetMapper(mySelectedMapper);
-			if (myCurrentPickerType == STACCATO_Picker_Element) {
-				mySelectedActor->GetProperty()->SetColor(0.5, 0.5, 0.5);
-				mySelectedActor->GetProperty()->EdgeVisibilityOn();
-				mySelectedActor->GetProperty()->SetEdgeColor(0, 0, 1);
-				mySelectedActor->GetProperty()->SetLineWidth(3);
-				mySelectedMapper->ScalarVisibilityOff();
-			}
-			else if (myCurrentPickerType == STACCATO_Picker_Node) {
-				mySelectedActor->GetProperty()->SetColor(0, 0, 1);
-				mySelectedActor->GetProperty()->SetPointSize(8.0);
-				mySelectedMapper->ScalarVisibilityOff();
-			}
+			// Dettach Renderer from other actors other than Surface
+			// Remove edgeActor
+			if (myEdgeVisibility)
+				myRenderer->RemoveActor(myEdgeActor);
+			// Enable Surface Actor
 			myRenderer->AddActor(mySelectedActor);
-			mySelectedActorActive = true;
+
+			// Pick from this location.
+			pointPicker->Pick(pos[0], pos[1], 0, myRenderer);
+			cellPicker->Pick(pos[0], pos[1], 0, myRenderer);
+
+			double* worldPosition = pointPicker->GetPickPosition();
+			std::cout << "Element id is: " << cellPicker->GetCellId() << std::endl;
+			std::cout << "Node id is: " << pointPicker->GetPointId() << std::endl;
+
+			// Store the Pick
+			mySelectedNodes.push_back(pointPicker->GetPointId());
+			mySelectedElements.push_back(cellPicker->GetCellId());
+
+			if (myCurrentPickerType!=STACCATO_Picker_None) {
+
+				if (pointPicker->GetPointId() != -1 && cellPicker->GetCellId() != -1)
+				{
+
+					std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
+						<< " " << worldPosition[2] << endl;
+
+					vtkSmartPointer<vtkIdTypeArray> ids =
+						vtkSmartPointer<vtkIdTypeArray>::New();
+					ids->SetNumberOfComponents(1);
+
+					if (myCurrentPickerType == STACCATO_Picker_Element) {
+						ids->InsertNextValue(cellPicker->GetCellId());
+						vtkSmartPointer<vtkIdList> ids_points = vtkIdList::New();
+					}
+					else if (myCurrentPickerType == STACCATO_Picker_Node) {
+						ids->InsertNextValue(pointPicker->GetPointId());
+					}
+					vtkSmartPointer<vtkSelectionNode> selectionNode =
+						vtkSmartPointer<vtkSelectionNode>::New();
+					if (myCurrentPickerType == STACCATO_Picker_Element) {
+						selectionNode->SetFieldType(vtkSelectionNode::CELL);
+					}
+					else if (myCurrentPickerType == STACCATO_Picker_Node) {
+						selectionNode->SetFieldType(vtkSelectionNode::POINT);
+					}
+					selectionNode->SetContentType(vtkSelectionNode::INDICES);
+					selectionNode->SetSelectionList(ids);
+
+					vtkSmartPointer<vtkSelection> selection =
+						vtkSmartPointer<vtkSelection>::New();
+					selection->AddNode(selectionNode);
+
+					vtkSmartPointer<vtkExtractSelection> extractSelection =
+						vtkSmartPointer<vtkExtractSelection>::New();
+
+					extractSelection->SetInputData(0, myRenderer->GetActors()->GetLastActor()->GetMapper()->GetInput());
+					extractSelection->SetInputData(1, selection);
+					extractSelection->Update();
+
+					// In selection
+					vtkSmartPointer<vtkUnstructuredGrid> selected =
+						vtkSmartPointer<vtkUnstructuredGrid>::New();
+					selected->ShallowCopy(extractSelection->GetOutput());
+
+					std::cout << "There are " << selected->GetNumberOfPoints()
+						<< " points in the selection." << std::endl;
+					std::cout << "There are " << selected->GetNumberOfCells()
+						<< " cells in the selection." << std::endl;
+
+					selectedPickMapper->SetInputData(selected);
+					selectedPickActor->SetMapper(selectedPickMapper);
+					if (myCurrentPickerType == STACCATO_Picker_Element) {
+						selectedPickActor->GetProperty()->SetColor(1, 0, 0);
+						selectedPickActor->GetProperty()->SetPointSize(8.0);
+						selectedPickActor->GetProperty()->EdgeVisibilityOff();
+						selectedPickActor->GetProperty()->SetEdgeColor(0, 0, 1);
+						selectedPickActor->GetProperty()->SetLineWidth(4.0);
+						selectedPickMapper->ScalarVisibilityOff();
+					}
+					else if (myCurrentPickerType == STACCATO_Picker_Node) {
+						selectedPickActor->GetProperty()->SetColor(0, 0, 1);
+						selectedPickActor->GetProperty()->SetPointSize(10.0);
+						selectedPickMapper->ScalarVisibilityOff();
+					}
+					myRenderer->AddActor(selectedPickActor);
+
+					mySelectedActorActive = true;	
+
+					if(myInteractivePickerVM)
+						myUpdateVisualizerWindow();
+				}
+			}
+			// Attach Model View Properties to Renderer
+			if (mySurfaceVisiiblity) {
+				mySelectedActor->SetMapper(mySelectedMapper);
+				myRenderer->AddActor(mySelectedActor);
+			}
+			else
+				myRenderer->RemoveActor(mySelectedActor);
+
+			if (myEdgeVisibility)
+				myRenderer->AddActor(myEdgeActor);
 			myRenderer->GetRenderWindow()->Render();
 		}
+		else if (_event->button() & Qt::RightButton) {
 
+		}
+		else if (_event->button() & Qt::MidButton) {
 
+		}
+		QVTKOpenGLWidget::mouseReleaseEvent(_event);
 	}
-	else if (_event->button() & Qt::RightButton) {
 
-	}
-	else if (_event->button() & Qt::MidButton) {
-
-	}
-	QVTKOpenGLWidget::mouseReleaseEvent(_event);
-	
-}
 
 void VtkViewer::setPickerMode(STACCATO_Picker_type _currentPickerType) {
 	myCurrentPickerType = _currentPickerType;
+}
+
+void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstructuredGrid) {
+	// Reset the Renderer
+	myRenderer->RemoveAllViewProps();
+
+	mySelectedMapper->SetInputData(_vtkUnstructuredGrid);
+
+	mySelectedMapper->ScalarVisibilityOn();
+	mySelectedMapper->SetScalarModeToUsePointData();
+	mySelectedMapper->SetColorModeToMapScalars();
+
+	mySelectedActor->SetMapper(mySelectedMapper);
+
+	double scalarRange[2];
+	_vtkUnstructuredGrid->GetPointData()->GetScalars()->GetRange(scalarRange);
+
+	// Set the color for edges of the sphere
+	mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
+	mySelectedActor->GetProperty()->EdgeVisibilityOff();
+
+	vtkSmartPointer<vtkWarpVector> warpFilter = vtkWarpVector::New();
+	warpFilter->SetInputData(_vtkUnstructuredGrid);
+	warpFilter->SetScaleFactor(myScaleFactor);
+	warpFilter->Update();
+	mySelectedMapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
+
+	mySelectedMapper->UseLookupTableScalarRangeOn();
+	// Create a lookup table to share between the mapper and the scalarbar
+	vtkSmartPointer<vtkLookupTable> hueLut = vtkLookupTable::New();
+	hueLut->SetTableRange(scalarRange[0], scalarRange[1]);
+	hueLut->SetHueRange(0.667, 0.0);
+	hueLut->SetValueRange(1, 1);
+	hueLut->Build();
+
+	mySelectedMapper->SetLookupTable(hueLut);
+
+	myScalarBarWidget->SetResizable(true);
+	myScalarBarWidget->SetInteractor(GetRenderWindow()->GetInteractor());
+	myScalarBarWidget->GetScalarBarActor()->SetTitle(myTitle);
+	myScalarBarWidget->GetScalarBarActor()->SetNumberOfLabels(4);
+	myScalarBarWidget->GetScalarBarActor()->SetLookupTable(hueLut);
+	myScalarBarWidget->EnabledOn();
+
+	this->getRenderer()->AddActor(myEdgeActor);
+
+	if (myEdgeVisibility) {
+		//Edge vis
+		vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
+		edgeExtractor->SetInputData(warpFilter->GetUnstructuredGridOutput());
+		vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
+		edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
+		myEdgeActor->SetMapper(edgeMapper);
+		myEdgeActor->GetProperty()->SetColor(0., 0., 0.);
+		myEdgeActor->GetProperty()->SetLineWidth(3);
+		edgeMapper->ScalarVisibilityOff();
+	}
+	else
+		myRenderer->RemoveActor(myEdgeActor);
+		
+	if (!mySurfaceVisiiblity)
+		this->getRenderer()->RemoveActor(mySelectedActor);
+	else
+		this->getRenderer()->AddActor(mySelectedActor);
+	
+	if (myScalarBarVisibility)
+		this->getRenderer()->AddActor2D(myScalarBarWidget->GetScalarBarActor());
+	else
+		this->getRenderer()->RemoveActor2D(myScalarBarWidget->GetScalarBarActor());
+
+	static bool resetCamera = true;
+	if (resetCamera) {
+		this->getRenderer()->ResetCamera();
+		resetCamera = false;
+	}
+	this->GetRenderWindow()->Render();
+
+	vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkXMLUnstructuredGridWriter::New();
+	writer->SetFileName("3dTestGrid");
+	writer->SetInputData(_vtkUnstructuredGrid);
+	writer->Write();
+	anaysisTimer01.stop();
+	//debugOut << "Duration for display Hmesh and results: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	//debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+}
+
+void VtkViewer::setDisplayProperties(STACCATO_Result_type _type, bool _edge, bool _surface, bool _scalarBar) {
+	if (_type == STACCATO_Ux_Re) {
+		this->myTitle = "Ux_Re";
+	}
+	else if (_type == STACCATO_Uy_Re) {
+		this->myTitle = "Uy_Re";
+	}
+	else if (_type == STACCATO_Uz_Re) {
+		this->myTitle = "Uz_Re";
+	}
+	else if (_type == STACCATO_Ux_Im) {
+		this->myTitle = "Ux_Im";
+	}
+	else if (_type == STACCATO_Uy_Im) {
+		this->myTitle = "Uy_Im";
+	}
+	else if (_type == STACCATO_Uz_Im) {
+		this->myTitle = "Uz_Im";
+	}
+	else if (_type == STACCATO_Magnitude_Re) {
+		this->myTitle = "UMag_Re";
+	}
+	else if (_type == STACCATO_Magnitude_Im) {
+		this->myTitle = "UMag_Im";
+	}
+
+	this->myEdgeVisibility = _edge;
+	this->mySurfaceVisiiblity = _surface;
+	this->myScalarBarVisibility = _scalarBar;
+}
+
+void VtkViewer::setScalingFactor(double _factor) {
+	this->myScaleFactor = _factor;
+	cout << "Scaling Factor changed to " << this->myScaleFactor << endl;
+}
+
+void VtkViewer::setViewMode(bool _rotate) {
+	this->myPickMode = !_rotate;
+	this->myRotateMode = _rotate;
+}
+
+std::vector<int> VtkViewer::getSelection(STACCATO_Picker_type _type) {
+	if (_type == STACCATO_Picker_Node)
+		return mySelectedNodes;
+	else if (_type == STACCATO_Picker_Element)
+		return mySelectedElements;
+}
+
+void VtkViewer::my2dVisualizerInterface(HMesh& _hMesh) {
+	VW = new VisualizerWindow(_hMesh);
+	VW->show();
+	myInteractivePickerVM=true;
+}
+
+void VtkViewer::myUpdateVisualizerWindow(){
+	if (myCurrentPickerType == STACCATO_Picker_Node)
+		VW->setSelection(mySelectedNodes);
+	else if (myCurrentPickerType == STACCATO_Picker_Element)
+		VW->setSelection(mySelectedElements);
 }

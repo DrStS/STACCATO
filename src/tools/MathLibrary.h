@@ -271,10 +271,12 @@ namespace MathLibrary {
 #ifdef USE_INTEL_MKL
 			this->determineCSR();
 			if (isSymmetric) {
-				pardiso_mtype = -2;  // real and symmetric indefinite
+				if(std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
+				else if (std::is_same<T, double>::value) pardiso_mtype  = -2;		// real and symmetric indefinite
 			}
 			else {
-				pardiso_mtype = 11; // real and unsymmetric matrix
+				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
+				else if (std::is_same<T, double>::value) pardiso_mtype   = 11;		// real and unsymmetric matrix
 			}
 
 			// set pardiso default parameters
@@ -290,8 +292,8 @@ namespace MathLibrary {
 			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = 1; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
-			mkl_set_num_threads(1);
-
+			//pardiso_iparm[36] = -90;
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads);
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -358,7 +360,7 @@ namespace MathLibrary {
 			// pardiso forward and backward substitution
 			pardiso_phase = 33; // forward and backward substitution
 			//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
-			mkl_set_num_threads(1); // set number of threads to 1 for mkl call only
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -433,7 +435,7 @@ namespace MathLibrary {
 						//myfile << '\t' << 0.0;
 					}
 				}
-				myfile << std::endl;
+				//myfile << std::endl;
 			}
 			myfile << std::endl;
 			myfile.close();

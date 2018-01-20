@@ -1,0 +1,97 @@
+# A cmake module to find XSD and XERCES
+#------------------------------------------------------------------------------------#
+# MKL includes and libraries are searched for in MKL_INCLUDE_DIR and MKL_LIB_DIR.
+# If MKL_INCLUDE_DIR and MKL_LIB_DIR are not set, the module searches under 
+# the environment variable XSDROOT_DIR and /opt/intel/mkl subdirectories.
+#------------------------------------------------------------------------------------#
+
+set(XSDROOT_DIR $ENV{XSDROOT})
+set(XERCESROOT_DIR $ENV{XERCESROOT})
+IF (NOT XSDROOT_DIR)
+   IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+       IF (EXISTS "/opt/intel/mkl")
+          set(XSDROOT_DIR "/opt/intel/mkl")
+       ENDIF(EXISTS "/opt/intel/mkl")
+   ENDIF()
+   IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+       IF (EXISTS "C:/software/libs/XSD/libxsd")
+          set(XSDROOT_DIR "C:/software/libs/XSD/libxsd")
+       ENDIF()
+   ENDIF()
+ENDIF ()
+message("XSDROOT_DIR is: ${XSDROOT_DIR}")
+IF (NOT XERCESROOT_DIR)
+   IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+       IF (EXISTS "/opt/intel/mkl")
+          set(XSDROOT_DIR "/opt/intel/mkl")
+       ENDIF(EXISTS "/opt/intel/mkl")
+   ENDIF()
+   IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+       IF (EXISTS "C:/software/libs/XERCES/xerces-c")
+          set(XERCESROOT_DIR "C:/software/libs/XERCES/xerces-c")
+       ENDIF()
+   ENDIF()
+ENDIF ()
+message("XERCESROOT_DIR is: ${XERCESROOT_DIR}")
+#------------------------------------------------------------------------------------#
+# Stage 1: find the include directory
+#------------------------------------------------------------------------------------#
+IF (NOT XSD_INCLUDE_DIR)
+set(EXPECT_XSD_INCLUDE_DIR "${XSDROOT_DIR}")	
+    if (IS_DIRECTORY ${EXPECT_XSD_INCLUDE_DIR})
+      set(XSD_INCLUDE_DIR ${EXPECT_XSD_INCLUDE_DIR})
+    endif ()
+	IF(XSD_INCLUDE_DIR MATCHES "XSD_INCLUDE_DIR-NOTFOUND")
+     unset(XSD_INCLUDE_DIR CACHE)
+	ENDIF()
+ENDIF ()
+message("XSD_INCLUDE_DIR is: ${XSD_INCLUDE_DIR}")
+IF (NOT XERCES_INCLUDE_DIR)
+  set(EXPECT_XERCES_INCLUDE_DIR "${XERCESROOT_DIR}/include")	
+    if (IS_DIRECTORY ${EXPECT_XERCES_INCLUDE_DIR})
+      set(XERCES_INCLUDE_DIR ${EXPECT_XERCES_INCLUDE_DIR})
+    endif ()
+	IF(XERCES_INCLUDE_DIR MATCHES "XERCES_INCLUDE_DIR-NOTFOUND")
+     unset(XERCES_INCLUDE_DIR CACHE)
+	ENDIF()
+ENDIF ()
+message("XERCES_INCLUDE_DIR is: ${XERCES_INCLUDE_DIR}")
+#------------------------------------------------------------------------------------#
+# Stage 2: find the lib directory
+#------------------------------------------------------------------------------------#	
+if (NOT XERCES_LIB_DIR)
+  if (XERCESROOT_DIR)
+	set(EXPECT_XERCES_LIBPATH "${XERCESROOT_DIR}/lib")	
+    if (IS_DIRECTORY ${EXPECT_XERCES_LIBPATH})
+      set(XERCES_LIB_DIR ${EXPECT_XERCES_LIBPATH})
+    endif ()
+  endif ()
+endif ()
+message("XERCES_LIB_DIR is: ${XERCES_LIB_DIR}")
+#------------------------------------------------------------------------------------#
+# Stage 3: find the libraries
+#------------------------------------------------------------------------------------#	
+IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+set (CMAKE_FIND_LIBRARY_SUFFIXES .a)
+ENDIF()
+IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+set (CMAKE_FIND_LIBRARY_SUFFIXES .lib)
+ENDIF()
+if (XERCES_LIB_DIR)
+  find_library(XERCES_XERCES-C_LIBRARY     xerces-c_3     ${XERCES_LIB_DIR})
+  if (XERCES_XERCES-C_LIBRARY)
+    IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+      set (XERCES_LIBRARIES "${XERCES_XERCES-C_LIBRARY}")
+    ENDIF()
+    IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
+      set (XERCES_LIBRARIES ${XERCES_XERCES-C_LIBRARY} )
+    ENDIF()
+  else ()
+    set (XERCES_LIBRARIES "")
+  endif ()
+endif ()
+
+# set MKL_FOUND
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(XSDXERCES REQUIRED_VARS  XERCES_XERCES-C_LIBRARY)
+mark_as_advanced(XSD_INCLUDE_DIR XERCES_INCLUDE_DIR XERCES_LIB_DIR XERCES_LIBRARIES)

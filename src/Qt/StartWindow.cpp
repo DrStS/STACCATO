@@ -34,13 +34,29 @@
 #include "qnemainwindow.h"
 #include "HMesh.h"
 #include "HMeshToVtkUnstructuredGrid.h"
+#include "VisualizerWindow.h"
 
-//QT5
+//Q5
 #include <QToolBar>
 #include <QTreeView>
 #include <QMessageBox>
 #include <QDockWidget>
 #include <QtWidgets>
+#include <QLabel>
+#include <QDesktopWidget>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QStringList>
+#include <QComboBox>
+#include <QCheckBox>
+#include <QGroupBox>
+#include <QFormLayout>
+#include <QSpinBox>
+#include <QtCharts/QLineSeries>
+//#include <QtCharts/QChart>
+#include <QtCharts/QChartView>
+
+QT_CHARTS_USE_NAMESPACE
 
 //OCC 7
 #include <StlMesh_Mesh.hxx> 
@@ -108,6 +124,9 @@ ui(new Ui::StartWindow)
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
 	//myOccViewer = new OccViewer(this);
+
+	myScalingFactorValue = 1;
+
 	myVtkViewer = new VtkViewer(this);
 	setCentralWidget(myVtkViewer);
 	createActions();
@@ -121,6 +140,7 @@ StartWindow::~StartWindow()
 	//delete myOccViewer;
 	delete myVtkViewer;
 }
+
 
 void StartWindow::openDataFlowWindow(void){
 	newWin = new QNEMainWindow();
@@ -145,30 +165,164 @@ void StartWindow::createActions(void)
 	myReadFileAction->setStatusTip(tr("Import 3D file"));
 	connect(myReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
-/*
+	// Time Step
+	myTimeStepLabel = new QLabel(tr("Frequency (in Hz):"), this);
+	myTimeStepLessAction = new QPushButton(tr("<"), this);
+	myTimeStepLessAction->setFixedWidth(40);
+	myTimeStepLessAction->setStatusTip(tr("Previous Frequency"));
+	connect(myTimeStepLessAction, SIGNAL(clicked()), this, SLOT(myTimeStepLessProc()));
+
+	myTimeStepAddAction = new QPushButton(tr(">"), this);
+	myTimeStepAddAction->setFixedWidth(40);
+	myTimeStepAddAction->setStatusTip(tr("Next Frequency"));
+	connect(myTimeStepAddAction, SIGNAL(clicked()), this, SLOT(myTimeStepAddProc()));
+
+	myTimeStepText = new QLineEdit(tr("0 Hz"),this);
+	myTimeStepText->setFixedWidth(50);
+	myTimeStepText->setAlignment(Qt::AlignHCenter);
+	myTimeStepText->setReadOnly(true);
+	myFreqIndex = 0;
+
+	// Solution Selector
+	allDispSolutionTypes.push_back("Displacement");
+	
+	allDispVectorComponents.push_back("Ux_Re");
+	allDispVectorComponents.push_back("Uy_Re");
+	allDispVectorComponents.push_back("Uz_Re");
+	allDispVectorComponents.push_back("Magnitude_Re");
+	allDispVectorComponents.push_back("Ux_Im");
+	allDispVectorComponents.push_back("Uy_Im");
+	allDispVectorComponents.push_back("Uz_Im");
+	allDispVectorComponents.push_back("Magnitude_Im");
+
+	allViewModes.push_back("Surface");
+	allViewModes.push_back("Surface with Edges");
+	allViewModes.push_back("Wireframe");
+
+	mySolutionSelector = new QComboBox();
+	mySolutionSelector->setStatusTip(tr("Select Solution Type"));
+	for (int i = 0; i < allDispSolutionTypes.size(); i++)
+		mySolutionSelector->addItem(QString::fromStdString(allDispSolutionTypes[i]));
+	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+	mySolutionSelector->setEnabled(false);
+
+	myComponentSelector = new QComboBox();
+	myComponentSelector->setStatusTip(tr("Select Vector Component"));
+	for (int i = 0; i < allDispVectorComponents.size() ; i++)
+		myComponentSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
+	connect(myComponentSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+	myComponentSelector->setEnabled(false);
+
+	myViewModeSelector = new QComboBox();
+	myViewModeSelector->setStatusTip(tr("Select Viewing Mode"));
+	for (int i = 0; i < allViewModes.size() ; i++)
+		myViewModeSelector->addItem(QString::fromStdString(allViewModes[i]));
+	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+	myViewModeSelector->setEnabled(false);
+
+	// 
+
+	// Picker Widgets
+	myPickerModeNone = new QPushButton(this);
+	myPickerModeNone->setIcon(QIcon(":/Qt/resources/none.ico"));
+	myPickerModeNone->setStatusTip(tr("Select Node"));
+	myPickerModeNone->setCheckable(true);
+	myPickerModeNone->setFlat(true);
+	myPickerModeNone->setChecked(true);
+	connect(myPickerModeNone, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeNone()));
+
+	myPickerModeNode = new QPushButton(this);
+	myPickerModeNode->setIcon(QIcon(":/Qt/resources/add.ico"));
+	myPickerModeNode->setStatusTip(tr("Select Node"));
+	myPickerModeNode->setCheckable(true);
+	myPickerModeNode->setFlat(true);
+	connect(myPickerModeNode, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeNode()));
+
+	myPickerModeElement = new QPushButton(this);
+	myPickerModeElement->setIcon(QIcon(":/Qt/resources/selectElement.ico"));
+	myPickerModeElement->setStatusTip(tr("Select Element"));
+	myPickerModeElement->setCheckable(true);
+	myPickerModeElement->setFlat(true);
+	connect(myPickerModeElement, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeElement()));
+
+	myPickerButtonGroup = new QButtonGroup(this);
+	myPickerButtonGroup->addButton(myPickerModeNone);
+	myPickerButtonGroup->addButton(myPickerModeNode);
+	myPickerButtonGroup->addButton(myPickerModeElement);
+
 	// View actions
-	mPanAction = new QAction(tr("Pan"), this);
-	mPanAction->setIcon(QIcon(":/Qt/resources/pan.png"));
-	mPanAction->setStatusTip(tr("Panning the view"));
-	connect(mPanAction, SIGNAL(triggered()), myOccViewer, SLOT(pan()));
+	myPickModeButton = new QPushButton(this);
+	myPickModeButton->setIcon(QIcon(":/Qt/resources/cursor.ico"));
+	myPickModeButton->setStatusTip(tr("Picking Mode"));
+	myPickModeButton->setStatusTip(tr("Panning the view"));
+	myPickModeButton->setCheckable(true);
+	myPickModeButton->setChecked(true);
+	myPickModeButton->setFlat(true);
+	connect(myPickModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
-	mZoomAction = new QAction(tr("Zoom"), this);
-	mZoomAction->setIcon(QIcon(":/Qt/resources/zoom.png"));
-	mZoomAction->setStatusTip(tr("Zooming the view"));
-	connect(mZoomAction, SIGNAL(triggered()), myOccViewer, SLOT(zoom()));
+	myRotateModeButton = new QPushButton( this);
+	myRotateModeButton->setStatusTip(tr("Rotation Mode"));
+	myRotateModeButton->setIcon(QIcon(":/Qt/resources/rotate.png"));
+	myRotateModeButton->setStatusTip(tr("Rotate the view"));
+	myRotateModeButton->setCheckable(true);
+	myRotateModeButton->setFlat(true);
+	connect(myRotateModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
-	mFitAllAction = new QAction(tr("Zoom fit all"), this);
-	mFitAllAction->setIcon(QIcon(":/Qt/resources/fitAll.png"));
-	mFitAllAction->setStatusTip(tr("Fit the view to show all"));
-	connect(mFitAllAction, SIGNAL(triggered()), myOccViewer, SLOT(fitAll()));
+	myPickerButtonGroup = new QButtonGroup(this);
+	myPickerButtonGroup->addButton(myPickModeButton);
+	myPickerButtonGroup->addButton(myRotateModeButton);
 
-	mRotateAction = new QAction(tr("Rotate"), this);
-	mRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
-	mRotateAction->setStatusTip(tr("Rotate the view"));
-	connect(mRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
+	/*
+	// View actions
+	myPanAction = new QAction(tr("Pan"), this);
+	myPanAction->setIcon(QIcon(":/Qt/resources/pan.png"));
+	myPanAction->setStatusTip(tr("Panning the view"));
+	connect(myPanAction, SIGNAL(triggered()), myOccViewer, SLOT(pan()));
 
+	myZoomAction = new QAction(tr("Zoom"), this);
+	myZoomAction->setIcon(QIcon(":/Qt/resources/zoom.png"));
+	myZoomAction->setStatusTip(tr("Zooming the view"));
+	connect(myZoomAction, SIGNAL(triggered()), myOccViewer, SLOT(zoom()));
+
+	myFitAllAction = new QAction(tr("Zoom fit all"), this);
+	myFitAllAction->setIcon(QIcon(":/Qt/resources/fitAll.png"));
+	myFitAllAction->setStatusTip(tr("Fit the view to show all"));
+	connect(myFitAllAction, SIGNAL(triggered()), myOccViewer, SLOT(fitAll()));
+
+	myRotateAction = new QAction(tr("Rotate"), this);
+	myRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
+	myRotateAction->setStatusTip(tr("Rotate the view"));
+	connect(myRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
+	
 	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
-*/
+	*/
+
+	// View Control ToolBar
+	myScalarBarVisibility = new QPushButton(this);
+	myScalarBarVisibility->setIcon(QIcon(":/Qt/resources/scalarBar.ico"));
+	myScalarBarVisibility->setStatusTip(tr("Enable ScalarBar"));
+	myScalarBarVisibility->setCheckable(true);
+	myScalarBarVisibility->setChecked(true);
+	myScalarBarVisibility->setFlat(true);
+	connect(myScalarBarVisibility, SIGNAL(clicked()), this, SLOT(myViewPropertyUpdate()));
+	myScalarBarVisibility->setEnabled(false);
+
+	// View Control ToolBar
+	myWarpVectorVisibility = new QPushButton(this);
+	myWarpVectorVisibility->setIcon(QIcon(":/Qt/resources/scale.ico"));
+	myWarpVectorVisibility->setStatusTip(tr("Enable Warp Vector"));
+	myWarpVectorVisibility->setCheckable(true);
+	myWarpVectorVisibility->setFlat(true);
+	connect(myWarpVectorVisibility, SIGNAL(clicked()), this, SLOT(myWarpVectorTriggered()));
+	myWarpVectorVisibility->setEnabled(false);
+
+	my2dVisualizerVisibility = new QPushButton(this);
+	my2dVisualizerVisibility->setIcon(QIcon(":/Qt/resources/2dPlot.ico"));
+	my2dVisualizerVisibility->setStatusTip(tr("Enable 2D Visualizer"));
+	my2dVisualizerVisibility->setFlat(true);
+	connect(my2dVisualizerVisibility, SIGNAL(clicked()), this, SLOT(my2dVisualizerInterface()));
+	my2dVisualizerVisibility->setEnabled(false);
+
 
 	// Create actions
 	myDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
@@ -198,12 +352,92 @@ void StartWindow::createActions(void)
 	mySetSelectionModeElementAction->setStatusTip(tr("Select an element"));
 	connect(mySetSelectionModeElementAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeElement()));
 
+	// Layout Actions
+	myResetLayoutAction = new QAction(tr("Reset Layout"), this);
+	myResetLayoutAction->setStatusTip(tr("Reset Layout"));
+
+	myDockWarpVectorAction = new QAction(tr("Warp Vector"), this);
+	myDockWarpVectorAction->setStatusTip(tr("Warp Vector"));
+	myDockWarpVectorAction->setCheckable(true);
+	myDockWarpVectorAction->setChecked(false);
+	connect(myDockWarpVectorAction, SIGNAL(triggered()), this, SLOT(myWarpVectorTriggered()));
+
+	my2dVisualizerAction = new QAction(tr("2D Visualizer"));
+	my2dVisualizerAction->setStatusTip(tr("2D Visualizer"));
+	my2dVisualizerAction->setCheckable(true);
+	my2dVisualizerAction->setChecked(false);
+	connect(my2dVisualizerAction, SIGNAL(triggered()), this, SLOT(my2dVisualizerInterface()));
+
 	//Help actions
 	myAboutAction = new QAction(tr("About"), this);
 	myAboutAction->setStatusTip(tr("About the application"));
 	myAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
 	connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
+}
+
+void StartWindow::myViewPropertyUpdate(void) {
+	static bool edge = false;
+	static bool surface = true;	
+
+	// Update View Mode
+	if (myViewModeSelector->currentText().toStdString() == allViewModes[0]) {			// Surface With Edges
+		edge = false;
+		surface = true;
+	}
+	else if (myViewModeSelector->currentText().toStdString() == allViewModes[1]) {			// Surface With Edges
+		edge = true;
+		surface = true;
+	}
+	else if (myViewModeSelector->currentText().toStdString() == allViewModes[2]) {		// Wireframe
+		edge = true;
+		surface = false;
+	}
+
+	// Update Solution
+	if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Ux_Re, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Uy_Re, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Uz_Re, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Re, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Im, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Ux_Im, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Im, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Uy_Im, edge, surface, myScalarBarVisibility->isChecked());
+	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Im, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Uz_Im, edge, surface, myScalarBarVisibility->isChecked());
+	}
+	else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, myFreqIndex));
+		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Im, edge, surface, myScalarBarVisibility->isChecked());
+	}
+	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());		// Update Plot
+}
+
+void StartWindow::myTimeStepLessProc(void) {
+	if (myFreqIndex > 0) {
+		myFreqIndex--;
+		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
+		myViewPropertyUpdate();
+	}
+}
+
+void StartWindow::myTimeStepAddProc(void) {
+	if (myFreqIndex < myOBD.getHMeshHandle()->getResultsTimeDescription().size()-1) {
+		myFreqIndex++;
+		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
+		myViewPropertyUpdate();
+	}
 }
 
 void StartWindow::createMenus(void)
@@ -223,6 +457,15 @@ void StartWindow::createMenus(void)
 	mySelectionMenu->addAction(mySetSelectionModeNodeAction);
 	mySelectionMenu->addAction(mySetSelectionModeElementAction);
 
+	myLayoutMenu = menuBar()->addMenu(tr("Layout"));
+	myLayoutMenu->addAction(myResetLayoutAction);
+
+	myViewToolbarSubMenu = myLayoutMenu->addMenu(tr("View Toolbars"));
+
+	myViewDockSubMenu = myLayoutMenu->addMenu(tr("View Dock Windows"));
+
+	myViewDockSubMenu->addAction(myDockWarpVectorAction);
+
 	myHelpMenu = menuBar()->addMenu(tr("&Help"));
 	myHelpMenu->addAction(myAboutAction);
 }
@@ -233,13 +476,46 @@ void StartWindow::createToolBars(void)
 	myFileToolBar->addAction(myReadFileAction);
 	myCreateToolBar = addToolBar(tr("Create"));
 	myCreateToolBar->addAction(myDataFlowAction);
+
 	myViewToolBar = addToolBar(tr("View"));
-//	mViewToolBar->addAction(mPanAction);
-//	mViewToolBar->addAction(mZoomAction);
-//	mViewToolBar->addAction(mFitAllAction);
-//	mViewToolBar->addAction(mRotateAction);
+	myViewToolBar->addWidget(myPickModeButton);
+	myViewToolBar->addWidget(myRotateModeButton);
+
+	/*
+	myViewToolBar = addToolBar(tr("View"));
+	myViewToolBar->addAction(myPanAction);
+	myViewToolBar->addAction(myZoomAction);
+	myViewToolBar->addAction(myFitAllAction);
+	myViewToolBar->addAction(myRotateAction);
+	*/
+
+	myTimeToolBar = addToolBar(tr("Time Step"));
+	myTimeToolBar->addWidget(myTimeStepLabel);
+	myTimeToolBar->addWidget(myTimeStepLessAction);
+	myTimeToolBar->addWidget(myTimeStepText);
+	myTimeToolBar->addWidget(myTimeStepAddAction);
+
+	mySolutionToolBar = addToolBar(tr("View Solution"));
+	mySolutionToolBar->addWidget(mySolutionSelector);
+	mySolutionToolBar->addSeparator();
+	mySolutionToolBar->addWidget(myComponentSelector);
+	mySolutionToolBar->addSeparator();
+	mySolutionToolBar->addWidget(myViewModeSelector);
+
+	myPickerViewToolBar = addToolBar(tr("Pick Finite Nodes/Elements"));
+	myPickerViewToolBar->addWidget(myPickerModeNone);
+	myPickerViewToolBar->addWidget(myPickerModeNode);
+	myPickerViewToolBar->addWidget(myPickerModeElement);
+
 	myHelpToolBar = addToolBar(tr("Help"));
 	myHelpToolBar->addAction(myAboutAction);
+
+	myDisplayControlToolBar = addToolBar(tr("Control Diplay within View Region"));
+	addToolBar(Qt::RightToolBarArea, myDisplayControlToolBar);
+	myDisplayControlToolBar->addWidget(myScalarBarVisibility);
+	myDisplayControlToolBar->addWidget(myWarpVectorVisibility);
+	myDisplayControlToolBar->addWidget(my2dVisualizerVisibility);
+	myDisplayControlToolBar->setOrientation(Qt::Vertical);
 }
 
 void StartWindow::createDockWindows()
@@ -274,12 +550,10 @@ void StartWindow::createDockWindows()
 	//warningOut << "warningOut" << std::endl;
 	//errorOut << "errorOut" << std::endl;
 	//infoOut << QThread::currentThread() << std::endl;
-
 }
 
 
-void StartWindow::about()
-{
+void StartWindow::about(){
 	myOccViewer->showGrid(Standard_True);
 	myOccViewer->viewTop();
 	myOccViewer->fitAll();
@@ -292,7 +566,6 @@ void StartWindow::about()
 
 
 void StartWindow::openOBDFile(void){
-	
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -308,7 +581,7 @@ void StartWindow::openOBDFile(void){
 		}
 	}
 
-	SimuliaODB myOBD =  SimuliaODB();
+	myOBD =  SimuliaODB();
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	anaysisTimer03.start();
@@ -316,11 +589,6 @@ void StartWindow::openOBDFile(void){
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
-	anaysisTimer01.start();
-	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 	//Run FE Analysis
 	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
@@ -328,169 +596,29 @@ void StartWindow::openOBDFile(void){
 	anaysisTimer03.stop();
 	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	
+	// Enable Tools
+	mySolutionSelector->setEnabled(true);
+	myComponentSelector->setEnabled(true);
+	myViewModeSelector->setEnabled(true);
+	myScalarBarVisibility->setEnabled(true);
+	myWarpVectorVisibility->setEnabled(true);
+	my2dVisualizerVisibility->setEnabled(true);
+
 	anaysisTimer01.start();
-
-	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re));
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re));
-	
-	vtkSmartPointer<vtkDataSetMapper> mapper = vtkSmartPointer<vtkDataSetMapper>::New();
-	mapper->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-
-	mapper->ScalarVisibilityOn();
-	mapper->SetScalarModeToUsePointData();
-	mapper->SetColorModeToMapScalars();
-
-	vtkSmartPointer<vtkActor> actor = vtkSmartPointer<vtkActor>::New();
-	actor->SetMapper(mapper);
-
-	double scalarRange[2];
-	myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid()->GetPointData()->GetScalars()->GetRange(scalarRange);
-	
-
-	// Set the color for edges of the sphere
-	actor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
-	actor->GetProperty()->EdgeVisibilityOff();
-
-	vtkSmartPointer<vtkWarpVector> warpFilter = vtkSmartPointer<vtkWarpVector>::New();
-	warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	warpFilter->SetScaleFactor(1000.0);
-	warpFilter->Update();
-	mapper->SetInputData(warpFilter->GetUnstructuredGridOutput());
-
-	mapper->UseLookupTableScalarRangeOn();
-	// Create a lookup table to share between the mapper and the scalarbar
-	vtkSmartPointer<vtkLookupTable> hueLut =
-		vtkSmartPointer<vtkLookupTable>::New();
-	hueLut->SetTableRange(scalarRange[0], scalarRange[1]);
-	hueLut->SetHueRange(0.667, 0.0);
-	hueLut->SetValueRange(1, 1);
-	hueLut->Build();
-
-	mapper->SetLookupTable(hueLut);
-	vtkSmartPointer<vtkScalarBarActor> scalarBar =
-	vtkSmartPointer<vtkScalarBarActor>::New();
-	scalarBar->SetTitle("Title");
-	scalarBar->SetNumberOfLabels(4);
-	scalarBar->SetLookupTable(hueLut);
-
-
-	//Edge vis
-	vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
-	edgeExtractor->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
-	edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
-	vtkSmartPointer<vtkActor> edgeActor = vtkActor::New();
-	edgeActor->SetMapper(edgeMapper);
-	edgeActor->GetProperty()->SetColor(0., 0., 0.);
-	edgeActor->GetProperty()->SetLineWidth(3);
-	edgeMapper->ScalarVisibilityOff();
-	myVtkViewer->getRenderer()->AddActor(edgeActor);
-
-	myVtkViewer->getRenderer()->AddActor(actor);
-	myVtkViewer->getRenderer()->AddActor2D(scalarBar);
-	myVtkViewer->getRenderer()->ResetCamera();
-	myVtkViewer->GetRenderWindow()->Render();
-
-	vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
-		vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-	writer->SetFileName("3dTestGrid");
-	writer->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	writer->Write();
-
-
+	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
 	anaysisTimer01.stop();
-	debugOut << "Duration for display Hmesh and results: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-	/*Test VTK
+	// Update Slider
+	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
 
-	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
-	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
-	//Geom_CartesianPoint
-	Handle(Geom_CartesianPoint)  start = new Geom_CartesianPoint(mGp_Pnt_Start);
-	Handle(Geom_CartesianPoint)    end = new Geom_CartesianPoint(mGp_Pnt_End);
-	Handle(Geom_TrimmedCurve) aTrimmedCurve = GC_MakeSegment(mGp_Pnt_Start, mGp_Pnt_End);
-	TopoDS_Edge mTopoEdge = BRepBuilderAPI_MakeEdge(aTrimmedCurve);
-
-
-	// Initialize aShape variable: e.g. load it from BREP file
-	IVtkOCC_Shape::Handle aShapeImpl = new IVtkOCC_Shape(mTopoEdge);
-	vtkSmartPointer<IVtkTools_ShapeDataSource> DS = vtkSmartPointer<IVtkTools_ShapeDataSource>::New();
-	DS->SetShape(aShapeImpl);
-	vtkSmartPointer<vtkPolyDataMapper> Mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
-	mapper->SetInputConnection(DS->GetOutputPort());
-	vtkSmartPointer<vtkActor> Actor = vtkSmartPointer<vtkActor>::New();
-	Actor->SetMapper(mapper);
-	*/
-
-
-/*
-	anaysisTimer01.start();
-	Handle(MeshVS_Mesh) aMesh = new MeshVS_Mesh();
-//	aMesh->SetDataSource(aDataSource);
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
 	
-	/Mesh->AddBuilder(new MeshVS_MeshPrsBuilder(aMesh), Standard_True);//False -> No selection
-	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_DisplayNodes, Standard_False); //MeshVS_DrawerAttribute
-	aMesh->GetDrawer()->SetBoolean(MeshVS_DA_ShowEdges, Standard_False);
-	aMesh->GetDrawer()->SetMaterial(MeshVS_DA_FrontMaterial, Graphic3d_NOM_BRASS);
-	aMesh->SetColor(Quantity_NOC_AZURE);
-	aMesh->SetDisplayMode(MeshVS_DMF_Shading); // Mode as defaut
-	aMesh->SetHilightMode(MeshVS_DMF_WireFrame); // Wireframe as default hilight mode
-
-
-	// assign nodal builder to the mesh
-	Handle(MeshVS_NodalColorPrsBuilder) aBuilder = new MeshVS_NodalColorPrsBuilder(aMesh, MeshVS_DMF_NodalColorDataPrs | MeshVS_DMF_OCCMask); 
-	aBuilder->UseTexture(Standard_True);
-	// prepare color map
-	Aspect_SequenceOfColor  aColorMap;
-	aColorMap.Append((Quantity_NameOfColor)Quantity_NOC_RED);
-	aColorMap.Append((Quantity_NameOfColor)Quantity_NOC_BLUE1);
-	// assign color scale map  values (0..1) to nodes
-	TColStd_DataMapOfIntegerReal  aScaleMap;
-	// iterate through the  nodes and add an node id and an appropriate value to the map
-
-	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
-	Standard_Integer aLen = (myOBD.getHMeshHandle())->getNumNodes();
-	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++) {
-		double someNumber = (double)rand() / (RAND_MAX);
-		aScaleMap.Bind(anIndex, someNumber);
-	}
-
-	// pass color map and color scale values to the builder
-	aBuilder->SetColorMap(aColorMap);
-	aBuilder->SetInvalidColor(Quantity_NOC_BLACK);
-	aBuilder->SetTextureCoords(aScaleMap);
-	aMesh->AddBuilder(aBuilder, Standard_True);
-	aMesh->SetDisplayMode(MeshVS_DMF_NodalColorDataPrs); // Mode as defaut
-
-	Handle(AIS_ColorScale) aCS = new AIS_ColorScale();
-	// configuring
-	Standard_Integer aWidth, aHeight;
-	myOccViewer->getView()->Window()->Size(aWidth, aHeight);
-	aCS->SetSize(aWidth, aHeight);
-	aCS->SetRange(0.0, 10.0);
-	aCS->SetNumberOfIntervals(10);
-	// displaying
-	aCS->SetZLayer(Graphic3d_ZLayerId_TopOSD);
-	aCS->SetTransformPersistence(Graphic3d_TMF_2d, gp_Pnt(-1, -1, 0));
-	aCS->SetToUpdate();
-	myOccViewer->getContext()->Display(aCS);
-
-	// Hide all nodes by default
-	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
-	Standard_Integer aLen = (myOBD.getHMeshHandle())->getNumNodes();
-	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
-		aNodes->ChangeMap().Add(anIndex);
-	}
-
-	//aMesh->SetHiddenNodes(aNodes);
-	//aMesh->SetSelectableNodes(aNodes);
-	myOccViewer->getContext()->Display(aMesh);
-	myOccViewer->getContext()->Deactivate(aMesh);
-	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
-	//myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
-	myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
-*/
+	// Plot Vector Field
+	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
 }
 
 void StartWindow::importFile(void)
@@ -854,4 +982,66 @@ void StartWindow::handleSelectionChanged(void){
 
 	}
 
+}
+
+void StartWindow::myViewModeTriggered() {
+	myVtkViewer->setViewMode(myRotateModeButton->isChecked());
+}
+
+void StartWindow::myWarpVectorTriggered() {
+	if (myDockWarpVectorAction->isChecked() || myWarpVectorVisibility->isChecked()) {
+		myWarpDock = new QDockWidget(tr("Warp Vector"), this);
+		myWarpDock->setAllowedAreas(Qt::LeftDockWidgetArea);
+
+		myAutoScaling = new QCheckBox(tr("Default Scaling"), this);
+		myAutoScaling->setChecked(true);
+		connect(myAutoScaling, SIGNAL(clicked()), this, SLOT(myAutoScalingState()));
+
+		myScalingFactorLabel = new QLabel(tr("Scaling Factor"), this);
+
+		myScalingFactor = new QSpinBox;
+		myScalingFactor->setRange(0, 10000000000);
+		myScalingFactor->setValue(myScalingFactorValue);
+		myScalingFactor->setSingleStep(1);
+		myScalingFactor->setEnabled(false);
+		connect(myScalingFactor, SIGNAL(editingFinished()), this, SLOT(myScalingFactorState()));
+
+		QFormLayout *layout = new QFormLayout;
+		layout->addRow(myAutoScaling);
+		layout->addRow(myScalingFactorLabel, myScalingFactor);
+		QWidget* temp = new QWidget(this);
+		temp->setLayout(layout);
+
+		myWarpDock->setWidget(temp);
+		myWarpDock->show();
+
+		addDockWidget(Qt::LeftDockWidgetArea, myWarpDock);
+	}
+	else {
+		removeDockWidget(myWarpDock);
+	}
+}
+
+void StartWindow::myAutoScalingState() {
+	if (myAutoScaling->isChecked()) {
+		myScalingFactorValue = 1;
+		myScalingFactor->setValue(myScalingFactorValue);
+		myScalingFactor->setEnabled(false);
+		myViewPropertyUpdate();
+	}
+	else{
+		myScalingFactor->setValue(myScalingFactorValue);
+		myScalingFactor->setEnabled(true);
+	}
+}
+
+void StartWindow::myScalingFactorState() {
+	double factor = QString(myScalingFactor->text()).toDouble();
+	myVtkViewer->setScalingFactor(factor);
+	myScalingFactorValue = factor;
+	myViewPropertyUpdate();
+}
+
+void StartWindow::my2dVisualizerInterface() {
+	myVtkViewer->my2dVisualizerInterface(*myOBD.getHMeshHandle());
 }

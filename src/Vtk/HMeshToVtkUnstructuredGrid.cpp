@@ -58,7 +58,6 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 		for (int i = 0; i < numElements; i++)
 		{
 			if (_HMesh.getElementTypes()[i] == STACCATO_PlainStrain4Node2D || _HMesh.getElementTypes()[i] == STACCATO_PlainStress4Node2D) {
-
 				aLinearQuad->GetPointIds()->SetId(0, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 0]));
 				aLinearQuad->GetPointIds()->SetId(1, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 1]));
 				aLinearQuad->GetPointIds()->SetId(2, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 2]));
@@ -67,7 +66,6 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 				index = index + 4;
 			}
 			if (_HMesh.getElementTypes()[i] == STACCATO_Tetrahedron10Node3D) {
-
 				aQuadTet->GetPointIds()->SetId(0, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 0]));
 				aQuadTet->GetPointIds()->SetId(1, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 1]));
 				aQuadTet->GetPointIds()->SetId(2, _HMesh.convertNodeLabelToNodeIndex(_HMesh.getElementTopology()[index + 2]));

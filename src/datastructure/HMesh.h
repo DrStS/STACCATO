@@ -140,7 +140,8 @@ public:
 	std::vector<std::vector<int>>& getNodeIndexToElementIndices(){ return nodeIndexToElementIndices; }
 	/***********************************************************************************************
 	* \brief get relation of element index to node indexes
-	* \param[out] reference to std::vector<std::vector<int>>
+	* \param[out] reference to s
+	td::vector<std::vector<int>>
 	* \author Stefan Sicklinger
 	***********/
 	std::vector<std::vector<int>>& getElementIndexToNodesIndices(){ return elementIndexToNodesIndices; }
@@ -194,6 +195,11 @@ public:
 	* \param[in] _resultsTimeDescription
 	* \author Stefan Sicklinger
 	***********/
+	std::vector<std::string>& HMesh::getResultsTimeDescription();
+	/***********************************************************************************************
+	* \brief Get all result time description
+	* \author Harikrishnan Sreekumar
+	***********/
 	void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription);
 	/***********************************************************************************************
 	* \brief Add a result to database
@@ -201,12 +207,27 @@ public:
 	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<double>& HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type);
+	std::vector<double>& HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type, int index);
 	/***********************************************************************************************
 	* \brief build DOF graph and local element coord vectors
 	* \author Stefan Sicklinger
 	***********/
 	void buildDoFGraph(void);
+	/***********************************************************************************************
+	* \brief Get result from data base at particular node for all frequencies
+	* \param[in] _type
+	* \param[in] _nodeLabel
+	* \param[out] reference to std vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _type, int _nodeLabel);
+	/***********************************************************************************************
+	* \brief Get index of a Node from Node Label
+	* \param[in] _nodeLabel
+	* \param[out] Node Index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int HMesh::getNodeIndexForLabel(int _nodeLabel);
 	
 
 private:
@@ -254,6 +275,16 @@ private:
 	std::vector<std::vector<double>> resultsUyRe;
 	/// result Vector node index to result value
 	std::vector<std::vector<double>> resultsUzRe;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsUxIm;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsUyIm;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsUzIm;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsMagRe;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsMagIm;
 	/// result vector description in time domain 
 	std::vector<std::string> resultsTimeDescription;
     /// unit test class

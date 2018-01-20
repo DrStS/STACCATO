@@ -25,16 +25,31 @@
 #ifndef STARTWINDOW_H
 #define STARTWINDOW_H
 
+#include "HMeshToVtkUnstructuredGrid.h"
+
 // QT5
 #include <QMainWindow>
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QComboBox>
 // OCC
 #include <AIS_InteractiveContext.hxx>
+// SimuliaOBD
+#include "SimuliaODB.h"
+/// Visualizer
+#include "VisualizerWindow.h"
+
+//#include <python.h>
 
 // forward declaration
 class OccViewer;
 class VtkViewer;
 class QTextEdit;
-
+class QCheckBox;
+class QGroupBox;
+class QSpinBox;
+class QFormLayout;
 
 namespace Ui {
 	class StartWindow;
@@ -55,8 +70,7 @@ public:
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
-	~StartWindow();
-
+	~StartWindow(); 
 protected:
 	/***********************************************************************************************
 	* \brief Creat all Actions of Qt
@@ -78,13 +92,30 @@ private slots:
 	void openDataFlowWindow(void);
 	void openOBDFile(void);
 	void animateObject(void);
+	void myTimeStepLessProc(void);
+	void myTimeStepAddProc(void);
+	void myViewPropertyUpdate(void);
+	void myWarpVectorTriggered(void);
+	void myAutoScalingState(void);
+	void myScalingFactorState(void);
+	void my2dVisualizerInterface(void);
+	void myViewModeTriggered(void);
 
 private:
+	std::vector<std::string> allDispSolutionTypes;
+	std::vector<std::string> allDispVectorComponents;
+	std::vector<std::string> allViewModes;
+
+	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
+
 	Ui::StartWindow *ui;
 	/// File action.
 	QAction* myExitAction;
     QAction* myReadFileAction;
 	QAction* myReadOBDFileAction;
+	/// Buttons
+	QPushButton* myTimeStepLessAction;
+	QPushButton* myTimeStepAddAction;
 	/// Create action.
 	QAction* myDrawCantileverAction;
 	QAction* myDataFlowAction;
@@ -98,18 +129,34 @@ private:
 	QAction* mySetSelectionModeNoneAction;
 	QAction* mySetSelectionModeNodeAction;
 	QAction* mySetSelectionModeElementAction;
+	/// Layout action
+	QAction* myResetLayoutAction;
+	QAction* myDockWarpVectorAction;
+	QAction* my2dVisualizerAction;
 	/// Help action.
 	QAction* myAboutAction;
 	/// Menus.
 	QMenu* myFileMenu;
 	QMenu* myCreateMenu;
 	QMenu* mySelectionMenu;
+	QMenu* myLayoutMenu;
 	QMenu* myHelpMenu;
+	/// SubMenus
+	QMenu* myViewToolbarSubMenu;
+	QMenu* myViewDockSubMenu;
 	/// Toolbars
 	QToolBar* myFileToolBar;
 	QToolBar* myViewToolBar;
 	QToolBar* myCreateToolBar;
 	QToolBar* myHelpToolBar;
+	QToolBar* myTimeToolBar;
+	QToolBar* mySolutionToolBar;
+	QToolBar* myDisplayControlToolBar;
+	QToolBar* myPickerViewToolBar;
+	/// Selectors
+	QComboBox* mySolutionSelector;
+	QComboBox* myComponentSelector;
+	QComboBox* myViewModeSelector;
 
 	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;
@@ -117,9 +164,50 @@ private:
 	VtkViewer* myVtkViewer;
 	/// the dockable widgets
 	QTextEdit* textOutput;
+	QLineEdit* myTimeStepText;
+
+	/// Spin Boxes
+	QSpinBox* myScalingFactor;
+
+	/// Labels
+	QLabel* myTimeStepLabel;
+	QLabel* myScalingFactorLabel;
+
+	/// Check Boxes
+	QCheckBox* myAutoScaling;
+
+	/// View Control ToolBar Buttons
+	QPushButton* myScalarBarVisibility;
+	QPushButton* myWarpVectorVisibility;
+	QPushButton* my2dVisualizerVisibility;
+	QPushButton* myRotateModeButton;
+	QPushButton* myPickModeButton;
+
+	/// Picker View ToolBar Buttons
+	QPushButton* myPickerModeNone;
+	QPushButton* myPickerModeNode;
+	QPushButton* myPickerModeElement;
+
+	/// Button Groups
+	QButtonGroup* myPickerButtonGroup;
+	QButtonGroup* myViewButtonGroup;
 
 	QMainWindow* newWin;
 
+	/// Dock Windows
+	QDockWidget *myWarpDock;
+
+	/// Layouts
+	QGroupBox* myWarpVectorLayout;
+	QFormLayout* myVisualizerDockLayout;
+
+	/// Widgets
+	QWidget* myVisualizerDockWidgets;
+
+	int myFreqIndex;
+	int myScalingFactorValue;
+
+	SimuliaODB myOBD;
 };
 
 #endif /* STARTWINDOW_H */

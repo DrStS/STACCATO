@@ -39,7 +39,12 @@ enum STACCATO_Element_type {
 enum STACCATO_Result_type {
 	STACCATO_Ux_Re,
 	STACCATO_Uy_Re,
-	STACCATO_Uz_Re
+	STACCATO_Uz_Re,
+	STACCATO_Magnitude_Re,
+	STACCATO_Ux_Im,
+	STACCATO_Uy_Im,
+	STACCATO_Uz_Im,
+	STACCATO_Magnitude_Im,
 };
 
 enum STACCATO_Picker_type {

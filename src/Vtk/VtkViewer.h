@@ -26,10 +26,11 @@
 #define _VTKVIEWER_H_
 
 #include <STACCATO_Enum.h>
+#include "HMesh.h"
+#include "VisualizerWindow.h"
 //VTK
 #include <QVTKOpenGLWidget.h>
 #include <vtkSmartPointer.h>
-
 
 class QVTKOpenGLWidget;
 class vtkOrientationMarkerWidget;
@@ -37,6 +38,8 @@ class vtkRenderer;
 class vtkDataSetMapper;
 class vtkActor;
 class QColor;
+class vtkScalarBarWidget;
+class vtkUnstructuredGrid;
 
 
 class VtkViewer : public QVTKOpenGLWidget
@@ -70,6 +73,42 @@ private:
 	* \author Stefan Sicklinger
 	***********/
 	void setPickerMode(STACCATO_Picker_type _currentPickerType);
+	/***********************************************************************************************
+	* \brief Update the Visualizer Window for update in picking
+	* \author Harikrishnan Sreekumar
+	***********/
+	void myUpdateVisualizerWindow();
+public:
+	/***********************************************************************************************
+	* \brief Set VTK Viewer with Vector Field
+	* \author Harikrishnan Sreekumar
+	***********/
+	void plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>&);
+	/***********************************************************************************************
+	* \brief Set Properties for Rendering
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setDisplayProperties(STACCATO_Result_type, bool, bool, bool);
+	/***********************************************************************************************
+	* \brief Set Properties for Scaling
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setScalingFactor(double);
+	/***********************************************************************************************
+	* \brief Set Properties for Rotating and Picking
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setViewMode(bool);
+	/***********************************************************************************************
+	* \brief Get Selected Nodes and Elements
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<int> getSelection(STACCATO_Picker_type);
+	/***********************************************************************************************
+	* \brief Create the Visualizer Window
+	* \author Harikrishnan Sreekumar
+	***********/
+	void my2dVisualizerInterface(HMesh& _hMesh);
 protected:
 	/***********************************************************************************************
 	* \brief Custom mouse press event
@@ -83,7 +122,27 @@ private:
 	vtkSmartPointer<vtkActor> mySelectedActor;
 	//vtkSmartPointer<vtkProperty> mySelectedProperty;
 	vtkSmartPointer<vtkDataSetMapper> mySelectedMapper;
+	vtkSmartPointer<vtkActor> myEdgeActor;
+	vtkSmartPointer<vtkScalarBarWidget> myScalarBarWidget;
+	vtkSmartPointer<vtkActor> selectedPickActor;
+
 	STACCATO_Picker_type myCurrentPickerType;
+
+	///Display Properties
+	bool myEdgeVisibility;
+	bool mySurfaceVisiiblity;
+	bool myScalarBarVisibility;
+	bool myRotateMode;
+	bool myPickMode;
+	bool myInteractivePickerVM;
+
+	char* myTitle;
+	double myScaleFactor;	
+
+	std::vector<int> mySelectedNodes;
+	std::vector<int> mySelectedElements;
+
+	VisualizerWindow* VW;
 
 public slots:
 	//! Zoom to the extent of the data set in the scene

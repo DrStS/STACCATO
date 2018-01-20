@@ -100,7 +100,7 @@ namespace MathLibrary {
 			else {
 				beta = 1.0;
 			}
-			mkl_set_num_threads(1);
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 			cblas_dgemm(CblasRowMajor, transposeA, CblasNoTrans, _m, _n, _k, alpha, _A, ka, _B, _n, beta, _C, _n);
 #endif
 #ifndef USE_INTEL_MKL_BLAS

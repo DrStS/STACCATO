@@ -53,23 +53,57 @@ void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<
 	else if (_type == STACCATO_Uz_Re) {
 		resultsUzRe.push_back(_valueVec);
 	}
+	else if (_type == STACCATO_Ux_Im) {
+		resultsUxIm.push_back(_valueVec);
+	}
+	else if (_type == STACCATO_Uy_Im) {
+		resultsUyIm.push_back(_valueVec);
+	}
+	else if (_type == STACCATO_Uz_Im) {
+		resultsUzIm.push_back(_valueVec);
+	}
+	else if (_type == STACCATO_Magnitude_Re) {
+		resultsMagRe.push_back(_valueVec);
+	}
+	else if (_type == STACCATO_Magnitude_Im) {
+		resultsMagIm.push_back(_valueVec);
+	}
+	
 }
 
-
-std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type) {
+std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type, int index) {
 	if (_type == STACCATO_Ux_Re){
-		return resultsUxRe[0];
+		return resultsUxRe[index];
 	}
 	else if(_type == STACCATO_Uy_Re){
-		return resultsUyRe[0];
+		return resultsUyRe[index];
 	}
 	else if (_type == STACCATO_Uz_Re) {
-		return resultsUzRe[0];
+		return resultsUzRe[index];
+	}
+	else if (_type == STACCATO_Ux_Im) {
+		return resultsUxIm[index];
+	}
+	else if (_type == STACCATO_Uy_Im) {
+		return resultsUyIm[index];
+	}
+	else if (_type == STACCATO_Uz_Im) {
+		return resultsUzIm[index];
+	}
+	else if (_type == STACCATO_Magnitude_Re) {
+		return resultsMagRe[index];
+	}
+	else if (_type == STACCATO_Magnitude_Im) {
+		return resultsMagIm[index];
 	}
 }
 
 void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription) {
 	resultsTimeDescription.push_back(_resultsTimeDescription);
+}
+
+std::vector<std::string>& HMesh::getResultsTimeDescription() {		// Getter Function to return all frequency steps
+	return resultsTimeDescription;
 }
 
 void HMesh::buildDataStructure(void){
@@ -173,5 +207,19 @@ void HMesh::buildDoFGraph(void) {
 	}
 }
 
+std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _type, int _nodeLabel) {
+	std::vector<double> results;
+	for (int i = 0; i < this->getResultsTimeDescription().size(); i++){
+		results.push_back(this->getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
+		std::cout << results[i] << "\n";
+	}
+	return results;
+}
 
-
+int HMesh::getNodeIndexForLabel(int _nodeLabel) {
+	for (int i = 0; i < this->getNodeLabels().size(); i++)
+	{
+		if (this->getNodeLabels()[i] == _nodeLabel)
+			return i;
+	}
+}

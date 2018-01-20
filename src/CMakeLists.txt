@@ -38,6 +38,11 @@ IF (${USE_SIMULIA_ODB})
   include_directories(${SIMULIA_INCLUDE_DIR})
   SET(STACCATO_LIBS ${STACCATO_LIBS} ${SIMULIA_LIBRARIES})
 ENDIF()
+IF (${USE_XSD})
+  include_directories(${XSD_INCLUDE_DIR})
+  include_directories(${XERCES_INCLUDE_DIR})
+  SET(STACCATO_LIBS ${STACCATO_LIBS} ${XERCES_LIBRARIES})
+ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
@@ -50,7 +55,7 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)
 ENDIF()
 target_link_libraries(STACCATO ${STACCATO_LIBS})
-qt5_use_modules(STACCATO Core Gui)
+qt5_use_modules(STACCATO Core Gui Charts)
 #------------------------------------------------------------------------------------#
 #
 #------------------------------------------------------------------------------------#

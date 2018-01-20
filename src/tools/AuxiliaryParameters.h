@@ -52,11 +52,11 @@ namespace STACCATO {
  ***********/
 class AuxiliaryParameters {
 public:
-    /// How many threads are used for MKL thread parallel routines
-    static const int mklSetNumThreads;
+    /// How many threads are used for linear solver part
+    static const int solverMKLThreads;
 
-    /// How many threads are used for mortar mapper thread parallel routines
-    static const int mapperSetNumThreads;
+    /// How many threads are used for the element loop
+    static const int denseVectorMatrixThreads;
 
     /// Machine epsilon (the difference between 1 and the least value greater than 1 that is representable).
     static const double machineEpsilon;

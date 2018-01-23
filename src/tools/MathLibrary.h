@@ -18,10 +18,10 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-																								 * \file MathLibrary.h
-																								 * The header file of math functions in STACCATO.
-																								 * \date 8/28/2017
-																								 **************************************************************************************************/
+* \file MathLibrary.h
+* The header file of math functions in STACCATO.
+* \date 8/28/2017
+**************************************************************************************************/
 #ifndef MATHLIBRARY_H_
 #define MATHLIBRARY_H_
 
@@ -469,9 +469,9 @@ namespace MathLibrary {
 			fgmres_ipar[7] = 1; // deactivate max iter check --> fgmres_ipar[4] ignored
 			fgmres_ipar[10] = 1; //--> activate precon
 			fgmres_dpar[0] = 1.0E-6; ////set the relative tolerance to 1.0D-3 instead of default value 1.0D-6
-									 /*---------------------------------------------------------------------------
-									 * Save the right-hand side in vector b for future use
-									 *---------------------------------------------------------------------------*/
+			/*---------------------------------------------------------------------------
+			* Save the right-hand side in vector b for future use
+			*---------------------------------------------------------------------------*/
 			int inc = 1;
 			dcopy(&m, _b, &inc, rhs, &inc);
 			/*---------------------------------------------------------------------------

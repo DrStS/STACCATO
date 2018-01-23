@@ -137,18 +137,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		}
 	}
 
-	//freq.push_back(250);
-	/*
-	freq.push_back(100);
-	freq.push_back(1000);
-	freq.push_back(2000);
-	freq.push_back(3000);
-	freq.push_back(4000);
-	freq.push_back(5000);
-	freq.push_back(6000);
-	freq.push_back(7000);
-	freq.push_back(8000);
-	*/
 	anaysisTimer01.start();
 
 	int totalDoF = myHMesh->getTotalNumOfDoFsRaw();					

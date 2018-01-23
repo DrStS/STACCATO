@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="STACCATO_XML" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:element name="STACCATO_XML" msdata:IsDataSet="true" msdata:Locale="en-US">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ANALYSIS">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="NAME" type="xs:string" minOccurs="0" />
+              <xs:element name="TYPE" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="FREQUENCY">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="START_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+              <xs:element name="END_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+              <xs:element name="STEP_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+            </xs:sequence>
+            <xs:attribute name="Type" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="MATERIALS">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="MATERIAL" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="E" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                    <xs:element name="nu" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                    <xs:element name="rho" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+                    <xs:element name="eta" type="xs:string" minOccurs="0" msdata:Ordinal="3" />
+                  </xs:sequence>
+                  <xs:attribute name="Name" type="xs:string" />
+                  <xs:attribute name="Type" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="NODES">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="NODE" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="ID" type="xs:string" minOccurs="0" />
+                    <xs:element name="X" type="xs:string" minOccurs="0" />
+                    <xs:element name="Y" type="xs:string" minOccurs="0" />
+                    <xs:element name="Z" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="ELEMENTS">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ELEMENT" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="ID" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                    <xs:element name="NODECONNECT" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                  </xs:sequence>
+                  <xs:attribute name="Type" type="xs:string" />
+                  <xs:attribute name="MatID" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="LOADS">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="LOAD" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="OnNode" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                    <xs:element name="Fx" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                    <xs:element name="iFx" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+                    <xs:element name="Fy" type="xs:string" minOccurs="0" msdata:Ordinal="3" />
+                    <xs:element name="iFy" type="xs:string" minOccurs="0" msdata:Ordinal="4" />
+                    <xs:element name="Fz" type="xs:string" minOccurs="0" msdata:Ordinal="5" />
+                    <xs:element name="iFz" type="xs:string" minOccurs="0" msdata:Ordinal="6" />
+                  </xs:sequence>
+                  <xs:attribute name="Type" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="BC">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="DBC" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="NODESET" type="xs:string" minOccurs="0" />
+                    <xs:element name="Ux" type="xs:string" minOccurs="0" />
+                    <xs:element name="Uy" type="xs:string" minOccurs="0" />
+                    <xs:element name="Uz" type="xs:string" minOccurs="0" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

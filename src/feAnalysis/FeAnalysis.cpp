@@ -34,6 +34,7 @@
 #include "MemWatcher.h"
 
 #include "MetaDatabase.h"
+#include <string.h>
 
 #include <complex>
 using namespace std::complex_literals;
@@ -42,7 +43,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	
 	// --- XML Testing ---------------------------------------------------------------------------------------------
 
-	char* inputFileName = "IP_STACCATO_XML.xml";
+	char* inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML.xml";
 	
 	MetaDatabase::init(inputFileName);
 	
@@ -67,7 +68,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	std::cout << ">> MATERIALS:" << std::endl;
 	STACCATO_XML::MATERIALS_const_iterator temp(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin());
 	for (int j = 0; j < temp->MATERIAL().size(); j++) {
-		std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << " ID: " << temp->MATERIAL().at(j).ID() << " E, nu, rho " << temp->MATERIAL().at(j).E() << "," << temp->MATERIAL().at(j).nu() << "," << temp->MATERIAL().at(j).rho() << std::endl;
+		std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << " E, nu, rho " << temp->MATERIAL().at(j).E() << "," << temp->MATERIAL().at(j).nu() << "," << temp->MATERIAL().at(j).rho() << std::endl;
 	}
 
 	std::cout << ">> NODES: " << std::endl;
@@ -83,6 +84,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	}
 
 	std::cout << "\n==================================\n";
+
+	MetaDatabase::getInstance()->exportXML();			// Routine: Export XML
 
 	// ---- END OF XML Testing -------------------------------------------------------------------------
 
@@ -118,7 +121,23 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	
 	std::vector<double> freq;
-	freq.push_back(250);
+	
+	// Routine to Accomodate Step Distribution
+	double start_freq = std::atof(MetaDatabase::getInstance()->xmlHandle->FREQUENCY().begin()->START_FREQ()->c_str());
+	freq.push_back(start_freq);		// Push back starting frequency in any case
+
+	if (std::string(MetaDatabase::getInstance()->xmlHandle->FREQUENCY().begin()->Type()->data()) == "STEP") {		// Step Distribute
+		double end_freq  = std::atof(MetaDatabase::getInstance()->xmlHandle->FREQUENCY().begin()->END_FREQ()->c_str());
+		double step_freq = std::atof(MetaDatabase::getInstance()->xmlHandle->FREQUENCY().begin()->STEP_FREQ()->c_str());
+		double push_freq = start_freq + step_freq;
+		
+		while (push_freq <= end_freq)		{
+			freq.push_back(push_freq);
+			push_freq += step_freq;
+		}
+	}
+
+	//freq.push_back(250);
 	/*
 	freq.push_back(100);
 	freq.push_back(1000);
@@ -153,20 +172,43 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	resultUyIm.resize(numNodes);									 
 	resultUzIm.resize(numNodes);
 	resultMagIm.resize(numNodes);
-	
-	// Damping													
-	double eta = 0.1;												
-	std::cout << "\nDamping Factor of eta = " << eta << " is added to the system!\n\n";
+
+	// Damping														
+	std::cout << "\nDamping Factor of eta = " << elasticMaterial->getDampingParameter() << " is added to the system!\n\n";
 
 	// Allocate global matrix and vector memory
-	std::vector<MKL_Complex16> b;
-	std::vector<MKL_Complex16> sol;
+	// Real Only
+	std::vector<double> bReal;
+	std::vector<double> solReal;
+	// Complex
+	std::vector<MKL_Complex16> bComplex;
+	std::vector<MKL_Complex16> solComplex;
 
-	b.resize(totalDoF);
-	sol.resize(totalDoF);
+	std::string analysisType = MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin()->TYPE()->data();
+
+	if (analysisType == "STATIC_REAL") {
+		bReal.resize(totalDoF);
+		solReal.resize(totalDoF);
+	} else if(analysisType == "STATIC" || analysisType == "DYNAMIC")	{
+		bComplex.resize(totalDoF);
+		solComplex.resize(totalDoF);
+	} else {
+		std::cerr << "Unsupported Analysis Type! \n-Hint: Check XML Input \n-Exiting STACCATO." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
 	for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
 		lastIndex = 0;
-		MathLibrary::SparseMatrix<MKL_Complex16> *A = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);
+
+		MathLibrary::SparseMatrix<double> *AReal;
+		MathLibrary::SparseMatrix<MKL_Complex16> *AComplex;
+		if (analysisType == "STATIC_REAL") {
+			AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true);
+		}
+		else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+			AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);
+		}
+
 		std::cout << "test1" << std::endl;
 		for (int iElement = 0; iElement < numElements; iElement++)
 		{
@@ -179,56 +221,116 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 				for (int j = 0; j < numDoFsPerElement; j++) {
 					if (eleDoFs[j] >= eleDoFs[i]) {
 						//K(1+eta*i)
-						(*A)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-						(*A)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * eta;
+						if (analysisType == "STATIC_REAL") {
+							(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+						}
+						else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+							(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+							if (analysisType == "DYNAMIC")
+								(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * elasticMaterial->getDampingParameter();
+						}
 					}
 				}
 			}
 			//K - omega*omega*M
 			//Assembly routine symmetric mass
-			for (int i = 0; i < numDoFsPerElement; i++) {
-				for (int j = 0; j < numDoFsPerElement; j++) {
-					if (eleDoFs[j] >= eleDoFs[i]) {
-						//K(1+eta*i) - omega*omega*M
-						(*A)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+			if (analysisType == "DYNAMIC")
+				for (int i = 0; i < numDoFsPerElement; i++) {
+					for (int j = 0; j < numDoFsPerElement; j++) {
+						if (eleDoFs[j] >= eleDoFs[i]) {
+							//K(1+eta*i) - omega*omega*M
+							(*AComplex)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+						}
+					}
+				}
+		}
+		std::cout << "test2" << std::endl;
+		//Add cload rhs contribution 
+		for (int k = 0; k < MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().size(); k++) {
+			
+			for (int j = 0; j < numNodes; j++)
+			{
+				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
+				for (int l = 0; l < numDoFsPerNode; l++) {
+					if (myHMesh->getNodeLabels()[j] == std::stoi(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).OnNode()->data())) {  //3407
+						
+						std::complex<double> temp_Fx(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fx()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFx()->data()));
+						std::complex<double> temp_Fy(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fy()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFy()->data()));
+						std::complex<double> temp_Fz(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fz()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFz()->data()));
+
+						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+						if (analysisType == "STATIC_REAL") {
+							switch (l) {
+							case 0:
+								bReal[dofIndex] += temp_Fx.real();
+								break;
+							case 1:
+								bReal[dofIndex] += temp_Fy.real();
+								break;
+							case 2:
+								bReal[dofIndex] += temp_Fz.real();
+								break;
+							default:
+								break;
+							}
+						}
+						else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+							switch (l) {
+							case 0:
+								bComplex[dofIndex].real += temp_Fx.real();
+								bComplex[dofIndex].imag += temp_Fx.imag();
+								break;
+							case 1:
+								bComplex[dofIndex].real += temp_Fy.real();
+								bComplex[dofIndex].imag += temp_Fy.imag();
+								break;
+							case 2:
+								bComplex[dofIndex].real += temp_Fz.real();
+								bComplex[dofIndex].imag += temp_Fz.imag();
+								break;
+							default:
+								break;
+							}
+						}
+
+						
 					}
 				}
 			}
 		}
-		std::cout << "test2" << std::endl;
-		//Add cload rhs contribution 
-		double cload_Re = 1.0;
-		double cload_Im = 1.11;					
-		for (int j = 0; j < numNodes; j++)
-		{
-			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
-			for (int l = 0; l < numDoFsPerNode; l++) {
-				if (myHMesh->getNodeLabels()[j] == 4) {  //3407
-					int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
-					b[dofIndex].real += cload_Re;
-					b[dofIndex].imag += cload_Im;		
-					cload_Re++;
-					cload_Im++;
-				}
-			}
-		}
+		
 		//(*A).print();
 		anaysisTimer01.stop();
 		infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		anaysisTimer01.start();
 		anaysisTimer02.start();
-		(*A).check();
+		if (analysisType == "STATIC_REAL") {
+			(*AReal).check();
+		}
+		else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+			(*AComplex).check();
+		}
 		anaysisTimer01.stop();
 		infoOut << "Duration for direct solver check: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		anaysisTimer01.start();
-		(*A).factorize();
+		if (analysisType == "STATIC_REAL") {
+			(*AReal).factorize();
+		}
+		else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+			(*AComplex).factorize();
+		}
 		anaysisTimer01.stop();
 		infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		anaysisTimer01.start();
-		(*A).solve(&sol[0], &b[0]);
+		if (analysisType == "STATIC_REAL") {
+			(*AReal).solveDirect(&solReal[0], &bReal[0]);
+		}
+		else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+			(*AComplex).solveDirect(&solComplex[0], &bComplex[0]);
+		}
 		anaysisTimer01.stop();
 		anaysisTimer02.stop();
 		infoOut << "Duration for direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -244,21 +346,37 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			for (int l = 0; l < numDoFsPerNode; l++) {
 				int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
 				if (l == 0) {
-					resultUxRe[j] = sol[dofIndex].real;
-					resultUxIm[j] = sol[dofIndex].imag;			
+					if (analysisType == "STATIC_REAL") {
+						resultUxRe[j] = solReal[dofIndex];
+					}
+					else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+						resultUxRe[j] = solComplex[dofIndex].real;
+						resultUxIm[j] = solComplex[dofIndex].imag;
+					}
 				}
 				if (l == 1) {
-					resultUyRe[j] = sol[dofIndex].real;
-					resultUyIm[j] = sol[dofIndex].imag;					
+					if (analysisType == "STATIC_REAL") {
+						resultUyRe[j] = solReal[dofIndex];
+					}
+					else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+						resultUyRe[j] = solComplex[dofIndex].real;
+						resultUyIm[j] = solComplex[dofIndex].imag;
+					}
 				}
 				if (l == 2) {
-					resultUzRe[j] = sol[dofIndex].real;
-					resultUzIm[j] = sol[dofIndex].imag;				
+					if (analysisType == "STATIC_REAL") {
+						resultUzRe[j] = solReal[dofIndex];
+					}
+					else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+						resultUzRe[j] = solComplex[dofIndex].real;
+						resultUzIm[j] = solComplex[dofIndex].imag;
+					}
 				}
 			}
 
 			resultMagRe[j] = sqrt(pow(resultUxRe[j], 2) + pow(resultUyRe[j], 2) + pow(resultUzRe[j], 2));
-			resultMagIm[j] = sqrt(pow(resultUxIm[j], 2) + pow(resultUyIm[j], 2) + pow(resultUzIm[j], 2));
+			if (analysisType == "STATIC" || analysisType == "DYNAMIC")
+				resultMagIm[j] = sqrt(pow(resultUxIm[j], 2) + pow(resultUyIm[j], 2) + pow(resultUzIm[j], 2));
 
 			if (myHMesh->getDomainDimension() == 2) {
 				resultUzRe[j] = 0.0;
@@ -281,15 +399,20 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		myHMesh->addResultsTimeDescription(std::to_string(freq[iFreqCounter]));
 
 		anaysisTimer01.start();
-		(*A).cleanPardiso();
-		delete A;
+		
+		if (analysisType == "STATIC_REAL") {
+			(*AReal).cleanPardiso();
+			delete AReal;
+		}
+		else if (analysisType == "STATIC" || analysisType == "DYNAMIC") {
+			(*AComplex).cleanPardiso();
+			delete AComplex;
+		}
 		anaysisTimer01.stop();
 		
 		infoOut << "Duration for Cleaning System Matrix: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	}
-
-
 }
 
 FeAnalysis::~FeAnalysis() {

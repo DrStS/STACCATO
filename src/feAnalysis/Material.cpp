@@ -19,11 +19,14 @@
 */
 #include "Material.h"
 
+#include "MetaDatabase.h"
+
 
 Material::Material() {
-	myYoungsModulus= 210000;
-	myPoissonsRatio= 0.3;
-	myDensity = 7.85e-09;;
+	myYoungsModulus = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->E()->data());
+	myPoissonsRatio = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->nu()->data());
+	myDensity		= std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->rho()->data());
+	myDampingParameter = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->eta()->data());
 }
 
 Material::~Material() {

@@ -62,11 +62,17 @@ public:
 	 * \author Stefan Sicklinger
 	 ***********/
 	 double getDensity(void) const { return myDensity; }
+	 /***********************************************************************************************
+	 * \brief Return density
+	 * \author Stefan Sicklinger
+	 ***********/
+	 double getDampingParameter(void) const { return myDampingParameter; }
 private:
     ///
 	double myYoungsModulus;
 	double myPoissonsRatio;
 	double myDensity;
+	double myDampingParameter;
 };
 
 

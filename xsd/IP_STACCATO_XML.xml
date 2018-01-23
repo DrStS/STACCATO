@@ -1,0 +1,36 @@
+<STACCATO_XML>
+	<ANALYSIS>
+		<NAME>FELGE</NAME>
+		<TYPE>DYNAMIC</TYPE>  <!-- TYPE = STATIC, STATIC_REAL, DYNAMIC -->
+	</ANALYSIS>
+	<FREQUENCY Type="STEP">
+		<START_FREQ>1000</START_FREQ>
+		<END_FREQ>1000</END_FREQ>
+		<STEP_FREQ>500</STEP_FREQ>
+	</FREQUENCY>
+	<MATERIALS>
+		<MATERIAL Name="Aluminium" Type="Isotropic"><E>210000</E><nu>0.3</nu><rho>7.85e-9</rho><eta>0.1</eta></MATERIAL>
+	</MATERIALS>
+	<NODES>
+		<NODE><ID>1</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>2</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>3</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>4</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>5</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>6</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>7</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>8</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>9</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>10</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+	</NODES>
+	<ELEMENTS>
+		<ELEMENT Type="FeTetrahedron10NodeElement" MatID="1"><ID>1</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
+		<ELEMENT Type="FeTetrahedron10NodeElement" MatID="1"><ID>2</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
+	</ELEMENTS>
+	<LOADS>
+		<LOAD Type="Nodal"><OnNode>4</OnNode><Fx>3.000</Fx><iFx>11.11</iFx><Fy>4.000</Fy><iFy>12.11</iFy><Fz>5.000</Fz><iFz>13.11</iFz></LOAD>
+	</LOADS>
+	<BC>
+		<DBC><NODESET>1 2 3</NODESET><Ux>0</Ux><Uy>0</Uy><Uz>0</Uz></DBC>
+	</BC>
+</STACCATO_XML>

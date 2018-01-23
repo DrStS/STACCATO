@@ -25,6 +25,7 @@
 #include "MetaDatabase.h"
 
 using namespace std;
+using namespace xercesc;
 
 MetaDatabase *MetaDatabase::metaDatabase = NULL;
 
@@ -36,10 +37,6 @@ void MetaDatabase::init(char* inputFileName) {
 MetaDatabase* MetaDatabase::getInstance() {
 	assert(metaDatabase != NULL);
 	return metaDatabase;
-}
-
-auto_ptr<STACCATO_XML> MetaDatabase::getXMLHandle() {
-	return xmlHandle;
 }
 
 MetaDatabase::MetaDatabase() {
@@ -93,4 +90,190 @@ void MetaDatabase::buildXML() {
 
 void MetaDatabase::exportXML() {
 	// DOM export
+	XMLPlatformUtils::Initialize();
+
+	DOMImplementation* xmlImpl = NULL;
+	xmlImpl = DOMImplementationRegistry::getDOMImplementation(XMLString::transcode("core"));
+
+	if (xmlImpl != NULL) {
+		try {
+			DOMDocument* xmlExportDoc = xmlImpl->createDocument(0, XMLString::transcode("STACCATO_XML"), 0);
+
+			DOMElement* pRoot = xmlExportDoc->getDocumentElement();
+			// Analysis --
+			DOMElement* pElement = xmlExportDoc->createElement(XMLString::transcode("ANALYSIS"));
+
+			DOMElement* pChildElement = xmlExportDoc->createElement(XMLString::transcode("NAME"));
+			pChildElement->setTextContent(XMLString::transcode("FELGE"));
+			pElement->appendChild(pChildElement);
+			
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("TYPE"));
+			pChildElement->setTextContent(XMLString::transcode("DYNAMIC"));
+			pElement->appendChild(pChildElement);
+
+			pRoot->appendChild(pElement);
+			// --
+
+			// Frequency --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("FREQUENCY"));
+			pElement->setAttribute(XMLString::transcode("Type"), XMLString::transcode("Step"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("START_FREQ"));
+			pChildElement->setTextContent(XMLString::transcode("1000"));
+			pElement->appendChild(pChildElement);
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("END_FREQ"));
+			pChildElement->setTextContent(XMLString::transcode("2500"));
+			pElement->appendChild(pChildElement);
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("STEP_FREQ"));
+			pChildElement->setTextContent(XMLString::transcode("500"));
+			pElement->appendChild(pChildElement);
+
+			pRoot->appendChild(pElement);
+			// --
+
+			// Materials --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("MATERIALS"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("MATERIAL"));
+			pChildElement->setAttribute(XMLString::transcode("Name"), XMLString::transcode("Aluminium"));
+			pChildElement->setAttribute(XMLString::transcode("Type"), XMLString::transcode("Isotropic"));
+			
+			DOMElement* pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("E"));
+			pChildChildElement->setTextContent(XMLString::transcode("210000"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("nu"));
+			pChildChildElement->setTextContent(XMLString::transcode("0.3"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("rho"));
+			pChildChildElement->setTextContent(XMLString::transcode("7.85e-9"));
+			pChildElement->appendChild(pChildChildElement);
+
+			pElement->appendChild(pChildElement);
+			pRoot->appendChild(pElement);
+			// --
+
+			// Nodes --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("NODES"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("FILE"));
+			pChildElement->setTextContent(XMLString::transcode("ModelName.odb"));
+			pElement->appendChild(pChildElement);
+
+			pRoot->appendChild(pElement);
+			// --
+
+			// Elements --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("ELEMENTS"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("FILE"));
+			pChildElement->setTextContent(XMLString::transcode("ModelName.odb"));
+			pElement->appendChild(pChildElement);
+
+			pRoot->appendChild(pElement);
+			// --
+
+			// LOADS --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("LOADS"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("LOAD"));
+			pChildElement->setAttribute(XMLString::transcode("Type"), XMLString::transcode("NODAL"));
+
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("ID"));
+			pChildChildElement->setTextContent(XMLString::transcode("1"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("OnNode"));
+			pChildChildElement->setTextContent(XMLString::transcode("4"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Fx"));
+			pChildChildElement->setTextContent(XMLString::transcode("3.000"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("iFx"));
+			pChildChildElement->setTextContent(XMLString::transcode("11.11"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Fy"));
+			pChildChildElement->setTextContent(XMLString::transcode("4.000"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("iFy"));
+			pChildChildElement->setTextContent(XMLString::transcode("12.11"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Fz"));
+			pChildChildElement->setTextContent(XMLString::transcode("5.000"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("iFz"));
+			pChildChildElement->setTextContent(XMLString::transcode("13.11"));
+			pChildElement->appendChild(pChildChildElement);
+
+			pElement->appendChild(pChildElement);
+			pRoot->appendChild(pElement);
+			// --
+
+			// BC --
+			pElement = xmlExportDoc->createElement(XMLString::transcode("BC"));
+
+			pChildElement = xmlExportDoc->createElement(XMLString::transcode("DBC"));
+
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("ID"));
+			pChildChildElement->setTextContent(XMLString::transcode("1"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("NODESET"));
+			pChildChildElement->setTextContent(XMLString::transcode("2 4 6 8"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Ux"));
+			pChildChildElement->setTextContent(XMLString::transcode("0"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Uy"));
+			pChildChildElement->setTextContent(XMLString::transcode("0"));
+			pChildElement->appendChild(pChildChildElement);
+			pChildChildElement = xmlExportDoc->createElement(XMLString::transcode("Uz"));
+			pChildChildElement->setTextContent(XMLString::transcode("0"));
+			pChildElement->appendChild(pChildChildElement);
+
+			pElement->appendChild(pChildElement);
+			pRoot->appendChild(pElement);
+			// --
+
+			outputXML(xmlExportDoc, "C:/software/repos/STACCATO/xsd/SavedData_xerces.xml");
+			xmlExportDoc->release();
+		}
+		catch (...) {
+			cerr << "Error Occurred while writing XML!";
+		}
+	}
+}
+
+void MetaDatabase::outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath)
+{
+	//Return the first registered implementation that has the desired features. In this case, we are after a DOM implementation that has the LS feature... or Load/Save. 
+	DOMImplementation *implementation = DOMImplementationRegistry::getDOMImplementation(XMLString::transcode("LS"));
+
+	// Create a DOMLSSerializer which is used to serialize a DOM tree into an XML document. 
+	DOMLSSerializer *serializer = ((DOMImplementationLS*)implementation)->createLSSerializer();
+
+	// Make the output more human readable by inserting line feeds. 
+	if (serializer->getDomConfig()->canSetParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true))
+		serializer->getDomConfig()->setParameter(XMLUni::fgDOMWRTFormatPrettyPrint, true);
+
+	// The end-of-line sequence of characters to be used in the XML being written out.  
+	serializer->setNewLine(XMLString::transcode("\r\n"));
+
+	// Convert the path into Xerces compatible XMLCh*. 
+	XMLCh *tempFilePath = XMLString::transcode(_filePath.c_str());
+
+	// Specify the target for the XML output. 
+	XMLFormatTarget *formatTarget = new LocalFileFormatTarget(tempFilePath);
+
+	// Create a new empty output destination object. 
+	DOMLSOutput *output = ((DOMImplementationLS*)implementation)->createLSOutput();
+
+	// Set the stream to our target. 
+	output->setByteStream(formatTarget);
+
+	// Write the serialized output to the destination. 
+	serializer->write(_pmyDOMDocument, output);
+
+	// Cleanup. 
+	serializer->release();
+	XMLString::release(&tempFilePath);
+	delete formatTarget;
+	output->release();
 }

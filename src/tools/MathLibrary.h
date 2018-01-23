@@ -18,10 +18,10 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file MathLibrary.h
- * The header file of math functions in STACCATO.
- * \date 8/28/2017
- **************************************************************************************************/
+																								 * \file MathLibrary.h
+																								 * The header file of math functions in STACCATO.
+																								 * \date 8/28/2017
+																								 **************************************************************************************************/
 #ifndef MATHLIBRARY_H_
 #define MATHLIBRARY_H_
 
@@ -36,56 +36,58 @@
 #include <mkl.h>
 #endif
 
+																								 //Iter tests
+
 
 namespace MathLibrary {
 	/***********************************************************************************************
-	 * \brief Compute the dot product of two dense vectors
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] vec2 the 2nd vector
-	 * \return dot product
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Compute the dot product of two dense vectors
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \return dot product
+	* \author Stefan Sicklinger
+	***********/
 	double computeDenseDotProduct(const std::vector<double> &vec1, const std::vector<double> &vec2);
 	/***********************************************************************************************
-	 * \brief Compute the dot product of two dense vectors
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] vec2 the 2nd vector
-	 * \param[in] elements number of elements in vec1 (vec2)
-	 * \return dot product
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Compute the dot product of two dense vectors
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \param[in] elements number of elements in vec1 (vec2)
+	* \return dot product
+	* \author Stefan Sicklinger
+	***********/
 	double computeDenseDotProduct(const double *vec1, const double *vec2, const int elements);
 	/***********************************************************************************************
-	 * \brief Copy dense vector vec1 <- vec2
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] vec2 the 2nd vector
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Copy dense vector vec1 <- vec2
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \author Stefan Sicklinger
+	***********/
 	void copyDenseVector(double *vec1, const double *vec2, const int elements);
 	/***********************************************************************************************
-	 * \brief Compute Euclidean norm of vector
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] elements number of elements in vec1
-	 * \return Euclidean norm
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Compute Euclidean norm of vector
+	* \param[in] vec1 the 1st vector
+	* \param[in] elements number of elements in vec1
+	* \return Euclidean norm
+	* \author Stefan Sicklinger
+	***********/
 	double computeDenseEuclideanNorm(const double *vec1, const int elements);
 	/***********************************************************************************************
-	 * \brief Computes a vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] vec2 the 2nd vector
-	 * \param[in] a    scalar
-	 * \param[in] elements number of elements in vec1
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Computes a vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \param[in] a    scalar
+	* \param[in] elements number of elements in vec1
+	* \author Stefan Sicklinger
+	***********/
 	void computeDenseVectorAddition(double *vec1, const double *vec2, const double a, const int elements);
 	/***********************************************************************************************
-	 * \brief Computes vector scales by scalar vec1 <- vec1*a
-	 * \param[in] vec1 the 1st vector
-	 * \param[in] a    scalar
-	 * \param[in] elements number of elements in vec1
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Computes vector scales by scalar vec1 <- vec1*a
+	* \param[in] vec1 the 1st vector
+	* \param[in] a    scalar
+	* \param[in] elements number of elements in vec1
+	* \author Stefan Sicklinger
+	***********/
 	void computeDenseVectorScalarMultiplication(double *vec1, const double a, const int elements);
 	/***********************************************************************************************
 	* \brief Compute the matrix product between two matrices (general)
@@ -116,10 +118,10 @@ namespace MathLibrary {
 	***********/
 	void computeDenseMatrixVectorMultiplication(int _m, int _n, const double *_A, const double *_b, double *_c);
 	/********//**
-	 * \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
-	 *
-	 * \author Stefan Sicklinger
-	 **************************************************************************************************/
+			  * \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
+			  *
+			  * \author Stefan Sicklinger
+			  **************************************************************************************************/
 	template<class T>
 	class SparseMatrix {
 	public:
@@ -128,11 +130,11 @@ namespace MathLibrary {
 		typedef std::map<size_t, T> col_t;
 		typedef typename col_t::iterator col_iter;
 		/***********************************************************************************************
-		 * \brief Constructor for symmetric matrices
-		 * \param[in] _m is the number of rows & columns
-		 * \param[in] _isSymmetric only the upper triangular form is stored
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Constructor for symmetric matrices
+		* \param[in] _m is the number of rows & columns
+		* \param[in] _isSymmetric only the upper triangular form is stored
+		* \author Stefan Sicklinger
+		***********/
 		SparseMatrix(const size_t _m, const bool _isSymmetric) {
 			m = _m;
 			n = _m;
@@ -147,11 +149,11 @@ namespace MathLibrary {
 
 		}
 		/***********************************************************************************************
-		 * \brief Constructor for unsymmetric matrices
-		 * \param[in] _m is the number of rows
-		 * \param[in] _n is the number of columns
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Constructor for unsymmetric matrices
+		* \param[in] _m is the number of rows
+		* \param[in] _n is the number of columns
+		* \author Stefan Sicklinger
+		***********/
 		SparseMatrix(const size_t _m, const size_t _n) {
 			m = _m;
 			n = _n;
@@ -162,19 +164,19 @@ namespace MathLibrary {
 			rowIndex = new std::vector<int>(m + 1);
 		}
 		/***********************************************************************************************
-		 * \brief Destructor
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Destructor
+		* \author Stefan Sicklinger
+		***********/
 		virtual ~SparseMatrix() {
 			delete mat;
 		}
 		;
 		/***********************************************************************************************
-		 * \brief Operator overloaded () for assignment of value e.g. A(i,j)=10
-		 * \param[in] i is the number of rows
-		 * \param[in] j is the number of columns
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Operator overloaded () for assignment of value e.g. A(i,j)=10
+		* \param[in] i is the number of rows
+		* \param[in] j is the number of columns
+		* \author Stefan Sicklinger
+		***********/
 		inline T& operator()(size_t i, size_t j) {
 			if (i >= m || j >= n)
 				assert(0);
@@ -184,11 +186,11 @@ namespace MathLibrary {
 			return (*mat)[i][j];
 		}
 		/***********************************************************************************************
-		 * \brief Operator overloaded () for assignment of value e.g. A(i,j)=10
-		 * \param[in] i is the number of rows
-		 * \param[in] j is the number of columns
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Operator overloaded () for assignment of value e.g. A(i,j)=10
+		* \param[in] i is the number of rows
+		* \param[in] j is the number of columns
+		* \author Stefan Sicklinger
+		***********/
 		inline T operator()(size_t i, size_t j) const {
 			if (i >= m || j >= n)
 				assert(0);
@@ -198,10 +200,10 @@ namespace MathLibrary {
 			return (*mat)[i][j];
 		}
 		/***********************************************************************************************
-		 * \brief Operator overloaded * for Matrix vector multiplication
-		 * \return std vector
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief Operator overloaded * for Matrix vector multiplication
+		* \return std vector
+		* \author Stefan Sicklinger
+		***********/
 		std::vector<T> operator*(const std::vector<T>& x) { //Computes y=A*x
 			if (this->m != x.size())
 				assert(0);
@@ -220,7 +222,7 @@ namespace MathLibrary {
 					sum += (*jj).second * x[(*jj).first];
 
 					if ((ii != (*jj).first) && isSymmetric) { //not on the main diagonal
-						//   std::cout << (*ii).first << " ssss "<< (*jj).second <<" tttt "<< x[(*ii).first] << "uuuu" << (*jj).first << std::endl;
+															  //   std::cout << (*ii).first << " ssss "<< (*jj).second <<" tttt "<< x[(*ii).first] << "uuuu" << (*jj).first << std::endl;
 						y[(*jj).first] += (*jj).second * x[ii];
 					}
 
@@ -231,12 +233,12 @@ namespace MathLibrary {
 			return y;
 		}
 		/***********************************************************************************************
-		 * \brief This function is a fast alternative to the operator overloading alternative
-		 * \param[in] x vector to be multiplied
-		 * \param[out] y result vector
-		 * \param[in] elements are the number of entries in the vector
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This function is a fast alternative to the operator overloading alternative
+		* \param[in] x vector to be multiplied
+		* \param[out] y result vector
+		* \param[in] elements are the number of entries in the vector
+		* \author Stefan Sicklinger
+		***********/
 		void mulitplyVec(const T* x, T* y, const size_t elements) { //Computes y=A*x
 			if (this->m != elements)
 				assert(0);
@@ -255,7 +257,7 @@ namespace MathLibrary {
 				for (jj = (*mat)[ii].begin(); jj != (*mat)[ii].end(); jj++) {
 					sum += (*jj).second * x[(*jj).first];
 					if ((ii != (*jj).first) && isSymmetric) { //not on the main diagonal
-						//   std::cout << (*ii).first << " ssss "<< (*jj).second <<" tttt "<< x[(*ii).first] << "uuuu" << (*jj).first << std::endl;
+															  //   std::cout << (*ii).first << " ssss "<< (*jj).second <<" tttt "<< x[(*ii).first] << "uuuu" << (*jj).first << std::endl;
 						y[(*jj).first] += (*jj).second * x[ii];
 					}
 				}
@@ -264,19 +266,19 @@ namespace MathLibrary {
 		}
 
 		/***********************************************************************************************
-		 * \brief This function analysis and factorize the matrix
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This function analysis and factorize the matrix
+		* \author Stefan Sicklinger
+		***********/
 		void factorize() {
 #ifdef USE_INTEL_MKL
 			this->determineCSR();
 			if (isSymmetric) {
-				if(std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
-				else if (std::is_same<T, double>::value) pardiso_mtype  = -2;		// real and symmetric indefinite
+				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
+				else if (std::is_same<T, double>::value) pardiso_mtype = -2;		// real and symmetric indefinite
 			}
 			else {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
-				else if (std::is_same<T, double>::value) pardiso_mtype   = 11;		// real and unsymmetric matrix
+				else if (std::is_same<T, double>::value) pardiso_mtype = 11;		// real and unsymmetric matrix
 			}
 
 			// set pardiso default parameters
@@ -289,11 +291,11 @@ namespace MathLibrary {
 			pardiso_msglvl = 1; // do NOT print statistical information
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
-			//pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
+							   //pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = 1; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
-			//pardiso_iparm[36] = -90;
-			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads);
+								//pardiso_iparm[36] = -90;
+			mkl_set_num_threads(1);
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -307,8 +309,8 @@ namespace MathLibrary {
 			infoOut << "Reordering and factorization completed" << std::endl;
 			infoOut << "Info: Number of equation = " << pardiso_neq << std::endl;
 			infoOut << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
-			infoOut << "Info: Number of factorization FLOPS = " << pardiso_iparm[18]*1000000.0 << std::endl;
-			infoOut << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14]+ pardiso_iparm[15]+pardiso_iparm[16])/1000 << std::endl;
+			infoOut << "Info: Number of factorization FLOPS = " << pardiso_iparm[18] * 1000000.0 << std::endl;
+			infoOut << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14] + pardiso_iparm[15] + pardiso_iparm[16]) / 1000 << std::endl;
 			infoOut << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
 			infoOut << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
 #endif
@@ -349,18 +351,17 @@ namespace MathLibrary {
 #endif
 		}
 		/***********************************************************************************************
-		 * \brief This function performs the prepare of a solution
-		 * \param[out] pointer to solution vector _x
-		 * \param[in]  pointer to rhs vector _b
-		 * \return std vector
-		 * \author Stefan Sicklinger
-		 ***********/
-		void solve(T* _x, T* _b) { //Computes x=A\b
+		* \brief This function performs the prepare of a solution
+		* \param[out] pointer to solution vector _x
+		* \param[in]  pointer to rhs vector _b
+		* \author Stefan Sicklinger
+		***********/
+		void solveDirect(T* _x, T* _b) { //Computes x=A\b
 #ifdef USE_INTEL_MKL
-			// pardiso forward and backward substitution
+										 // pardiso forward and backward substitution
 			pardiso_phase = 33; // forward and backward substitution
-			//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
-			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
+								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
+			mkl_set_num_threads(1); // set number of threads to 1 for mkl call only
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -376,9 +377,9 @@ namespace MathLibrary {
 		}
 
 		/***********************************************************************************************
-		 * \brief This function clean Pardiso
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This function clean Pardiso
+		* \author Stefan Sicklinger
+		***********/
 		void cleanPardiso() {
 #ifdef USE_INTEL_MKL
 			// clean pardiso
@@ -396,9 +397,251 @@ namespace MathLibrary {
 		}
 
 		/***********************************************************************************************
-		 * \brief This prints the matrix in CSR style i j value
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This function prepares iterative solver
+		* \param[in]  pointer to rhs vector _b
+		* \param[out] pointer to solution vector _x
+		* \author Stefan Sicklinger
+		***********/
+		void initIterativeSolver(double* _x, double* _b) {
+#ifdef USE_INTEL_MKL
+			//////////////////////////////////////////////////////////////
+			this->determineCSR();
+			//const int m --> number of dofs
+			/*---------------------------------------------------------------------------
+			* Allocate storage for the ?par parameters and the solution/rhs/residual vectors
+			*---------------------------------------------------------------------------*/
+			//number of the non-restarted FGMRES iterations
+			int numberofNonRestartedIterations = 100;// std::min(m, 2500);
+			int numberofMaxIterations = numberofNonRestartedIterations;
+
+			//Allocate storage
+			uint64_t memoryLength = ((2 * numberofNonRestartedIterations + 1)*m + numberofNonRestartedIterations * (numberofNonRestartedIterations + 9) / 2 + 1);
+			printf("Try to allocate %f Gb \n", (double)memoryLength * sizeof(double) / 1000000000);
+			fgmres_memory = new double[memoryLength];
+			double *trueResidual; // r=A*x-b
+			double *rhs; // copy of _b
+			trueResidual = new double[m];
+			rhs = new double[m];
+			//Allocate CSR precon-matrix
+			double  *pIlut;
+			MKL_INT *jPIlut;
+			MKL_INT *iPIlut;
+			MKL_INT maxfilIlut = m / 2 - 1; // Maximum fill-in, which is half of the preconditioner bandwidth. The number of non-zero elements in the rows of the preconditioner cannot exceed (2*maxfil+1).
+			double tolIlut = 1.E-6;
+
+			MKL_INT pIlutLength = (2 * maxfilIlut + 1)*m - maxfilIlut*(maxfilIlut + 1) + 1;
+			if (pIlutLength < 0) {
+				pIlutLength = (2 * maxfilIlut + 1)*m + 1;
+			}
+
+			pIlut = new double[pIlutLength];
+			//ilu0// pIlut = new double[values.size()];
+			jPIlut = new MKL_INT[pIlutLength];
+			iPIlut = new MKL_INT[m + 1];
+			MKL_INT errorFlagIlut;
+			double  *tmpVecIlut;
+			tmpVecIlut = new double[m];
+
+			/*---------------------------------------------------------------------------
+			* Initialize the solver
+			*---------------------------------------------------------------------------*/
+			dfgmres_init(&m, _x, _b, &fgmres_RCI_request, fgmres_ipar, fgmres_dpar, fgmres_memory);
+			printf("--------------------------------------------------\n");
+			printf(" The SIMPLE example of usage of RCI FGMRES solver\n");
+			printf("to solve a non-symmetric indefinite non-degenerate\n");
+			printf("       algebraic system of linear equations\n");
+			printf("--------------------------------------------------\n\n");
+			if (fgmres_RCI_request != 0) {
+				iterativeSolverHandleError();
+			}
+			/*---------------------------------------------------------------------------
+			* Set the desired parameters
+			*---------------------------------------------------------------------------*/
+			//specifies the maximum number of iterations.The default value is min(150, n).
+			fgmres_ipar[4] = numberofNonRestartedIterations;
+			//specifies the number of the non-restarted FGMRES iterations. 
+			//To run the restarted version of the FGMRES method, assign the number of iterations to ipar[14] before the restart. 
+			//The default value is min(150, n), which means that by default the non-restarted version of FGMRES method is used.
+			fgmres_ipar[14] = numberofMaxIterations;
+			fgmres_ipar[8] = 0; //do not do the residual stopping test
+			fgmres_ipar[9] = 1; //do request for the user defined stopping test
+			fgmres_ipar[11] = 1; //do the check of the norm of the next generated vector automatically
+			fgmres_ipar[7] = 1; // deactivate max iter check --> fgmres_ipar[4] ignored
+			fgmres_ipar[10] = 1; //--> activate precon
+			fgmres_dpar[0] = 1.0E-6; ////set the relative tolerance to 1.0D-3 instead of default value 1.0D-6
+									 /*---------------------------------------------------------------------------
+									 * Save the right-hand side in vector b for future use
+									 *---------------------------------------------------------------------------*/
+			int inc = 1;
+			dcopy(&m, _b, &inc, rhs, &inc);
+			/*---------------------------------------------------------------------------
+			* Calculate ILUT preconditioner.
+			*                      !ATTENTION!
+			* DCSRILUT routine uses some IPAR, DPAR set by DFGMRES_INIT routine.
+			* Important for DCSRILUT default entries set by DFGMRES_INIT are
+			* ipar[1] = 6 - output of error messages to the screen,
+			* ipar[5] = 1 - allow output of errors,
+			* ipar[6] = 1 - output warn messages if any and continue
+			* ipar[30]= 0 - abort DCSRILUT calculations if routine meets zero diagonal element.
+			*
+			* If ILUT is going to be used out of Intel(R) MKL FGMRES context, than the values
+			* of ipar[1], ipar[5], ipar[6], ipar[30], and dpar[30] should be user
+			* provided before the DCSRILUT routine call.
+			*
+			* In this example, specific for DCSRILUT entries are set in turn:
+			* ipar[30]= 1 - change small diagonal value to that given by dpar[31],
+			* dpar[30]= 1.E-5  instead of the default value set by DFGMRES_INIT.
+			*                  It is the target value of the diagonal value if it is
+			*                  small as compared to the given tolerance multiplied
+			*                  by the matrix row norm and the routine should
+			*                  change it rather than abort DCSRILUT calculations.
+			*---------------------------------------------------------------------------*/
+			fgmres_ipar[30] = 1;
+			fgmres_dpar[30] = 1.E-6;
+
+			dcsrilut(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, iPIlut, jPIlut, &tolIlut, &maxfilIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
+			//ilu0//dcsrilu0(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
+
+			if (errorFlagIlut != 0)
+			{
+				printf("Preconditioner dcsrilut has returned the ERROR code %d\n", errorFlagIlut);
+				iterativeSolverHandleError();
+			}
+			/*---------------------------------------------------------------------------
+			* Check the correctness and consistency of the newly set parameters
+			*---------------------------------------------------------------------------*/
+			dfgmres_check(&m, _x, rhs, &fgmres_RCI_request, fgmres_ipar, fgmres_dpar, fgmres_memory);
+			if (fgmres_RCI_request != 0) {
+				iterativeSolverHandleError();
+			}
+			iterativeSolverPrintInfo();
+			while (1) {
+				/*---------------------------------------------------------------------------
+				* Compute the solution by RCI (P)FGMRES solver without preconditioning
+				* Reverse Communication starts here
+				*---------------------------------------------------------------------------*/
+				dfgmres(&m, _x, rhs, &fgmres_RCI_request, fgmres_ipar, fgmres_dpar, fgmres_memory);
+				/*---------------------------------------------------------------------------
+				* If RCI_request=0, then the solution was found with the required precision
+				*---------------------------------------------------------------------------*/
+				if (fgmres_RCI_request == 0) {
+					// Finalize
+					iterativeSolverFinalize(_x, rhs);
+					/*-------------------------------------------------------------------------*/
+					/* Release internal Intel(R) MKL memory that might be used for computations         */
+					/* NOTE: It is important to call the routine below to avoid memory leaks   */
+					/* unless you disable Intel(R) MKL Memory Manager                                   */
+					/*-------------------------------------------------------------------------*/
+					MKL_Free_Buffers();
+					break;
+				}
+				/*---------------------------------------------------------------------------
+				* If RCI_request=1, then compute the vector A*tmp[ipar[21]-1]
+				* and put the result in vector tmp[ipar[22]-1]
+				*---------------------------------------------------------------------------
+				* NOTE that ipar[21] and ipar[22] contain FORTRAN style addresses,
+				* therefore, in C code it is required to subtract 1 from them to get C style
+				* addresses
+				*---------------------------------------------------------------------------*/
+				if (fgmres_RCI_request == 1)
+				{
+					if (isSymmetric) {
+						char upperDiag = 'U';
+						mkl_dcsrsymv(&upperDiag, &m, &values[0], &((*rowIndex)[0]), &columns[0], &fgmres_memory[fgmres_ipar[21] - 1], &fgmres_memory[fgmres_ipar[22] - 1]);
+					}
+					else {
+						char transposeA = 'N';
+						mkl_dcsrgemv(&transposeA, &m, &values[0], &((*rowIndex)[0]), &columns[0], &fgmres_memory[fgmres_ipar[21] - 1], &fgmres_memory[fgmres_ipar[22] - 1]);
+					}
+				}
+				/*---------------------------------------------------------------------------
+				* If RCI_request=2, then do the user-defined stopping test
+				* The residual stopping test for the computed solution is performed here
+				* NOTE: from this point vector rhs[N] is no longer containing the right-hand
+				* side of the problem! It contains the current FGMRES approximation to the
+				* solution. If you need to keep the right-hand side, save it in some other
+				* vector before the call to dfgmres routine. Here we saved it in vector b[N]
+				*---------------------------------------------------------------------------*/
+				if (fgmres_RCI_request == 2)
+				{
+					/* Request to the dfgmres_get routine to put the solution into rhs[N] via ipar[12]
+					WARNING: beware that the call to dfgmres_get routine with ipar[12]=0 at this
+					stage may destroy the convergence of the FGMRES method, therefore, only advanced
+					users should exploit this option with care */
+					fgmres_ipar[12] = 1;
+					/* Get the current computed solution in the vector rhs[N] */
+					int currentIterCount;
+					dfgmres_get(&m, _x, rhs, &fgmres_RCI_request, fgmres_ipar, fgmres_dpar, fgmres_memory, &currentIterCount);
+					/* Compute the current true residual via Intel(R) MKL (Sparse) BLAS routines */
+					if (isSymmetric) {
+						char upperDiag = 'U';
+						mkl_dcsrsymv(&upperDiag, &m, &values[0], &((*rowIndex)[0]), &columns[0], rhs, trueResidual);
+					}
+					else {
+						char transposeA = 'N';
+						mkl_dcsrgemv(&transposeA, &m, &values[0], &((*rowIndex)[0]), &columns[0], rhs, trueResidual);
+					}
+					double minusOne = -1.0E0;
+					int inc = 1;
+					daxpy(&m, &minusOne, _b, &inc, trueResidual, &inc);
+					double residualNorm = dnrm2(&m, trueResidual, &inc);
+					printf("currentIterCount: %d \t residualNorm: %f \n", currentIterCount, residualNorm);
+					if (currentIterCount == 800) {
+						// Finalize
+						iterativeSolverFinalize(_x, rhs);
+						/*-------------------------------------------------------------------------*/
+						/* Release internal Intel(R) MKL memory that might be used for computations         */
+						/* NOTE: It is important to call the routine below to avoid memory leaks   */
+						/* unless you disable Intel(R) MKL Memory Manager                                   */
+						/*-------------------------------------------------------------------------*/
+						MKL_Free_Buffers();
+						break;
+					}
+				}
+				/*---------------------------------------------------------------------------
+				* If RCI_request=3, then apply the preconditioner on the vector
+				* tmp[ipar[21]-1] and put the result in vector tmp[ipar[22]-1]
+				*---------------------------------------------------------------------------
+				* NOTE that ipar[21] and ipar[22] contain FORTRAN style addresses,
+				* therefore, in C code it is required to subtract 1 from them to get C style
+				* addresses
+				* Here is the recommended usage of the result produced by ILUT routine
+				* via standard Intel(R) MKL Sparse Blas solver routine mkl_dcsrtrsv.
+				*---------------------------------------------------------------------------*/
+				if (fgmres_RCI_request == 3)
+				{
+					char cvar1 = 'L';
+					char cvar = 'N';
+					char cvar2 = 'U';
+					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
+					//ilu0//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
+
+					cvar1 = 'U';
+					cvar = 'N';
+					cvar2 = 'N';
+					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
+					//ilu0//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
+					printf("Preconditioner applied!\n");
+				}
+				/*---------------------------------------------------------------------------
+				* If RCI_request=anything else, then dfgmres subroutine failed
+				* to compute the solution vector: computed_solution[N]
+				*---------------------------------------------------------------------------*/
+				if (!(fgmres_RCI_request == 0 || fgmres_RCI_request == 1 || fgmres_RCI_request == 2 || fgmres_RCI_request == 3))
+				{
+					iterativeSolverHandleError();
+					break;
+				}
+			}// while
+			 //////////////////////////////////////////////////////////////
+#endif
+		}
+
+
+		/***********************************************************************************************
+		* \brief This prints the matrix in CSR style i j value
+		* \author Stefan Sicklinger
+		***********/
 		void printCSR() {
 			row_iter ii;
 			col_iter jj;
@@ -415,9 +658,9 @@ namespace MathLibrary {
 			std::cout << std::endl;
 		}
 		/***********************************************************************************************
-		 * \brief This prints the matrix in full style
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This prints the matrix in full style
+		* \author Stefan Sicklinger
+		***********/
 		void print() {
 			size_t ii_counter;
 			size_t jj_counter;
@@ -459,7 +702,7 @@ namespace MathLibrary {
 		std::vector<int>* rowIndex;
 		/// pardiso variable
 		MKL_INT *pardiso_pt[64]; // this is related to internal memory management, see PARDISO manual
-		/// pardiso variable
+								 /// pardiso variable
 		MKL_INT pardiso_iparm[64];
 		/// pardiso variable
 		MKL_INT pardiso_mtype;
@@ -481,12 +724,21 @@ namespace MathLibrary {
 		MKL_INT pardiso_idum;
 		/// pardiso variable
 		MKL_INT pardiso_error;
+		/// GMRES INTEGER array, this parameter specifies the integer set of data for the RCI FGMRES computations :
+		MKL_INT fgmres_ipar[128];
+		/// FGEMRES DOUBLE PRECISION array, this parameter specifies the double precision set of data for the RCI CG computations, specifically:
+		double fgmres_dpar[128];
+		/// FGMRES memory DOUBLE PRECISION array of size((2 * ipar(15) + 1)*n + ipar(15)*(ipar(15) + 9) / 2 + 1)) used to supply the double precision temporary space for the RCI FGMRES computations, specifically:
+		double *fgmres_memory;
+		///INTEGER.Gives information about the result of the routine.
+		MKL_INT fgmres_RCI_request;
 		/// determineCSR already called
 		bool alreadyCalled;
+
 		/***********************************************************************************************
-		 * \brief This fills the three vectors of the CSR format (one-based)
-		 * \author Stefan Sicklinger
-		 ***********/
+		* \brief This fills the three vectors of the CSR format (one-based)
+		* \author Stefan Sicklinger
+		***********/
 		void determineCSR() {
 			if (!alreadyCalled) {
 				std::cout << "!alreadyCalled" << std::endl;
@@ -513,26 +765,127 @@ namespace MathLibrary {
 
 			alreadyCalled = true;
 		}
+		/***********************************************************************************************
+		* \brief This function handles iterative solver errors
+		* \author Stefan Sicklinger
+		***********/
+		void iterativeSolverHandleError() {
+			/*-------------------------------------------------------------------------*/
+			/* Release internal Intel(R) MKL memory that might be used for computations         */
+			/* NOTE: It is important to call the routine below to avoid memory leaks   */
+			/* unless you disable Intel(R) MKL Memory Manager                                   */
+			/*-------------------------------------------------------------------------*/
+			printf("\nThe iterative solver FAILED as the solver has returned the ERROR code %d", fgmres_RCI_request);
+			MKL_Free_Buffers();
+		}
+
+		/***********************************************************************************************
+		* \brief This function prints iterative solver RCI info
+		* \author Stefan Sicklinger
+		***********/
+		void iterativeSolverPrintInfo() {
+			printf("Some info about the current run of RCI FGMRES method:\n\n");
+			if (fgmres_ipar[7])
+			{
+				printf("As ipar[7]=%d, the automatic test for the maximal number of ", fgmres_ipar[7]);
+				printf("iterations will be\nperformed\n");
+			}
+			else
+			{
+				printf("As ipar[7]=%d, the automatic test for the maximal number of ", fgmres_ipar[7]);
+				printf("iterations will be\nskipped\n");
+			}
+			printf("+++\n");
+			if (fgmres_ipar[8])
+			{
+				printf("As ipar[8]=%d, the automatic residual test will be performed\n", fgmres_ipar[8]);
+			}
+			else
+			{
+				printf("As ipar[8]=%d, the automatic residual test will be skipped\n", fgmres_ipar[8]);
+			}
+			printf("+++\n");
+			if (fgmres_ipar[9])
+			{
+				printf("As ipar[9]=%d, the user-defined stopping test will be ", fgmres_ipar[9]);
+				printf("requested via\nRCI_request=2\n");
+			}
+			else
+			{
+				printf("As ipar[9]=%d, the user-defined stopping test will not be ", fgmres_ipar[9]);
+				printf("requested, thus,\nRCI_request will not take the value 2\n");
+			}
+			printf("+++\n");
+			if (fgmres_ipar[10])
+			{
+				printf("As ipar[10]=%d, the Preconditioned FGMRES iterations will be ", fgmres_ipar[10]);
+				printf("performed, thus,\nthe preconditioner action will be requested via RCI_request=3\n");
+			}
+			else
+			{
+				printf("As ipar[10]=%d, the Preconditioned FGMRES iterations will not ", fgmres_ipar[10]);
+				printf("be performed,\nthus, RCI_request will not take the value 3\n");
+			}
+			printf("+++\n");
+			if (fgmres_ipar[11])
+			{
+				printf("As ipar[11]=%d, the automatic test for the norm of the next ", fgmres_ipar[11]);
+				printf("generated vector is\nnot equal to zero up to rounding and ");
+				printf("computational errors will be performed,\nthus, RCI_request will not take the value 4\n");
+			}
+			else
+			{
+				printf("As ipar[11]=%d, the automatic test for the norm of the next ", fgmres_ipar[11]);
+				printf("generated vector is\nnot equal to zero up to rounding and ");
+				printf("computational errors will be skipped,\nthus, the user-defined test ");
+				printf("will be requested via RCI_request=4\n");
+			}
+			printf("+++\n\n");
+		}
+		/***********************************************************************************************
+		* \brief This finalizes the iterative solver
+		* \param[in]  pointer to rhs vector _rhs
+		* \param[out] pointer to solution vector _x
+		* \author Stefan Sicklinger
+		***********/
+		void iterativeSolverFinalize(double* _x, double* _rhs) {
+			// Finalize
+			fgmres_ipar[12] = 0;
+			int currentIterCount;
+			dfgmres_get(&m, _x, _rhs, &fgmres_RCI_request, fgmres_ipar, fgmres_dpar, fgmres_memory, &currentIterCount);
+			/*---------------------------------------------------------------------------
+			* Print solution vector: computed_solution[N] and the number of iterations: itercount
+			*---------------------------------------------------------------------------*/
+			printf(" The system has been solved \n");
+			printf("\n The following solution has been obtained: \n");
+			for (int i = 0; i < 3; i++)
+			{
+				printf("computed_solution[%d]=", i);
+				printf("%e\n", _x[i]);
+			}
+			printf("\n Number of iterations: %d\n", currentIterCount);
+		}
+
 	};
 	/***********************************************************************************************
 	* \brief Gauss points for 2D bilinear elements
 	* \author Stefan Sicklinger
 	***********/
-	static const double tmpSqrt13 = sqrt(1.0 / 3.0); 
+	static const double tmpSqrt13 = sqrt(1.0 / 3.0);
 	const double quadGaussPoints2D4Point[8] = { tmpSqrt13, tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13, -tmpSqrt13, tmpSqrt13, -tmpSqrt13 };
 	/***********************************************************************************************
 	* \brief Gauss points for 3D quadratic tet element
 	* \author Stefan Sicklinger
 	***********/
-	static const double tmpA = (5 + 3 * sqrt(5.0))/20.0;
+	static const double tmpA = (5 + 3 * sqrt(5.0)) / 20.0;
 	static const double tmpB = (5 - sqrt(5.0)) / 20.0;
-	const double tetGaussPoints3D4Points[16] = { 
-	tmpA, tmpB, tmpB, tmpB,
-	tmpB, tmpA, tmpB, tmpB,
-	tmpB, tmpB, tmpA, tmpB,
-	tmpB, tmpB, tmpB, tmpA
+	const double tetGaussPoints3D4Points[16] = {
+		tmpA, tmpB, tmpB, tmpB,
+		tmpB, tmpA, tmpB, tmpB,
+		tmpB, tmpB, tmpA, tmpB,
+		tmpB, tmpB, tmpB, tmpA
 	};
-	const double tetGaussWeights3D4Points = 1.0/4.0;
+	const double tetGaussWeights3D4Points = 1.0 / 4.0;
 
 	static const double tmpG1A = (7. - sqrt(15.0)) / 34.;
 	static const double tmpG1B = 1. - 3. * tmpG1A;
@@ -555,7 +908,7 @@ namespace MathLibrary {
 		tmpG2B, tmpG2A, tmpG2A, tmpG2A,
 		tmpG2A, tmpG2B, tmpG2A, tmpG2A,
 		tmpG2A, tmpG2A, tmpG2B, tmpG2A,
-		tmpG2A, tmpG2A, tmpG2A, tmpG2B,	
+		tmpG2A, tmpG2A, tmpG2A, tmpG2B,
 
 		tmpG3B, tmpG3B, tmpG3A, tmpG3A,
 		tmpG3B, tmpG3A, tmpG3B, tmpG3A,
@@ -566,6 +919,6 @@ namespace MathLibrary {
 
 		tmpG4A, tmpG4A, tmpG4A, tmpG4A
 	};
-	const double tetGaussWeights3D15Points[15] = {tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4};
+	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
 } /* namespace Math */
 #endif /* MATHLIBRARY_H_ */

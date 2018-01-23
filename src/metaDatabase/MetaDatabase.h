@@ -30,14 +30,23 @@
 #include <map>
 
 #include "IP_STACCATO_XML.hxx"
-/********//**
+
+// XERCES
+#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/framework/XMLFormatter.hpp>
+#include <xercesc/framework/LocalFileFormatTarget.hpp>
+#include <xercesc/dom/DOMDocument.hpp>
+#include <xercesc/dom/DOMImplementation.hpp>
+#include <xercesc/dom/DOMImplementationRegistry.hpp>
+#include <xercesc/dom/DOMLSSerializer.hpp>
+#include <xercesc/dom/DOMLSOutput.hpp>
+
+/**********
 * \brief Class MetaDatabase handles all the Metadata inside STACCATO
 ***********/
 class MetaDatabase {
-public:
-	static void init(char*);
-	static MetaDatabase* getInstance();
-	virtual ~MetaDatabase();
 private:
 	/***********************************************************************************************
 	* \brief Constructor
@@ -52,9 +61,12 @@ private:
 	static MetaDatabase* metaDatabase;
 public:
 	std::auto_ptr<STACCATO_XML> xmlHandle;
-	std::auto_ptr<STACCATO_XML> getXMLHandle();
+	static void init(char*);
+	static MetaDatabase* getInstance();
+	virtual ~MetaDatabase();
 	void buildXML();
 	void exportXML();
+	void outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath);
 };
 
 #endif /* METADATABASE_H_ */

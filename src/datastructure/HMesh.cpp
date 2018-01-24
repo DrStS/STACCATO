@@ -223,3 +223,40 @@ int HMesh::getNodeIndexForLabel(int _nodeLabel) {
 			return i;
 	}
 }
+
+std::vector<int>& HMesh::getKilledElementDoFList() {
+	std::vector<int> nodeSet;
+	nodeSet.push_back(1);
+	nodeSet.push_back(2);
+	nodeSet.push_back(3);
+	std::vector<int> fixedForDofs;
+	fixedForDofs.push_back(1);
+	fixedForDofs.push_back(0);
+	fixedForDofs.push_back(1);
+	std::vector<int> dofMapBC;
+
+	// Create the Map of boundary Dof List for all Nodes
+	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
+		int nodeIndex = getNodeIndexForLabel(nodeSet.at(iNode));
+		std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
+
+		// Create a map of Dofs
+		int numDoFsPerNode = getNumDoFsPerNode(nodeIndex);
+		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
+			if (fixedForDofs.at(iMap) == 1) {
+				dofMapBC.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
+			}
+		}
+	}
+
+	// DOF Killing
+	for (int m = 0; m < elementDoFList.size(); m++) {
+		for (int n = 0; n < dofMapBC.size(); n++) {
+			if (elementDoFList.at(m) == dofMapBC.at(n)) {
+				elementDoFList.at(m) = -1;
+			}
+		}
+	}
+
+	return elementDoFList;
+}

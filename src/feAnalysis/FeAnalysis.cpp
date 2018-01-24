@@ -142,7 +142,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 					allElements[elemIndex]->computeElementMatrix(eleCoords);
 					lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
 				}
-				std::cout << "\nDev. Info >> Section : " << iSection->SECTION().at(j).Name() << ", with Element Set : " << iSets->ELEMENTSET().at(k).Name() << ", is assigned with Material :" << iSection->SECTION().at(j).MATERIAL() << std::endl;
+				std::cout << "\nDev. Info >> Section : " << iSection->SECTION().at(j).Name() << ", with Element Set : " << iSets->ELEMENTSET().at(k).Name() << ", is assigned with Material :" << iSection->SECTION().at(j).MATERIAL() << std::endl << std::endl;
 
 				break;
 			}
@@ -194,9 +194,41 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	resultUzIm.resize(numNodes);
 	resultMagIm.resize(numNodes);
 
-	// Damping														
-	//std::cout << "\nDamping Factor of eta = " << elasticMaterial->getDampingParameter() << " is added to the system!\n\n";
+	
+	/*
+	// Dirichlet BC Testing ---------------------------------------------
+	std::vector<int> nodeSet = {1, 2, 3};
+	std::vector<int> fixedForDofs = { 1, 0 ,1 };
+	std::vector<int> dofMapBC;
+	
+	anaysisTimer02.start();
+	// Create the Map of boundary Dof List for all Nodes
+	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
+		int nodeIndex = myHMesh->getNodeIndexForLabel(nodeSet.at(iNode));
+		std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
 
+		// Create a map of Dofs
+		int numDoFsPerNode = myHMesh->getNumDoFsPerNode(nodeIndex);
+		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
+			if (fixedForDofs.at(iMap) == 1) {
+				dofMapBC.push_back(myHMesh->getNodeIndexToDoFIndices()[nodeIndex][iMap]);
+			}
+		}
+	}
+
+	// DOF Killing
+	std::vector<int> eleDof = myHMesh->getElementDoFList();
+	for (int m = 0; m < eleDof.size(); m++){
+		for (int n = 0; n < dofMapBC.size(); n++) {
+			if (eleDof.at(m) == dofMapBC.at(n))	{
+				eleDof.at(m) = -1;
+			}
+		}
+	}
+	anaysisTimer02.stop();
+	infoOut << "Duration for DOF killing loop: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
+	// ------------------------------------------------------------------
+	*/
 	// Allocate global matrix and vector memory
 	// Real Only
 	std::vector<double> bReal;
@@ -217,6 +249,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		std::cerr << "Unsupported Analysis Type! \n-Hint: Check XML Input \n-Exiting STACCATO." << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	// Kill
+	myHMesh->getKilledElementDoFList();
 
 	for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
 		int lastIndex = 0;
@@ -239,15 +274,17 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			double omega = 2 * M_PI*freq[iFreqCounter];
 			//Assembly routine symmetric stiffness
 			for (int i = 0; i < numDoFsPerElement; i++) {
-				for (int j = 0; j < numDoFsPerElement; j++) {
-					if (eleDoFs[j] >= eleDoFs[i]) {
-						//K(1+eta*i)
-						if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-							(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-						}
-						else if ( analysisType == "STEADYSTATE_DYNAMIC") {
-							(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-							(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
+				if (eleDoFs[i] != -1) {
+					for (int j = 0; j < numDoFsPerElement; j++) {
+						if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
+							//K(1+eta*i)
+							if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+								(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+							}
+							else if (analysisType == "STEADYSTATE_DYNAMIC") {
+								(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+								(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
+							}
 						}
 					}
 				}
@@ -256,14 +293,16 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			//Assembly routine symmetric mass
 			if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC")
 				for (int i = 0; i < numDoFsPerElement; i++) {
-					for (int j = 0; j < numDoFsPerElement; j++) {
-						if (eleDoFs[j] >= eleDoFs[i]) {
-							//K(1+eta*i) - omega*omega*M
-							if (analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-								(*AReal)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
-							}
-							else if (analysisType == "STEADYSTATE_DYNAMIC") {
-								(*AComplex)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+					if (eleDoFs[i] != -1) {
+						for (int j = 0; j < numDoFsPerElement; j++) {
+							if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
+								//K(1+eta*i) - omega*omega*M
+								if (analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+									(*AReal)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+								}
+								else if (analysisType == "STEADYSTATE_DYNAMIC") {
+									(*AComplex)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+								}
 							}
 						}
 					}

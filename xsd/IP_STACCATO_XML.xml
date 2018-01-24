@@ -1,4 +1,22 @@
 <STACCATO_XML>
+	<FILEIMPORT Type="AbqODB">
+		<IMPORT>
+			<NODES><LIST>ALL</LIST></NODES>
+			<ELEMENTS>
+				<LIST>ALL</LIST>
+				<TRANSLATETO Source="C3D10" Target="FeTetrahedron10NodeElement"/>
+			</ELEMENTS>
+			<SETS>
+				<NODE>
+					<TRANSLATETO Source="cload" Target="LOAD"/>
+					<TRANSLATETO Source="clamp" Target="BOUNDARY"/>
+				</NODE>
+				<ELEMENT>
+					<TRANSLATETO Source="allEle" Target="LOAD"/>
+				</ELEMENT>
+			</SETS>
+		<IMPORT/>
+	<FILEIMPORT/>
 	<ANALYSIS>
 		<NAME>someEleTed</NAME>
 		<TYPE>STEADYSTATE_DYNAMIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->

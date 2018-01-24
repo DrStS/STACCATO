@@ -295,7 +295,7 @@ namespace MathLibrary {
 			pardiso_nrhs = 1; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
 								//pardiso_iparm[36] = -90;
-			mkl_set_num_threads(1);
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads);
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -361,7 +361,7 @@ namespace MathLibrary {
 										 // pardiso forward and backward substitution
 			pardiso_phase = 33; // forward and backward substitution
 								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
-			mkl_set_num_threads(1); // set number of threads to 1 for mkl call only
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,

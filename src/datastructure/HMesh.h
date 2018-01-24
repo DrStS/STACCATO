@@ -137,6 +137,12 @@ public:
 	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
+	std::vector<int>& getKilledElementDoFList();
+	/***********************************************************************************************
+	* \brief get number of DoFs per element
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
 //	std::vector<int>& getTypeDoFsPerElement() { return typeDoFsPerElement; }
 	/***********************************************************************************************
 	* \brief get relation of node index to element indexes: 1 to nn

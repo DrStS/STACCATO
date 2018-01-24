@@ -15,20 +15,10 @@
 			<rho>8050</rho>
 			<eta>0.1</eta>
 		</MATERIAL>
-		<MATERIAL Name="Aluminium" Type="Isotropic">
-			<E>7e10</E>
-			<nu>0.34</nu>
-			<rho>2700</rho>
-			<eta>0.1</eta>
-		</MATERIAL>
 	</MATERIALS>
 	<SECTIONS>
 		<SECTION Name="Sec1">
-			<ELEMENTSET>ELEMSET_1</ELEMENTSET>
-			<MATERIAL>Aluminium</MATERIAL>
-		</SECTION>
-		<SECTION Name="Sec2">
-			<ELEMENTSET>ELEMSET_2</ELEMENTSET>
+			<ELEMENTSET>allElem</ELEMENTSET>
 			<MATERIAL>Steel</MATERIAL>
 		</SECTION>
 	</SECTIONS>
@@ -49,9 +39,7 @@
 		<ELEMENT Type="FeTetrahedron10NodeElement"><ID>2</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
 	</ELEMENTS>
 	<SETS>
-		<ELEMENTSET Name="ELEMSET_1"><LIST>1 3</LIST></ELEMENTSET>
-		<ELEMENTSET Name="ELEMSET_2"><LIST>2 4</LIST></ELEMENTSET>
-		<ELEMENTSET Name="allEle"><LIST>ALL</LIST></ELEMENTSET>
+		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
 		<NODESET Name="clamp"><LIST>1 2 3 </LIST></NODESET>
 	</SETS>
 	<LOADS>

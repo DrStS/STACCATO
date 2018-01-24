@@ -21,12 +21,21 @@
 
 #include "MetaDatabase.h"
 
+Material::Material() {	
+}
 
-Material::Material() {
-	myYoungsModulus = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->E()->data());
-	myPoissonsRatio = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->nu()->data());
-	myDensity		= std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->rho()->data());
-	myDampingParameter = std::stod(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin()->MATERIAL().begin()->eta()->data());
+Material::Material(std::string _materialName) {
+	STACCATO_XML::MATERIALS_const_iterator iMat(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin());
+	for (int j = 0; j < iMat->MATERIAL().size(); j++) {
+		if (std::string(iMat->MATERIAL().at(j).Name()->c_str()) == _materialName) {
+			myYoungsModulus = std::stod(iMat->MATERIAL().at(j).E()->data());
+			myPoissonsRatio = std::stod(iMat->MATERIAL().at(j).nu()->data());
+			myDensity = std::stod(iMat->MATERIAL().at(j).rho()->data());
+			myDampingParameter = std::stod(iMat->MATERIAL().at(j).eta()->data());
+			break;
+		}
+	}
+	
 }
 
 Material::~Material() {

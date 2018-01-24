@@ -62,6 +62,11 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	virtual const std::vector<double> & getMassMatrix(void) const = 0;
+	/***********************************************************************************************
+	* \brief Return pointer to Element Material
+	* \author Harikrishnan Sreekumar
+	***********/
+	virtual const Material* getMaterial(void) { return myMaterial; }
 protected:
 	/// Stiffness matrix
 	std::vector<double> myKe;

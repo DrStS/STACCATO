@@ -79,6 +79,12 @@ public:
 	***********/
 	std::vector<int>& getNodeLabels() { return nodeLabels; }
 	/***********************************************************************************************
+	* \brief get element labels
+	* \param[out] reference to std vector int
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<int>& getElementLabels() { return elementLabels; }
+	/***********************************************************************************************
 	* \brief get total number of elements
 	* \param[out] total number of elements
 	* \author Stefan Sicklinger

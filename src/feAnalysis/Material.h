@@ -29,7 +29,7 @@
 #include <cstddef>
 #include <assert.h>
 #include <math.h>
-
+#include <string>
 
 /********//**
 * \brief Class Material 
@@ -41,6 +41,11 @@ public:
 	 * \author Stefan Sicklinger
 	 ***********/
 	Material(void);
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
+	Material(std::string _materialName);
 	/***********************************************************************************************
 	 * \brief Destructor
 	 *

@@ -731,7 +731,7 @@ void VisualizerWindow::updateList() {
 		int nodeIndex = myHMesh->getNodeIndexForLabel(std::stoi(myNodePickText->text().toStdString()));
 		
 		std::cout << "\n-----Selected Node Displacement-----\n";
-		std::cout << "---- Node " << myNodePickText->text().toStdString() <<  " for Index " << nodeIndex << " @ FREQ "<< myHMesh->getResultsTimeDescription()[0]<< "Hz ----\n";
+		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->getResultsTimeDescription()[0]<< "Hz ----\n";
 		std::cout << std::showpos << "\tReal x: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, 0)[nodeIndex] << std::endl;
 		std::cout << "\tReal y: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, 0)[nodeIndex] << std::endl;
 		std::cout << "\tReal z: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, 0)[nodeIndex] << std::endl;

@@ -85,14 +85,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 
 	std::cout << "\n==================================\n";
 
-	MetaDatabase::getInstance()->exportXML();			// Routine: Export XML
+	//MetaDatabase::getInstance()->exportXML();			// Routine: Export XML
 
 	// ---- END OF XML Testing -------------------------------------------------------------------------
 
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
-
-	Material * elasticMaterial = new Material();
+	std::vector<FeElement*> allElements(numElements);
 
 	anaysisTimer01.start();
 	myHMesh->buildDoFGraph();
@@ -101,21 +100,55 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 
-	std::vector<FeElement*> allElements(numElements);
-	int lastIndex = 0;
-	for (int iElement = 0; iElement < numElements; iElement++)
-	{
-		if (myHMesh->getElementTypes()[iElement] == STACCATO_PlainStress4Node2D) {
-			allElements[iElement] = new FePlainStress4NodeElement(elasticMaterial);
+	// Section Material Assignement
+	STACCATO_XML::SECTIONS_const_iterator iSection(MetaDatabase::getInstance()->xmlHandle->SECTIONS().begin());
+	for (int j = 0; j < iSection->SECTION().size(); j++) {
+		Material * elasticMaterial = new Material(std::string(iSection->SECTION().at(j).MATERIAL()->c_str()));
+
+		// Find the Corresponding Set
+		STACCATO_XML::SETS_const_iterator iSets(MetaDatabase::getInstance()->xmlHandle->SETS().begin());
+		for (int k = 0; k < iSets->ELEMENTSET().size(); k++) {
+			if (std::string(iSets->ELEMENTSET().at(k).Name()->c_str()) == std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str())) {
+				
+				// Recognize List for ALL or a List of IDs
+				std::vector<int> idList;
+				// Keyword: ALL
+				if (std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()) == "ALL") {
+					idList = myHMesh->getElementLabels();
+				} else {	// ID List
+					// filter
+					std::stringstream stream(std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()));
+					while (stream) {
+						int n;
+						stream >> n;
+						if(stream)	
+							idList.push_back(n);
+					}
+				}
+
+				// Assign Elements in idList
+				int lastIndex = 0;
+				for (int iElement = 0; iElement < idList.size(); iElement++)
+				{
+					int elemIndex = myHMesh->getNodeIndexForLabel(idList[iElement]);
+					if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
+						allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
+					}
+					else	if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
+						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
+					}
+					int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
+					double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
+					allElements[elemIndex]->computeElementMatrix(eleCoords);
+					lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
+				}
+				std::cout << "\nDev. Info >> Section : " << iSection->SECTION().at(j).Name() << ", with Element Set : " << iSets->ELEMENTSET().at(k).Name() << ", is assigned with Material :" << iSection->SECTION().at(j).MATERIAL() << std::endl;
+
+				break;
+			}
 		}
-		else	if (myHMesh->getElementTypes()[iElement] == STACCATO_Tetrahedron10Node3D) {
-			allElements[iElement] = new FeTetrahedron10NodeElement(elasticMaterial);
-		}
-		int numNodesPerElement = myHMesh->getNumNodesPerElement()[iElement];
-		double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-		allElements[iElement]->computeElementMatrix(eleCoords);
-		lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
 	}
+
 	anaysisTimer01.stop();
 	infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -162,7 +195,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	resultMagIm.resize(numNodes);
 
 	// Damping														
-	std::cout << "\nDamping Factor of eta = " << elasticMaterial->getDampingParameter() << " is added to the system!\n\n";
+	//std::cout << "\nDamping Factor of eta = " << elasticMaterial->getDampingParameter() << " is added to the system!\n\n";
 
 	// Allocate global matrix and vector memory
 	// Real Only
@@ -186,7 +219,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	}
 
 	for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
-		lastIndex = 0;
+		int lastIndex = 0;
 
 		MathLibrary::SparseMatrix<double> *AReal;
 		MathLibrary::SparseMatrix<MKL_Complex16> *AComplex;
@@ -214,7 +247,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 						}
 						else if ( analysisType == "STEADYSTATE_DYNAMIC") {
 							(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-							(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * elasticMaterial->getDampingParameter();
+							(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
 						}
 					}
 				}
@@ -238,54 +271,55 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		}
 		std::cout << "test2" << std::endl;
 		//Add cload rhs contribution 
-		for (int k = 0; k < MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().size(); k++) {
+		STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
+		for (int k = 0; k < iLoads->LOAD().size(); k++) {
 			
 			for (int j = 0; j < numNodes; j++)
 			{
 				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 				for (int l = 0; l < numDoFsPerNode; l++) {
-					if (myHMesh->getNodeLabels()[j] == std::stoi(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).OnNode()->data())) {  //3407
+					if (myHMesh->getNodeLabels()[j] == std::stoi(iLoads->LOAD().at(k).Node().begin()->ID()->data())) {  //3407
 						
-						std::complex<double> temp_Fx(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fx()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFx()->data()));
-						std::complex<double> temp_Fy(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fy()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFy()->data()));
-						std::complex<double> temp_Fz(std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).Fz()->data()), std::atof(MetaDatabase::getInstance()->xmlHandle->LOADS().begin()->LOAD().at(k).iFz()->data()));
+						if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
+							std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
+							std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
+							std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
 
-						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
-						if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-							switch (l) {
-							case 0:
-								bReal[dofIndex] += temp_Fx.real();
-								break;
-							case 1:
-								bReal[dofIndex] += temp_Fy.real();
-								break;
-							case 2:
-								bReal[dofIndex] += temp_Fz.real();
-								break;
-							default:
-								break;
+							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+							if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+								switch (l) {
+								case 0:
+									bReal[dofIndex] += temp_Fx.real();
+									break;
+								case 1:
+									bReal[dofIndex] += temp_Fy.real();
+									break;
+								case 2:
+									bReal[dofIndex] += temp_Fz.real();
+									break;
+								default:
+									break;
+								}
+							}
+							else if (analysisType == "STEADYSTATE_DYNAMIC") {
+								switch (l) {
+								case 0:
+									bComplex[dofIndex].real += temp_Fx.real();
+									bComplex[dofIndex].imag += temp_Fx.imag();
+									break;
+								case 1:
+									bComplex[dofIndex].real += temp_Fy.real();
+									bComplex[dofIndex].imag += temp_Fy.imag();
+									break;
+								case 2:
+									bComplex[dofIndex].real += temp_Fz.real();
+									bComplex[dofIndex].imag += temp_Fz.imag();
+									break;
+								default:
+									break;
+								}
 							}
 						}
-						else if (analysisType == "STEADYSTATE_DYNAMIC") {
-							switch (l) {
-							case 0:
-								bComplex[dofIndex].real += temp_Fx.real();
-								bComplex[dofIndex].imag += temp_Fx.imag();
-								break;
-							case 1:
-								bComplex[dofIndex].real += temp_Fy.real();
-								bComplex[dofIndex].imag += temp_Fy.imag();
-								break;
-							case 2:
-								bComplex[dofIndex].real += temp_Fz.real();
-								bComplex[dofIndex].imag += temp_Fz.imag();
-								break;
-							default:
-								break;
-							}
-						}
-
-						
 					}
 				}
 			}

@@ -1,37 +1,37 @@
 <STACCATO_XML>
 	<FILEIMPORT Type="AbqODB">
-		<IMPORT>
-			<NODES><LIST>ALL</LIST></NODES>
-			<ELEMENTS>
-				<LIST>ALL</LIST>
-				<TRANSLATETO Source="C3D10" Target="FeTetrahedron10NodeElement"/>
-			</ELEMENTS>
-			<SETS>
+		<IMPORT Type="Nodes">
+			<LIST>ALL</LIST>
+		</IMPORT>
+		<IMPORT Type="Elements">
+			<LIST>ALL</LIST>
+			<TRANSLATETO Source="C3D10" Target="STACCATO_Tetrahedron10Node3D"/>
+		</IMPORT>
+		<IMPORT Type="Sets">
 				<NODE>
-					<TRANSLATETO Source="cload" Target="LOAD"/>
-					<TRANSLATETO Source="clamp" Target="BOUNDARY"/>
+					<TRANSLATETO Source="CLOAD" Target="LOAD"/>
+					<TRANSLATETO Source="CLAMP" Target="BOUNDARY"/>
 				</NODE>
 				<ELEMENT>
 					<TRANSLATETO Source="allEle" Target="LOAD"/>
 				</ELEMENT>
-			</SETS>
-		<IMPORT/>
-	<FILEIMPORT/>
+		</IMPORT>
+	</FILEIMPORT>
 	<ANALYSIS>
 		<NAME>someEleTed</NAME>
-		<TYPE>STEADYSTATE_DYNAMIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
+		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
 	</ANALYSIS>
 	<FREQUENCY Type="STEP">
-		<START_FREQ>1000</START_FREQ>
-		<END_FREQ>1000</END_FREQ>
+		<START_FREQ>250</START_FREQ>
+		<END_FREQ>250</END_FREQ>
 		<STEP_FREQ>500</STEP_FREQ>
 	</FREQUENCY>
 	<MATERIALS>
 		<MATERIAL Name="Steel" Type="Isotropic">
-			<E>2e11</E>
+			<E>211000</E>
 			<nu>0.3</nu>
-			<rho>8050</rho>
-			<eta>0.1</eta>
+			<rho>7.85e-6</rho>
+			<eta>0.0</eta>
 		</MATERIAL>
 	</MATERIALS>
 	<SECTIONS>
@@ -58,12 +58,12 @@
 	</ELEMENTS>
 	<SETS>
 		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
-		<NODESET Name="clamp"><LIST>1 2 3 </LIST></NODESET>
+		<NODESET Name="clamp22"><LIST>1 2 3 </LIST></NODESET>
 	</SETS>
 	<LOADS>
-		<LOAD Type="ConcentratedForce"><Node ID="4"/><REAL><X>3.000</X><Y>4.000</Y><Z>5.000</Z></REAL><IMAGINARY><X>3.000</X><Y>4.000</Y><Z>5.000</Z></IMAGINARY></LOAD>
+		<LOAD Type="ConcentratedForce"><NODESET Name="LOAD"/><REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
 	</LOADS>
 	<BC>
-		<DBC><NODESET Name="clamp"/><REAL><X>3.000</X><Y>4.000</Y><Z>5.000</Z></REAL><IMAGINARY><X>3.000</X><Y>4.000</Y><Z>5.000</Z></IMAGINARY></DBC>
+		<DBC><NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
 	</BC>
 </STACCATO_XML>

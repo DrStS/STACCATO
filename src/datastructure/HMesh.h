@@ -137,12 +137,6 @@ public:
 	* \param[out] reference to std vector
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<int>& getKilledElementDoFList();
-	/***********************************************************************************************
-	* \brief get number of DoFs per element
-	* \param[out] reference to std vector
-	* \author Stefan Sicklinger
-	***********/
 //	std::vector<int>& getTypeDoFsPerElement() { return typeDoFsPerElement; }
 	/***********************************************************************************************
 	* \brief get relation of node index to element indexes: 1 to nn
@@ -306,6 +300,26 @@ private:
 	HMesh(const HMesh&);
 	/// Avoid copy of a HMesh object assignment operator
 	HMesh& operator=(const HMesh&);
+
+
+	// =================================================
+private:
+	std::vector<int> dirichletDOF;
+	std::vector<std::vector<int>> nodeSets;
+	std::vector<std::string> nodeSetsName;
+	std::vector<std::vector<int>> elemSets;
+	std::vector<std::string> elemSetsName;
+public:
+	void addNodeSet(std::string, std::vector<int>);
+	void addElemSet(std::string, std::vector<int>);
+	void check();
+	std::vector<std::string>  getNodeSetsName() { return nodeSetsName; }
+	std::vector<std::vector<int>>  getNodeSets() { return nodeSets; }
+	std::vector<std::string>  getElemSetsName() { return elemSetsName; }
+	std::vector<std::vector<int>>  getElemSets() { return elemSets; }
+	std::vector<int>  getDirichletDOF() { return dirichletDOF; }
+	void killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF);
+	// =================================================
 };
 
 #endif /* HMESH_H_ */

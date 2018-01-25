@@ -42,11 +42,6 @@ using namespace std::complex_literals;
 FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh(&_hMesh), myFeMetaDatabase(&_feMetaDatabase) {
 	
 	// --- XML Testing ---------------------------------------------------------------------------------------------
-
-	char* inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML.xml";
-	
-	MetaDatabase::init(inputFileName);
-	
 	std::cout << "==================================\n";
 	std::cout << "========= STACCATO IMPORT ========\n";
 	std::cout << "==================================\n\n";
@@ -70,24 +65,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	for (int j = 0; j < temp->MATERIAL().size(); j++) {
 		std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << " E, nu, rho " << temp->MATERIAL().at(j).E() << "," << temp->MATERIAL().at(j).nu() << "," << temp->MATERIAL().at(j).rho() << std::endl;
 	}
-
-	std::cout << ">> NODES: " << std::endl;
-	STACCATO_XML::NODES_const_iterator i(MetaDatabase::getInstance()->xmlHandle->NODES().begin());
-	for (int j = 0; j < i->NODE().size(); j++) {
-		std::cout << " > ID: " << i->NODE().at(j).ID() << " X, Y, Z: " << i->NODE().at(j).X() << "," << i->NODE().at(j).Y() << "," << i->NODE().at(j).Z() << std::endl;
-	}
-
-	std::cout << ">> ELEMENTS: " << std::endl;
-	STACCATO_XML::ELEMENTS_const_iterator temp_e(MetaDatabase::getInstance()->xmlHandle->ELEMENTS().begin());
-	for (int j = 0; j < temp_e->ELEMENT().size(); j++) {
-		std::cout << " > Type: " << temp_e->ELEMENT().at(j).Type() << " ID: " << temp_e->ELEMENT().at(j).ID() << " NODECONNECT: " << temp_e->ELEMENT().at(j).NODECONNECT() << std::endl;
-	}
-
 	std::cout << "\n==================================\n";
-
-	//MetaDatabase::getInstance()->exportXML();			// Routine: Export XML
-
-	// ---- END OF XML Testing -------------------------------------------------------------------------
 
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
@@ -100,32 +78,59 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 
+	// Add STACCATO_XML-User Entered Sets
+	STACCATO_XML::SETS_const_iterator iSets(MetaDatabase::getInstance()->xmlHandle->SETS().begin());
+	// Element Sets
+	for (int k = 0; k < iSets->ELEMENTSET().size(); k++) {
+		// Recognize List for ALL or a List of IDs
+		std::vector<int> idList;
+		// Keyword: ALL
+		if (std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()) == "ALL") {
+			idList = myHMesh->getElementLabels();
+		}
+		else {	// ID List
+				// filter
+			std::stringstream stream(std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()));
+			while (stream) {
+				int n;
+				stream >> n;
+				if (stream)
+					idList.push_back(n);
+			}
+		}
+		myHMesh->addElemSet(std::string(iSets->ELEMENTSET().at(k).Name()->c_str()), idList);
+	}
+	// Node Sets
+	for (int k = 0; k < iSets->NODESET().size(); k++) {
+		// Recognize List for ALL or a List of IDs
+		std::vector<int> idList;
+		// Keyword: ALL
+		if (std::string(iSets->NODESET().at(k).LIST()->c_str()) == "ALL") {
+			idList = myHMesh->getNodeLabels();
+		}
+		else {	// ID List
+				// filter
+			std::stringstream stream(std::string(iSets->NODESET().at(k).LIST()->c_str()));
+			while (stream) {
+				int n;
+				stream >> n;
+				if (stream)
+					idList.push_back(n);
+			}
+		}
+		myHMesh->addNodeSet(std::string(iSets->NODESET().at(k).Name()->c_str()), idList);
+	}
+
 	// Section Material Assignement
 	STACCATO_XML::SECTIONS_const_iterator iSection(MetaDatabase::getInstance()->xmlHandle->SECTIONS().begin());
 	for (int j = 0; j < iSection->SECTION().size(); j++) {
 		Material * elasticMaterial = new Material(std::string(iSection->SECTION().at(j).MATERIAL()->c_str()));
 
 		// Find the Corresponding Set
-		STACCATO_XML::SETS_const_iterator iSets(MetaDatabase::getInstance()->xmlHandle->SETS().begin());
-		for (int k = 0; k < iSets->ELEMENTSET().size(); k++) {
-			if (std::string(iSets->ELEMENTSET().at(k).Name()->c_str()) == std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str())) {
+		for (int k = 0; k < myHMesh->getElemSetsName().size(); k++) {
+			if (myHMesh->getElemSetsName().at(k) == std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str())) {
 				
-				// Recognize List for ALL or a List of IDs
-				std::vector<int> idList;
-				// Keyword: ALL
-				if (std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()) == "ALL") {
-					idList = myHMesh->getElementLabels();
-				} else {	// ID List
-					// filter
-					std::stringstream stream(std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()));
-					while (stream) {
-						int n;
-						stream >> n;
-						if(stream)	
-							idList.push_back(n);
-					}
-				}
-
+				std::vector<int> idList = myHMesh->getElemSets()[k];
 				// Assign Elements in idList
 				int lastIndex = 0;
 				for (int iElement = 0; iElement < idList.size(); iElement++)
@@ -194,41 +199,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	resultUzIm.resize(numNodes);
 	resultMagIm.resize(numNodes);
 
-	
-	/*
-	// Dirichlet BC Testing ---------------------------------------------
-	std::vector<int> nodeSet = {1, 2, 3};
-	std::vector<int> fixedForDofs = { 1, 0 ,1 };
-	std::vector<int> dofMapBC;
-	
-	anaysisTimer02.start();
-	// Create the Map of boundary Dof List for all Nodes
-	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
-		int nodeIndex = myHMesh->getNodeIndexForLabel(nodeSet.at(iNode));
-		std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
-
-		// Create a map of Dofs
-		int numDoFsPerNode = myHMesh->getNumDoFsPerNode(nodeIndex);
-		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
-			if (fixedForDofs.at(iMap) == 1) {
-				dofMapBC.push_back(myHMesh->getNodeIndexToDoFIndices()[nodeIndex][iMap]);
-			}
-		}
-	}
-
-	// DOF Killing
-	std::vector<int> eleDof = myHMesh->getElementDoFList();
-	for (int m = 0; m < eleDof.size(); m++){
-		for (int n = 0; n < dofMapBC.size(); n++) {
-			if (eleDof.at(m) == dofMapBC.at(n))	{
-				eleDof.at(m) = -1;
-			}
-		}
-	}
-	anaysisTimer02.stop();
-	infoOut << "Duration for DOF killing loop: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
-	// ------------------------------------------------------------------
-	*/
 	// Allocate global matrix and vector memory
 	// Real Only
 	std::vector<double> bReal;
@@ -250,8 +220,33 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		exit(EXIT_FAILURE);
 	}
 
-	// Kill
-	myHMesh->getKilledElementDoFList();
+	anaysisTimer02.start();
+	// Prepare elementDof for Enforcing Dirichlet BC
+	STACCATO_XML::BC_const_iterator iBC(MetaDatabase::getInstance()->xmlHandle->BC().begin());
+	for (int j = 0; j < iBC->DBC().size(); j++) {
+
+		// Prepare restricted DOF vector
+		std::vector<int> restrictedDOF;
+		restrictedDOF.push_back(1);				// 1: FIXED
+		restrictedDOF.push_back(1);				// 0: FREE
+		restrictedDOF.push_back(1);
+		if (std::string(iBC->DBC().at(j).REAL().begin()->X()->c_str()) == "") {
+			restrictedDOF.at(0) = 0;
+			std::cout << "x set Free!\n";
+		}
+		if (std::string(iBC->DBC().at(j).REAL().begin()->Y()->c_str()) == "") {
+			restrictedDOF.at(1) = 0;
+			std::cout << "y set Free!\n";
+		}
+		if (std::string(iBC->DBC().at(j).REAL().begin()->Z()->c_str()) == "") {
+			restrictedDOF.at(2) = 0;
+			std::cout << "z set Free!\n";
+		}
+		myHMesh->killDirichletDOF(std::string(iBC->DBC().at(j).NODESET().begin()->Name()->c_str()), restrictedDOF);
+
+	}
+	anaysisTimer02.stop();
+	infoOut << "Duration for killing DOF loop: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 
 	for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
 		int lastIndex = 0;
@@ -313,55 +308,84 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 		for (int k = 0; k < iLoads->LOAD().size(); k++) {
 			
+			// Find NODESET
+			std::vector<int> nodeSet;
+			for (int i = 0; i < myHMesh->getNodeSetsName().size(); i++) {
+				if (myHMesh->getNodeSetsName().at(i) == std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str())) {
+					nodeSet = myHMesh->getNodeSets().at(i);
+					std::cout << iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n\n";
+				}
+			}
+
 			for (int j = 0; j < numNodes; j++)
 			{
 				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 				for (int l = 0; l < numDoFsPerNode; l++) {
-					if (myHMesh->getNodeLabels()[j] == std::stoi(iLoads->LOAD().at(k).Node().begin()->ID()->data())) {  //3407
-						
-						if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
-							std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
-							std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
-							std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
+					for (int m = 0; m < nodeSet.size(); m++) {
+						if (myHMesh->getNodeLabels()[j] == nodeSet.at(m)) {  
+							if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
+								std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
+								std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
+								std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
 
-							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
-							if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-								switch (l) {
-								case 0:
-									bReal[dofIndex] += temp_Fx.real();
-									break;
-								case 1:
-									bReal[dofIndex] += temp_Fy.real();
-									break;
-								case 2:
-									bReal[dofIndex] += temp_Fz.real();
-									break;
-								default:
-									break;
+								int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+									switch (l) {
+									case 0:
+										bReal[dofIndex] += temp_Fx.real();
+										break;
+									case 1:
+										bReal[dofIndex] += temp_Fy.real();
+										break;
+									case 2:
+										bReal[dofIndex] += temp_Fz.real();
+										break;
+									default:
+										break;
+									}
 								}
-							}
-							else if (analysisType == "STEADYSTATE_DYNAMIC") {
-								switch (l) {
-								case 0:
-									bComplex[dofIndex].real += temp_Fx.real();
-									bComplex[dofIndex].imag += temp_Fx.imag();
-									break;
-								case 1:
-									bComplex[dofIndex].real += temp_Fy.real();
-									bComplex[dofIndex].imag += temp_Fy.imag();
-									break;
-								case 2:
-									bComplex[dofIndex].real += temp_Fz.real();
-									bComplex[dofIndex].imag += temp_Fz.imag();
-									break;
-								default:
-									break;
+								else if (analysisType == "STEADYSTATE_DYNAMIC") {
+									switch (l) {
+									case 0:
+										bComplex[dofIndex].real += temp_Fx.real();
+										bComplex[dofIndex].imag += temp_Fx.imag();
+										break;
+									case 1:
+										bComplex[dofIndex].real += temp_Fy.real();
+										bComplex[dofIndex].imag += temp_Fy.imag();
+										break;
+									case 2:
+										bComplex[dofIndex].real += temp_Fz.real();
+										bComplex[dofIndex].imag += temp_Fz.imag();
+										break;
+									default:
+										break;
+									}
 								}
 							}
 						}
 					}
 				}
 			}
+		}
+
+		// Implement DBC
+		// Applying Dirichlet
+		for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
+
+				int dofIndex = myHMesh->getDirichletDOF().at(m);
+
+				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+					(*AReal)(dofIndex, dofIndex) = 1;
+					bReal[dofIndex] = 0;
+				}
+				else if (analysisType == "STEADYSTATE_DYNAMIC") {
+					(*AComplex)(dofIndex, dofIndex).real = 1;
+					(*AComplex)(dofIndex, dofIndex).imag = 1;
+					bComplex[dofIndex].real = 0;
+					bComplex[dofIndex].imag = 0;
+				}
+			
 		}
 		
 		//(*A).print();

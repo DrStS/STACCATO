@@ -224,39 +224,68 @@ int HMesh::getNodeIndexForLabel(int _nodeLabel) {
 	}
 }
 
-std::vector<int>& HMesh::getKilledElementDoFList() {
+void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF) {
 	std::vector<int> nodeSet;
-	nodeSet.push_back(1);
-	nodeSet.push_back(2);
-	nodeSet.push_back(3);
-	std::vector<int> fixedForDofs;
-	fixedForDofs.push_back(1);
-	fixedForDofs.push_back(0);
-	fixedForDofs.push_back(1);
-	std::vector<int> dofMapBC;
+	for (int i = 0; i < nodeSetsName.size(); i++) {
+		if (nodeSetsName.at(i) == _nodeSetName) {
+			nodeSet = nodeSets.at(i);
+			std::cout << _nodeSetName << " is added.\n\n";
+		}
+	}
 
 	// Create the Map of boundary Dof List for all Nodes
 	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
 		int nodeIndex = getNodeIndexForLabel(nodeSet.at(iNode));
-		std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
+		//std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
 
 		// Create a map of Dofs
 		int numDoFsPerNode = getNumDoFsPerNode(nodeIndex);
 		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
-			if (fixedForDofs.at(iMap) == 1) {
-				dofMapBC.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
+			if (_restrictedDOF.at(iMap) == 1) {
+				dirichletDOF.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
 			}
 		}
 	}
-
 	// DOF Killing
-	for (int m = 0; m < elementDoFList.size(); m++) {
-		for (int n = 0; n < dofMapBC.size(); n++) {
-			if (elementDoFList.at(m) == dofMapBC.at(n)) {
-				elementDoFList.at(m) = -1;
+		for (int n = 0; n < nodeSet.size(); n++) {
+			std::vector<int> indexAffected = getNodeIndexToDoFIndices()[n];
+
+			// Create a map of Dofs
+			int numDoFsPerNode = getNumDoFsPerNode(nodeSet.at(n));
+			for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
+				if (_restrictedDOF.at(iMap) == 1) {
+					elementDoFList.at(indexAffected.at(iMap)) = -1;
+				}
 			}
 		}
-	}
+}
 
-	return elementDoFList;
+void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {
+	nodeSetsName.push_back(_name);
+	nodeSets.push_back(_nodeLabels);
+}
+
+void HMesh::addElemSet(std::string _name, std::vector<int> _elemLabels) {
+	elemSetsName.push_back(_name);
+	elemSets.push_back(_elemLabels);
+}
+
+void HMesh::check() {
+	for (int i = 0; i < nodeSetsName.size(); i++) {
+		std::cout << "NodeSet Name: "<< nodeSetsName[i];
+		for (int j = 0; j < nodeSets[i].size(); j++) {
+			std::cout << " L: " << nodeSets[i].at(j);			
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
+
+	for (int i = 0; i < elemSetsName.size(); i++) {
+		std::cout << "ElemSet Name: " << elemSetsName[i];
+		for (int j = 0; j < elemSets[i].size(); j++) {
+			std::cout << " L: " << elemSets[i].at(j);
+		}
+		std::cout << "\n";
+	}
+	std::cout << "\n";
 }

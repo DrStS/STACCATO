@@ -222,10 +222,14 @@ namespace xml_schema
 
 // Forward declarations.
 //
+class NODE;
+class TRANSLATETO;
+class ELEMENT;
 class NODESET;
 class REAL;
 class IMAGINARY;
 class STACCATO_XML;
+class FILEIMPORT;
 class ANALYSIS;
 class FREQUENCY;
 class MATERIALS;
@@ -235,14 +239,12 @@ class ELEMENTS;
 class SETS;
 class LOADS;
 class BC;
+class IMPORT;
 class MATERIAL;
 class SECTION;
-class NODE;
-class ELEMENT;
 class ELEMENTSET;
 class LOAD;
 class DBC;
-class Node;
 
 #include <memory>    // ::std::auto_ptr
 #include <limits>    // std::numeric_limits
@@ -256,6 +258,345 @@ class Node;
 #include <xsd/cxx/tree/list.hxx>
 
 #include <xsd/cxx/xml/dom/parsing-header.hxx>
+
+class NODE: public ::xml_schema::type
+{
+  public:
+  // ID
+  //
+  typedef ::xml_schema::string ID_type;
+  typedef ::xsd::cxx::tree::optional< ID_type > ID_optional;
+  typedef ::xsd::cxx::tree::traits< ID_type, char > ID_traits;
+
+  const ID_optional&
+  ID () const;
+
+  ID_optional&
+  ID ();
+
+  void
+  ID (const ID_type& x);
+
+  void
+  ID (const ID_optional& x);
+
+  void
+  ID (::std::auto_ptr< ID_type > p);
+
+  // X
+  //
+  typedef ::xml_schema::string X_type;
+  typedef ::xsd::cxx::tree::optional< X_type > X_optional;
+  typedef ::xsd::cxx::tree::traits< X_type, char > X_traits;
+
+  const X_optional&
+  X () const;
+
+  X_optional&
+  X ();
+
+  void
+  X (const X_type& x);
+
+  void
+  X (const X_optional& x);
+
+  void
+  X (::std::auto_ptr< X_type > p);
+
+  // Y
+  //
+  typedef ::xml_schema::string Y_type;
+  typedef ::xsd::cxx::tree::optional< Y_type > Y_optional;
+  typedef ::xsd::cxx::tree::traits< Y_type, char > Y_traits;
+
+  const Y_optional&
+  Y () const;
+
+  Y_optional&
+  Y ();
+
+  void
+  Y (const Y_type& x);
+
+  void
+  Y (const Y_optional& x);
+
+  void
+  Y (::std::auto_ptr< Y_type > p);
+
+  // Z
+  //
+  typedef ::xml_schema::string Z_type;
+  typedef ::xsd::cxx::tree::optional< Z_type > Z_optional;
+  typedef ::xsd::cxx::tree::traits< Z_type, char > Z_traits;
+
+  const Z_optional&
+  Z () const;
+
+  Z_optional&
+  Z ();
+
+  void
+  Z (const Z_type& x);
+
+  void
+  Z (const Z_optional& x);
+
+  void
+  Z (::std::auto_ptr< Z_type > p);
+
+  // TRANSLATETO
+  //
+  typedef ::TRANSLATETO TRANSLATETO_type;
+  typedef ::xsd::cxx::tree::sequence< TRANSLATETO_type > TRANSLATETO_sequence;
+  typedef TRANSLATETO_sequence::iterator TRANSLATETO_iterator;
+  typedef TRANSLATETO_sequence::const_iterator TRANSLATETO_const_iterator;
+  typedef ::xsd::cxx::tree::traits< TRANSLATETO_type, char > TRANSLATETO_traits;
+
+  const TRANSLATETO_sequence&
+  TRANSLATETO () const;
+
+  TRANSLATETO_sequence&
+  TRANSLATETO ();
+
+  void
+  TRANSLATETO (const TRANSLATETO_sequence& s);
+
+  // Constructors.
+  //
+  NODE ();
+
+  NODE (const ::xercesc::DOMElement& e,
+        ::xml_schema::flags f = xml_schema::flags::dont_validate,
+        ::xml_schema::container* c = 0);
+
+  NODE (const NODE& x,
+        ::xml_schema::flags f = xml_schema::flags::dont_validate,
+        ::xml_schema::container* c = 0);
+
+  virtual NODE*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  NODE&
+  operator= (const NODE& x);
+
+  virtual 
+  ~NODE ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  ID_optional ID_;
+  X_optional X_;
+  Y_optional Y_;
+  Z_optional Z_;
+  TRANSLATETO_sequence TRANSLATETO_;
+};
+
+class TRANSLATETO: public ::xml_schema::type
+{
+  public:
+  // Source
+  //
+  typedef ::xml_schema::string Source_type;
+  typedef ::xsd::cxx::tree::optional< Source_type > Source_optional;
+  typedef ::xsd::cxx::tree::traits< Source_type, char > Source_traits;
+
+  const Source_optional&
+  Source () const;
+
+  Source_optional&
+  Source ();
+
+  void
+  Source (const Source_type& x);
+
+  void
+  Source (const Source_optional& x);
+
+  void
+  Source (::std::auto_ptr< Source_type > p);
+
+  // Target
+  //
+  typedef ::xml_schema::string Target_type;
+  typedef ::xsd::cxx::tree::optional< Target_type > Target_optional;
+  typedef ::xsd::cxx::tree::traits< Target_type, char > Target_traits;
+
+  const Target_optional&
+  Target () const;
+
+  Target_optional&
+  Target ();
+
+  void
+  Target (const Target_type& x);
+
+  void
+  Target (const Target_optional& x);
+
+  void
+  Target (::std::auto_ptr< Target_type > p);
+
+  // Constructors.
+  //
+  TRANSLATETO ();
+
+  TRANSLATETO (const ::xercesc::DOMElement& e,
+               ::xml_schema::flags f = xml_schema::flags::dont_validate,
+               ::xml_schema::container* c = 0);
+
+  TRANSLATETO (const TRANSLATETO& x,
+               ::xml_schema::flags f = xml_schema::flags::dont_validate,
+               ::xml_schema::container* c = 0);
+
+  virtual TRANSLATETO*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  TRANSLATETO&
+  operator= (const TRANSLATETO& x);
+
+  virtual 
+  ~TRANSLATETO ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  Source_optional Source_;
+  Target_optional Target_;
+};
+
+class ELEMENT: public ::xml_schema::type
+{
+  public:
+  // ID
+  //
+  typedef ::xml_schema::string ID_type;
+  typedef ::xsd::cxx::tree::optional< ID_type > ID_optional;
+  typedef ::xsd::cxx::tree::traits< ID_type, char > ID_traits;
+
+  const ID_optional&
+  ID () const;
+
+  ID_optional&
+  ID ();
+
+  void
+  ID (const ID_type& x);
+
+  void
+  ID (const ID_optional& x);
+
+  void
+  ID (::std::auto_ptr< ID_type > p);
+
+  // NODECONNECT
+  //
+  typedef ::xml_schema::string NODECONNECT_type;
+  typedef ::xsd::cxx::tree::optional< NODECONNECT_type > NODECONNECT_optional;
+  typedef ::xsd::cxx::tree::traits< NODECONNECT_type, char > NODECONNECT_traits;
+
+  const NODECONNECT_optional&
+  NODECONNECT () const;
+
+  NODECONNECT_optional&
+  NODECONNECT ();
+
+  void
+  NODECONNECT (const NODECONNECT_type& x);
+
+  void
+  NODECONNECT (const NODECONNECT_optional& x);
+
+  void
+  NODECONNECT (::std::auto_ptr< NODECONNECT_type > p);
+
+  // TRANSLATETO
+  //
+  typedef ::TRANSLATETO TRANSLATETO_type;
+  typedef ::xsd::cxx::tree::sequence< TRANSLATETO_type > TRANSLATETO_sequence;
+  typedef TRANSLATETO_sequence::iterator TRANSLATETO_iterator;
+  typedef TRANSLATETO_sequence::const_iterator TRANSLATETO_const_iterator;
+  typedef ::xsd::cxx::tree::traits< TRANSLATETO_type, char > TRANSLATETO_traits;
+
+  const TRANSLATETO_sequence&
+  TRANSLATETO () const;
+
+  TRANSLATETO_sequence&
+  TRANSLATETO ();
+
+  void
+  TRANSLATETO (const TRANSLATETO_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  ELEMENT ();
+
+  ELEMENT (const ::xercesc::DOMElement& e,
+           ::xml_schema::flags f = xml_schema::flags::dont_validate,
+           ::xml_schema::container* c = 0);
+
+  ELEMENT (const ELEMENT& x,
+           ::xml_schema::flags f = xml_schema::flags::dont_validate,
+           ::xml_schema::container* c = 0);
+
+  virtual ELEMENT*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  ELEMENT&
+  operator= (const ELEMENT& x);
+
+  virtual 
+  ~ELEMENT ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  ID_optional ID_;
+  NODECONNECT_optional NODECONNECT_;
+  TRANSLATETO_sequence TRANSLATETO_;
+  Type_optional Type_;
+};
 
 class NODESET: public ::xml_schema::type
 {
@@ -541,6 +882,57 @@ class IMAGINARY: public ::xml_schema::type
 class STACCATO_XML: public ::xml_schema::type
 {
   public:
+  // NODE
+  //
+  typedef ::NODE NODE_type;
+  typedef ::xsd::cxx::tree::sequence< NODE_type > NODE_sequence;
+  typedef NODE_sequence::iterator NODE_iterator;
+  typedef NODE_sequence::const_iterator NODE_const_iterator;
+  typedef ::xsd::cxx::tree::traits< NODE_type, char > NODE_traits;
+
+  const NODE_sequence&
+  NODE () const;
+
+  NODE_sequence&
+  NODE ();
+
+  void
+  NODE (const NODE_sequence& s);
+
+  // TRANSLATETO
+  //
+  typedef ::TRANSLATETO TRANSLATETO_type;
+  typedef ::xsd::cxx::tree::sequence< TRANSLATETO_type > TRANSLATETO_sequence;
+  typedef TRANSLATETO_sequence::iterator TRANSLATETO_iterator;
+  typedef TRANSLATETO_sequence::const_iterator TRANSLATETO_const_iterator;
+  typedef ::xsd::cxx::tree::traits< TRANSLATETO_type, char > TRANSLATETO_traits;
+
+  const TRANSLATETO_sequence&
+  TRANSLATETO () const;
+
+  TRANSLATETO_sequence&
+  TRANSLATETO ();
+
+  void
+  TRANSLATETO (const TRANSLATETO_sequence& s);
+
+  // ELEMENT
+  //
+  typedef ::ELEMENT ELEMENT_type;
+  typedef ::xsd::cxx::tree::sequence< ELEMENT_type > ELEMENT_sequence;
+  typedef ELEMENT_sequence::iterator ELEMENT_iterator;
+  typedef ELEMENT_sequence::const_iterator ELEMENT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< ELEMENT_type, char > ELEMENT_traits;
+
+  const ELEMENT_sequence&
+  ELEMENT () const;
+
+  ELEMENT_sequence&
+  ELEMENT ();
+
+  void
+  ELEMENT (const ELEMENT_sequence& s);
+
   // NODESET
   //
   typedef ::NODESET NODESET_type;
@@ -591,6 +983,23 @@ class STACCATO_XML: public ::xml_schema::type
 
   void
   IMAGINARY (const IMAGINARY_sequence& s);
+
+  // FILEIMPORT
+  //
+  typedef ::FILEIMPORT FILEIMPORT_type;
+  typedef ::xsd::cxx::tree::sequence< FILEIMPORT_type > FILEIMPORT_sequence;
+  typedef FILEIMPORT_sequence::iterator FILEIMPORT_iterator;
+  typedef FILEIMPORT_sequence::const_iterator FILEIMPORT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< FILEIMPORT_type, char > FILEIMPORT_traits;
+
+  const FILEIMPORT_sequence&
+  FILEIMPORT () const;
+
+  FILEIMPORT_sequence&
+  FILEIMPORT ();
+
+  void
+  FILEIMPORT (const FILEIMPORT_sequence& s);
 
   // ANALYSIS
   //
@@ -775,9 +1184,13 @@ class STACCATO_XML: public ::xml_schema::type
          ::xml_schema::flags);
 
   protected:
+  NODE_sequence NODE_;
+  TRANSLATETO_sequence TRANSLATETO_;
+  ELEMENT_sequence ELEMENT_;
   NODESET_sequence NODESET_;
   REAL_sequence REAL_;
   IMAGINARY_sequence IMAGINARY_;
+  FILEIMPORT_sequence FILEIMPORT_;
   ANALYSIS_sequence ANALYSIS_;
   FREQUENCY_sequence FREQUENCY_;
   MATERIALS_sequence MATERIALS_;
@@ -787,6 +1200,81 @@ class STACCATO_XML: public ::xml_schema::type
   SETS_sequence SETS_;
   LOADS_sequence LOADS_;
   BC_sequence BC_;
+};
+
+class FILEIMPORT: public ::xml_schema::type
+{
+  public:
+  // IMPORT
+  //
+  typedef ::IMPORT IMPORT_type;
+  typedef ::xsd::cxx::tree::sequence< IMPORT_type > IMPORT_sequence;
+  typedef IMPORT_sequence::iterator IMPORT_iterator;
+  typedef IMPORT_sequence::const_iterator IMPORT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< IMPORT_type, char > IMPORT_traits;
+
+  const IMPORT_sequence&
+  IMPORT () const;
+
+  IMPORT_sequence&
+  IMPORT ();
+
+  void
+  IMPORT (const IMPORT_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  FILEIMPORT ();
+
+  FILEIMPORT (const ::xercesc::DOMElement& e,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              ::xml_schema::container* c = 0);
+
+  FILEIMPORT (const FILEIMPORT& x,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              ::xml_schema::container* c = 0);
+
+  virtual FILEIMPORT*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  FILEIMPORT&
+  operator= (const FILEIMPORT& x);
+
+  virtual 
+  ~FILEIMPORT ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  IMPORT_sequence IMPORT_;
+  Type_optional Type_;
 };
 
 class ANALYSIS: public ::xml_schema::type
@@ -1380,6 +1868,139 @@ class BC: public ::xml_schema::type
   DBC_sequence DBC_;
 };
 
+class IMPORT: public ::xml_schema::type
+{
+  public:
+  // LIST
+  //
+  typedef ::xml_schema::string LIST_type;
+  typedef ::xsd::cxx::tree::optional< LIST_type > LIST_optional;
+  typedef ::xsd::cxx::tree::traits< LIST_type, char > LIST_traits;
+
+  const LIST_optional&
+  LIST () const;
+
+  LIST_optional&
+  LIST ();
+
+  void
+  LIST (const LIST_type& x);
+
+  void
+  LIST (const LIST_optional& x);
+
+  void
+  LIST (::std::auto_ptr< LIST_type > p);
+
+  // NODE
+  //
+  typedef ::NODE NODE_type;
+  typedef ::xsd::cxx::tree::sequence< NODE_type > NODE_sequence;
+  typedef NODE_sequence::iterator NODE_iterator;
+  typedef NODE_sequence::const_iterator NODE_const_iterator;
+  typedef ::xsd::cxx::tree::traits< NODE_type, char > NODE_traits;
+
+  const NODE_sequence&
+  NODE () const;
+
+  NODE_sequence&
+  NODE ();
+
+  void
+  NODE (const NODE_sequence& s);
+
+  // ELEMENT
+  //
+  typedef ::ELEMENT ELEMENT_type;
+  typedef ::xsd::cxx::tree::sequence< ELEMENT_type > ELEMENT_sequence;
+  typedef ELEMENT_sequence::iterator ELEMENT_iterator;
+  typedef ELEMENT_sequence::const_iterator ELEMENT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< ELEMENT_type, char > ELEMENT_traits;
+
+  const ELEMENT_sequence&
+  ELEMENT () const;
+
+  ELEMENT_sequence&
+  ELEMENT ();
+
+  void
+  ELEMENT (const ELEMENT_sequence& s);
+
+  // TRANSLATETO
+  //
+  typedef ::TRANSLATETO TRANSLATETO_type;
+  typedef ::xsd::cxx::tree::sequence< TRANSLATETO_type > TRANSLATETO_sequence;
+  typedef TRANSLATETO_sequence::iterator TRANSLATETO_iterator;
+  typedef TRANSLATETO_sequence::const_iterator TRANSLATETO_const_iterator;
+  typedef ::xsd::cxx::tree::traits< TRANSLATETO_type, char > TRANSLATETO_traits;
+
+  const TRANSLATETO_sequence&
+  TRANSLATETO () const;
+
+  TRANSLATETO_sequence&
+  TRANSLATETO ();
+
+  void
+  TRANSLATETO (const TRANSLATETO_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  IMPORT ();
+
+  IMPORT (const ::xercesc::DOMElement& e,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  IMPORT (const IMPORT& x,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  virtual IMPORT*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  IMPORT&
+  operator= (const IMPORT& x);
+
+  virtual 
+  ~IMPORT ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  LIST_optional LIST_;
+  NODE_sequence NODE_;
+  ELEMENT_sequence ELEMENT_;
+  TRANSLATETO_sequence TRANSLATETO_;
+  Type_optional Type_;
+};
+
 class MATERIAL: public ::xml_schema::type
 {
   public:
@@ -1648,230 +2269,6 @@ class SECTION: public ::xml_schema::type
   Name_optional Name_;
 };
 
-class NODE: public ::xml_schema::type
-{
-  public:
-  // ID
-  //
-  typedef ::xml_schema::string ID_type;
-  typedef ::xsd::cxx::tree::optional< ID_type > ID_optional;
-  typedef ::xsd::cxx::tree::traits< ID_type, char > ID_traits;
-
-  const ID_optional&
-  ID () const;
-
-  ID_optional&
-  ID ();
-
-  void
-  ID (const ID_type& x);
-
-  void
-  ID (const ID_optional& x);
-
-  void
-  ID (::std::auto_ptr< ID_type > p);
-
-  // X
-  //
-  typedef ::xml_schema::string X_type;
-  typedef ::xsd::cxx::tree::optional< X_type > X_optional;
-  typedef ::xsd::cxx::tree::traits< X_type, char > X_traits;
-
-  const X_optional&
-  X () const;
-
-  X_optional&
-  X ();
-
-  void
-  X (const X_type& x);
-
-  void
-  X (const X_optional& x);
-
-  void
-  X (::std::auto_ptr< X_type > p);
-
-  // Y
-  //
-  typedef ::xml_schema::string Y_type;
-  typedef ::xsd::cxx::tree::optional< Y_type > Y_optional;
-  typedef ::xsd::cxx::tree::traits< Y_type, char > Y_traits;
-
-  const Y_optional&
-  Y () const;
-
-  Y_optional&
-  Y ();
-
-  void
-  Y (const Y_type& x);
-
-  void
-  Y (const Y_optional& x);
-
-  void
-  Y (::std::auto_ptr< Y_type > p);
-
-  // Z
-  //
-  typedef ::xml_schema::string Z_type;
-  typedef ::xsd::cxx::tree::optional< Z_type > Z_optional;
-  typedef ::xsd::cxx::tree::traits< Z_type, char > Z_traits;
-
-  const Z_optional&
-  Z () const;
-
-  Z_optional&
-  Z ();
-
-  void
-  Z (const Z_type& x);
-
-  void
-  Z (const Z_optional& x);
-
-  void
-  Z (::std::auto_ptr< Z_type > p);
-
-  // Constructors.
-  //
-  NODE ();
-
-  NODE (const ::xercesc::DOMElement& e,
-        ::xml_schema::flags f = xml_schema::flags::dont_validate,
-        ::xml_schema::container* c = 0);
-
-  NODE (const NODE& x,
-        ::xml_schema::flags f = xml_schema::flags::dont_validate,
-        ::xml_schema::container* c = 0);
-
-  virtual NODE*
-  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
-          ::xml_schema::container* c = 0) const;
-
-  NODE&
-  operator= (const NODE& x);
-
-  virtual 
-  ~NODE ();
-
-  // Implementation.
-  //
-  protected:
-  void
-  parse (::xsd::cxx::xml::dom::parser< char >&,
-         ::xml_schema::flags);
-
-  protected:
-  ID_optional ID_;
-  X_optional X_;
-  Y_optional Y_;
-  Z_optional Z_;
-};
-
-class ELEMENT: public ::xml_schema::type
-{
-  public:
-  // ID
-  //
-  typedef ::xml_schema::string ID_type;
-  typedef ::xsd::cxx::tree::optional< ID_type > ID_optional;
-  typedef ::xsd::cxx::tree::traits< ID_type, char > ID_traits;
-
-  const ID_optional&
-  ID () const;
-
-  ID_optional&
-  ID ();
-
-  void
-  ID (const ID_type& x);
-
-  void
-  ID (const ID_optional& x);
-
-  void
-  ID (::std::auto_ptr< ID_type > p);
-
-  // NODECONNECT
-  //
-  typedef ::xml_schema::string NODECONNECT_type;
-  typedef ::xsd::cxx::tree::optional< NODECONNECT_type > NODECONNECT_optional;
-  typedef ::xsd::cxx::tree::traits< NODECONNECT_type, char > NODECONNECT_traits;
-
-  const NODECONNECT_optional&
-  NODECONNECT () const;
-
-  NODECONNECT_optional&
-  NODECONNECT ();
-
-  void
-  NODECONNECT (const NODECONNECT_type& x);
-
-  void
-  NODECONNECT (const NODECONNECT_optional& x);
-
-  void
-  NODECONNECT (::std::auto_ptr< NODECONNECT_type > p);
-
-  // Type
-  //
-  typedef ::xml_schema::string Type_type;
-  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
-  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
-
-  const Type_optional&
-  Type () const;
-
-  Type_optional&
-  Type ();
-
-  void
-  Type (const Type_type& x);
-
-  void
-  Type (const Type_optional& x);
-
-  void
-  Type (::std::auto_ptr< Type_type > p);
-
-  // Constructors.
-  //
-  ELEMENT ();
-
-  ELEMENT (const ::xercesc::DOMElement& e,
-           ::xml_schema::flags f = xml_schema::flags::dont_validate,
-           ::xml_schema::container* c = 0);
-
-  ELEMENT (const ELEMENT& x,
-           ::xml_schema::flags f = xml_schema::flags::dont_validate,
-           ::xml_schema::container* c = 0);
-
-  virtual ELEMENT*
-  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
-          ::xml_schema::container* c = 0) const;
-
-  ELEMENT&
-  operator= (const ELEMENT& x);
-
-  virtual 
-  ~ELEMENT ();
-
-  // Implementation.
-  //
-  protected:
-  void
-  parse (::xsd::cxx::xml::dom::parser< char >&,
-         ::xml_schema::flags);
-
-  protected:
-  ID_optional ID_;
-  NODECONNECT_optional NODECONNECT_;
-  Type_optional Type_;
-};
-
 class ELEMENTSET: public ::xml_schema::type
 {
   public:
@@ -1954,22 +2351,22 @@ class ELEMENTSET: public ::xml_schema::type
 class LOAD: public ::xml_schema::type
 {
   public:
-  // Node
+  // NODESET
   //
-  typedef ::Node Node_type;
-  typedef ::xsd::cxx::tree::sequence< Node_type > Node_sequence;
-  typedef Node_sequence::iterator Node_iterator;
-  typedef Node_sequence::const_iterator Node_const_iterator;
-  typedef ::xsd::cxx::tree::traits< Node_type, char > Node_traits;
+  typedef ::NODESET NODESET_type;
+  typedef ::xsd::cxx::tree::sequence< NODESET_type > NODESET_sequence;
+  typedef NODESET_sequence::iterator NODESET_iterator;
+  typedef NODESET_sequence::const_iterator NODESET_const_iterator;
+  typedef ::xsd::cxx::tree::traits< NODESET_type, char > NODESET_traits;
 
-  const Node_sequence&
-  Node () const;
+  const NODESET_sequence&
+  NODESET () const;
 
-  Node_sequence&
-  Node ();
+  NODESET_sequence&
+  NODESET ();
 
   void
-  Node (const Node_sequence& s);
+  NODESET (const NODESET_sequence& s);
 
   // REAL
   //
@@ -2056,7 +2453,7 @@ class LOAD: public ::xml_schema::type
          ::xml_schema::flags);
 
   protected:
-  Node_sequence Node_;
+  NODESET_sequence NODESET_;
   REAL_sequence REAL_;
   IMAGINARY_sequence IMAGINARY_;
   Type_optional Type_;
@@ -2151,68 +2548,290 @@ class DBC: public ::xml_schema::type
   IMAGINARY_sequence IMAGINARY_;
 };
 
-class Node: public ::xml_schema::type
-{
-  public:
-  // ID
-  //
-  typedef ::xml_schema::string ID_type;
-  typedef ::xsd::cxx::tree::optional< ID_type > ID_optional;
-  typedef ::xsd::cxx::tree::traits< ID_type, char > ID_traits;
-
-  const ID_optional&
-  ID () const;
-
-  ID_optional&
-  ID ();
-
-  void
-  ID (const ID_type& x);
-
-  void
-  ID (const ID_optional& x);
-
-  void
-  ID (::std::auto_ptr< ID_type > p);
-
-  // Constructors.
-  //
-  Node ();
-
-  Node (const ::xercesc::DOMElement& e,
-        ::xml_schema::flags f = xml_schema::flags::dont_validate,
-        ::xml_schema::container* c = 0);
-
-  Node (const Node& x,
-        ::xml_schema::flags f = xml_schema::flags::dont_validate,
-        ::xml_schema::container* c = 0);
-
-  virtual Node*
-  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
-          ::xml_schema::container* c = 0) const;
-
-  Node&
-  operator= (const Node& x);
-
-  virtual 
-  ~Node ();
-
-  // Implementation.
-  //
-  protected:
-  void
-  parse (::xsd::cxx::xml::dom::parser< char >&,
-         ::xml_schema::flags);
-
-  protected:
-  ID_optional ID_;
-};
-
 #include <iosfwd>
 
 #include <xercesc/sax/InputSource.hpp>
 #include <xercesc/dom/DOMDocument.hpp>
 #include <xercesc/dom/DOMErrorHandler.hpp>
+
+// Parse a URI or a local file.
+//
+
+::std::auto_ptr< ::NODE >
+NODE_ (const ::std::string& uri,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (const ::std::string& uri,
+       ::xml_schema::error_handler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (const ::std::string& uri,
+       ::xercesc::DOMErrorHandler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse std::istream.
+//
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       ::xml_schema::error_handler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       ::xercesc::DOMErrorHandler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       const ::std::string& id,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       const ::std::string& id,
+       ::xml_schema::error_handler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::std::istream& is,
+       const ::std::string& id,
+       ::xercesc::DOMErrorHandler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::InputSource.
+//
+
+::std::auto_ptr< ::NODE >
+NODE_ (::xercesc::InputSource& is,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::xercesc::InputSource& is,
+       ::xml_schema::error_handler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::xercesc::InputSource& is,
+       ::xercesc::DOMErrorHandler& eh,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::DOMDocument.
+//
+
+::std::auto_ptr< ::NODE >
+NODE_ (const ::xercesc::DOMDocument& d,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::NODE >
+NODE_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse a URI or a local file.
+//
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& uri,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& uri,
+              ::xml_schema::error_handler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& uri,
+              ::xercesc::DOMErrorHandler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse std::istream.
+//
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xml_schema::error_handler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xercesc::DOMErrorHandler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& id,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& id,
+              ::xml_schema::error_handler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& id,
+              ::xercesc::DOMErrorHandler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::InputSource.
+//
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& is,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& is,
+              ::xml_schema::error_handler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& is,
+              ::xercesc::DOMErrorHandler& eh,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::DOMDocument.
+//
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::xercesc::DOMDocument& d,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse a URI or a local file.
+//
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (const ::std::string& uri,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (const ::std::string& uri,
+          ::xml_schema::error_handler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (const ::std::string& uri,
+          ::xercesc::DOMErrorHandler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse std::istream.
+//
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          ::xml_schema::error_handler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          ::xercesc::DOMErrorHandler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          const ::std::string& id,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          const ::std::string& id,
+          ::xml_schema::error_handler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::std::istream& is,
+          const ::std::string& id,
+          ::xercesc::DOMErrorHandler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::InputSource.
+//
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::xercesc::InputSource& is,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::xercesc::InputSource& is,
+          ::xml_schema::error_handler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::xercesc::InputSource& is,
+          ::xercesc::DOMErrorHandler& eh,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+// Parse xercesc::DOMDocument.
+//
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (const ::xercesc::DOMDocument& d,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
+
+::std::auto_ptr< ::ELEMENT >
+ELEMENT_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          const ::xml_schema::properties& p = ::xml_schema::properties ());
 
 // Parse a URI or a local file.
 //

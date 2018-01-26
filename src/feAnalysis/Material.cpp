@@ -20,21 +20,26 @@
 #include "Material.h"
 
 #include "MetaDatabase.h"
+#include <iostream>
 
 Material::Material() {	
 }
 
 Material::Material(std::string _materialName) {
 	STACCATO_XML::MATERIALS_const_iterator iMat(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin());
+	int flag = 0;
 	for (int j = 0; j < iMat->MATERIAL().size(); j++) {
 		if (std::string(iMat->MATERIAL().at(j).Name()->c_str()) == _materialName) {
 			myYoungsModulus = std::stod(iMat->MATERIAL().at(j).E()->data());
 			myPoissonsRatio = std::stod(iMat->MATERIAL().at(j).nu()->data());
 			myDensity = std::stod(iMat->MATERIAL().at(j).rho()->data());
 			myDampingParameter = std::stod(iMat->MATERIAL().at(j).eta()->data());
+			flag = 1;
 			break;
 		}
 	}
+	if (flag == 0)
+		std::cerr << ">> Error while finding Material: MATERIAL " << _materialName << " not Found.\n";
 	
 }
 

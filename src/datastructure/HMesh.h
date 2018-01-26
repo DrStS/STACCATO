@@ -234,6 +234,13 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	int HMesh::getNodeIndexForLabel(int _nodeLabel);
+	/***********************************************************************************************
+	* \brief Get index of an Element from Element Label
+	* \param[in] _elemLabel
+	* \param[out] Element Index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int HMesh::getElementIndexForLabel(int _elemLabel);
 	
 
 private:
@@ -309,10 +316,12 @@ private:
 	std::vector<std::string> nodeSetsName;
 	std::vector<std::vector<int>> elemSets;
 	std::vector<std::string> elemSetsName;
+	std::vector<int> elementDoFListBC;
 public:
 	void addNodeSet(std::string, std::vector<int>);
 	void addElemSet(std::string, std::vector<int>);
 	void check();
+	std::vector<int>&  getElementDoFListBC() { return elementDoFListBC; }
 	std::vector<std::string>  getNodeSetsName() { return nodeSetsName; }
 	std::vector<std::vector<int>>  getNodeSets() { return nodeSets; }
 	std::vector<std::string>  getElemSetsName() { return elemSetsName; }

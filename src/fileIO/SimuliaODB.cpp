@@ -227,7 +227,7 @@ void SimuliaODB::openODBFile(std::string _obdFilePath) {
 					}
 				}
 				else
-					std::cerr << importType << "is not yet Supported or is Incorrect.\n";
+					std::cerr << importType << " is not yet Supported or is Incorrect.\n";
 
 			}
 				

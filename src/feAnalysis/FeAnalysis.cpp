@@ -42,9 +42,9 @@ using namespace std::complex_literals;
 FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh(&_hMesh), myFeMetaDatabase(&_feMetaDatabase) {
 	
 	// --- XML Testing ---------------------------------------------------------------------------------------------
-	std::cout << "==================================\n";
-	std::cout << "========= STACCATO IMPORT ========\n";
-	std::cout << "==================================\n\n";
+	std::cout << "=============================================\n";
+	std::cout << "=============== STACCATO IMPORT =============\n";
+	std::cout << "=============================================\n\n";
 
 
 	std::cout << ">> Name: " << MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin()->NAME() << std::endl;
@@ -63,9 +63,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	std::cout << ">> MATERIALS:" << std::endl;
 	STACCATO_XML::MATERIALS_const_iterator temp(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin());
 	for (int j = 0; j < temp->MATERIAL().size(); j++) {
-		std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << " E, nu, rho " << temp->MATERIAL().at(j).E() << "," << temp->MATERIAL().at(j).nu() << "," << temp->MATERIAL().at(j).rho() << std::endl;
+		std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << "\n\t E   : " << temp->MATERIAL().at(j).E() << "\n\t nu  : " << temp->MATERIAL().at(j).nu() << "\n\t rho : " << temp->MATERIAL().at(j).rho() << "\n\t eta : " << temp->MATERIAL().at(j).eta() << std::endl;
 	}
-	std::cout << "\n==================================\n";
+	std::cout << "\n=============================================\n\n";
 
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
@@ -125,7 +125,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	STACCATO_XML::SECTIONS_const_iterator iSection(MetaDatabase::getInstance()->xmlHandle->SECTIONS().begin());
 	for (int j = 0; j < iSection->SECTION().size(); j++) {
 		Material * elasticMaterial = new Material(std::string(iSection->SECTION().at(j).MATERIAL()->c_str()));
-
+		int flag = 0;
 		// Find the Corresponding Set
 		for (int k = 0; k < myHMesh->getElemSetsName().size(); k++) {
 			if (myHMesh->getElemSetsName().at(k) == std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str())) {
@@ -135,23 +135,24 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 				int lastIndex = 0;
 				for (int iElement = 0; iElement < idList.size(); iElement++)
 				{
-					int elemIndex = myHMesh->getNodeIndexForLabel(idList[iElement]);
+					int elemIndex =idList[iElement];
 					if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
 						allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
 					}
 					else	if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
 						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
-					}
+					} 
 					int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
 					double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
 					allElements[elemIndex]->computeElementMatrix(eleCoords);
 					lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
 				}
-				std::cout << "\nDev. Info >> Section : " << iSection->SECTION().at(j).Name() << ", with Element Set : " << iSets->ELEMENTSET().at(k).Name() << ", is assigned with Material :" << iSection->SECTION().at(j).MATERIAL() << std::endl << std::endl;
-
+				flag = 1;
 				break;
 			}
 		}
+		if (flag == 0)
+			std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str()) << " not Found.\n";
 	}
 
 	anaysisTimer01.stop();
@@ -174,8 +175,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			push_freq += step_freq;
 		}
 	}
-
-	anaysisTimer01.start();
 
 	int totalDoF = myHMesh->getTotalNumOfDoFsRaw();					
 	// Memory for output
@@ -247,7 +246,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 	}
 	anaysisTimer02.stop();
 	infoOut << "Duration for killing DOF loop: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
-
+	
+	anaysisTimer01.start();
 	for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
 		int lastIndex = 0;
 
@@ -260,11 +260,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);
 		}
 
-		std::cout << "test1" << std::endl;
+		std::cout << ">> Building Stiffness Matrix..." ;
 		for (int iElement = 0; iElement < numElements; iElement++)
 		{
 			int numDoFsPerElement = myHMesh->getNumDoFsPerElement()[iElement];
-			int*  eleDoFs = &myHMesh->getElementDoFList()[lastIndex];
+			int*  eleDoFs = &myHMesh->getElementDoFListBC()[lastIndex];
 			lastIndex += numDoFsPerElement;
 			double omega = 2 * M_PI*freq[iFreqCounter];
 			//Assembly routine symmetric stiffness
@@ -303,27 +303,36 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 					}
 				}
 		}
-		std::cout << "test2" << std::endl;
+		std::cout << " Finished." << std::endl;
+		std::cout << ">> Building RHS ...\n";
 		//Add cload rhs contribution 
 		STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 		for (int k = 0; k < iLoads->LOAD().size(); k++) {
 			
 			// Find NODESET
+			int flag = 0;
 			std::vector<int> nodeSet;
 			for (int i = 0; i < myHMesh->getNodeSetsName().size(); i++) {
 				if (myHMesh->getNodeSetsName().at(i) == std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str())) {
 					nodeSet = myHMesh->getNodeSets().at(i);
-					std::cout << iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n\n";
+					std::cout << ">> " << std::string(iLoads->LOAD().at(k).Type()->c_str()) << " "<< iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n";
+					flag = 1;
 				}
 			}
+			if(flag == 0)
+				std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
+
+			int flagLabel = 0;
 
 			for (int j = 0; j < numNodes; j++)
 			{
 				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 				for (int l = 0; l < numDoFsPerNode; l++) {
 					for (int m = 0; m < nodeSet.size(); m++) {
-						if (myHMesh->getNodeLabels()[j] == nodeSet.at(m)) {  
+						if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[nodeSet.at(m)]) {  
 							if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
+								flagLabel = 1;
+
 								std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
 								std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
 								std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
@@ -367,14 +376,17 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 					}
 				}
 			}
+			if (flagLabel == 0)
+				std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
 		}
+		std::cout << ">> Building RHS Finished." << std::endl;
 
+		std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";
 		// Implement DBC
 		// Applying Dirichlet
 		for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
 
 				int dofIndex = myHMesh->getDirichletDOF().at(m);
-
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					(*AReal)(dofIndex, dofIndex) = 1;
 					bReal[dofIndex] = 0;
@@ -387,6 +399,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 				}
 			
 		}
+		std::cout << " Finished." << std::endl;
 		
 		//(*A).print();
 		anaysisTimer01.stop();

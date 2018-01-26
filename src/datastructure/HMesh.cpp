@@ -199,6 +199,7 @@ void HMesh::buildDoFGraph(void) {
 			// Generate DoF table
 			for (int l = 0; l < numDoFsPerNode[nodeIndex]; l++) {
 				elementDoFList.push_back(nodeIndexToDoFIndices[nodeIndex][l]);
+				elementDoFListBC.push_back(nodeIndexToDoFIndices[nodeIndex][l]);
 				numDoFsPerElement++;
 			}
 
@@ -224,19 +225,26 @@ int HMesh::getNodeIndexForLabel(int _nodeLabel) {
 	}
 }
 
+int HMesh::getElementIndexForLabel(int _elemLabel) {
+	for (int i = 0; i < this->getElementLabels().size(); i++)
+	{
+		if (this->getElementLabels()[i] == _elemLabel)
+			return i;
+	}
+}
+
 void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF) {
 	std::vector<int> nodeSet;
 	for (int i = 0; i < nodeSetsName.size(); i++) {
 		if (nodeSetsName.at(i) == _nodeSetName) {
-			nodeSet = nodeSets.at(i);
-			std::cout << _nodeSetName << " is added.\n\n";
+			nodeSet = getNodeSets()[i];
+			std::cout << ">> Dirichlet BC on NODESET " << _nodeSetName << " is added.\n";
 		}
 	}
 
 	// Create the Map of boundary Dof List for all Nodes
 	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
-		int nodeIndex = getNodeIndexForLabel(nodeSet.at(iNode));
-		//std::cout << "lN " << nodeSet.at(iNode) << " and iN " << nodeIndex << std::endl;
+		int nodeIndex = nodeSet.at(iNode);
 
 		// Create a map of Dofs
 		int numDoFsPerNode = getNumDoFsPerNode(nodeIndex);
@@ -247,27 +255,63 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 		}
 	}
 	// DOF Killing
-		for (int n = 0; n < nodeSet.size(); n++) {
-			std::vector<int> indexAffected = getNodeIndexToDoFIndices()[n];
-
-			// Create a map of Dofs
-			int numDoFsPerNode = getNumDoFsPerNode(nodeSet.at(n));
-			for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
-				if (_restrictedDOF.at(iMap) == 1) {
-					elementDoFList.at(indexAffected.at(iMap)) = -1;
+	for (int n = 0; n < nodeSet.size(); n++) {
+		std::vector<int> indexAffected = getNodeIndexToDoFIndices()[nodeSet.at(n)];
+		std::vector<int> affectedElements = getNodeIndexToElementIndices()[nodeSet.at(n)];
+		/*for (int iMap = 0; iMap < affectedElements.size(); iMap++) {
+			std::cout << ": " << affectedElements[iMap];
+		}*/
+		// Create a map of Dofs
+		int numDoFsPerNode = getNumDoFsPerNode(nodeSet.at(n));
+		int numNodesPerElem = getNumNodesPerElement()[0];
+		int totalDoFsPerElem = numDoFsPerNode*numNodesPerElem;
+		for (int iMap = 0; iMap < affectedElements.size(); iMap++) {
+			for (int jMap = totalDoFsPerElem*affectedElements[iMap]; jMap < totalDoFsPerElem*affectedElements[iMap] + totalDoFsPerElem; jMap++)
+			{
+				for (int kMap = 0; kMap < indexAffected.size(); kMap++) {
+					if (indexAffected.at(kMap) == elementDoFList.at(jMap)) {
+						elementDoFListBC.at(jMap) = -1;
+					}
 				}
+
 			}
 		}
+		/*int numDoFsPerNode = getNumDoFsPerNode(nodeSet.at(n));
+		for (int iMap = 0; iMap < indexAffected.size(); iMap++) {
+			for (int jMap = 0; jMap < elementDoFList.size(); jMap++) {
+				if (indexAffected.at(iMap) == elementDoFList.at(jMap)) {
+					if (_restrictedDOF.at(iMap) == 1) {
+						elementDoFListBC.at(jMap) = -1;
+					}
+				}
+			}
+
+		}*/
+	}
+	/*std::cout << "Size Comp " << elementDoFList.size() << " and " << elementDoFListBC.size()<< std::endl;
+	for (int iMap = 0; iMap < elementDoFList.size(); iMap++) {
+		std::cout << ": " << elementDoFList[iMap];
+	}
+	std::cout << "\n\n ";
+	for (int iMap = 0; iMap < elementDoFListBC.size(); iMap++) {
+		std::cout << ": " << elementDoFListBC[iMap];
+	}*/
 }
 
 void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {
 	nodeSetsName.push_back(_name);
-	nodeSets.push_back(_nodeLabels);
+	std::vector<int> nodeIndex;
+	for (int i = 0; i < _nodeLabels.size(); i++)
+		nodeIndex.push_back(getNodeIndexForLabel(_nodeLabels.at(i)));
+	nodeSets.push_back(nodeIndex);
 }
 
 void HMesh::addElemSet(std::string _name, std::vector<int> _elemLabels) {
 	elemSetsName.push_back(_name);
-	elemSets.push_back(_elemLabels);
+	std::vector<int> elemIndex;
+	for (int i = 0; i < _elemLabels.size(); i++)
+		elemIndex.push_back(getElementIndexForLabel(_elemLabels.at(i)));
+	elemSets.push_back(elemIndex);
 }
 
 void HMesh::check() {

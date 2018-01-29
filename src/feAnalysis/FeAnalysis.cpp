@@ -381,6 +381,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		}
 		std::cout << ">> Building RHS Finished." << std::endl;
 
+		anaysisTimer02.start();
 		std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";
 		// Implement DBC
 		// Applying Dirichlet
@@ -400,8 +401,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 			
 		}
 		std::cout << " Finished." << std::endl;
+		anaysisTimer02.stop();
+		infoOut << "Duration for applying dirichlet conditions: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
+		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		
-		(*AReal).print();
+		//(*AReal).print();
 		anaysisTimer01.stop();
 		infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;

@@ -197,14 +197,14 @@ public:
 	***********/
 	void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec);
 	/***********************************************************************************************
-	* \brief Add a result time description
-	* \param[in] _resultsTimeDescription
-	* \author Stefan Sicklinger
+	* \brief Get results for all time description
+	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<std::string>& HMesh::getResultsTimeDescription();
 	/***********************************************************************************************
-	* \brief Get all result time description
-	* \author Harikrishnan Sreekumar
+	* \brief Add a result time description
+	* \param[in] _resultsTimeDescription
+	* \author Stefan Sicklinger
 	***********/
 	void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription);
 	/***********************************************************************************************
@@ -241,8 +241,6 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	int HMesh::getElementIndexForLabel(int _elemLabel);
-	
-
 private:
 	/// mesh name
 	std::string name;
@@ -309,26 +307,83 @@ private:
 	HMesh& operator=(const HMesh&);
 
 
-	// =================================================
+	/* -- Class Members and Functions for DBC -- */
 private:
+	/// vector holding affected DOFs for Dirichlet
 	std::vector<int> dirichletDOF;
+	/// vector holding affected nodes ID for Dirichlet
 	std::vector<std::vector<int>> nodeSets;
+	/// vector holding affected node names for Dirichlet
 	std::vector<std::string> nodeSetsName;
+	/// vector holding affected element ID for Dirichlet
 	std::vector<std::vector<int>> elemSets;
+	/// vector holding affected element names for Dirichlet
 	std::vector<std::string> elemSetsName;
+	/// DoF list sorted  element index 0..ne with entries -1 for Dirichlet DoF
 	std::vector<int> elementDoFListBC;
 public:
+	/***********************************************************************************************
+	* \brief Add a Node Set
+	* \param[in] _name
+	* \param[in] _nodeLabels
+	* \author Harikrishnan Sreekumar
+	***********/
 	void addNodeSet(std::string, std::vector<int>);
+	/***********************************************************************************************
+	* \brief Add an Element Set
+	* \param[in] _name
+	* \param[in] _elemLabels
+	* \author Harikrishnan Sreekumar
+	***********/
 	void addElemSet(std::string, std::vector<int>);
-	void check();
+	/***********************************************************************************************
+	* \brief Print Contents of all Sets
+	* \author Harikrishnan Sreekumar
+	***********/
+	void printSets();
+	/***********************************************************************************************
+	* \brief Get Handle to the Killed Element-DoF List
+	* \param[out] Handle to the Killed Element-DoF List
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<int>&  getElementDoFListBC() { return elementDoFListBC; }
+	/***********************************************************************************************
+	* \brief Get all Names of Node Sets
+	* \param[out] nodeSetsName
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<std::string>  getNodeSetsName() { return nodeSetsName; }
+	/***********************************************************************************************
+	* \brief Get all Node Sets
+	* \param[out] nodeSets
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<std::vector<int>>  getNodeSets() { return nodeSets; }
+	/***********************************************************************************************
+	* \brief Get all Names of Element Sets
+	* \param[out] elemSetsName
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<std::string>  getElemSetsName() { return elemSetsName; }
+	/***********************************************************************************************
+	* \brief Get all Element Sets
+	* \param[out] elemSets
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<std::vector<int>>  getElemSets() { return elemSets; }
+	/***********************************************************************************************
+	* \brief Get the list of DoFs with Dirichlet Condition
+	* \param[out] dirichletDOF
+	* \author Harikrishnan Sreekumar
+	***********/
 	std::vector<int>  getDirichletDOF() { return dirichletDOF; }
+	/***********************************************************************************************
+	* \brief Kills / Mark the DoFs with Dirichlet Condition as -1
+	* \param[in] _nodeSetName
+	* \param[in] _restrictedDOF
+	* \author Harikrishnan Sreekumar
+	***********/
 	void killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF);
-	// =================================================
 };
 
 #endif /* HMESH_H_ */

@@ -116,6 +116,10 @@ QT_CHARTS_USE_NAMESPACE
 #include <vtkExtractEdges.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 
+//XML
+#include "MetaDatabase.h"
+
+
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
 ui(new Ui::StartWindow)
@@ -128,11 +132,19 @@ ui(new Ui::StartWindow)
 	myScalingFactorValue = 1;
 
 	myVtkViewer = new VtkViewer(this);
+
 	setCentralWidget(myVtkViewer);
 	createActions();
 	createMenus();
 	createToolBars();
 	createDockWindows();
+
+	// Works for one instance only
+	myHMesh = new HMesh("default");
+
+	// Intialize XML Parsing
+	char* inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML_B31_fe.xml";
+	MetaDatabase::init(inputFileName);
 }
 
 StartWindow::~StartWindow()
@@ -352,6 +364,13 @@ void StartWindow::createActions(void)
 	mySetSelectionModeElementAction->setStatusTip(tr("Select an element"));
 	connect(mySetSelectionModeElementAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeElement()));
 
+	// Export Actions
+	myUMAAction = new QAction(tr("SIM via UMA"), this);
+	myUMAAction->setStatusTip(tr("SIM via UMA"));
+	myUMAAction->setCheckable(true);
+	myUMAAction->setChecked(false);
+	connect(myUMAAction, SIGNAL(triggered()), this, SLOT(myUMATriggered()));
+
 	// Layout Actions
 	myResetLayoutAction = new QAction(tr("Reset Layout"), this);
 	myResetLayoutAction->setStatusTip(tr("Reset Layout"));
@@ -396,29 +415,29 @@ void StartWindow::myViewPropertyUpdate(void) {
 
 	// Update Solution
 	if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Ux_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uy_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uz_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Im, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Ux_Im, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Im, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uy_Im, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Im, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uz_Im, edge, surface, myScalarBarVisibility->isChecked());
 	}
 	else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, myFreqIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Im, edge, surface, myScalarBarVisibility->isChecked());
 	}
 	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());		// Update Plot
@@ -427,15 +446,15 @@ void StartWindow::myViewPropertyUpdate(void) {
 void StartWindow::myTimeStepLessProc(void) {
 	if (myFreqIndex > 0) {
 		myFreqIndex--;
-		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
+		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
 		myViewPropertyUpdate();
 	}
 }
 
 void StartWindow::myTimeStepAddProc(void) {
-	if (myFreqIndex < myOBD.getHMeshHandle()->getResultsTimeDescription().size()-1) {
+	if (myFreqIndex < myHMesh->getResultsTimeDescription().size()-1) {
 		myFreqIndex++;
-		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
+		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
 		myViewPropertyUpdate();
 	}
 }
@@ -456,6 +475,9 @@ void StartWindow::createMenus(void)
 	mySelectionMenu->addAction(mySetSelectionModeNoneAction);
 	mySelectionMenu->addAction(mySetSelectionModeNodeAction);
 	mySelectionMenu->addAction(mySetSelectionModeElementAction);
+
+	myImportMenu = menuBar()->addMenu(tr("Import"));
+	myImportMenu->addAction(myUMAAction);
 
 	myLayoutMenu = menuBar()->addMenu(tr("Layout"));
 	myLayoutMenu->addAction(myResetLayoutAction);
@@ -585,14 +607,14 @@ void StartWindow::openOBDFile(void){
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	anaysisTimer03.start();
-	myOBD.openODBFile(fileName.toStdString());
+	myOBD.openODBFile(fileName.toStdString(), *myHMesh);
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
 
 	//Run FE Analysis
 	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh, *mFeMetaDatabase);
 	anaysisTimer03.stop();
 	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -606,16 +628,16 @@ void StartWindow::openOBDFile(void){
 	my2dVisualizerVisibility->setEnabled(true);
 
 	anaysisTimer01.start();
-	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myOBD.getHMeshHandle());
+	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 	// Update Slider
-	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myOBD.getHMeshHandle()->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
+	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
 
-	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myOBD.getHMeshHandle()->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
 	
 	// Plot Vector Field
 	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
@@ -1043,5 +1065,68 @@ void StartWindow::myScalingFactorState() {
 }
 
 void StartWindow::my2dVisualizerInterface() {
-	myVtkViewer->my2dVisualizerInterface(*myOBD.getHMeshHandle());
+	myVtkViewer->my2dVisualizerInterface(*myHMesh);
+}
+
+void StartWindow::myUMATriggered() {
+	if (myUMAAction->isChecked()) {
+		myUMADock = new QDockWidget(tr("SIM via UMA"), this);
+		myUMADock->setAllowedAreas(Qt::LeftDockWidgetArea);
+
+		mySIMFileName = new QLineEdit(this);
+		mySIMFileName->setText("C:/software/repos/staccato/sim/B31_fe_X1.sim");
+
+		myUMAInterfaceButton = new QPushButton(tr("Parse SIM File"), this);
+		connect(myUMAInterfaceButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
+
+		mySIMImportButton = new QPushButton(tr("Import SIM to HMesh"), this);
+		connect(mySIMImportButton, SIGNAL(clicked()), this, SLOT(myUMAHMesh()));
+
+		mySIMImportLabel = new QLabel(tr("File: "), this);
+
+		QFormLayout *layout = new QFormLayout;
+		layout->addRow(mySIMImportLabel, mySIMFileName);
+		layout->addRow(myUMAInterfaceButton);
+		layout->addRow(mySIMImportButton);
+		QWidget* temp = new QWidget(this);
+		temp->setLayout(layout);
+
+		myUMADock->setWidget(temp);
+		myUMADock->show();
+
+		addDockWidget(Qt::LeftDockWidgetArea, myUMADock);
+	}
+	else {
+		removeDockWidget(myUMADock);
+	}
+}
+
+void StartWindow::myUMAImport() {
+	std::cout << ">> Trying to start UMA Interface ... " << std::endl;
+	//myUMA->openSIM(mySIMFileName->text().toLocal8Bit().data());
+
+}
+
+void StartWindow::myUMAHMesh() {
+	// Check for Imports
+	bool flagSIM = false;
+	for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
+		iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
+		++iFileImport)
+	{
+		if (std::string(iFileImport->Type()->c_str()) == "AbqSIM") {
+			flagSIM = true;
+		}
+	}
+	if (flagSIM) {
+		std::cout << ">> SIM Import from XML Detected.\n";
+		//myUMA->importToHMesh(*myHMesh);
+		//Run FE Analysis
+		myHMesh->isSIM = true;
+		FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
+		FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh, *mFeMetaDatabase);
+	}
+	else {
+		std::cerr << "FILEIMPORT Error: AbqSIM not found in XML.\n";
+	}
 }

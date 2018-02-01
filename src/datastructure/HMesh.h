@@ -384,6 +384,10 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF);
+
+	/* -- Class Member for supporting UMA -- */
+public:
+	bool isSIM;
 };
 
 #endif /* HMESH_H_ */

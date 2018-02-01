@@ -1,0 +1,78 @@
+<STACCATO_XML>
+	<!--
+	<FILEIMPORT Type="AbqODB">
+		<IMPORT Type="Nodes">
+			<LIST>ALL</LIST>
+		</IMPORT>
+		<IMPORT Type="Elements">
+			<LIST>ALL</LIST>
+			<TRANSLATETO Source="C3D10" Target="STACCATO_Tetrahedron10Node3D"/>
+		</IMPORT>
+		<IMPORT Type="Sets">
+				<NODE>
+					<TRANSLATETO Source="CLOAD" Target="LOAD"/>
+					<TRANSLATETO Source="CLAMP" Target="BOUNDARY"/>
+				</NODE>
+				<ELEMENT>
+					<TRANSLATETO Source="allEle" Target="LOAD"/>
+				</ELEMENT>
+		</IMPORT>
+	</FILEIMPORT>
+		-->
+	<FILEIMPORT Type="AbqSIM">
+		<IMPORT Type="Matrices">
+			<LIST>ALL</LIST>
+		</IMPORT>
+	</FILEIMPORT>
+	<ANALYSIS>
+		<NAME>B31</NAME>
+		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
+	</ANALYSIS>
+	<FREQUENCY Type="STEP">
+		<START_FREQ>250</START_FREQ>
+		<END_FREQ>250</END_FREQ>
+		<STEP_FREQ>500</STEP_FREQ>
+	</FREQUENCY>
+	<MATERIALS>
+		<MATERIAL Name="Steel" Type="Isotropic">
+			<E>2.1e11</E>
+			<nu>0.3</nu>
+			<rho>7200</rho>
+			<eta>0.0</eta>
+		</MATERIAL>
+	</MATERIALS>
+	<SECTIONS>
+		<SECTION Name="Sec">
+			<ELEMENTSET>allElem</ELEMENTSET>
+			<MATERIAL>Steel</MATERIAL>
+		</SECTION>
+	</SECTIONS>
+	<NODES>
+		<NODE><ID>1</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>2</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>3</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>4</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>5</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>6</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>7</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>8</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>9</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+		<NODE><ID>10</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
+	</NODES>
+	<ELEMENTS>
+		<ELEMENT Type="FeTetrahedron10NodeElement"><ID>1</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
+		<ELEMENT Type="FeTetrahedron10NodeElement"><ID>2</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
+	</ELEMENTS>
+	<SETS>
+		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
+		<NODESET Name="clamp22"><LIST>1 2 3 </LIST></NODESET>
+		<NODESET Name="end1"><LIST>1</LIST></NODESET>
+		<NODESET Name="end2"><LIST>5</LIST></NODESET>
+	</SETS>
+	<LOADS>
+		<LOAD Type="ConcentratedForce"><NODESET Name="end2"/><REAL><X>0.000</X><Y>5.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
+	</LOADS>
+	<BC>
+		<DBC><NODESET Name="end1"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
+	</BC>
+</STACCATO_XML>

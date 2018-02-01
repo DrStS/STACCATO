@@ -45,6 +45,7 @@
 // forward declaration
 class OccViewer;
 class VtkViewer;
+class UMA_AccessSparse;
 class QTextEdit;
 class QCheckBox;
 class QGroupBox;
@@ -100,6 +101,9 @@ private slots:
 	void myScalingFactorState(void);
 	void my2dVisualizerInterface(void);
 	void myViewModeTriggered(void);
+	void myUMATriggered(void);
+	void myUMAImport(void);
+	void myUMAHMesh(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -129,6 +133,8 @@ private:
 	QAction* mySetSelectionModeNoneAction;
 	QAction* mySetSelectionModeNodeAction;
 	QAction* mySetSelectionModeElementAction;
+	/// Export action
+	QAction* myUMAAction;
 	/// Layout action
 	QAction* myResetLayoutAction;
 	QAction* myDockWarpVectorAction;
@@ -139,6 +145,7 @@ private:
 	QMenu* myFileMenu;
 	QMenu* myCreateMenu;
 	QMenu* mySelectionMenu;
+	QMenu* myImportMenu;
 	QMenu* myLayoutMenu;
 	QMenu* myHelpMenu;
 	/// SubMenus
@@ -179,6 +186,7 @@ private:
 	/// View Control ToolBar Buttons
 	QPushButton* myScalarBarVisibility;
 	QPushButton* myWarpVectorVisibility;
+	QPushButton* myUMAImportVisibility;
 	QPushButton* my2dVisualizerVisibility;
 	QPushButton* myRotateModeButton;
 	QPushButton* myPickModeButton;
@@ -196,6 +204,13 @@ private:
 
 	/// Dock Windows
 	QDockWidget *myWarpDock;
+	QDockWidget *myUMADock;
+
+	/// UMA Widgets
+	QPushButton* myUMAInterfaceButton;
+	QPushButton* mySIMImportButton;
+	QLabel* mySIMImportLabel;
+	QLineEdit* mySIMFileName;
 
 	/// Layouts
 	QGroupBox* myWarpVectorLayout;
@@ -208,6 +223,9 @@ private:
 	int myScalingFactorValue;
 
 	SimuliaODB myOBD;
+private:
+	/// HMesh object 
+	HMesh *myHMesh;
 };
 
 #endif /* STARTWINDOW_H */

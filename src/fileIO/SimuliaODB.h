@@ -52,12 +52,13 @@ public:
 	* \param[in] _obdFilePath string which holds the path to the obd file
 	* \author Stefan Sicklinger
 	***********/
-	void openODBFile(const std::string _obdFilePath);
+	void openODBFile(const std::string _obdFilePath, HMesh& _hMesh);
 	/***********************************************************************************************
 	* \brief get HMesh
 	* \author Stefan Sicklinger
 	***********/
-	HMesh* getHMeshHandle(void){ return myHMesh; }
+	//HMesh* getHMeshHandle(void){ return myHMesh; }
+
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

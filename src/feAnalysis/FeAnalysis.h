@@ -30,6 +30,8 @@
 #include <assert.h>
 #include <math.h>
 
+#include <MathLibrary.h>
+
 class HMesh;
 class FeMetaDatabase;
 /********//**
@@ -56,6 +58,10 @@ private:
 	HMesh *myHMesh;
 	/// FeMetaDatabase object 
 	FeMetaDatabase *myFeMetaDatabase;
+
+	/// Stiffness Matrix
+	MathLibrary::SparseMatrix<double> *AReal;
+	MathLibrary::SparseMatrix<MKL_Complex16> *AComplex;
 };
 
 

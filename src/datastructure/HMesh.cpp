@@ -23,6 +23,7 @@
 #include "Message.h"
 
 HMesh::HMesh(std::string _name) : name(_name) {
+	isSIM = false;
 }
 
 HMesh::~HMesh() {
@@ -137,6 +138,17 @@ void HMesh::buildDataStructure(void){
 			//2. DoF -> u_y
 			//3. DoF -> u_z
 			numDoFsPerNodeCurrent = 3;
+			domainDimension = 3;
+		}
+		else if (elementTyps[i] == STACCATO_UmaElement) {
+			numNodesPerElem[i] = getNumNodes();
+			//1. DoF -> u_x
+			//2. DoF -> u_y
+			//3. DoF -> u_z
+			//4. DoF -> w_x
+			//5. DoF -> w_y
+			//6. DoF -> w_z
+			numDoFsPerNodeCurrent = 6;
 			domainDimension = 3;
 		}
 
@@ -274,6 +286,16 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 			}
 		}
 	}
+	/*
+	std::cout << "Size Comp " << elementDoFList.size() << " and " << elementDoFListBC.size() << std::endl;
+	for (int iMap = 0; iMap < elementDoFList.size(); iMap++) {
+		std::cout << ": " << elementDoFList[iMap];
+	}
+	std::cout << "\n\n ";
+	for (int iMap = 0; iMap < elementDoFListBC.size(); iMap++) {
+		std::cout << ": " << elementDoFListBC[iMap];
+	}
+	*/
 }
 
 void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {

@@ -23,11 +23,12 @@
 #include "Message.h"
 #include "FeAnalysis.h"
 #include "HMesh.h"
-#include "FeMetaDatabase.h"
+#include "BoundaryCondition.h"
 #include "FeElement.h"
 #include "FePlainStress4NodeElement.h"
 #include "FeTetrahedron10NodeElement.h"
 #include "Material.h"
+#include "BoundaryCondition.h"
 
 #include "MathLibrary.h"
 #include "Timer.h"
@@ -37,9 +38,8 @@
 #include <string.h>
 
 #include <complex>
-using namespace std::complex_literals;
 
-FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh(&_hMesh), myFeMetaDatabase(&_feMetaDatabase) {
+FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	
 	// --- XML Testing ---------------------------------------------------------------------------------------------
 	std::cout << "=============================================\n";
@@ -154,6 +154,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		if (flag == 0)
 			std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str()) << " not Found.\n";
 	}
+
+
+
 
 	anaysisTimer01.stop();
 	infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -306,80 +309,14 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		std::cout << " Finished." << std::endl;
 		std::cout << ">> Building RHS ...\n";
 		//Add cload rhs contribution 
-		STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
-		for (int k = 0; k < iLoads->LOAD().size(); k++) {
-			
-			// Find NODESET
-			int flag = 0;
-			std::vector<int> nodeSet;
-			for (int i = 0; i < myHMesh->getNodeSetsName().size(); i++) {
-				if (myHMesh->getNodeSetsName().at(i) == std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str())) {
-					nodeSet = myHMesh->getNodeSets().at(i);
-					std::cout << ">> " << std::string(iLoads->LOAD().at(k).Type()->c_str()) << " "<< iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n";
-					flag = 1;
-				}
-			}
-			if(flag == 0)
-				std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
-
-			int flagLabel = 0;
-
-			for (int j = 0; j < numNodes; j++)
-			{
-				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
-				for (int l = 0; l < numDoFsPerNode; l++) {
-					for (int m = 0; m < nodeSet.size(); m++) {
-						if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[nodeSet.at(m)]) {  
-							if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
-								flagLabel = 1;
-
-								std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
-								std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
-								std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
-
-								int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
-								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-									switch (l) {
-									case 0:
-										bReal[dofIndex] += temp_Fx.real();
-										break;
-									case 1:
-										bReal[dofIndex] += temp_Fy.real();
-										break;
-									case 2:
-										bReal[dofIndex] += temp_Fz.real();
-										break;
-									default:
-										break;
-									}
-								}
-								else if (analysisType == "STEADYSTATE_DYNAMIC") {
-									switch (l) {
-									case 0:
-										bComplex[dofIndex].real += temp_Fx.real();
-										bComplex[dofIndex].imag += temp_Fx.imag();
-										break;
-									case 1:
-										bComplex[dofIndex].real += temp_Fy.real();
-										bComplex[dofIndex].imag += temp_Fy.imag();
-										break;
-									case 2:
-										bComplex[dofIndex].real += temp_Fz.real();
-										bComplex[dofIndex].imag += temp_Fz.imag();
-										break;
-									default:
-										break;
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			if (flagLabel == 0)
-				std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
+		BoundaryCondition neumannBoundaryCondition(*myHMesh);
+		if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+			neumannBoundaryCondition.addConcentratedForce(bReal);
 		}
-		std::cout << ">> Building RHS Finished." << std::endl;
+		else if (analysisType == "STEADYSTATE_DYNAMIC") {
+			neumannBoundaryCondition.addConcentratedForce(bComplex);
+		}
+
 
 		std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";
 		// Implement DBC
@@ -401,7 +338,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		}
 		std::cout << " Finished." << std::endl;
 		
-		(*AReal).print();
+		//(*AReal).print();
 		anaysisTimer01.stop();
 		infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -429,6 +366,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh, FeMetaDatabase& _feMetaDatabase) : myHMesh
 		anaysisTimer01.start();
 		if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 			(*AReal).solveDirect(&solReal[0], &bReal[0]);
+			//(*AReal).initIterativeSolver(&solReal[0], &bReal[0]);
 		}
 		else if (analysisType == "STEADYSTATE_DYNAMIC") {
 			(*AComplex).solveDirect(&solComplex[0], &bComplex[0]);

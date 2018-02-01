@@ -27,7 +27,6 @@
 #include "Message.h"
 #include "SimuliaODB.h"
 #include "HMeshToMeshVS_DataSource.h"
-#include "FeMetaDatabase.h"
 #include "FeAnalysis.h"
 #include "Timer.h"
 #include "MemWatcher.h"
@@ -591,8 +590,7 @@ void StartWindow::openOBDFile(void){
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
 
 	//Run FE Analysis
-	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle(), *mFeMetaDatabase);
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myOBD.getHMeshHandle());
 	anaysisTimer03.stop();
 	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;

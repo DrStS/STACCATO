@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,38 +18,50 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file FeMetaDatabase.h
- * This file holds the class FeMetaDatabase which holds all meta data for the FE analysis
- * i.e. lightweight descriptive data, e.g. material, section, anaylsis type, solver properties
- * \date 8/28/2017
+ * \file BoundaryCondition.h
+ * This file holds the class BoundaryCondition
+ * \date 2/2/2018
  **************************************************************************************************/
 
-#ifndef FEMETADATABASE_H_
-#define FEMETADATABASE_H_
+#ifndef BOUNDARYCONDITION_H_
+#define BOUNDARYCONDITION_H_
 
 #include <string>
+#include <vector>
 #include <assert.h>
+#include "MathLibrary.h"
 
+class HMesh;
 /********//**
- * \brief This handles the output handling with Abaqus ODB
+ * \brief This implements all boundary condtions 
  **************************************************************************************************/
-class FeMetaDatabase{
+class BoundaryCondition {
 public:
     /***********************************************************************************************
      * \brief Constructor
-     * \param[in] _obdFilePath string which holds the path to the obd file
      * \author Stefan Sicklinger
      ***********/
-	FeMetaDatabase(void);
+	BoundaryCondition(HMesh& _hMesh);
     /***********************************************************************************************
      * \brief Destructor
      *
      * \author Stefan Sicklinger
      ***********/
-	virtual ~FeMetaDatabase(void);
+	virtual ~BoundaryCondition(void);
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
+	void addConcentratedForce(std::vector<double> &_rhsReal);
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
+	void addConcentratedForce(std::vector<MKL_Complex16> &_rhsComplex);
 private:
+	/// HMesh object 
+	HMesh *myHMesh;
 
 };
 
-
-#endif /* FEMETADATABASE_H_ */
+#endif /* BOUNDARYCONDITION_H_ */

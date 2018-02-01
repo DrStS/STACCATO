@@ -31,7 +31,6 @@
 #include <math.h>
 
 class HMesh;
-class FeMetaDatabase;
 /********//**
  * \brief Class FeAnalysis holds and builds the whole Fe Analysis
  * Input to this class is a FeMetaDatabase and a HMesh object
@@ -44,7 +43,7 @@ public:
 	 * \param[in] _FeMetaDatabase reference to FeMetaDatabase object
      * \author Stefan Sicklinger
      ***********/
-	FeAnalysis(HMesh& _HMesh, FeMetaDatabase& _FeMetaDatabase);
+	FeAnalysis(HMesh& _HMesh);
     /***********************************************************************************************
      * \brief Destructor
      *
@@ -54,8 +53,6 @@ public:
 private:
 	/// HMesh object 
 	HMesh *myHMesh;
-	/// FeMetaDatabase object 
-	FeMetaDatabase *myFeMetaDatabase;
 };
 
 

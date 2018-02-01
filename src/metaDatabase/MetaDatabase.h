@@ -19,7 +19,8 @@
  */
 /***********************************************************************************************//**
  * \file MetaDatabase.h
- * This file holds the class of MetaDatabase.
+ * This file holds the class of MetaDatabase which holds all meta data for the FE analysis
+ * i.e. lightweight descriptive data, e.g. material, section, anaylsis type, solver properties
  * \date 20/1/2018
  **************************************************************************************************/
 #ifndef METADATABASE_H_

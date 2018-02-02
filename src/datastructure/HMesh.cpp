@@ -144,9 +144,9 @@ void HMesh::buildDataStructure(void){
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			//3. DoF -> u_z
-			//4. DoF -> w_x
-			//5. DoF -> w_y
-			//6. DoF -> w_z
+			//4. DoF -> phi_x
+			//5. DoF -> phi_y
+			//6. DoF -> phi_z
 			numDoFsPerNodeCurrent = 6;
 			domainDimension = 3;
 		}
@@ -287,7 +287,7 @@ void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {
 	nodeSetsName.push_back(_name);
 	std::vector<int> nodeIndex;
 	for (int i = 0; i < _nodeLabels.size(); i++){
-		nodeIndex.push_back(convertNodeLabelToNodeIndex(_nodeLabels.at(i)));
+		nodeIndex.push_back(convertNodeLabelToNodeIndex(_nodeLabels[i]));
 	}
 	nodeSets.push_back(nodeIndex);
 }

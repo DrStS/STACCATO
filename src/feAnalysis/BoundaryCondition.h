@@ -58,6 +58,11 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void addConcentratedForce(std::vector<MKL_Complex16> &_rhsComplex);
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
+	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector);
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

@@ -74,5 +74,4 @@ void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
 			myKe[row * 30 + col] = val;
 		}
 	}
-
 }

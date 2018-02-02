@@ -173,6 +173,15 @@ public:
 		return nodeLabelToNodeIndexMap[_nodeLabel];
 	}
 	/***********************************************************************************************
+	* \brief convert element label to element index
+	* \param[in] element label
+	* \param[out] element index [0..nElems]
+	* \author Stefan Sicklinger
+	***********/
+	int convertElementLabelToElementIndex(int _elemLabel) {
+		return elementLabelToElementIndexMap[_elemLabel];
+	}
+	/***********************************************************************************************
 	* \brief Total number of DoF without internal DoFs and BCs
 	* \param[out] reference to std vector double
 	* \author Stefan Sicklinger
@@ -227,20 +236,6 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _type, int _nodeLabel);
-	/***********************************************************************************************
-	* \brief Get index of a Node from Node Label
-	* \param[in] _nodeLabel
-	* \param[out] Node Index
-	* \author Harikrishnan Sreekumar
-	***********/
-	int HMesh::getNodeIndexForLabel(int _nodeLabel);
-	/***********************************************************************************************
-	* \brief Get index of an Element from Element Label
-	* \param[in] _elemLabel
-	* \param[out] Element Index
-	* \author Harikrishnan Sreekumar
-	***********/
-	int HMesh::getElementIndexForLabel(int _elemLabel);
 private:
 	/// mesh name
 	std::string name;
@@ -387,6 +382,7 @@ public:
 
 	/* -- Class Member for supporting UMA -- */
 public:
+	bool hasParts;
 	bool isSIM;
 };
 

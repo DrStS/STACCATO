@@ -29,9 +29,10 @@ using namespace xercesc;
 
 MetaDatabase *MetaDatabase::metaDatabase = NULL;
 
-void MetaDatabase::init(char* inputFileName) {
+void MetaDatabase::init(std::string inputFileName) {
 	assert(metaDatabase == NULL);
 	metaDatabase = new MetaDatabase(inputFileName);
+	std::cout << ">> xml Import: " << inputFileName << " successful.\n\n";
 }
 
 MetaDatabase* MetaDatabase::getInstance() {
@@ -43,7 +44,7 @@ MetaDatabase::MetaDatabase() {
 
 }
 
-MetaDatabase::MetaDatabase(char *inputFileName) {
+MetaDatabase::MetaDatabase(std::string inputFileName) {
 	try
 	{
 		xmlHandle = auto_ptr<STACCATO_XML>(STACCATO_XML_(inputFileName));
@@ -58,7 +59,7 @@ MetaDatabase::~MetaDatabase() {
 	metaDatabase = NULL;
 }
 
-void MetaDatabase::buildXML() {
+void MetaDatabase::printXML() {
 
 	std::cout << "==================================\n";
 	std::cout << "========= STACCATO IMPORT ========\n";
@@ -86,6 +87,51 @@ void MetaDatabase::buildXML() {
 	}
 
 	std::cout << "\n==================================\n";
+}
+
+void MetaDatabase::buildXML(HMesh& _hMesh) {
+	// Add STACCATO_XML-User Entered Sets
+	STACCATO_XML::SETS_const_iterator iSets(MetaDatabase::getInstance()->xmlHandle->SETS().begin());
+	// Element Sets
+	for (int k = 0; k < iSets->ELEMENTSET().size(); k++) {
+		// Recognize List for ALL or a List of IDs
+		std::vector<int> idList;
+		// Keyword: ALL
+		if (std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()) == "ALL") {
+			idList = _hMesh.getElementLabels();
+		}
+		else {	// ID List
+				// filter
+			std::stringstream stream(std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()));
+			while (stream) {
+				int n;
+				stream >> n;
+				if (stream)
+					idList.push_back(n);
+			}
+		}
+		_hMesh.addElemSet(std::string(iSets->ELEMENTSET().at(k).Name()->c_str()), idList);
+	}
+	// Node Sets
+	for (int k = 0; k < iSets->NODESET().size(); k++) {
+		// Recognize List for ALL or a List of IDs
+		std::vector<int> idList;
+		// Keyword: ALL
+		if (std::string(iSets->NODESET().at(k).LIST()->c_str()) == "ALL") {
+			idList = _hMesh.getNodeLabels();
+		}
+		else {	// ID List
+				// filter
+			std::stringstream stream(std::string(iSets->NODESET().at(k).LIST()->c_str()));
+			while (stream) {
+				int n;
+				stream >> n;
+				if (stream)
+					idList.push_back(n);
+			}
+		}
+		_hMesh.addNodeSet(std::string(iSets->NODESET().at(k).Name()->c_str()), idList);
+	}
 }
 
 void MetaDatabase::exportXML() {

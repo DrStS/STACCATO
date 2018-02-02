@@ -23,7 +23,6 @@
 #include "memWatcher.h"
 #include "HMesh.h"
 
-
 /// SIMULIA includes
 #include <odb_API.h>
 #include <odb_Coupling.h>
@@ -31,33 +30,30 @@
 #include <odb_ShellSolidCoupling.h>
 #include <odb_Enum.h>
 #include <odb_SectionTypes.h>
-//UMA
-#include <ads_CoreFESystemC.h>
-#include <uma_System.h>
-#include <uma_IncoreMatrix.h>
-#include <uma_Matrix.h>
-#include <uma_Enum.h>
-#include <uma_ArrayInt.h>
 
 //XML
 #include "MetaDatabase.h"
 
 //#define DEBUG
 
-SimuliaODB::SimuliaODB() {
+SimuliaODB::SimuliaODB(std::string _fileName, HMesh& myHMesh) : myHMesh(&myHMesh) {
+	myFileName = _fileName;
+	std::cout << ">> ODB Reader initialized for file " << myFileName << std::endl;
 	odb_initializeAPI();
+	openFile();
+	myHMesh.hasParts = true;
 }
 
 SimuliaODB::~SimuliaODB() {
 	odb_finalizeAPI();
 }
 
-void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
+void SimuliaODB::openFile() {
 	try {
 #ifdef DEBUG_OUTPUT
-		infoOut << "Open OBD file: " << _obdFilePath << std::endl;
+		infoOut << "Open OBD file: " << myFileName << std::endl;
 #endif
-		odb_Odb& odb = openOdb(odb_String(_obdFilePath.c_str()));
+		odb_Odb& odb = openOdb(odb_String(myFileName.c_str()));
 #ifdef DEBUG_OUTPUT
 		infoOut << odb.name().CStr() << " '__________" << std::endl;
 		infoOut << "analysisTitle: " << odb.analysisTitle().CStr() << std::endl;
@@ -99,7 +95,7 @@ void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
 										coords[0], coords[1], coords[2]);
 									infoOut << formattedOut << std::endl;
 #endif
-									_hMesh.addNode(aNode.label(), coords[0], coords[1], coords[2]);
+									myHMesh->addNode(aNode.label(), coords[0], coords[1], coords[2]);
 								}
 							}
 							else
@@ -141,9 +137,9 @@ void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
 #endif
 									if (std::string(aElement.type().CStr()) == translateSource) {
 										if (translateTarget == "STACCATO_Tetrahedron10Node3D")
-											_hMesh.addElement(aElement.label(), STACCATO_Tetrahedron10Node3D, elementTopo);
+											myHMesh->addElement(aElement.label(), STACCATO_Tetrahedron10Node3D, elementTopo);
 										else if (translateTarget == "STACCATO_PlainStress4Node2D")
-											_hMesh.addElement(aElement.label(), STACCATO_PlainStress4Node2D, elementTopo);
+											myHMesh->addElement(aElement.label(), STACCATO_PlainStress4Node2D, elementTopo);
 										else
 											std::cerr << "STACCATO cannot recognize this element: " << translateTarget << std::endl;
 									}
@@ -180,7 +176,7 @@ void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
 											for (int n = 0; n < n_max; n++) {
 												nodeLabels.push_back(nodesInMySet.node(n).label());
 											}
-											_hMesh.addNodeSet(translateTarget, nodeLabels);
+											myHMesh->addNodeSet(translateTarget, nodeLabels);
 										}
 									}
 								}
@@ -216,7 +212,7 @@ void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
 												std::vector<int> elemLabels;
 												for (int j = 0; j < elemConSize; j++)
 													elemLabels.push_back(elemsInMySet.element(n).label());
-												_hMesh.addElemSet(translateTarget, elemLabels);
+												myHMesh->addElemSet(translateTarget, elemLabels);
 											}
 										}
 									}
@@ -228,13 +224,9 @@ void SimuliaODB::openODBFile(std::string _obdFilePath, HMesh& _hMesh) {
 					}
 
 				}
-				else
-					std::cout << ">> FILEIMPORT: " << std::string(iFileImport->Type()->c_str()) << " is present within XML.\n";
 			}
 
 		}
-		debugOut << "SimuliaODB::openODBFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-		_hMesh.buildDataStructure();
 		debugOut << "SimuliaODB::openODBFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		odb.close();//Change datastrc here HMesh should node be a member of odb
 

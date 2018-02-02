@@ -728,7 +728,7 @@ void VisualizerWindow::updateList() {
 		addChildToTree(R1, "Uz_Im", false);
 		myPickTree->expandAll();
 
-		int nodeIndex = myHMesh->getNodeIndexForLabel(std::stoi(myNodePickText->text().toStdString()));
+		int nodeIndex = myHMesh->convertNodeLabelToNodeIndex(std::stoi(myNodePickText->text().toStdString()));
 		
 		std::cout << "\n-----Selected Node Displacement-----\n";
 		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->getResultsTimeDescription()[0]<< "Hz ----\n";

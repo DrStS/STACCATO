@@ -901,9 +901,57 @@ BC (const BC_sequence& s)
   this->BC_ = s;
 }
 
+const STACCATO_XML::COUPLE_sequence& STACCATO_XML::
+COUPLE () const
+{
+  return this->COUPLE_;
+}
+
+STACCATO_XML::COUPLE_sequence& STACCATO_XML::
+COUPLE ()
+{
+  return this->COUPLE_;
+}
+
+void STACCATO_XML::
+COUPLE (const COUPLE_sequence& s)
+{
+  this->COUPLE_ = s;
+}
+
 
 // FILEIMPORT
 // 
+
+const FILEIMPORT::FILE_optional& FILEIMPORT::
+FILE () const
+{
+  return this->FILE_;
+}
+
+FILEIMPORT::FILE_optional& FILEIMPORT::
+FILE ()
+{
+  return this->FILE_;
+}
+
+void FILEIMPORT::
+FILE (const FILE_type& x)
+{
+  this->FILE_.set (x);
+}
+
+void FILEIMPORT::
+FILE (const FILE_optional& x)
+{
+  this->FILE_ = x;
+}
+
+void FILEIMPORT::
+FILE (::std::auto_ptr< FILE_type > x)
+{
+  this->FILE_.set (x);
+}
 
 const FILEIMPORT::IMPORT_sequence& FILEIMPORT::
 IMPORT () const
@@ -921,6 +969,36 @@ void FILEIMPORT::
 IMPORT (const IMPORT_sequence& s)
 {
   this->IMPORT_ = s;
+}
+
+const FILEIMPORT::Name_optional& FILEIMPORT::
+Name () const
+{
+  return this->Name_;
+}
+
+FILEIMPORT::Name_optional& FILEIMPORT::
+Name ()
+{
+  return this->Name_;
+}
+
+void FILEIMPORT::
+Name (const Name_type& x)
+{
+  this->Name_.set (x);
+}
+
+void FILEIMPORT::
+Name (const Name_optional& x)
+{
+  this->Name_ = x;
+}
+
+void FILEIMPORT::
+Name (::std::auto_ptr< Name_type > x)
+{
+  this->Name_.set (x);
 }
 
 const FILEIMPORT::Type_optional& FILEIMPORT::
@@ -1311,6 +1389,58 @@ void BC::
 DBC (const DBC_sequence& s)
 {
   this->DBC_ = s;
+}
+
+
+// COUPLE
+// 
+
+const COUPLE::Part_sequence& COUPLE::
+Part () const
+{
+  return this->Part_;
+}
+
+COUPLE::Part_sequence& COUPLE::
+Part ()
+{
+  return this->Part_;
+}
+
+void COUPLE::
+Part (const Part_sequence& s)
+{
+  this->Part_ = s;
+}
+
+const COUPLE::Type_optional& COUPLE::
+Type () const
+{
+  return this->Type_;
+}
+
+COUPLE::Type_optional& COUPLE::
+Type ()
+{
+  return this->Type_;
+}
+
+void COUPLE::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void COUPLE::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void COUPLE::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
 }
 
 
@@ -1917,6 +2047,58 @@ void DBC::
 IMAGINARY (const IMAGINARY_sequence& s)
 {
   this->IMAGINARY_ = s;
+}
+
+
+// Part
+// 
+
+const Part::NODESET_sequence& Part::
+NODESET () const
+{
+  return this->NODESET_;
+}
+
+Part::NODESET_sequence& Part::
+NODESET ()
+{
+  return this->NODESET_;
+}
+
+void Part::
+NODESET (const NODESET_sequence& s)
+{
+  this->NODESET_ = s;
+}
+
+const Part::Name_optional& Part::
+Name () const
+{
+  return this->Name_;
+}
+
+Part::Name_optional& Part::
+Name ()
+{
+  return this->Name_;
+}
+
+void Part::
+Name (const Name_type& x)
+{
+  this->Name_.set (x);
+}
+
+void Part::
+Name (const Name_optional& x)
+{
+  this->Name_ = x;
+}
+
+void Part::
+Name (::std::auto_ptr< Name_type > x)
+{
+  this->Name_.set (x);
 }
 
 
@@ -2661,7 +2843,8 @@ STACCATO_XML ()
   ELEMENTS_ (this),
   SETS_ (this),
   LOADS_ (this),
-  BC_ (this)
+  BC_ (this),
+  COUPLE_ (this)
 {
 }
 
@@ -2685,7 +2868,8 @@ STACCATO_XML (const STACCATO_XML& x,
   ELEMENTS_ (x.ELEMENTS_, f, this),
   SETS_ (x.SETS_, f, this),
   LOADS_ (x.LOADS_, f, this),
-  BC_ (x.BC_, f, this)
+  BC_ (x.BC_, f, this),
+  COUPLE_ (x.COUPLE_, f, this)
 {
 }
 
@@ -2709,7 +2893,8 @@ STACCATO_XML (const ::xercesc::DOMElement& e,
   ELEMENTS_ (this),
   SETS_ (this),
   LOADS_ (this),
-  BC_ (this)
+  BC_ (this),
+  COUPLE_ (this)
 {
   if ((f & ::xml_schema::flags::base) == 0)
   {
@@ -2904,6 +3089,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
       continue;
     }
 
+    // COUPLE
+    //
+    if (n.name () == "COUPLE" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< COUPLE_type > r (
+        COUPLE_traits::create (i, f, this));
+
+      this->COUPLE_.push_back (r);
+      continue;
+    }
+
     break;
   }
 }
@@ -2937,6 +3133,7 @@ operator= (const STACCATO_XML& x)
     this->SETS_ = x.SETS_;
     this->LOADS_ = x.LOADS_;
     this->BC_ = x.BC_;
+    this->COUPLE_ = x.COUPLE_;
   }
 
   return *this;
@@ -2953,7 +3150,9 @@ STACCATO_XML::
 FILEIMPORT::
 FILEIMPORT ()
 : ::xml_schema::type (),
+  FILE_ (this),
   IMPORT_ (this),
+  Name_ (this),
   Type_ (this)
 {
 }
@@ -2963,7 +3162,9 @@ FILEIMPORT (const FILEIMPORT& x,
             ::xml_schema::flags f,
             ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
+  FILE_ (x.FILE_, f, this),
   IMPORT_ (x.IMPORT_, f, this),
+  Name_ (x.Name_, f, this),
   Type_ (x.Type_, f, this)
 {
 }
@@ -2973,7 +3174,9 @@ FILEIMPORT (const ::xercesc::DOMElement& e,
             ::xml_schema::flags f,
             ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  FILE_ (this),
   IMPORT_ (this),
+  Name_ (this),
   Type_ (this)
 {
   if ((f & ::xml_schema::flags::base) == 0)
@@ -2992,6 +3195,20 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
     const ::xercesc::DOMElement& i (p.cur_element ());
     const ::xsd::cxx::xml::qualified_name< char > n (
       ::xsd::cxx::xml::dom::name< char > (i));
+
+    // FILE
+    //
+    if (n.name () == "FILE" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< FILE_type > r (
+        FILE_traits::create (i, f, this));
+
+      if (!this->FILE_)
+      {
+        this->FILE_.set (r);
+        continue;
+      }
+    }
 
     // IMPORT
     //
@@ -3012,6 +3229,12 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
     const ::xercesc::DOMAttr& i (p.next_attribute ());
     const ::xsd::cxx::xml::qualified_name< char > n (
       ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Name" && n.namespace_ ().empty ())
+    {
+      this->Name_.set (Name_traits::create (i, f, this));
+      continue;
+    }
 
     if (n.name () == "Type" && n.namespace_ ().empty ())
     {
@@ -3034,7 +3257,9 @@ operator= (const FILEIMPORT& x)
   if (this != &x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
+    this->FILE_ = x.FILE_;
     this->IMPORT_ = x.IMPORT_;
+    this->Name_ = x.Name_;
     this->Type_ = x.Type_;
   }
 
@@ -3876,6 +4101,105 @@ BC::
 {
 }
 
+// COUPLE
+//
+
+COUPLE::
+COUPLE ()
+: ::xml_schema::type (),
+  Part_ (this),
+  Type_ (this)
+{
+}
+
+COUPLE::
+COUPLE (const COUPLE& x,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Part_ (x.Part_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+COUPLE::
+COUPLE (const ::xercesc::DOMElement& e,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Part_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void COUPLE::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // Part
+    //
+    if (n.name () == "Part" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< Part_type > r (
+        Part_traits::create (i, f, this));
+
+      this->Part_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+COUPLE* COUPLE::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class COUPLE (*this, f, c);
+}
+
+COUPLE& COUPLE::
+operator= (const COUPLE& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Part_ = x.Part_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+COUPLE::
+~COUPLE ()
+{
+}
+
 // IMPORT
 //
 
@@ -4649,6 +4973,105 @@ operator= (const DBC& x)
 
 DBC::
 ~DBC ()
+{
+}
+
+// Part
+//
+
+Part::
+Part ()
+: ::xml_schema::type (),
+  NODESET_ (this),
+  Name_ (this)
+{
+}
+
+Part::
+Part (const Part& x,
+      ::xml_schema::flags f,
+      ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  NODESET_ (x.NODESET_, f, this),
+  Name_ (x.Name_, f, this)
+{
+}
+
+Part::
+Part (const ::xercesc::DOMElement& e,
+      ::xml_schema::flags f,
+      ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  NODESET_ (this),
+  Name_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void Part::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // NODESET
+    //
+    if (n.name () == "NODESET" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< NODESET_type > r (
+        NODESET_traits::create (i, f, this));
+
+      this->NODESET_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Name" && n.namespace_ ().empty ())
+    {
+      this->Name_.set (Name_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+Part* Part::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class Part (*this, f, c);
+}
+
+Part& Part::
+operator= (const Part& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->NODESET_ = x.NODESET_;
+    this->Name_ = x.Name_;
+  }
+
+  return *this;
+}
+
+Part::
+~Part ()
 {
 }
 

@@ -19,7 +19,8 @@
  */
 /***********************************************************************************************//**
  * \file MetaDatabase.h
- * This file holds the class of MetaDatabase.
+ * This file holds the class of MetaDatabase which holds all meta data for the FE analysis
+ * i.e. lightweight descriptive data, e.g. material, section, anaylsis type, solver properties
  * \date 20/1/2018
  **************************************************************************************************/
 #ifndef METADATABASE_H_
@@ -28,6 +29,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <HMesh.h>
 
 #include "IP_STACCATO_XML.hxx"
 
@@ -57,14 +59,15 @@ private:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	MetaDatabase(char *);
+	MetaDatabase(std::string);
 	static MetaDatabase* metaDatabase;
 public:
 	std::auto_ptr<STACCATO_XML> xmlHandle;
-	static void init(char*);
+	static void init(std::string);
 	static MetaDatabase* getInstance();
 	virtual ~MetaDatabase();
-	void buildXML();
+	void printXML();
+	void buildXML(HMesh& _hMesh);
 	void exportXML();
 	void outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath);
 };

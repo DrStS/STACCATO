@@ -18,6 +18,7 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include "StartWindow.h"
+#include "SimuliaUMA.h"
 #include "ui_StartWindow.h"
 #include "OccViewer.h"
 #include "VtkViewer.h"
@@ -25,9 +26,7 @@
 #include "STLVRML_DataSource.h"
 #include "AuxiliaryParameters.h"
 #include "Message.h"
-#include "SimuliaODB.h"
 #include "HMeshToMeshVS_DataSource.h"
-#include "FeMetaDatabase.h"
 #include "FeAnalysis.h"
 #include "Timer.h"
 #include "MemWatcher.h"
@@ -35,6 +34,7 @@
 #include "HMesh.h"
 #include "HMeshToVtkUnstructuredGrid.h"
 #include "VisualizerWindow.h"
+#include "Reader.h"
 
 //Q5
 #include <QToolBar>
@@ -141,10 +141,6 @@ ui(new Ui::StartWindow)
 
 	// Works for one instance only
 	myHMesh = new HMesh("default");
-
-	// Intialize XML Parsing
-	char* inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML_B31_fe.xml";
-	MetaDatabase::init(inputFileName);
 }
 
 StartWindow::~StartWindow()
@@ -171,6 +167,10 @@ void StartWindow::createActions(void)
 	myReadOBDFileAction = new QAction(tr("Open OBD file"), this);
 	myReadOBDFileAction->setStatusTip(tr("Read Abaqus OBD file"));
 	connect(myReadOBDFileAction, SIGNAL(triggered()), this, SLOT(openOBDFile()));
+
+	myImportXMLFileAction = new QAction(tr("Import XML file"), this);
+	myImportXMLFileAction->setStatusTip(tr("Import STACCATO XML file"));
+	connect(myImportXMLFileAction, SIGNAL(triggered()), this, SLOT(importXMLFile()));
 
 	myReadFileAction = new QAction(tr("Import file"), this);
 	myReadFileAction->setIcon(QIcon(":/Qt/resources/openDoc.png"));
@@ -463,7 +463,8 @@ void StartWindow::createMenus(void)
 {
 	myFileMenu = menuBar()->addMenu(tr("&File"));
 	myFileMenu->addAction(myReadFileAction);
-	myFileMenu->addAction(myReadOBDFileAction);
+	//myFileMenu->addAction(myReadOBDFileAction);
+	myFileMenu->addAction(myImportXMLFileAction);
 	myFileMenu->addAction(myExitAction);
 
 	myCreateMenu = menuBar()->addMenu(tr("Create"));
@@ -586,8 +587,89 @@ void StartWindow::about(){
 		"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
+void StartWindow::importXMLFile(void) {
+	QString myWorkingFolder = "";
+	QString fileType;
+	QFileInfo fileInfo;
+
+	QString fileName = QFileDialog::getOpenFileName(this,
+		tr("Open xml file"), myWorkingFolder, tr("XML (*.xml)"));
+
+	fileInfo.setFile(fileName);
+	fileType = fileInfo.suffix();
+	if (!fileName.isEmpty() && !fileName.isNull()) {
+		if (fileType.toLower() == tr("xml")) {
+			infoOut << "XML file: " << fileName.toStdString() << std::endl;
+		}
+	}
+
+	// Intialize XML Parsing
+	MetaDatabase::init(fileName.toStdString());
+
+	int numParts = MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size();
+	std::cout << "There are " << MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size() << " models.\n";
+
+	anaysisTimer01.start();
+	anaysisTimer03.start();
+	std::vector<Reader*> allReader(numParts);
+	int i = 0;
+	for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
+		iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
+		++iFileImport, i++) {
+		std::string filePath = "C:/software/repos/STACCATO/model/";
+		filePath += std::string(iFileImport->FILE()->data());
+		if (std::string(iFileImport->Type()->data()) == "AbqODB") {
+			allReader[i] = new SimuliaODB(filePath, *myHMesh);
+		}
+		else if (std::string(iFileImport->Type()->data()) == "AbqSIM") {
+			allReader[i] = new SimuliaUMA(filePath, *myHMesh);
+		}
+		else {
+			std::cerr << ">> XML Error: Unidentified FileImport type " << iFileImport->Type()->data() << std::endl;
+		}
+	}
+	anaysisTimer01.stop();
+	debugOut << "Duration for reading all file imports: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+	anaysisTimer01.start();
+
+	//Run FE Analysis
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
+	anaysisTimer03.stop();
+	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+	// Enable Tools
+	mySolutionSelector->setEnabled(true);
+	myComponentSelector->setEnabled(true);
+	myViewModeSelector->setEnabled(true);
+	myScalarBarVisibility->setEnabled(true);
+	myWarpVectorVisibility->setEnabled(true);
+	my2dVisualizerVisibility->setEnabled(true);
+
+	anaysisTimer01.start();
+	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
+	anaysisTimer01.stop();
+	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+	// Update Slider
+	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
+
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+
+	// Plot Vector Field
+	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+}
+
 
 void StartWindow::openOBDFile(void){
+	// Intialize XML Parsing
+	std::string inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML.xml";
+	MetaDatabase::init(inputFileName);
+
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -603,18 +685,17 @@ void StartWindow::openOBDFile(void){
 		}
 	}
 
-	myOBD =  SimuliaODB();
+	SimuliaODB myOBD = SimuliaODB(fileName.toStdString(), *myHMesh);
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	anaysisTimer01.start();
 	anaysisTimer03.start();
-	myOBD.openODBFile(fileName.toStdString(), *myHMesh);
+	myOBD.openFile();
 	anaysisTimer01.stop();
 	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
 
 	//Run FE Analysis
-	FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh, *mFeMetaDatabase);
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
 	anaysisTimer03.stop();
 	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -1108,6 +1189,10 @@ void StartWindow::myUMAImport() {
 }
 
 void StartWindow::myUMAHMesh() {
+	// Intialize XML Parsing
+	std::string inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML_B31_fe.xml";
+	MetaDatabase::init(inputFileName);
+
 	// Check for Imports
 	bool flagSIM = false;
 	for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
@@ -1123,8 +1208,7 @@ void StartWindow::myUMAHMesh() {
 		//myUMA->importToHMesh(*myHMesh);
 		//Run FE Analysis
 		myHMesh->isSIM = true;
-		FeMetaDatabase *mFeMetaDatabase = new FeMetaDatabase();
-		FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh, *mFeMetaDatabase);
+		FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
 	}
 	else {
 		std::cerr << "FILEIMPORT Error: AbqSIM not found in XML.\n";

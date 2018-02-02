@@ -23,6 +23,7 @@
 #include "Message.h"
 
 HMesh::HMesh(std::string _name) : name(_name) {
+	hasParts = false;
 	isSIM = false;
 }
 
@@ -34,6 +35,8 @@ void HMesh::addNode(int _label, double _xCoord, double _yCoord, double _zCoord){
 	nodeCoords.push_back(_xCoord);
 	nodeCoords.push_back(_yCoord);
 	nodeCoords.push_back(_zCoord);
+
+	nodeLabelToNodeIndexMap[_label] = nodeLabels.size() - 1; // Index of last entered node
 }
 
 void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology){
@@ -42,6 +45,8 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	for (std::vector<int>::size_type i = 0; i != _elementTopology.size(); i++) {
 		elementsTopology.push_back(_elementTopology[i]);
 	}
+
+	elementLabelToElementIndexMap[_label] = elementLabels.size() - 1; // Index of last entered element;
 }
 
 void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec) {
@@ -108,11 +113,6 @@ std::vector<std::string>& HMesh::getResultsTimeDescription() {		// Getter Functi
 }
 
 void HMesh::buildDataStructure(void){
-	//Node loop	
-	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
-		nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
-	}
-
 	//Element loop
 	nodeIndexToElementIndices.resize(getNumNodes());
 	numDoFsPerNode.resize(getNumNodes());
@@ -122,7 +122,6 @@ void HMesh::buildDataStructure(void){
 	int lastIndexInElementTopology = -1;
 
 	for (std::vector<int>::size_type i = 0; i != elementLabels.size(); i++) {
-		elementLabelToElementIndexMap[elementLabels[i]] = i;
 
 		int numDoFsPerNodeCurrent;
 		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D){
@@ -141,7 +140,7 @@ void HMesh::buildDataStructure(void){
 			domainDimension = 3;
 		}
 		else if (elementTyps[i] == STACCATO_UmaElement) {
-			numNodesPerElem[i] = getNumNodes();
+			numNodesPerElem[i] = 5;  // Take care of this
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			//3. DoF -> u_z
@@ -229,22 +228,6 @@ std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _typ
 	return results;
 }
 
-int HMesh::getNodeIndexForLabel(int _nodeLabel) {
-	for (int i = 0; i < this->getNodeLabels().size(); i++)
-	{
-		if (this->getNodeLabels()[i] == _nodeLabel)
-			return i;
-	}
-}
-
-int HMesh::getElementIndexForLabel(int _elemLabel) {
-	for (int i = 0; i < this->getElementLabels().size(); i++)
-	{
-		if (this->getElementLabels()[i] == _elemLabel)
-			return i;
-	}
-}
-
 void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF) {
 	std::vector<int> nodeSet;
 	// Find the NodeSet where the Dirichlet Condition has to be enforced
@@ -252,6 +235,7 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 		if (nodeSetsName.at(i) == _nodeSetName) {
 			nodeSet = getNodeSets()[i];
 			std::cout << ">> Dirichlet BC on NODESET " << _nodeSetName << " is added.\n";
+			break;
 		}
 	}
 
@@ -286,6 +270,7 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 			}
 		}
 	}
+
 	/*
 	std::cout << "Size Comp " << elementDoFList.size() << " and " << elementDoFListBC.size() << std::endl;
 	for (int iMap = 0; iMap < elementDoFList.size(); iMap++) {
@@ -301,8 +286,9 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {
 	nodeSetsName.push_back(_name);
 	std::vector<int> nodeIndex;
-	for (int i = 0; i < _nodeLabels.size(); i++)
-		nodeIndex.push_back(getNodeIndexForLabel(_nodeLabels.at(i)));
+	for (int i = 0; i < _nodeLabels.size(); i++){
+		nodeIndex.push_back(convertNodeLabelToNodeIndex(_nodeLabels.at(i)));
+	}
 	nodeSets.push_back(nodeIndex);
 }
 
@@ -310,7 +296,7 @@ void HMesh::addElemSet(std::string _name, std::vector<int> _elemLabels) {
 	elemSetsName.push_back(_name);
 	std::vector<int> elemIndex;
 	for (int i = 0; i < _elemLabels.size(); i++)
-		elemIndex.push_back(getElementIndexForLabel(_elemLabels.at(i)));
+		elemIndex.push_back(convertElementLabelToElementIndex(_elemLabels.at(i)));
 	elemSets.push_back(elemIndex);
 }
 

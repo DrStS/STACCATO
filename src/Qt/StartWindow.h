@@ -104,6 +104,7 @@ private slots:
 	void myUMATriggered(void);
 	void myUMAImport(void);
 	void myUMAHMesh(void);
+	void importXMLFile(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -117,6 +118,7 @@ private:
 	QAction* myExitAction;
     QAction* myReadFileAction;
 	QAction* myReadOBDFileAction;
+	QAction* myImportXMLFileAction;
 	/// Buttons
 	QPushButton* myTimeStepLessAction;
 	QPushButton* myTimeStepAddAction;
@@ -222,7 +224,6 @@ private:
 	int myFreqIndex;
 	int myScalingFactorValue;
 
-	SimuliaODB myOBD;
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

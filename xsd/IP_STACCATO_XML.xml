@@ -1,5 +1,6 @@
 <STACCATO_XML>
-	<FILEIMPORT Type="AbqODB">
+	<FILEIMPORT Name="FelgeStaticODB" Type="AbqODB">
+		<FILE>FelgeStatic.odb</FILE>
 		<IMPORT Type="Nodes">
 			<LIST>ALL</LIST>
 		</IMPORT>
@@ -17,8 +18,14 @@
 				</ELEMENT>
 		</IMPORT>
 	</FILEIMPORT>
+	<FILEIMPORT Name="B31SIM" Type="AbqSIM1">
+		<FILE>B31_fe_X1.sim</FILE>
+		<IMPORT Type="Matrices">
+			<LIST>ALL</LIST>
+		</IMPORT>
+	</FILEIMPORT>
 	<ANALYSIS>
-		<NAME>Felge</NAME>
+		<NAME>MultiReaderExample</NAME>
 		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
 	</ANALYSIS>
 	<FREQUENCY Type="STEP">
@@ -59,11 +66,19 @@
 	<SETS>
 		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
 		<NODESET Name="clamp22"><LIST>1 2 3 </LIST></NODESET>
+		<NODESET Name="end1"><LIST>1</LIST></NODESET>
+		<NODESET Name="end2"><LIST>5</LIST></NODESET>
 	</SETS>
 	<LOADS>
 		<LOAD Type="ConcentratedForce"><NODESET Name="LOAD"/><REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
+		<LOAD Type="ConcentratedForce"><NODESET Name="end2"/><REAL><X>0.000</X><Y>5.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
 	</LOADS>
 	<BC>
 		<DBC><NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
+		<DBC><NODESET Name="end11"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
 	</BC>
+	<COUPLE Type="NODE">
+		<Part Name="FelgeStaticODB"><NODESET Name="P1C"/></Part>
+		<Part Name="B31SIM"><NODESET Name="P2C"/></Part>
+	</COUPLE>
 </STACCATO_XML>

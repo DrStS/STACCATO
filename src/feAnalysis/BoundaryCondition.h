@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,48 +18,50 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file SimuliaODB.h
- * This file holds the class SimuliaODb which adds the capability to read Abaqus odb files
- * \date 1/18/2017
+ * \file BoundaryCondition.h
+ * This file holds the class BoundaryCondition
+ * \date 2/2/2018
  **************************************************************************************************/
 
-#ifndef SIMULIAODB_H_
-#define SIMULIAODB_H_
+#ifndef BOUNDARYCONDITION_H_
+#define BOUNDARYCONDITION_H_
 
 #include <string>
+#include <vector>
 #include <assert.h>
-#include "Reader.h"
+#include "MathLibrary.h"
 
 class HMesh;
 /********//**
- * \brief This handles the output handling with Abaqus ODB
+ * \brief This implements all boundary condtions 
  **************************************************************************************************/
-class SimuliaODB :public Reader {
+class BoundaryCondition {
 public:
     /***********************************************************************************************
      * \brief Constructor
-     * \param[in] _filePath string which holds the path to the obd file
      * \author Stefan Sicklinger
      ***********/
-	SimuliaODB(std::string _fileName, HMesh& _hMesh);
+	BoundaryCondition(HMesh& _hMesh);
     /***********************************************************************************************
      * \brief Destructor
      *
      * \author Stefan Sicklinger
      ***********/
-	virtual ~SimuliaODB(void);
+	virtual ~BoundaryCondition(void);
 	/***********************************************************************************************
-	* \brief Open die odb file
-	* \param[in] _filePath string which holds the path to the obd file
+	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	void openFile();
-
+	void addConcentratedForce(std::vector<double> &_rhsReal);
+	/***********************************************************************************************
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
+	void addConcentratedForce(std::vector<MKL_Complex16> &_rhsComplex);
 private:
-	std::string myFileName;
 	/// HMesh object 
 	HMesh *myHMesh;
+
 };
 
-
-#endif /* SIMULIAODB_H_ */
+#endif /* BOUNDARYCONDITION_H_ */

@@ -411,7 +411,7 @@ namespace MathLibrary {
 			* Allocate storage for the ?par parameters and the solution/rhs/residual vectors
 			*---------------------------------------------------------------------------*/
 			//number of the non-restarted FGMRES iterations
-			int numberofNonRestartedIterations = 100;// std::min(m, 2500);
+			int numberofNonRestartedIterations = 2500;// std::min(m, 2500);
 			int numberofMaxIterations = numberofNonRestartedIterations;
 
 			//Allocate storage
@@ -430,12 +430,9 @@ namespace MathLibrary {
 			double tolIlut = 1.E-6;
 
 			MKL_INT pIlutLength = (2 * maxfilIlut + 1)*m - maxfilIlut*(maxfilIlut + 1) + 1;
-			if (pIlutLength < 0) {
-				pIlutLength = (2 * maxfilIlut + 1)*m + 1;
-			}
-
-			pIlut = new double[pIlutLength];
-			//ilu0// pIlut = new double[values.size()];
+			printf("Try to allocate %f Gb for precond \n", (double)pIlutLength * sizeof(double) / 1000000000);
+			//ilut// pIlut = new double[pIlutLength];
+			pIlut = new double[values.size()];
 			jPIlut = new MKL_INT[pIlutLength];
 			iPIlut = new MKL_INT[m + 1];
 			MKL_INT errorFlagIlut;
@@ -499,8 +496,8 @@ namespace MathLibrary {
 			fgmres_ipar[30] = 1;
 			fgmres_dpar[30] = 1.E-6;
 
-			dcsrilut(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, iPIlut, jPIlut, &tolIlut, &maxfilIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
-			//ilu0//dcsrilu0(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
+			//ilut//dcsrilut(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, iPIlut, jPIlut, &tolIlut, &maxfilIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
+			dcsrilu0(&m, &values[0], &((*rowIndex)[0]), &columns[0], pIlut, fgmres_ipar, fgmres_dpar, &errorFlagIlut);
 
 			if (errorFlagIlut != 0)
 			{
@@ -613,14 +610,14 @@ namespace MathLibrary {
 					char cvar1 = 'L';
 					char cvar = 'N';
 					char cvar2 = 'U';
-					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
-					//ilu0//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
+					//ilut//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
+					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], &fgmres_memory[fgmres_ipar[21] - 1], tmpVecIlut);
 
 					cvar1 = 'U';
 					cvar = 'N';
 					cvar2 = 'N';
-					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
-					//ilu0//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
+					//ilut//mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, iPIlut, jPIlut, tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
+					mkl_dcsrtrsv(&cvar1, &cvar, &cvar2, &m, pIlut, &((*rowIndex)[0]), &columns[0], tmpVecIlut, &fgmres_memory[fgmres_ipar[22] - 1]);
 					printf("Preconditioner applied!\n");
 				}
 				/*---------------------------------------------------------------------------

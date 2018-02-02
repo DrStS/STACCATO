@@ -65,6 +65,7 @@
         <xs:element name="FILEIMPORT">
           <xs:complexType>
             <xs:sequence>
+              <xs:element name="FILE" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
               <xs:element name="IMPORT" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
@@ -77,6 +78,7 @@
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
+            <xs:attribute name="Name" type="xs:string" />
             <xs:attribute name="Type" type="xs:string" />
           </xs:complexType>
         </xs:element>
@@ -189,6 +191,21 @@
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="COUPLE">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Part" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
+                  </xs:sequence>
+                  <xs:attribute name="Name" type="xs:string" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="Type" type="xs:string" />
           </xs:complexType>
         </xs:element>
       </xs:choice>

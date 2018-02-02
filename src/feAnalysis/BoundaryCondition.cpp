@@ -19,7 +19,7 @@
 */
 #include "BoundaryCondition.h"
 #include "MetaDatabase.h"
-#include "HMesh.h"
+#include "HMesh.h"	
 #include <iostream>
 #include <complex>
 
@@ -153,6 +153,19 @@ void BoundaryCondition::addConcentratedForce(std::vector<MKL_Complex16> &_rhsCom
 			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not found.\n";
 	}
 	std::cout << ">> Building RHS Finished." << std::endl;
+}
+
+void BoundaryCondition::computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector) {
+/*	int numCouplingNodes = _couplingNodes.size() / 3;
+	double weightingFactor = 1.0/(double)numCouplingNodes;
+	std::vector<double> xMean(3);
+
+	for (int i; i < numCouplingNodes; i++) {
+		xMean[0] += weightingFactor * myHMesh->getNodeCoords()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[i]) * 3 + 0];
+		xMean[1] += weightingFactor * myHMesh->getNodeCoords()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[i]) * 3 + 1];
+		xMean[2] += weightingFactor * myHMesh->getNodeCoords()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[i]) * 3 + 2];
+	}
+	*/
 }
 
 

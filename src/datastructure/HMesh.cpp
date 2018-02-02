@@ -218,6 +218,9 @@ std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _typ
 }
 
 int HMesh::getNodeIndexForLabel(int _nodeLabel) {
+
+	return nodeLabelToNodeIndexMap[_nodeLabel];
+
 	for (int i = 0; i < this->getNodeLabels().size(); i++)
 	{
 		if (this->getNodeLabels()[i] == _nodeLabel)
@@ -226,6 +229,9 @@ int HMesh::getNodeIndexForLabel(int _nodeLabel) {
 }
 
 int HMesh::getElementIndexForLabel(int _elemLabel) {
+
+	return elementLabelToElementIndexMap[_elemLabel];
+
 	for (int i = 0; i < this->getElementLabels().size(); i++)
 	{
 		if (this->getElementLabels()[i] == _elemLabel)

@@ -82,7 +82,7 @@ void MetaDatabase::printXML() {
 		i != xmlHandle->NODES().end(); i++)
 	{
 		for (int j = 0; j < i->NODE().size(); j++) {
-			std::cout << " > ID: " << i->NODE().at(j).ID() << " X, Y, Z: " << i->NODE().at(j).X() << "," << i->NODE().at(j).Y() << "," << i->NODE().at(j).Z() << std::endl;
+			std::cout << " > ID: " << i->NODE()[j].ID() << " X, Y, Z: " << i->NODE()[j].X() << "," << i->NODE()[j].Y() << "," << i->NODE()[j].Z() << std::endl;
 		}
 	}
 
@@ -97,12 +97,12 @@ void MetaDatabase::buildXML(HMesh& _hMesh) {
 		// Recognize List for ALL or a List of IDs
 		std::vector<int> idList;
 		// Keyword: ALL
-		if (std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()) == "ALL") {
+		if (std::string(iSets->ELEMENTSET()[k].LIST()->c_str()) == "ALL") {
 			idList = _hMesh.getElementLabels();
 		}
 		else {	// ID List
 				// filter
-			std::stringstream stream(std::string(iSets->ELEMENTSET().at(k).LIST()->c_str()));
+			std::stringstream stream(std::string(iSets->ELEMENTSET()[k].LIST()->c_str()));
 			while (stream) {
 				int n;
 				stream >> n;
@@ -110,19 +110,19 @@ void MetaDatabase::buildXML(HMesh& _hMesh) {
 					idList.push_back(n);
 			}
 		}
-		_hMesh.addElemSet(std::string(iSets->ELEMENTSET().at(k).Name()->c_str()), idList);
+		_hMesh.addElemSet(std::string(iSets->ELEMENTSET()[k].Name()->c_str()), idList);
 	}
 	// Node Sets
 	for (int k = 0; k < iSets->NODESET().size(); k++) {
 		// Recognize List for ALL or a List of IDs
 		std::vector<int> idList;
 		// Keyword: ALL
-		if (std::string(iSets->NODESET().at(k).LIST()->c_str()) == "ALL") {
+		if (std::string(iSets->NODESET()[k].LIST()->c_str()) == "ALL") {
 			idList = _hMesh.getNodeLabels();
 		}
 		else {	// ID List
 				// filter
-			std::stringstream stream(std::string(iSets->NODESET().at(k).LIST()->c_str()));
+			std::stringstream stream(std::string(iSets->NODESET()[k].LIST()->c_str()));
 			while (stream) {
 				int n;
 				stream >> n;
@@ -130,7 +130,7 @@ void MetaDatabase::buildXML(HMesh& _hMesh) {
 					idList.push_back(n);
 			}
 		}
-		_hMesh.addNodeSet(std::string(iSets->NODESET().at(k).Name()->c_str()), idList);
+		_hMesh.addNodeSet(std::string(iSets->NODESET()[k].Name()->c_str()), idList);
 	}
 }
 

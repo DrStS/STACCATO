@@ -77,10 +77,10 @@ void SimuliaODB::openFile() {
 			{
 				if (std::string(iFileImport->Type()->c_str()) == "AbqODB") {
 					for (int iImport = 0; iImport < iFileImport->IMPORT().size(); iImport++) {
-						std::string importType = iFileImport->IMPORT().at(iImport).Type()->c_str();
+						std::string importType = iFileImport->IMPORT()[iImport].Type()->c_str();
 
 						if (importType == "Nodes") {
-							if (std::string(iFileImport->IMPORT().at(iImport).LIST()->c_str()) == "ALL") {
+							if (std::string(iFileImport->IMPORT()[iImport].LIST()->c_str()) == "ALL") {
 								//Nodes
 #ifdef DEBUG_OUTPUT
 								infoOut << "Total number of nodes: " << numOfNodes << std::endl;
@@ -103,10 +103,10 @@ void SimuliaODB::openFile() {
 						}
 						else if (importType == "Elements") {
 
-							std::string translateSource = iFileImport->IMPORT().at(iImport).TRANSLATETO().begin()->Source()->c_str();
-							std::string translateTarget = iFileImport->IMPORT().at(iImport).TRANSLATETO().begin()->Target()->c_str();
+							std::string translateSource = iFileImport->IMPORT()[iImport].TRANSLATETO().begin()->Source()->c_str();
+							std::string translateTarget = iFileImport->IMPORT()[iImport].TRANSLATETO().begin()->Target()->c_str();
 
-							if (std::string(iFileImport->IMPORT().at(iImport).LIST()->c_str()) == "ALL") {
+							if (std::string(iFileImport->IMPORT()[iImport].LIST()->c_str()) == "ALL") {
 
 								//Elements
 #ifdef DEBUG_OUTPUT
@@ -151,10 +151,10 @@ void SimuliaODB::openFile() {
 						else if (importType == "Sets") {
 							// SETS
 							// NODES
-							for (int i = 0; i < iFileImport->IMPORT().at(iImport).NODE().begin()->TRANSLATETO().size(); i++) {
+							for (int i = 0; i < iFileImport->IMPORT()[iImport].NODE().begin()->TRANSLATETO().size(); i++) {
 
-								std::string translateSource = iFileImport->IMPORT().at(iImport).NODE().begin()->TRANSLATETO().at(i).Source()->c_str();
-								std::string translateTarget = iFileImport->IMPORT().at(iImport).NODE().begin()->TRANSLATETO().at(i).Target()->c_str();
+								std::string translateSource = iFileImport->IMPORT()[iImport].NODE().begin()->TRANSLATETO()[i].Source()->c_str();
+								std::string translateTarget = iFileImport->IMPORT()[iImport].NODE().begin()->TRANSLATETO()[i].Target()->c_str();
 
 								odb_SetRepositoryIT setIter(odb.rootAssembly().nodeSets());
 								for (setIter.first(); !setIter.isDone() && setIter.currentValue().type() == odb_Enum::NODE_SET; setIter.next()) {
@@ -182,10 +182,10 @@ void SimuliaODB::openFile() {
 								}
 							}
 							// ELEMENTS
-							for (int i = 0; i < iFileImport->IMPORT().at(iImport).ELEMENT().begin()->TRANSLATETO().size(); i++) {
+							for (int i = 0; i < iFileImport->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO().size(); i++) {
 
-								std::string translateSource = iFileImport->IMPORT().at(iImport).ELEMENT().begin()->TRANSLATETO().at(i).Source()->c_str();
-								std::string translateTarget = iFileImport->IMPORT().at(iImport).ELEMENT().begin()->TRANSLATETO().at(i).Target()->c_str();
+								std::string translateSource = iFileImport->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO()[i].Source()->c_str();
+								std::string translateTarget = iFileImport->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO()[i].Target()->c_str();
 
 								odb_SetRepositoryIT setIter(odb.rootAssembly().nodeSets());
 

@@ -35,8 +35,6 @@ void HMesh::addNode(int _label, double _xCoord, double _yCoord, double _zCoord){
 	nodeCoords.push_back(_xCoord);
 	nodeCoords.push_back(_yCoord);
 	nodeCoords.push_back(_zCoord);
-
-	nodeLabelToNodeIndexMap[_label] = nodeLabels.size() - 1; // Index of last entered node
 }
 
 void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology){
@@ -45,8 +43,6 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	for (std::vector<int>::size_type i = 0; i != _elementTopology.size(); i++) {
 		elementsTopology.push_back(_elementTopology[i]);
 	}
-
-	elementLabelToElementIndexMap[_label] = elementLabels.size() - 1; // Index of last entered element;
 }
 
 void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec) {
@@ -113,6 +109,11 @@ std::vector<std::string>& HMesh::getResultsTimeDescription() {		// Getter Functi
 }
 
 void HMesh::buildDataStructure(void){
+	//Node loop	
+	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
+		nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
+	}
+
 	//Element loop
 	nodeIndexToElementIndices.resize(getNumNodes());
 	numDoFsPerNode.resize(getNumNodes());
@@ -122,6 +123,7 @@ void HMesh::buildDataStructure(void){
 	int lastIndexInElementTopology = -1;
 
 	for (std::vector<int>::size_type i = 0; i != elementLabels.size(); i++) {
+		elementLabelToElementIndexMap[elementLabels[i]] = i;
 
 		int numDoFsPerNodeCurrent;
 		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D){
@@ -229,24 +231,16 @@ std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _typ
 }
 
 void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF) {
-	std::vector<int> nodeSet;
-	// Find the NodeSet where the Dirichlet Condition has to be enforced
-	for (int i = 0; i < nodeSetsName.size(); i++) {
-		if (nodeSetsName.at(i) == _nodeSetName) {
-			nodeSet = getNodeSets()[i];
-			std::cout << ">> Dirichlet BC on NODESET " << _nodeSetName << " is added.\n";
-			break;
-		}
-	}
+	std::vector<int> nodeSet = convertNodeSetNameToLabels(_nodeSetName);
 
 	// Create the Map of boundary Dof List for all Nodes
 	for (int iNode = 0; iNode < nodeSet.size(); iNode++) {
-		int nodeIndex = nodeSet.at(iNode);
+		int nodeIndex = convertNodeLabelToNodeIndex(nodeSet[iNode]);
 
 		// Create a map of Dofs
 		int numDoFsPerNode = getNumDoFsPerNode(nodeIndex);
 		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
-			if (_restrictedDOF.at(iMap) == 1) {
+			if (_restrictedDOF[iMap] == 1) {
 				dirichletDOF.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
 			}
 		}
@@ -254,68 +248,44 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 
 	// DOF Killing
 	for (int n = 0; n < nodeSet.size(); n++) {
-		std::vector<int> indexAffected = getNodeIndexToDoFIndices()[nodeSet.at(n)];
-		std::vector<int> affectedElements = getNodeIndexToElementIndices()[nodeSet.at(n)];
+		std::vector<int> indexAffected = getNodeIndexToDoFIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
+		std::vector<int> affectedElements = getNodeIndexToElementIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
 		// Create a list of Dofs with -1 indicating Dirichlet enforced DoF
-		int totalDoFsPerElem = getNumDoFsPerNode(nodeSet.at(n))*getNumNodesPerElement()[0];
+		int totalDoFsPerElem = getNumDoFsPerNode(convertNodeLabelToNodeIndex(nodeSet[n]))*getNumNodesPerElement()[0];
 		for (int iMap = 0; iMap < affectedElements.size(); iMap++) {
 			for (int jMap = totalDoFsPerElem*affectedElements[iMap]; jMap < totalDoFsPerElem*affectedElements[iMap] + totalDoFsPerElem; jMap++)
 			{
 				for (int kMap = 0; kMap < indexAffected.size(); kMap++) {
-					if (indexAffected.at(kMap) == elementDoFList.at(jMap)) {
-						elementDoFListBC.at(jMap) = -1;
+					if (indexAffected[kMap] == elementDoFList[jMap]) {
+						elementDoFListBC[jMap] = -1;
 					}
 				}
 
 			}
 		}
 	}
-
-	/*
-	std::cout << "Size Comp " << elementDoFList.size() << " and " << elementDoFListBC.size() << std::endl;
-	for (int iMap = 0; iMap < elementDoFList.size(); iMap++) {
-		std::cout << ": " << elementDoFList[iMap];
-	}
-	std::cout << "\n\n ";
-	for (int iMap = 0; iMap < elementDoFListBC.size(); iMap++) {
-		std::cout << ": " << elementDoFListBC[iMap];
-	}
-	*/
 }
 
 void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {
-	nodeSetsName.push_back(_name);
-	std::vector<int> nodeIndex;
-	for (int i = 0; i < _nodeLabels.size(); i++){
-		nodeIndex.push_back(convertNodeLabelToNodeIndex(_nodeLabels[i]));
-	}
-	nodeSets.push_back(nodeIndex);
+	nodeSetsMap[_name] = _nodeLabels;
 }
 
 void HMesh::addElemSet(std::string _name, std::vector<int> _elemLabels) {
-	elemSetsName.push_back(_name);
-	std::vector<int> elemIndex;
-	for (int i = 0; i < _elemLabels.size(); i++)
-		elemIndex.push_back(convertElementLabelToElementIndex(_elemLabels.at(i)));
-	elemSets.push_back(elemIndex);
+	elemSetsMap[_name] = _elemLabels;
 }
 
-void HMesh::printSets() {
-	for (int i = 0; i < nodeSetsName.size(); i++) {
-		std::cout << "NodeSet Name: "<< nodeSetsName[i];
-		for (int j = 0; j < nodeSets[i].size(); j++) {
-			std::cout << " L: " << nodeSets[i].at(j);			
-		}
-		std::cout << "\n";
+std::vector<int> HMesh::convertNodeSetNameToLabels(std::string _nodeSetName) {
+	if (nodeSetsMap.find(_nodeSetName) != nodeSetsMap.end()) {
+		return nodeSetsMap.find(_nodeSetName)->second;
 	}
-	std::cout << "\n";
+	else
+		return {};
+}
 
-	for (int i = 0; i < elemSetsName.size(); i++) {
-		std::cout << "ElemSet Name: " << elemSetsName[i];
-		for (int j = 0; j < elemSets[i].size(); j++) {
-			std::cout << " L: " << elemSets[i].at(j);
-		}
-		std::cout << "\n";
+std::vector<int> HMesh::convertElementSetNameToLabels(std::string _elemSetName) {
+	if (elemSetsMap.find(_elemSetName) != elemSetsMap.end()) {
+		return elemSetsMap.find(_elemSetName)->second;
 	}
-	std::cout << "\n";
+	else
+		return{};
 }

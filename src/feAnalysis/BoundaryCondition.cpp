@@ -40,18 +40,13 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 	for (int k = 0; k < iLoads->LOAD().size(); k++) {
 
 		// Find NODESET
-		int flag = 0;
-		std::vector<int> nodeSet;
-		for (int i = 0; i < myHMesh->getNodeSetsName().size(); i++) {
-			if (myHMesh->getNodeSetsName().at(i) == std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str())) {
-				nodeSet = myHMesh->getNodeSets().at(i);
-				std::cout << ">> " << std::string(iLoads->LOAD().at(k).Type()->c_str()) << " " << iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n";
-				flag = 1;
-			}
-		}
-		if (flag == 0)
-			std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
+		std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()));
 
+		if (nodeSet.empty())
+			std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not Found.\n";
+		else
+			std::cout << ">> " << std::string(iLoads->LOAD()[k].Type()->c_str()) << " " << iLoads->LOAD()[k].NODESET().begin()->Name()->c_str() << " is loaded.\n";
+		
 		int flagLabel = 0;
 
 		for (int j = 0; j < numNodes; j++)
@@ -59,13 +54,13 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 			for (int l = 0; l < numDoFsPerNode; l++) {
 				for (int m = 0; m < nodeSet.size(); m++) {
-					if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[nodeSet.at(m)]) {
-						if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
+					if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])]) {
+						if (std::string(iLoads->LOAD()[k].Type()->c_str()) == "ConcentratedForce") {
 							flagLabel = 1;
 
-							std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
-							std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
-							std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
+							std::complex<double> temp_Fx(std::atof(iLoads->LOAD()[k].REAL().begin()->X()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->X()->data()));
+							std::complex<double> temp_Fy(std::atof(iLoads->LOAD()[k].REAL().begin()->Y()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Y()->data()));
+							std::complex<double> temp_Fz(std::atof(iLoads->LOAD()[k].REAL().begin()->Z()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Z()->data()));
 
 							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
 								switch (l) {
@@ -87,7 +82,7 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 				}
 			}
 		if (flagLabel == 0)
-			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not found.\n";
+			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not found.\n";
 	}
 	std::cout << ">> Building RHS Finished." << std::endl;
 }
@@ -95,22 +90,17 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 void BoundaryCondition::addConcentratedForce(std::vector<MKL_Complex16> &_rhsComplex) {
 
 	unsigned int numNodes = myHMesh->getNumNodes();
-
+	
 	STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 	for (int k = 0; k < iLoads->LOAD().size(); k++) {
 
 		// Find NODESET
-		int flag = 0;
-		std::vector<int> nodeSet;
-		for (int i = 0; i < myHMesh->getNodeSetsName().size(); i++) {
-			if (myHMesh->getNodeSetsName().at(i) == std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str())) {
-				nodeSet = myHMesh->getNodeSets().at(i);
-				std::cout << ">> " << std::string(iLoads->LOAD().at(k).Type()->c_str()) << " " << iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str() << " is loaded.\n";
-				flag = 1;
-			}
-		}
-		if (flag == 0)
-			std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not Found.\n";
+		std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()));
+
+		if (nodeSet.empty())
+			std::cerr << ">> Error while Loading: NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not Found.\n";
+		else
+			std::cout << ">> " << std::string(iLoads->LOAD()[k].Type()->c_str()) << " " << iLoads->LOAD()[k].NODESET().begin()->Name()->c_str() << " is loaded.\n";
 
 		int flagLabel = 0;
 
@@ -119,13 +109,13 @@ void BoundaryCondition::addConcentratedForce(std::vector<MKL_Complex16> &_rhsCom
 			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
 			for (int l = 0; l < numDoFsPerNode; l++) {
 				for (int m = 0; m < nodeSet.size(); m++) {
-					if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[nodeSet.at(m)]) {
-						if (std::string(iLoads->LOAD().at(k).Type()->c_str()) == "ConcentratedForce") {
+					if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])]) {
+						if (std::string(iLoads->LOAD()[k].Type()->c_str()) == "ConcentratedForce") {
 							flagLabel = 1;
 
-							std::complex<double> temp_Fx(std::atof(iLoads->LOAD().at(k).REAL().begin()->X()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->X()->data()));
-							std::complex<double> temp_Fy(std::atof(iLoads->LOAD().at(k).REAL().begin()->Y()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Y()->data()));
-							std::complex<double> temp_Fz(std::atof(iLoads->LOAD().at(k).REAL().begin()->Z()->data()), std::atof(iLoads->LOAD().at(k).IMAGINARY().begin()->Z()->data()));
+							std::complex<double> temp_Fx(std::atof(iLoads->LOAD()[k].REAL().begin()->X()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->X()->data()));
+							std::complex<double> temp_Fy(std::atof(iLoads->LOAD()[k].REAL().begin()->Y()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Y()->data()));
+							std::complex<double> temp_Fz(std::atof(iLoads->LOAD()[k].REAL().begin()->Z()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Z()->data()));
 
 							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
 								switch (l) {
@@ -150,7 +140,7 @@ void BoundaryCondition::addConcentratedForce(std::vector<MKL_Complex16> &_rhsCom
 			}
 		}
 		if (flagLabel == 0)
-			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD().at(k).NODESET().begin()->Name()->c_str()) << " not found.\n";
+			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not found.\n";
 	}
 	std::cout << ">> Building RHS Finished." << std::endl;
 }

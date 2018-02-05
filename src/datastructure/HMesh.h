@@ -306,14 +306,10 @@ private:
 private:
 	/// vector holding affected DOFs for Dirichlet
 	std::vector<int> dirichletDOF;
-	/// vector holding affected nodes ID for Dirichlet
-	std::vector<std::vector<int>> nodeSets;
-	/// vector holding affected node names for Dirichlet
-	std::vector<std::string> nodeSetsName;
-	/// vector holding affected element ID for Dirichlet
-	std::vector<std::vector<int>> elemSets;
-	/// vector holding affected element names for Dirichlet
-	std::vector<std::string> elemSetsName;
+	/// Map holding NodeSets
+	std::map<std::string, std::vector<int>> nodeSetsMap;
+	/// Map holding NodeSets
+	std::map<std::string, std::vector<int>> elemSetsMap;
 	/// DoF list sorted  element index 0..ne with entries -1 for Dirichlet DoF
 	std::vector<int> elementDoFListBC;
 public:
@@ -332,40 +328,11 @@ public:
 	***********/
 	void addElemSet(std::string, std::vector<int>);
 	/***********************************************************************************************
-	* \brief Print Contents of all Sets
-	* \author Harikrishnan Sreekumar
-	***********/
-	void printSets();
-	/***********************************************************************************************
 	* \brief Get Handle to the Killed Element-DoF List
 	* \param[out] Handle to the Killed Element-DoF List
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<int>&  getElementDoFListBC() { return elementDoFListBC; }
-	/***********************************************************************************************
-	* \brief Get all Names of Node Sets
-	* \param[out] nodeSetsName
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<std::string>  getNodeSetsName() { return nodeSetsName; }
-	/***********************************************************************************************
-	* \brief Get all Node Sets
-	* \param[out] nodeSets
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<std::vector<int>>  getNodeSets() { return nodeSets; }
-	/***********************************************************************************************
-	* \brief Get all Names of Element Sets
-	* \param[out] elemSetsName
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<std::string>  getElemSetsName() { return elemSetsName; }
-	/***********************************************************************************************
-	* \brief Get all Element Sets
-	* \param[out] elemSets
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<std::vector<int>>  getElemSets() { return elemSets; }
 	/***********************************************************************************************
 	* \brief Get the list of DoFs with Dirichlet Condition
 	* \param[out] dirichletDOF
@@ -379,6 +346,20 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF);
+	/***********************************************************************************************
+	* \brief Find and Return all Node Sets corresponding to the label
+	* \param[in] _nodeSetName
+	* \param[out] nodeSets
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<int> convertNodeSetNameToLabels(std::string _nodeSetName);
+	/***********************************************************************************************
+	* \brief Find and Return all Element Sets corresponding to the label
+	* \param[in] _elemSetName
+	* \param[out] nodeSets
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<int> convertElementSetNameToLabels(std::string _elemSetName);
 
 	/* -- Class Member for supporting UMA -- */
 public:

@@ -64,7 +64,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		std::cout << ">> MATERIALS:" << std::endl;
 		STACCATO_XML::MATERIALS_const_iterator temp(MetaDatabase::getInstance()->xmlHandle->MATERIALS().begin());
 		for (int j = 0; j < temp->MATERIAL().size(); j++) {
-			std::cout << " > NAME: " << temp->MATERIAL().at(j).Name() << " Type: " << temp->MATERIAL().at(j).Type() << "\n\t E   : " << temp->MATERIAL().at(j).E() << "\n\t nu  : " << temp->MATERIAL().at(j).nu() << "\n\t rho : " << temp->MATERIAL().at(j).rho() << "\n\t eta : " << temp->MATERIAL().at(j).eta() << std::endl;
+			std::cout << " > NAME: " << temp->MATERIAL()[j].Name() << " Type: " << temp->MATERIAL()[j].Type() << "\n\t E   : " << temp->MATERIAL()[j].E() << "\n\t nu  : " << temp->MATERIAL()[j].nu() << "\n\t rho : " << temp->MATERIAL()[j].rho() << "\n\t eta : " << temp->MATERIAL()[j].eta() << std::endl;
 		}
 		std::cout << "\n=============================================\n\n";
 
@@ -93,38 +93,34 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		// Section Material Assignement
 		STACCATO_XML::SECTIONS_const_iterator iSection(MetaDatabase::getInstance()->xmlHandle->SECTIONS().begin());
 		for (int j = 0; j < iSection->SECTION().size(); j++) {
-			Material * elasticMaterial = new Material(std::string(iSection->SECTION().at(j).MATERIAL()->c_str()));
-			int flag = 0;
-			// Find the Corresponding Set
-			for (int k = 0; k < myHMesh->getElemSetsName().size(); k++) {
-				if (myHMesh->getElemSetsName().at(k) == std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str())) {
+			Material * elasticMaterial = new Material(std::string(iSection->SECTION()[j].MATERIAL()->c_str()));
 
-					std::vector<int> idList = myHMesh->getElemSets()[k];
-					// Assign Elements in idList
-					int lastIndex = 0;
-					for (int iElement = 0; iElement < idList.size(); iElement++)
-					{
-						int elemIndex = idList[iElement];
-						if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
-							allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
-						}
-						else	if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
-							allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
-						}
-						else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-							allElements[elemIndex] = new FeUmaElement(elasticMaterial);
-						}
-						int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
-						double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-						allElements[elemIndex]->computeElementMatrix(eleCoords);
-						lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
+			// Find the Corresponding Set
+			std::vector<int> idList = myHMesh->convertElementSetNameToLabels(std::string(iSection->SECTION()[j].ELEMENTSET()->c_str()));
+
+			if (!idList.empty()) {
+				// Assign Elements in idList
+				int lastIndex = 0;
+				for (int iElement = 0; iElement < idList.size(); iElement++)
+				{
+					int elemIndex = myHMesh->convertElementLabelToElementIndex(idList[iElement]);
+					if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
+						allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
 					}
-					flag = 1;
-					break;
+					else	if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
+						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
+					}
+					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
+						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
+					}
+					int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
+					double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
+					allElements[elemIndex]->computeElementMatrix(eleCoords);
+					lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
 				}
 			}
-			if (flag == 0)
-				std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iSection->SECTION().at(j).ELEMENTSET()->c_str()) << " not Found.\n";
+			else
+				std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iSection->SECTION()[j].ELEMENTSET()->c_str()) << " not Found.\n";
 		}
 
 		anaysisTimer01.stop();
@@ -208,19 +204,19 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			restrictedDOF.push_back(1);				// 0: FREE
 			restrictedDOF.push_back(1);
 
-			if (std::string(iBC->DBC().at(j).REAL().begin()->X()->c_str()) == "") {
-				restrictedDOF.at(0) = 0;
+			if (std::string(iBC->DBC()[j].REAL().begin()->X()->c_str()) == "") {
+				restrictedDOF[0] = 0;
 				std::cout << "x set Free!\n";
 			}
-			if (std::string(iBC->DBC().at(j).REAL().begin()->Y()->c_str()) == "") {
-				restrictedDOF.at(1) = 0;
+			if (std::string(iBC->DBC()[j].REAL().begin()->Y()->c_str()) == "") {
+				restrictedDOF[1] = 0;
 				std::cout << "y set Free!\n";
 			}
-			if (std::string(iBC->DBC().at(j).REAL().begin()->Z()->c_str()) == "") {
-				restrictedDOF.at(2) = 0;
+			if (std::string(iBC->DBC()[j].REAL().begin()->Z()->c_str()) == "") {
+				restrictedDOF[2] = 0;
 				std::cout << "z set Free!\n";
 			}
-			myHMesh->killDirichletDOF(std::string(iBC->DBC().at(j).NODESET().begin()->Name()->c_str()), restrictedDOF);
+			myHMesh->killDirichletDOF(std::string(iBC->DBC()[j].NODESET().begin()->Name()->c_str()), restrictedDOF);
 
 		}
 		anaysisTimer02.stop();
@@ -297,7 +293,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			// Applying Dirichlet
 			for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
 
-				int dofIndex = myHMesh->getDirichletDOF().at(m);
+				int dofIndex = myHMesh->getDirichletDOF()[m];
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					(*AReal)(dofIndex, dofIndex) = 1;
 					bReal[dofIndex] = 0;
@@ -314,11 +310,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer02.stop();
 			infoOut << "Duration for applying dirichlet conditions: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-			
-			//(*AReal).print();
-
-			/* ---- Test */
-			//if (!myHMesh->isSIM) {
 
 			anaysisTimer01.stop();
 			infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -451,10 +442,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Duration for Cleaning System Matrix: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		}
-	//}
-// else {
-//	 std::cout << ">> Executing SIM Routine ... \n\n";
-//}
 }
 
 FeAnalysis::~FeAnalysis() {

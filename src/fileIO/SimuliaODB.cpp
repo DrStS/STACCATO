@@ -151,6 +151,7 @@ void SimuliaODB::openFile() {
 						else if (importType == "Sets") {
 							// SETS
 							// NODES
+							std::cout << ">> Found Odb sets: ";
 							for (int i = 0; i < iFileImport->IMPORT()[iImport].NODE().begin()->TRANSLATETO().size(); i++) {
 
 								std::string translateSource = iFileImport->IMPORT()[iImport].NODE().begin()->TRANSLATETO()[i].Source()->c_str();
@@ -176,11 +177,13 @@ void SimuliaODB::openFile() {
 											for (int n = 0; n < n_max; n++) {
 												nodeLabels.push_back(nodesInMySet.node(n).label());
 											}
+											std::cout << translateTarget << " with " << nodeLabels.size() << " nodes. ";
 											myHMesh->addNodeSet(translateTarget, nodeLabels);
 										}
 									}
 								}
 							}
+							std::cout << std::endl;
 							// ELEMENTS
 							for (int i = 0; i < iFileImport->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO().size(); i++) {
 

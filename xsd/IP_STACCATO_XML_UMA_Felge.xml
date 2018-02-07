@@ -71,7 +71,7 @@
 	</SETS>
 	<LOADS>
 		<LOAD Type="ConcentratedForce"><NODESET Name="LOAD"/><REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
-		<LOAD Type="ConcentratedForce"><NODESET Name="end2"/><REAL><X>0.000</X><Y>5.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
+		<LOAD Type="ConcentratedForce"><NODESET Name="end222"/><REAL><X>0.000</X><Y>5.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></LOAD>
 	</LOADS>
 	<BC>
 		<DBC><NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>

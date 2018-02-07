@@ -62,7 +62,42 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector);
+	std::vector<std::vector<double>> computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector);
+	/***********************************************************************************************
+	* \brief Computes the Cross Product of two vectors
+	* \param[in] Vector 1
+	* \param[in] Vector 2
+	* \param[out] Cross Product
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> computeVectorCrossProduct(std::vector<double> &_v1, std::vector<double> &_v2);
+	/***********************************************************************************************
+	* \brief Computes the Sum of two vectors
+	* \param[in] Vector 1
+	* \param[in] Vector 2
+	* \param[out] Sum Vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> computeVectorAddition(std::vector<double> &_v1, std::vector<double> &_v2);
+	/***********************************************************************************************
+	* \brief Computes the Difference of two vectors
+	* \param[in] Vector 1
+	* \param[in] Vector 2
+	* \param[out] Difference Vector = Vector 1 - Vector 2
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> computeVectorSubstraction(std::vector<double> &_v1, std::vector<double> &_v2);
+	/***********************************************************************************************
+	* \brief Computes the Scalar Multiplication
+	* \param[in] Vector
+	* \param[in] Scalar
+	* \param[out] Resulting Vector
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> computeVectorScalarMultiplication(std::vector<double> &_v, int _a);
+
+	std::vector<double> BoundaryCondition::solve3x3LinearSystem(std::vector<std::vector<double>>& _A, std::vector<double>& _b, double _EPS);
+	double BoundaryCondition::det3x3(std::vector<std::vector<double>>& _A);
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

@@ -67,6 +67,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			std::cout << " > NAME: " << temp->MATERIAL()[j].Name() << " Type: " << temp->MATERIAL()[j].Type() << "\n\t E   : " << temp->MATERIAL()[j].E() << "\n\t nu  : " << temp->MATERIAL()[j].nu() << "\n\t rho : " << temp->MATERIAL()[j].rho() << "\n\t eta : " << temp->MATERIAL()[j].eta() << std::endl;
 		}
 		std::cout << "\n=============================================\n\n";
+		// --------------------------------------------------------------------------------------------------------------
 
 		// Build DataStructure
 		myHMesh->buildDataStructure();
@@ -80,6 +81,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		// Normal Routine is skipped if there is a detection of SIM Import
 		infoOut << "Duration for building DoF graph: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+		anaysisTimer01.start();
 
 		// Build XML NodeSets and ElementSets
 		MetaDatabase::getInstance()->buildXML(*myHMesh);
@@ -348,7 +351,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-			if (myHMesh->isSIM) {
+			/*if (myHMesh->isSIM) {
 				std::cout << ">> Printing RHS.. \n";
 				for (int i = 0; i < bReal.size(); i++)
 				{
@@ -364,7 +367,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 					std::cout << std::endl;
 				}
-			}			
+			}*/			
 
 			anaysisTimer01.start();
 

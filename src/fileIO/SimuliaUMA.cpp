@@ -134,6 +134,14 @@ void SimuliaUMA::openFile() {
 	}
 	myHMesh->addElement(lastHMeshElementLabel+1, STACCATO_UmaElement, elementTopo);
 
+	// Printing
+	std::cout << "\nMap for UMA-SIM:\n";
+	for (int col = 0; col < nodes.Size(); col++) {
+		if (col % 10 == 0)
+			printf("\n");
+		printf(" %3i:%3i-%1i", col, nodes[col], ldofs[col]);
+	}
+	printf("\n");
 }
 
 

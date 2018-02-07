@@ -247,6 +247,7 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 	}
 
 	// DOF Killing
+	bool flag = false;
 	for (int n = 0; n < nodeSet.size(); n++) {
 		std::vector<int> indexAffected = getNodeIndexToDoFIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
 		std::vector<int> affectedElements = getNodeIndexToElementIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
@@ -258,12 +259,16 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 				for (int kMap = 0; kMap < indexAffected.size(); kMap++) {
 					if (indexAffected[kMap] == elementDoFList[jMap]) {
 						elementDoFListBC[jMap] = -1;
+						flag = true;
 					}
 				}
 
 			}
 		}
 	}
+	if(flag)
+		std::cout << ">> Dirichlet DoF killing performed on NODESET: " << _nodeSetName << std::endl;
+
 }
 
 void HMesh::addNodeSet(std::string _name, std::vector<int> _nodeLabels) {

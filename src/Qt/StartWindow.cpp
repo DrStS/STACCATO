@@ -164,10 +164,6 @@ void StartWindow::createActions(void)
 	myExitAction->setStatusTip(tr("Exit the application"));
 	connect(myExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
-	myReadOBDFileAction = new QAction(tr("Open OBD file"), this);
-	myReadOBDFileAction->setStatusTip(tr("Read Abaqus OBD file"));
-	connect(myReadOBDFileAction, SIGNAL(triggered()), this, SLOT(openOBDFile()));
-
 	myImportXMLFileAction = new QAction(tr("Import XML file"), this);
 	myImportXMLFileAction->setStatusTip(tr("Import STACCATO XML file"));
 	connect(myImportXMLFileAction, SIGNAL(triggered()), this, SLOT(importXMLFile()));
@@ -463,7 +459,6 @@ void StartWindow::createMenus(void)
 {
 	myFileMenu = menuBar()->addMenu(tr("&File"));
 	myFileMenu->addAction(myReadFileAction);
-	//myFileMenu->addAction(myReadOBDFileAction);
 	myFileMenu->addAction(myImportXMLFileAction);
 	myFileMenu->addAction(myExitAction);
 
@@ -601,127 +596,65 @@ void StartWindow::importXMLFile(void) {
 		if (fileType.toLower() == tr("xml")) {
 			infoOut << "XML file: " << fileName.toStdString() << std::endl;
 		}
+
+		// Intialize XML Parsing
+		MetaDatabase::init(fileName.toStdString());
+
+		int numParts = MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size();
+		std::cout << "There are " << MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size() << " models.\n";
+
+		anaysisTimer01.start();
+		anaysisTimer03.start();
+		std::vector<Reader*> allReader(numParts);
+		int i = 0;
+		for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
+			iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
+			++iFileImport, i++) {
+			std::string filePath = "C:/software/repos/STACCATO/model/";
+			filePath += std::string(iFileImport->FILE()->data());
+			if (std::string(iFileImport->Type()->data()) == "AbqODB") {
+				allReader[i] = new SimuliaODB(filePath, *myHMesh);
+			}
+			else if (std::string(iFileImport->Type()->data()) == "AbqSIM") {
+				allReader[i] = new SimuliaUMA(filePath, *myHMesh);
+			}
+			else {
+				std::cerr << ">> XML Error: Unidentified FileImport type " << iFileImport->Type()->data() << std::endl;
+			}
+		}
+		anaysisTimer01.stop();
+		debugOut << "Duration for reading all file imports: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+		//Run FE Analysis
+		FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
+		anaysisTimer03.stop();
+		debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+		// Enable Tools
+		mySolutionSelector->setEnabled(true);
+		myComponentSelector->setEnabled(true);
+		myViewModeSelector->setEnabled(true);
+		myScalarBarVisibility->setEnabled(true);
+		myWarpVectorVisibility->setEnabled(true);
+		my2dVisualizerVisibility->setEnabled(true);
+
+		anaysisTimer01.start();
+		myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
+		anaysisTimer01.stop();
+		debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+		// Update Slider
+		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
+
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+
+		// Plot Vector Field
+		myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
 	}
-
-	// Intialize XML Parsing
-	MetaDatabase::init(fileName.toStdString());
-
-	int numParts = MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size();
-	std::cout << "There are " << MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size() << " models.\n";
-
-	anaysisTimer01.start();
-	anaysisTimer03.start();
-	std::vector<Reader*> allReader(numParts);
-	int i = 0;
-	for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
-		iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
-		++iFileImport, i++) {
-		std::string filePath = "C:/software/repos/STACCATO/model/";
-		filePath += std::string(iFileImport->FILE()->data());
-		if (std::string(iFileImport->Type()->data()) == "AbqODB") {
-			allReader[i] = new SimuliaODB(filePath, *myHMesh);
-		}
-		else if (std::string(iFileImport->Type()->data()) == "AbqSIM") {
-			allReader[i] = new SimuliaUMA(filePath, *myHMesh);
-		}
-		else {
-			std::cerr << ">> XML Error: Unidentified FileImport type " << iFileImport->Type()->data() << std::endl;
-		}
-	}
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading all file imports: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	anaysisTimer01.start();
-
-	//Run FE Analysis
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
-	anaysisTimer03.stop();
-	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	// Enable Tools
-	mySolutionSelector->setEnabled(true);
-	myComponentSelector->setEnabled(true);
-	myViewModeSelector->setEnabled(true);
-	myScalarBarVisibility->setEnabled(true);
-	myWarpVectorVisibility->setEnabled(true);
-	my2dVisualizerVisibility->setEnabled(true);
-
-	anaysisTimer01.start();
-	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	// Update Slider
-	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
-
-	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
-
-	// Plot Vector Field
-	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-}
-
-
-void StartWindow::openOBDFile(void){
-	// Intialize XML Parsing
-	std::string inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML.xml";
-	MetaDatabase::init(inputFileName);
-
-	QString myWorkingFolder = "";
-	QString fileType;
-	QFileInfo fileInfo;
-
-	QString fileName = QFileDialog::getOpenFileName(this,
-		tr("Open odb file"), myWorkingFolder, tr("ODB (*.odb)"));
-
-	fileInfo.setFile(fileName);
-	fileType = fileInfo.suffix();
-	if (!fileName.isEmpty() && !fileName.isNull()){
-		if (fileType.toLower() == tr("odb") ) {
-			infoOut << "ODB file: " << fileName.toStdString() << std::endl;
-		}
-	}
-
-	SimuliaODB myOBD = SimuliaODB(fileName.toStdString(), *myHMesh);
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	anaysisTimer01.start();
-	anaysisTimer03.start();
-	myOBD.openFile();
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading odb file: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory()/1000000 << " Mb" << std::endl;
-
-	//Run FE Analysis
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
-	anaysisTimer03.stop();
-	debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	
-	// Enable Tools
-	mySolutionSelector->setEnabled(true);
-	myComponentSelector->setEnabled(true);
-	myViewModeSelector->setEnabled(true);
-	myScalarBarVisibility->setEnabled(true);
-	myWarpVectorVisibility->setEnabled(true);
-	my2dVisualizerVisibility->setEnabled(true);
-
-	anaysisTimer01.start();
-	myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
-	anaysisTimer01.stop();
-	debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	// Update Slider
-	myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
-
-	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
-	
-	// Plot Vector Field
-	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
 }
 
 void StartWindow::importFile(void)

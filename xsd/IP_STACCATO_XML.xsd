@@ -168,6 +168,25 @@
               <xs:element name="LOAD" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
+                    <xs:element name="REFERENCENODESET" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="Name" type="xs:string" />
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="REFERENCENODE" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="X" type="xs:string" minOccurs="0" />
+                          <xs:element name="Y" type="xs:string" minOccurs="0" />
+                          <xs:element name="Z" type="xs:string" minOccurs="0" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="COUPLINGNODESET" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="Name" type="xs:string" />
+                      </xs:complexType>
+                    </xs:element>
                     <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
                     <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
                     <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />

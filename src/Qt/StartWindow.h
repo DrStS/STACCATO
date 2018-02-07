@@ -91,7 +91,6 @@ private slots:
 	void drawCantilever(void);
 	void handleSelectionChanged(void);
 	void openDataFlowWindow(void);
-	void openOBDFile(void);
 	void animateObject(void);
 	void myTimeStepLessProc(void);
 	void myTimeStepAddProc(void);
@@ -117,7 +116,6 @@ private:
 	/// File action.
 	QAction* myExitAction;
     QAction* myReadFileAction;
-	QAction* myReadOBDFileAction;
 	QAction* myImportXMLFileAction;
 	/// Buttons
 	QPushButton* myTimeStepLessAction;

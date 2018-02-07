@@ -1907,6 +1907,60 @@ Name (::std::auto_ptr< Name_type > x)
 // LOAD
 // 
 
+const LOAD::REFERENCENODESET_sequence& LOAD::
+REFERENCENODESET () const
+{
+  return this->REFERENCENODESET_;
+}
+
+LOAD::REFERENCENODESET_sequence& LOAD::
+REFERENCENODESET ()
+{
+  return this->REFERENCENODESET_;
+}
+
+void LOAD::
+REFERENCENODESET (const REFERENCENODESET_sequence& s)
+{
+  this->REFERENCENODESET_ = s;
+}
+
+const LOAD::REFERENCENODE_sequence& LOAD::
+REFERENCENODE () const
+{
+  return this->REFERENCENODE_;
+}
+
+LOAD::REFERENCENODE_sequence& LOAD::
+REFERENCENODE ()
+{
+  return this->REFERENCENODE_;
+}
+
+void LOAD::
+REFERENCENODE (const REFERENCENODE_sequence& s)
+{
+  this->REFERENCENODE_ = s;
+}
+
+const LOAD::COUPLINGNODESET_sequence& LOAD::
+COUPLINGNODESET () const
+{
+  return this->COUPLINGNODESET_;
+}
+
+LOAD::COUPLINGNODESET_sequence& LOAD::
+COUPLINGNODESET ()
+{
+  return this->COUPLINGNODESET_;
+}
+
+void LOAD::
+COUPLINGNODESET (const COUPLINGNODESET_sequence& s)
+{
+  this->COUPLINGNODESET_ = s;
+}
+
 const LOAD::NODESET_sequence& LOAD::
 NODESET () const
 {
@@ -2096,6 +2150,168 @@ Name (const Name_optional& x)
 }
 
 void Part::
+Name (::std::auto_ptr< Name_type > x)
+{
+  this->Name_.set (x);
+}
+
+
+// REFERENCENODESET
+// 
+
+const REFERENCENODESET::Name_optional& REFERENCENODESET::
+Name () const
+{
+  return this->Name_;
+}
+
+REFERENCENODESET::Name_optional& REFERENCENODESET::
+Name ()
+{
+  return this->Name_;
+}
+
+void REFERENCENODESET::
+Name (const Name_type& x)
+{
+  this->Name_.set (x);
+}
+
+void REFERENCENODESET::
+Name (const Name_optional& x)
+{
+  this->Name_ = x;
+}
+
+void REFERENCENODESET::
+Name (::std::auto_ptr< Name_type > x)
+{
+  this->Name_.set (x);
+}
+
+
+// REFERENCENODE
+// 
+
+const REFERENCENODE::X_optional& REFERENCENODE::
+X () const
+{
+  return this->X_;
+}
+
+REFERENCENODE::X_optional& REFERENCENODE::
+X ()
+{
+  return this->X_;
+}
+
+void REFERENCENODE::
+X (const X_type& x)
+{
+  this->X_.set (x);
+}
+
+void REFERENCENODE::
+X (const X_optional& x)
+{
+  this->X_ = x;
+}
+
+void REFERENCENODE::
+X (::std::auto_ptr< X_type > x)
+{
+  this->X_.set (x);
+}
+
+const REFERENCENODE::Y_optional& REFERENCENODE::
+Y () const
+{
+  return this->Y_;
+}
+
+REFERENCENODE::Y_optional& REFERENCENODE::
+Y ()
+{
+  return this->Y_;
+}
+
+void REFERENCENODE::
+Y (const Y_type& x)
+{
+  this->Y_.set (x);
+}
+
+void REFERENCENODE::
+Y (const Y_optional& x)
+{
+  this->Y_ = x;
+}
+
+void REFERENCENODE::
+Y (::std::auto_ptr< Y_type > x)
+{
+  this->Y_.set (x);
+}
+
+const REFERENCENODE::Z_optional& REFERENCENODE::
+Z () const
+{
+  return this->Z_;
+}
+
+REFERENCENODE::Z_optional& REFERENCENODE::
+Z ()
+{
+  return this->Z_;
+}
+
+void REFERENCENODE::
+Z (const Z_type& x)
+{
+  this->Z_.set (x);
+}
+
+void REFERENCENODE::
+Z (const Z_optional& x)
+{
+  this->Z_ = x;
+}
+
+void REFERENCENODE::
+Z (::std::auto_ptr< Z_type > x)
+{
+  this->Z_.set (x);
+}
+
+
+// COUPLINGNODESET
+// 
+
+const COUPLINGNODESET::Name_optional& COUPLINGNODESET::
+Name () const
+{
+  return this->Name_;
+}
+
+COUPLINGNODESET::Name_optional& COUPLINGNODESET::
+Name ()
+{
+  return this->Name_;
+}
+
+void COUPLINGNODESET::
+Name (const Name_type& x)
+{
+  this->Name_.set (x);
+}
+
+void COUPLINGNODESET::
+Name (const Name_optional& x)
+{
+  this->Name_ = x;
+}
+
+void COUPLINGNODESET::
 Name (::std::auto_ptr< Name_type > x)
 {
   this->Name_.set (x);
@@ -4741,6 +4957,9 @@ ELEMENTSET::
 LOAD::
 LOAD ()
 : ::xml_schema::type (),
+  REFERENCENODESET_ (this),
+  REFERENCENODE_ (this),
+  COUPLINGNODESET_ (this),
   NODESET_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
@@ -4753,6 +4972,9 @@ LOAD (const LOAD& x,
       ::xml_schema::flags f,
       ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
+  REFERENCENODESET_ (x.REFERENCENODESET_, f, this),
+  REFERENCENODE_ (x.REFERENCENODE_, f, this),
+  COUPLINGNODESET_ (x.COUPLINGNODESET_, f, this),
   NODESET_ (x.NODESET_, f, this),
   REAL_ (x.REAL_, f, this),
   IMAGINARY_ (x.IMAGINARY_, f, this),
@@ -4765,6 +4987,9 @@ LOAD (const ::xercesc::DOMElement& e,
       ::xml_schema::flags f,
       ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  REFERENCENODESET_ (this),
+  REFERENCENODE_ (this),
+  COUPLINGNODESET_ (this),
   NODESET_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
@@ -4786,6 +5011,39 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
     const ::xercesc::DOMElement& i (p.cur_element ());
     const ::xsd::cxx::xml::qualified_name< char > n (
       ::xsd::cxx::xml::dom::name< char > (i));
+
+    // REFERENCENODESET
+    //
+    if (n.name () == "REFERENCENODESET" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< REFERENCENODESET_type > r (
+        REFERENCENODESET_traits::create (i, f, this));
+
+      this->REFERENCENODESET_.push_back (r);
+      continue;
+    }
+
+    // REFERENCENODE
+    //
+    if (n.name () == "REFERENCENODE" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< REFERENCENODE_type > r (
+        REFERENCENODE_traits::create (i, f, this));
+
+      this->REFERENCENODE_.push_back (r);
+      continue;
+    }
+
+    // COUPLINGNODESET
+    //
+    if (n.name () == "COUPLINGNODESET" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< COUPLINGNODESET_type > r (
+        COUPLINGNODESET_traits::create (i, f, this));
+
+      this->COUPLINGNODESET_.push_back (r);
+      continue;
+    }
 
     // NODESET
     //
@@ -4850,6 +5108,9 @@ operator= (const LOAD& x)
   if (this != &x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
+    this->REFERENCENODESET_ = x.REFERENCENODESET_;
+    this->REFERENCENODE_ = x.REFERENCENODE_;
+    this->COUPLINGNODESET_ = x.COUPLINGNODESET_;
     this->NODESET_ = x.NODESET_;
     this->REAL_ = x.REAL_;
     this->IMAGINARY_ = x.IMAGINARY_;
@@ -5072,6 +5333,277 @@ operator= (const Part& x)
 
 Part::
 ~Part ()
+{
+}
+
+// REFERENCENODESET
+//
+
+REFERENCENODESET::
+REFERENCENODESET ()
+: ::xml_schema::type (),
+  Name_ (this)
+{
+}
+
+REFERENCENODESET::
+REFERENCENODESET (const REFERENCENODESET& x,
+                  ::xml_schema::flags f,
+                  ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Name_ (x.Name_, f, this)
+{
+}
+
+REFERENCENODESET::
+REFERENCENODESET (const ::xercesc::DOMElement& e,
+                  ::xml_schema::flags f,
+                  ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Name_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void REFERENCENODESET::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Name" && n.namespace_ ().empty ())
+    {
+      this->Name_.set (Name_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+REFERENCENODESET* REFERENCENODESET::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class REFERENCENODESET (*this, f, c);
+}
+
+REFERENCENODESET& REFERENCENODESET::
+operator= (const REFERENCENODESET& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Name_ = x.Name_;
+  }
+
+  return *this;
+}
+
+REFERENCENODESET::
+~REFERENCENODESET ()
+{
+}
+
+// REFERENCENODE
+//
+
+REFERENCENODE::
+REFERENCENODE ()
+: ::xml_schema::type (),
+  X_ (this),
+  Y_ (this),
+  Z_ (this)
+{
+}
+
+REFERENCENODE::
+REFERENCENODE (const REFERENCENODE& x,
+               ::xml_schema::flags f,
+               ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  X_ (x.X_, f, this),
+  Y_ (x.Y_, f, this),
+  Z_ (x.Z_, f, this)
+{
+}
+
+REFERENCENODE::
+REFERENCENODE (const ::xercesc::DOMElement& e,
+               ::xml_schema::flags f,
+               ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  X_ (this),
+  Y_ (this),
+  Z_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, false);
+    this->parse (p, f);
+  }
+}
+
+void REFERENCENODE::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // X
+    //
+    if (n.name () == "X" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< X_type > r (
+        X_traits::create (i, f, this));
+
+      if (!this->X_)
+      {
+        this->X_.set (r);
+        continue;
+      }
+    }
+
+    // Y
+    //
+    if (n.name () == "Y" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< Y_type > r (
+        Y_traits::create (i, f, this));
+
+      if (!this->Y_)
+      {
+        this->Y_.set (r);
+        continue;
+      }
+    }
+
+    // Z
+    //
+    if (n.name () == "Z" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< Z_type > r (
+        Z_traits::create (i, f, this));
+
+      if (!this->Z_)
+      {
+        this->Z_.set (r);
+        continue;
+      }
+    }
+
+    break;
+  }
+}
+
+REFERENCENODE* REFERENCENODE::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class REFERENCENODE (*this, f, c);
+}
+
+REFERENCENODE& REFERENCENODE::
+operator= (const REFERENCENODE& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->X_ = x.X_;
+    this->Y_ = x.Y_;
+    this->Z_ = x.Z_;
+  }
+
+  return *this;
+}
+
+REFERENCENODE::
+~REFERENCENODE ()
+{
+}
+
+// COUPLINGNODESET
+//
+
+COUPLINGNODESET::
+COUPLINGNODESET ()
+: ::xml_schema::type (),
+  Name_ (this)
+{
+}
+
+COUPLINGNODESET::
+COUPLINGNODESET (const COUPLINGNODESET& x,
+                 ::xml_schema::flags f,
+                 ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Name_ (x.Name_, f, this)
+{
+}
+
+COUPLINGNODESET::
+COUPLINGNODESET (const ::xercesc::DOMElement& e,
+                 ::xml_schema::flags f,
+                 ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Name_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void COUPLINGNODESET::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Name" && n.namespace_ ().empty ())
+    {
+      this->Name_.set (Name_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+COUPLINGNODESET* COUPLINGNODESET::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class COUPLINGNODESET (*this, f, c);
+}
+
+COUPLINGNODESET& COUPLINGNODESET::
+operator= (const COUPLINGNODESET& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Name_ = x.Name_;
+  }
+
+  return *this;
+}
+
+COUPLINGNODESET::
+~COUPLINGNODESET ()
 {
 }
 

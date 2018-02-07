@@ -1,5 +1,6 @@
 <STACCATO_XML>
-	<FILEIMPORT Type="AbqODB">
+	<FILEIMPORT Name="KinCoupleFelgeStaticODB" Type="AbqODB">
+		<FILE>FelgeStaticKinematic.odb</FILE>
 		<IMPORT Type="Nodes">
 			<LIST>ALL</LIST>
 		</IMPORT>
@@ -9,8 +10,9 @@
 		</IMPORT>
 		<IMPORT Type="Sets">
 				<NODE>
-					<TRANSLATETO Source="CLOAD" Target="LOAD"/>
+					<TRANSLATETO Source="CLOAD" Target="REFNODE"/>
 					<TRANSLATETO Source="CLAMP" Target="BOUNDARY"/>
+					<TRANSLATETO Source="SLAVENODES" Target="SLAVENODES"/>
 				</NODE>
 				<ELEMENT>
 					<TRANSLATETO Source="allEle" Target="LOAD"/>
@@ -18,7 +20,7 @@
 		</IMPORT>
 	</FILEIMPORT>
 	<ANALYSIS>
-		<NAME>Felge</NAME>
+		<NAME>KinematicCouplingFelgeStatic</NAME>
 		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
 	</ANALYSIS>
 	<FREQUENCY Type="STEP">
@@ -58,20 +60,18 @@
 	</ELEMENTS>
 	<SETS>
 		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
-		<NODESET Name="clamp22"><LIST>1 2 3 </LIST></NODESET>
+		<NODESET Name="clamp22"><LIST>3407</LIST></NODESET>
 	</SETS>
 	<LOADS>
-		<LOAD Type="ConcentratedForce">
-			<NODESET Name="LOAD"/>
-			<NODELIST>1 2 3 4 5 6<NODELIST/>
+		<!--<LOAD Type="ConcentratedForce">
+			<NODESET Name="clamp22"/>
 			<REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL>
 			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-		</LOAD>
+		</LOAD>-->
 		<LOAD Type="DistributingCouplingForce">
-			<REFERENCENODESET Name="RF"/>
-			<REFERENCENODE>1 2 3 4 5 6<REFERENCENODE/>
-			<COUPLINGNODESET Name="RF"/>
-			<COUPLINGNODELIST>1 2 3 4 5 6<COUPLINGNODELIST/>
+			<REFERENCENODESET Name="REFNODE"/>
+			<REFERENCENODE><X>0.000</X><Y>500.000</Y><Z>0.000</Z></REFERENCENODE>
+			<COUPLINGNODESET Name="SLAVENODES"/>
 			<REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL>
 			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
 		</LOAD>
@@ -79,4 +79,8 @@
 	<BC>
 		<DBC><NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
 	</BC>
+	<COUPLE Type="NODE">
+		<Part Name="FelgeStaticODB"><NODESET Name="P1C"/></Part>
+		<Part Name="B31SIM"><NODESET Name="P2C"/></Part>
+	</COUPLE>
 </STACCATO_XML>

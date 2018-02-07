@@ -247,6 +247,9 @@ class ELEMENTSET;
 class LOAD;
 class DBC;
 class Part;
+class REFERENCENODESET;
+class REFERENCENODE;
+class COUPLINGNODESET;
 
 #include <memory>    // ::std::auto_ptr
 #include <limits>    // std::numeric_limits
@@ -2490,6 +2493,57 @@ class ELEMENTSET: public ::xml_schema::type
 class LOAD: public ::xml_schema::type
 {
   public:
+  // REFERENCENODESET
+  //
+  typedef ::REFERENCENODESET REFERENCENODESET_type;
+  typedef ::xsd::cxx::tree::sequence< REFERENCENODESET_type > REFERENCENODESET_sequence;
+  typedef REFERENCENODESET_sequence::iterator REFERENCENODESET_iterator;
+  typedef REFERENCENODESET_sequence::const_iterator REFERENCENODESET_const_iterator;
+  typedef ::xsd::cxx::tree::traits< REFERENCENODESET_type, char > REFERENCENODESET_traits;
+
+  const REFERENCENODESET_sequence&
+  REFERENCENODESET () const;
+
+  REFERENCENODESET_sequence&
+  REFERENCENODESET ();
+
+  void
+  REFERENCENODESET (const REFERENCENODESET_sequence& s);
+
+  // REFERENCENODE
+  //
+  typedef ::REFERENCENODE REFERENCENODE_type;
+  typedef ::xsd::cxx::tree::sequence< REFERENCENODE_type > REFERENCENODE_sequence;
+  typedef REFERENCENODE_sequence::iterator REFERENCENODE_iterator;
+  typedef REFERENCENODE_sequence::const_iterator REFERENCENODE_const_iterator;
+  typedef ::xsd::cxx::tree::traits< REFERENCENODE_type, char > REFERENCENODE_traits;
+
+  const REFERENCENODE_sequence&
+  REFERENCENODE () const;
+
+  REFERENCENODE_sequence&
+  REFERENCENODE ();
+
+  void
+  REFERENCENODE (const REFERENCENODE_sequence& s);
+
+  // COUPLINGNODESET
+  //
+  typedef ::COUPLINGNODESET COUPLINGNODESET_type;
+  typedef ::xsd::cxx::tree::sequence< COUPLINGNODESET_type > COUPLINGNODESET_sequence;
+  typedef COUPLINGNODESET_sequence::iterator COUPLINGNODESET_iterator;
+  typedef COUPLINGNODESET_sequence::const_iterator COUPLINGNODESET_const_iterator;
+  typedef ::xsd::cxx::tree::traits< COUPLINGNODESET_type, char > COUPLINGNODESET_traits;
+
+  const COUPLINGNODESET_sequence&
+  COUPLINGNODESET () const;
+
+  COUPLINGNODESET_sequence&
+  COUPLINGNODESET ();
+
+  void
+  COUPLINGNODESET (const COUPLINGNODESET_sequence& s);
+
   // NODESET
   //
   typedef ::NODESET NODESET_type;
@@ -2592,6 +2646,9 @@ class LOAD: public ::xml_schema::type
          ::xml_schema::flags);
 
   protected:
+  REFERENCENODESET_sequence REFERENCENODESET_;
+  REFERENCENODE_sequence REFERENCENODE_;
+  COUPLINGNODESET_sequence COUPLINGNODESET_;
   NODESET_sequence NODESET_;
   REAL_sequence REAL_;
   IMAGINARY_sequence IMAGINARY_;
@@ -2759,6 +2816,221 @@ class Part: public ::xml_schema::type
 
   protected:
   NODESET_sequence NODESET_;
+  Name_optional Name_;
+};
+
+class REFERENCENODESET: public ::xml_schema::type
+{
+  public:
+  // Name
+  //
+  typedef ::xml_schema::string Name_type;
+  typedef ::xsd::cxx::tree::optional< Name_type > Name_optional;
+  typedef ::xsd::cxx::tree::traits< Name_type, char > Name_traits;
+
+  const Name_optional&
+  Name () const;
+
+  Name_optional&
+  Name ();
+
+  void
+  Name (const Name_type& x);
+
+  void
+  Name (const Name_optional& x);
+
+  void
+  Name (::std::auto_ptr< Name_type > p);
+
+  // Constructors.
+  //
+  REFERENCENODESET ();
+
+  REFERENCENODESET (const ::xercesc::DOMElement& e,
+                    ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                    ::xml_schema::container* c = 0);
+
+  REFERENCENODESET (const REFERENCENODESET& x,
+                    ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                    ::xml_schema::container* c = 0);
+
+  virtual REFERENCENODESET*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  REFERENCENODESET&
+  operator= (const REFERENCENODESET& x);
+
+  virtual 
+  ~REFERENCENODESET ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  Name_optional Name_;
+};
+
+class REFERENCENODE: public ::xml_schema::type
+{
+  public:
+  // X
+  //
+  typedef ::xml_schema::string X_type;
+  typedef ::xsd::cxx::tree::optional< X_type > X_optional;
+  typedef ::xsd::cxx::tree::traits< X_type, char > X_traits;
+
+  const X_optional&
+  X () const;
+
+  X_optional&
+  X ();
+
+  void
+  X (const X_type& x);
+
+  void
+  X (const X_optional& x);
+
+  void
+  X (::std::auto_ptr< X_type > p);
+
+  // Y
+  //
+  typedef ::xml_schema::string Y_type;
+  typedef ::xsd::cxx::tree::optional< Y_type > Y_optional;
+  typedef ::xsd::cxx::tree::traits< Y_type, char > Y_traits;
+
+  const Y_optional&
+  Y () const;
+
+  Y_optional&
+  Y ();
+
+  void
+  Y (const Y_type& x);
+
+  void
+  Y (const Y_optional& x);
+
+  void
+  Y (::std::auto_ptr< Y_type > p);
+
+  // Z
+  //
+  typedef ::xml_schema::string Z_type;
+  typedef ::xsd::cxx::tree::optional< Z_type > Z_optional;
+  typedef ::xsd::cxx::tree::traits< Z_type, char > Z_traits;
+
+  const Z_optional&
+  Z () const;
+
+  Z_optional&
+  Z ();
+
+  void
+  Z (const Z_type& x);
+
+  void
+  Z (const Z_optional& x);
+
+  void
+  Z (::std::auto_ptr< Z_type > p);
+
+  // Constructors.
+  //
+  REFERENCENODE ();
+
+  REFERENCENODE (const ::xercesc::DOMElement& e,
+                 ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                 ::xml_schema::container* c = 0);
+
+  REFERENCENODE (const REFERENCENODE& x,
+                 ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                 ::xml_schema::container* c = 0);
+
+  virtual REFERENCENODE*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  REFERENCENODE&
+  operator= (const REFERENCENODE& x);
+
+  virtual 
+  ~REFERENCENODE ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  X_optional X_;
+  Y_optional Y_;
+  Z_optional Z_;
+};
+
+class COUPLINGNODESET: public ::xml_schema::type
+{
+  public:
+  // Name
+  //
+  typedef ::xml_schema::string Name_type;
+  typedef ::xsd::cxx::tree::optional< Name_type > Name_optional;
+  typedef ::xsd::cxx::tree::traits< Name_type, char > Name_traits;
+
+  const Name_optional&
+  Name () const;
+
+  Name_optional&
+  Name ();
+
+  void
+  Name (const Name_type& x);
+
+  void
+  Name (const Name_optional& x);
+
+  void
+  Name (::std::auto_ptr< Name_type > p);
+
+  // Constructors.
+  //
+  COUPLINGNODESET ();
+
+  COUPLINGNODESET (const ::xercesc::DOMElement& e,
+                   ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                   ::xml_schema::container* c = 0);
+
+  COUPLINGNODESET (const COUPLINGNODESET& x,
+                   ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                   ::xml_schema::container* c = 0);
+
+  virtual COUPLINGNODESET*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  COUPLINGNODESET&
+  operator= (const COUPLINGNODESET& x);
+
+  virtual 
+  ~COUPLINGNODESET ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
   Name_optional Name_;
 };
 

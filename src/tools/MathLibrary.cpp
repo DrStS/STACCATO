@@ -60,8 +60,9 @@ namespace MathLibrary {
 #endif
 	}
 
-	void computeDenseVectorAddition(double *vec1, const double *vec2, const double a, const int elements){
+	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements){
 #ifdef USE_INTEL_MKL
+		cblas_daxpy(elements, a, vec1, 1, vec2, 1);
 #endif
 	}
 

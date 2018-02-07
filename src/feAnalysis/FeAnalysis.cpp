@@ -280,8 +280,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 			}
 			std::cout << " Finished." << std::endl;
-			std::cout << ">> Building RHS ...\n";
+			std::cout << ">> Building RHS Matrix for Neumann...\n";
 			//Add cload rhs contribution 
+			anaysisTimer02.start();
 			BoundaryCondition neumannBoundaryCondition(*myHMesh);
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 				neumannBoundaryCondition.addConcentratedForce(bReal);
@@ -289,6 +290,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
 				neumannBoundaryCondition.addConcentratedForce(bComplex);
 			}
+			std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
+			anaysisTimer02.stop();
+			infoOut << "Duration for applying Neumann conditions: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
+			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			anaysisTimer02.start();
 			std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";

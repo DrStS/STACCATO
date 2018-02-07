@@ -80,7 +80,7 @@ namespace MathLibrary {
 	* \param[in] elements number of elements in vec1
 	* \author Stefan Sicklinger
 	***********/
-	void computeDenseVectorAddition(double *vec1, const double *vec2, const double a, const int elements);
+	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements);
 	/***********************************************************************************************
 	* \brief Computes vector scales by scalar vec1 <- vec1*a
 	* \param[in] vec1 the 1st vector

@@ -133,6 +133,9 @@ ui(new Ui::StartWindow)
 
 	myVtkViewer = new VtkViewer(this);
 
+	mySubFrameIndex = 0;
+	isSubFrame = false;
+
 	setCentralWidget(myVtkViewer);
 	createActions();
 	createMenus();
@@ -367,6 +370,13 @@ void StartWindow::createActions(void)
 	myUMAAction->setChecked(false);
 	connect(myUMAAction, SIGNAL(triggered()), this, SLOT(myUMATriggered()));
 
+	// ToolBar Actions
+	mySubFrameAnimateAction = new QAction(tr("Animate Sub Frame"), this);
+	mySubFrameAnimateAction->setStatusTip(tr("Animate sub Frame"));
+	mySubFrameAnimateAction->setCheckable(true);
+	mySubFrameAnimateAction->setChecked(false);
+	connect(mySubFrameAnimateAction, SIGNAL(triggered()), this, SLOT(mySubFrameAnimate()));
+
 	// Layout Actions
 	myResetLayoutAction = new QAction(tr("Reset Layout"), this);
 	myResetLayoutAction->setStatusTip(tr("Reset Layout"));
@@ -376,6 +386,12 @@ void StartWindow::createActions(void)
 	myDockWarpVectorAction->setCheckable(true);
 	myDockWarpVectorAction->setChecked(false);
 	connect(myDockWarpVectorAction, SIGNAL(triggered()), this, SLOT(myWarpVectorTriggered()));
+
+	myViewPropertyAction = new QAction(tr("View Property"), this);
+	myViewPropertyAction->setStatusTip(tr("View Property"));
+	myViewPropertyAction->setCheckable(true);
+	myViewPropertyAction->setChecked(false);
+	connect(myViewPropertyAction, SIGNAL(triggered()), this, SLOT(myViewPropertyDockTriggered()));
 
 	my2dVisualizerAction = new QAction(tr("2D Visualizer"));
 	my2dVisualizerAction->setStatusTip(tr("2D Visualizer"));
@@ -409,38 +425,43 @@ void StartWindow::myViewPropertyUpdate(void) {
 		surface = false;
 	}
 
+	int resultIndex = mySubFrameIndex*myHMesh->getResultsTimeDescription().size() + myFreqIndex;
+	std::cout << "Plotting for Index: " << resultIndex << std::endl;
+
 	// Update Solution
 	if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Ux_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uy_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uz_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Re, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Im, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Ux_Im, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Im, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uy_Im, edge, surface, myScalarBarVisibility->isChecked());
 	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Im, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Uz_Im, edge, surface, myScalarBarVisibility->isChecked());
 	}
 	else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, myFreqIndex));
+		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, resultIndex));
 		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Im, edge, surface, myScalarBarVisibility->isChecked());
 	}
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
 	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());		// Update Plot
 }
 
 void StartWindow::myTimeStepLessProc(void) {
 	if (myFreqIndex > 0) {
+		isSubFrame = false;
 		myFreqIndex--;
 		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
 		myViewPropertyUpdate();
@@ -449,6 +470,7 @@ void StartWindow::myTimeStepLessProc(void) {
 
 void StartWindow::myTimeStepAddProc(void) {
 	if (myFreqIndex < myHMesh->getResultsTimeDescription().size()-1) {
+		isSubFrame = false;
 		myFreqIndex++;
 		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
 		myViewPropertyUpdate();
@@ -479,10 +501,12 @@ void StartWindow::createMenus(void)
 	myLayoutMenu->addAction(myResetLayoutAction);
 
 	myViewToolbarSubMenu = myLayoutMenu->addMenu(tr("View Toolbars"));
+	myViewToolbarSubMenu->addAction(mySubFrameAnimateAction);
 
 	myViewDockSubMenu = myLayoutMenu->addMenu(tr("View Dock Windows"));
 
 	myViewDockSubMenu->addAction(myDockWarpVectorAction);
+	myViewDockSubMenu->addAction(myViewPropertyAction);
 
 	myHelpMenu = menuBar()->addMenu(tr("&Help"));
 	myHelpMenu->addAction(myAboutAction);
@@ -1058,6 +1082,32 @@ void StartWindow::myWarpVectorTriggered() {
 	}
 }
 
+void StartWindow::myViewPropertyDockTriggered() {
+	if (myViewPropertyAction->isChecked()) {
+		myViewPropertyDock = new QDockWidget(tr("View Property"), this);
+		myViewPropertyDock->setAllowedAreas(Qt::LeftDockWidgetArea);
+
+		myReferenceNode = new QCheckBox(tr("Reference Node"), this);
+		myReferenceNode->setChecked(false);
+		myReferenceNode->setEnabled(false);
+		connect(myReferenceNode, SIGNAL(clicked()), this, SLOT(myReferenceNodeTriggered()));
+
+		QFormLayout *layout = new QFormLayout;
+		layout->addRow(myReferenceNode);
+		QWidget* temp = new QWidget(this);
+		temp->setLayout(layout);
+
+		myViewPropertyDock->setWidget(temp);
+		myViewPropertyDock->show();
+
+		addDockWidget(Qt::LeftDockWidgetArea, myViewPropertyDock);
+	}
+	else {
+		removeDockWidget(myViewPropertyDock);
+	}
+}
+
+
 void StartWindow::myAutoScalingState() {
 	if (myAutoScaling->isChecked()) {
 		myScalingFactorValue = 1;
@@ -1145,5 +1195,66 @@ void StartWindow::myUMAHMesh() {
 	}
 	else {
 		std::cerr << "FILEIMPORT Error: AbqSIM not found in XML.\n";
+	}
+}
+
+void StartWindow::myReferenceNodeTriggered() {
+	if (myHMesh->referenceNodeLabel.size() != 0)
+		myReferenceNode->setEnabled(true);
+}
+
+void StartWindow::mySubFrameAnimate() {
+	if (mySubFrameAnimateAction->isChecked()) {
+
+		myPreviousFrameButton = new QPushButton(tr("<"), this);
+		myPreviousFrameButton->setFixedWidth(40);
+		myPreviousFrameButton->setStatusTip(tr("Previous Frequency"));
+		connect(myPreviousFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
+
+		myNextFrameButton = new QPushButton(tr(">"), this);
+		myNextFrameButton->setFixedWidth(40);
+		myNextFrameButton->setStatusTip(tr("Next Frequency"));
+		connect(myNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
+
+		mySubFrameAnimateButton = new QPushButton(tr("||"), this);
+		mySubFrameAnimateButton->setFixedWidth(40);
+		mySubFrameAnimateButton->setStatusTip(tr("Play/Pause"));
+		//connect(mySubFrameAnimateButton, SIGNAL(clicked()), this, SLOT(myTimeStepAddProc()));
+
+		mySubFrameText = new QLineEdit(tr("0 deg"), this);
+		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+		mySubFrameText->setFixedWidth(50);
+		mySubFrameText->setAlignment(Qt::AlignHCenter);
+		mySubFrameText->setReadOnly(true);
+
+		mySubFrameAnimatorToolBar = addToolBar(tr("Animate"));
+		mySubFrameAnimatorToolBar->addWidget(myPreviousFrameButton);
+		mySubFrameAnimatorToolBar->addSeparator();
+		mySubFrameAnimatorToolBar->addWidget(mySubFrameText);
+		mySubFrameAnimatorToolBar->addSeparator();
+		mySubFrameAnimatorToolBar->addWidget(myNextFrameButton);
+		mySubFrameAnimatorToolBar->addSeparator();
+		mySubFrameAnimatorToolBar->addWidget(mySubFrameAnimateButton);
+	}
+	else {
+		mySubFrameAnimatorToolBar->hide();
+	}
+}
+
+void StartWindow::mySubFramePrevProc(void) {
+	if (mySubFrameIndex > 0) {
+		isSubFrame = true;
+		mySubFrameIndex--;
+		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+		myViewPropertyUpdate();
+	}
+}
+
+void StartWindow::mySubFrameNextProc(void) {
+	if (mySubFrameIndex < myHMesh->getResultsSubFrameDescription().size() - 1) {
+		isSubFrame = true;
+		mySubFrameIndex++;
+		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+		myViewPropertyUpdate();
 	}
 }

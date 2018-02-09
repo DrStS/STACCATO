@@ -30,6 +30,7 @@
 #include <vector>
 #include <assert.h>
 #include "MathLibrary.h"
+#include <complex>
 
 class HMesh;
 /********//**
@@ -62,22 +63,13 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	std::vector<double> computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector);
-	/***********************************************************************************************
-	* \brief Computes the Cross Product of two vectors
-	* \param[in] Vector 1
-	* \param[in] Vector 2
-	* \param[out] Cross Product
-	* \author Stefan Sicklinger
-	***********/
-	std::vector<double> computeVectorCrossProduct(std::vector<double> &_v1, std::vector<double> &_v2);
-
-	std::vector<double> BoundaryCondition::solve3x3LinearSystem(std::vector<double>& _A, std::vector<double>& _b, double _EPS);
-	double BoundaryCondition::det3x3(std::vector<double>& _A);
+	std::vector<std::complex<double>> computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<std::complex<double>> &_loadVector);
 private:
 	/// HMesh object 
 	HMesh *myHMesh;
-
+public:
+	int nRHS;
+	bool isRotate;
 };
 
 #endif /* BOUNDARYCONDITION_H_ */

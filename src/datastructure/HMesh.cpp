@@ -70,7 +70,6 @@ void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<
 	else if (_type == STACCATO_Magnitude_Im) {
 		resultsMagIm.push_back(_valueVec);
 	}
-	
 }
 
 std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type, int index) {
@@ -103,9 +102,16 @@ std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _t
 void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription) {
 	resultsTimeDescription.push_back(_resultsTimeDescription);
 }
+void HMesh::addResultsSubFrameDescription(int _resultsSubFrameDescription) {
+	resultsSubFrameDescription.push_back(_resultsSubFrameDescription);
+}
 
 std::vector<std::string>& HMesh::getResultsTimeDescription() {		// Getter Function to return all frequency steps
 	return resultsTimeDescription;
+}
+
+std::vector<int>& HMesh::getResultsSubFrameDescription() {		// Getter Function to return all subframe steps
+	return resultsSubFrameDescription;
 }
 
 void HMesh::buildDataStructure(void){

@@ -104,6 +104,11 @@ private slots:
 	void myUMAImport(void);
 	void myUMAHMesh(void);
 	void importXMLFile(void);
+	void myViewPropertyDockTriggered(void);
+	void myReferenceNodeTriggered(void);
+	void mySubFrameAnimate(void);
+	void mySubFramePrevProc(void);
+	void mySubFrameNextProc(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -138,6 +143,7 @@ private:
 	/// Layout action
 	QAction* myResetLayoutAction;
 	QAction* myDockWarpVectorAction;
+	QAction* myViewPropertyAction;
 	QAction* my2dVisualizerAction;
 	/// Help action.
 	QAction* myAboutAction;
@@ -160,6 +166,7 @@ private:
 	QToolBar* mySolutionToolBar;
 	QToolBar* myDisplayControlToolBar;
 	QToolBar* myPickerViewToolBar;
+	QToolBar* mySubFrameAnimatorToolBar;
 	/// Selectors
 	QComboBox* mySolutionSelector;
 	QComboBox* myComponentSelector;
@@ -182,6 +189,7 @@ private:
 
 	/// Check Boxes
 	QCheckBox* myAutoScaling;
+	QCheckBox* myReferenceNode;
 
 	/// View Control ToolBar Buttons
 	QPushButton* myScalarBarVisibility;
@@ -205,6 +213,7 @@ private:
 	/// Dock Windows
 	QDockWidget *myWarpDock;
 	QDockWidget *myUMADock;
+	QDockWidget *myViewPropertyDock;
 
 	/// UMA Widgets
 	QPushButton* myUMAInterfaceButton;
@@ -219,12 +228,23 @@ private:
 	/// Widgets
 	QWidget* myVisualizerDockWidgets;
 
+	/// Sub Frame Animator Widgets
+	QAction* mySubFrameAnimateAction;
+	QPushButton* myPreviousFrameButton;
+	QPushButton* myNextFrameButton;
+	QPushButton* mySubFrameAnimateButton;
+	QLineEdit* mySubFrameText;
+
 	int myFreqIndex;
+	int mySubFrameIndex;
 	int myScalingFactorValue;
 
 private:
 	/// HMesh object 
 	HMesh *myHMesh;
+
+public:
+	bool isSubFrame;
 };
 
 #endif /* STARTWINDOW_H */

@@ -250,6 +250,7 @@ class Part;
 class REFERENCENODESET;
 class REFERENCENODE;
 class COUPLINGNODESET;
+class ROTATE;
 
 #include <memory>    // ::std::auto_ptr
 #include <limits>    // std::numeric_limits
@@ -2595,6 +2596,23 @@ class LOAD: public ::xml_schema::type
   void
   IMAGINARY (const IMAGINARY_sequence& s);
 
+  // ROTATE
+  //
+  typedef ::ROTATE ROTATE_type;
+  typedef ::xsd::cxx::tree::sequence< ROTATE_type > ROTATE_sequence;
+  typedef ROTATE_sequence::iterator ROTATE_iterator;
+  typedef ROTATE_sequence::const_iterator ROTATE_const_iterator;
+  typedef ::xsd::cxx::tree::traits< ROTATE_type, char > ROTATE_traits;
+
+  const ROTATE_sequence&
+  ROTATE () const;
+
+  ROTATE_sequence&
+  ROTATE ();
+
+  void
+  ROTATE (const ROTATE_sequence& s);
+
   // Type
   //
   typedef ::xml_schema::string Type_type;
@@ -2652,6 +2670,7 @@ class LOAD: public ::xml_schema::type
   NODESET_sequence NODESET_;
   REAL_sequence REAL_;
   IMAGINARY_sequence IMAGINARY_;
+  ROTATE_sequence ROTATE_;
   Type_optional Type_;
 };
 
@@ -3032,6 +3051,129 @@ class COUPLINGNODESET: public ::xml_schema::type
 
   protected:
   Name_optional Name_;
+};
+
+class ROTATE: public ::xml_schema::type
+{
+  public:
+  // START_THETA
+  //
+  typedef ::xml_schema::string START_THETA_type;
+  typedef ::xsd::cxx::tree::optional< START_THETA_type > START_THETA_optional;
+  typedef ::xsd::cxx::tree::traits< START_THETA_type, char > START_THETA_traits;
+
+  const START_THETA_optional&
+  START_THETA () const;
+
+  START_THETA_optional&
+  START_THETA ();
+
+  void
+  START_THETA (const START_THETA_type& x);
+
+  void
+  START_THETA (const START_THETA_optional& x);
+
+  void
+  START_THETA (::std::auto_ptr< START_THETA_type > p);
+
+  // END_THETA
+  //
+  typedef ::xml_schema::string END_THETA_type;
+  typedef ::xsd::cxx::tree::optional< END_THETA_type > END_THETA_optional;
+  typedef ::xsd::cxx::tree::traits< END_THETA_type, char > END_THETA_traits;
+
+  const END_THETA_optional&
+  END_THETA () const;
+
+  END_THETA_optional&
+  END_THETA ();
+
+  void
+  END_THETA (const END_THETA_type& x);
+
+  void
+  END_THETA (const END_THETA_optional& x);
+
+  void
+  END_THETA (::std::auto_ptr< END_THETA_type > p);
+
+  // STEP_THETA
+  //
+  typedef ::xml_schema::string STEP_THETA_type;
+  typedef ::xsd::cxx::tree::optional< STEP_THETA_type > STEP_THETA_optional;
+  typedef ::xsd::cxx::tree::traits< STEP_THETA_type, char > STEP_THETA_traits;
+
+  const STEP_THETA_optional&
+  STEP_THETA () const;
+
+  STEP_THETA_optional&
+  STEP_THETA ();
+
+  void
+  STEP_THETA (const STEP_THETA_type& x);
+
+  void
+  STEP_THETA (const STEP_THETA_optional& x);
+
+  void
+  STEP_THETA (::std::auto_ptr< STEP_THETA_type > p);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  ROTATE ();
+
+  ROTATE (const ::xercesc::DOMElement& e,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  ROTATE (const ROTATE& x,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  virtual ROTATE*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  ROTATE&
+  operator= (const ROTATE& x);
+
+  virtual 
+  ~ROTATE ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  START_THETA_optional START_THETA_;
+  END_THETA_optional END_THETA_;
+  STEP_THETA_optional STEP_THETA_;
+  Type_optional Type_;
 };
 
 #include <iosfwd>

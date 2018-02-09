@@ -365,6 +365,14 @@ public:
 public:
 	bool hasParts;
 	bool isSIM;
+	std::vector<int> referenceNodeLabel;
+
+	/* -- Class Members and Functions for SubFrame -- */
+private:
+	std::vector<int> resultsSubFrameDescription;
+public:
+	void addResultsSubFrameDescription(int _resultsSubFrameDescription);
+	std::vector<int>& getResultsSubFrameDescription();
 };
 
 #endif /* HMESH_H_ */

@@ -117,6 +117,24 @@ namespace MathLibrary {
 	* \author Stefan Sicklinger
 	***********/
 	void computeDenseMatrixVectorMultiplication(int _m, int _n, const double *_A, const double *_b, double *_c);
+	/***********************************************************************************************
+	* \brief Computes the Cross Product of two vectors
+	* \param[in] Vector 1
+	* \param[in] Vector 2
+	* \param[out] Cross Product
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> computeVectorCrossProduct(std::vector<double> &_v1, std::vector<double> &_v2);
+	/***********************************************************************************************
+	* \brief Solves 3X3 Linear System of Equations
+	* \author Stefan Sicklinger
+	***********/
+	std::vector<double> solve3x3LinearSystem(std::vector<double>& _A, std::vector<double>& _b, double _EPS);
+	/***********************************************************************************************
+	* \brief Computes Determinant of Matrix
+	* \author Stefan Sicklinger
+	***********/
+	double det3x3(std::vector<double>& _A);
 	/********//**
 			  * \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
 			  *
@@ -269,7 +287,7 @@ namespace MathLibrary {
 		* \brief This function analysis and factorize the matrix
 		* \author Stefan Sicklinger
 		***********/
-		void factorize() {
+		void factorize(int nRHS) {
 #ifdef USE_INTEL_MKL
 			this->determineCSR();
 			if (isSymmetric) {
@@ -292,7 +310,7 @@ namespace MathLibrary {
 			pardiso_neq = m; // number of rows of 
 			pardiso_error = 0; //Initialize error flag 
 							   //pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
-			pardiso_nrhs = 1; // number of right hand side
+			pardiso_nrhs = nRHS; // number of right hand side
 			pardiso_phase = 12; // analysis and factorization
 								//pardiso_iparm[36] = -90;
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads);
@@ -357,6 +375,32 @@ namespace MathLibrary {
 		* \author Stefan Sicklinger
 		***********/
 		void solveDirect(T* _x, T* _b) { //Computes x=A\b
+#ifdef USE_INTEL_MKL
+										 // pardiso forward and backward substitution
+			pardiso_phase = 33; // forward and backward substitution
+								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
+
+			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
+				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
+				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, _b, _x, &pardiso_error);
+			if (pardiso_error != 0)
+			{
+				errorOut << "Error pardiso forward and backward substitution failed with error code: " << pardiso_error
+					<< std::endl;
+				exit(EXIT_FAILURE);
+			}
+			infoOut << "Forward and backward substitution completed" << std::endl;
+#endif
+		}
+
+		/***********************************************************************************************
+		* \brief This function performs the prepare of "multiple" solutions
+		* \param[out] pointer to solution vector _x
+		* \param[in]  pointer to rhs vector _b
+		* \author Stefan Sicklinger
+		***********/
+		void solveDirect(T* _x, T* _b, int nRHS) { //Computes x=A\b
 #ifdef USE_INTEL_MKL
 										 // pardiso forward and backward substitution
 			pardiso_phase = 33; // forward and backward substitution

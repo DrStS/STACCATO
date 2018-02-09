@@ -143,4 +143,37 @@ namespace MathLibrary {
 			_c[i] = sum;
 		}
 	}
+
+
+	std::vector<double> computeVectorCrossProduct(std::vector<double> &_v1, std::vector<double> &_v2) {
+		std::vector<double> crossProduct(3);
+		crossProduct[0] = _v1[1] * _v2[2] - _v2[1] * _v1[2];
+		crossProduct[1] = -(_v1[0] * _v2[2] - _v2[0] * _v1[2]);
+		crossProduct[2] = _v1[0] * _v2[1] - _v2[0] * _v1[1];
+		return crossProduct;
+	}
+
+	std::vector<double> solve3x3LinearSystem(std::vector<double>& _A, std::vector<double>& _b, double _EPS) {
+		std::vector<double> A(9, 0);
+		std::vector<double> b(3, 0);
+
+		double detA = det3x3(_A);
+		if (fabs(detA) < _EPS)
+			return{};
+		for (int i = 0; i < 3; i++)
+			b[i] = _b[i];
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 9; j++)
+				A[j] = _A[j];
+			for (int j = 0; j < 3; j++)
+				A[j * 3 + i] = b[j];
+			_b[i] = det3x3(A) / detA;
+		}
+		return _b;
+	}
+
+	double det3x3(std::vector<double>& _A) {
+		return _A[0] * _A[4] * _A[8] + _A[1] * _A[5] * _A[6] + _A[2] * _A[3] * _A[7]
+			- _A[0] * _A[5] * _A[7] - _A[1] * _A[3] * _A[8] - _A[2] * _A[4] * _A[6];
+	}
 } /* namespace Math */

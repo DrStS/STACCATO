@@ -190,6 +190,16 @@
                     <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
                     <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
                     <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />
+                    <xs:element name="ROTATE" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="START_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                          <xs:element name="END_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                          <xs:element name="STEP_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+                        </xs:sequence>
+                        <xs:attribute name="Type" type="xs:string" />
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Type" type="xs:string" />
                 </xs:complexType>

@@ -58,6 +58,11 @@ private:
 	/// Stiffness Matrix
 	MathLibrary::SparseMatrix<double> *AReal;
 	MathLibrary::SparseMatrix<MKL_Complex16> *AComplex;
+public:
+	std::vector<std::vector<double>> thetaResultsUxRe;
+	std::vector<std::vector<double>> thetaResultsUyRe;
+	std::vector<std::vector<double>> thetaResultsUzRe;
+	std::vector<std::vector<double>> thetaResultsMagRe;
 };
 
 

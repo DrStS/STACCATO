@@ -1,6 +1,6 @@
 <STACCATO_XML>
-	<FILEIMPORT Name="KinCoupleFelgeStaticODB" Type="AbqODB">
-		<FILE>FelgeStaticKinematic.odb</FILE>
+	<FILEIMPORT Name="FCoupleFelgeDynamicODB" Type="AbqODB">
+		<FILE>felgeStaticKinematic.odb</FILE>
 		<IMPORT Type="Nodes">
 			<LIST>ALL</LIST>
 		</IMPORT>
@@ -20,20 +20,20 @@
 		</IMPORT>
 	</FILEIMPORT>
 	<ANALYSIS>
-		<NAME>KinematicCouplingFelgeStatic</NAME>
+		<NAME>ForceCouplingFelgeStaticRotate</NAME>
 		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
 	</ANALYSIS>
 	<FREQUENCY Type="STEP">
 		<START_FREQ>250</START_FREQ>
 		<END_FREQ>250</END_FREQ>
-		<STEP_FREQ>500</STEP_FREQ>
+		<STEP_FREQ>750</STEP_FREQ>
 	</FREQUENCY>
 	<MATERIALS>
 		<MATERIAL Name="Steel" Type="Isotropic">
 			<E>211000</E>
 			<nu>0.3</nu>
 			<rho>7.85e-6</rho>
-			<eta>0.0</eta>
+			<eta>0.01</eta>
 		</MATERIAL>
 	</MATERIALS>
 	<SECTIONS>
@@ -63,17 +63,17 @@
 		<NODESET Name="clamp22"><LIST>3407</LIST></NODESET>
 	</SETS>
 	<LOADS>
-		<!--<LOAD Type="ConcentratedForce">
-			<NODESET Name="clamp22"/>
-			<REAL><X>11.000</X><Y>12.000</Y><Z>13.000</Z></REAL>
-			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-		</LOAD>-->
-		<LOAD Type="DistributingCouplingForce">
+		<LOAD Type="RotatingDistributingCouplingForce">
 			<REFERENCENODESET Name="REFNODE"/>
 			<REFERENCENODE><X>0.000</X><Y>500.000</Y><Z>0.000</Z></REFERENCENODE>
 			<COUPLINGNODESET Name="SLAVENODES"/>
 			<REAL><X>5000.000</X><Y>150.000</Y><Z>180.000</Z></REAL>
 			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
+			<ROTATE Type="STEP">
+				<START_THETA>0</START_THETA>
+				<END_THETA>360</END_THETA>
+				<STEP_THETA>30</STEP_THETA>
+			</ROTATE>
 		</LOAD>
 	</LOADS>
 	<BC>

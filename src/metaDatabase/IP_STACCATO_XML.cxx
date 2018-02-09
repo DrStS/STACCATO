@@ -2015,6 +2015,24 @@ IMAGINARY (const IMAGINARY_sequence& s)
   this->IMAGINARY_ = s;
 }
 
+const LOAD::ROTATE_sequence& LOAD::
+ROTATE () const
+{
+  return this->ROTATE_;
+}
+
+LOAD::ROTATE_sequence& LOAD::
+ROTATE ()
+{
+  return this->ROTATE_;
+}
+
+void LOAD::
+ROTATE (const ROTATE_sequence& s)
+{
+  this->ROTATE_ = s;
+}
+
 const LOAD::Type_optional& LOAD::
 Type () const
 {
@@ -2315,6 +2333,130 @@ void COUPLINGNODESET::
 Name (::std::auto_ptr< Name_type > x)
 {
   this->Name_.set (x);
+}
+
+
+// ROTATE
+// 
+
+const ROTATE::START_THETA_optional& ROTATE::
+START_THETA () const
+{
+  return this->START_THETA_;
+}
+
+ROTATE::START_THETA_optional& ROTATE::
+START_THETA ()
+{
+  return this->START_THETA_;
+}
+
+void ROTATE::
+START_THETA (const START_THETA_type& x)
+{
+  this->START_THETA_.set (x);
+}
+
+void ROTATE::
+START_THETA (const START_THETA_optional& x)
+{
+  this->START_THETA_ = x;
+}
+
+void ROTATE::
+START_THETA (::std::auto_ptr< START_THETA_type > x)
+{
+  this->START_THETA_.set (x);
+}
+
+const ROTATE::END_THETA_optional& ROTATE::
+END_THETA () const
+{
+  return this->END_THETA_;
+}
+
+ROTATE::END_THETA_optional& ROTATE::
+END_THETA ()
+{
+  return this->END_THETA_;
+}
+
+void ROTATE::
+END_THETA (const END_THETA_type& x)
+{
+  this->END_THETA_.set (x);
+}
+
+void ROTATE::
+END_THETA (const END_THETA_optional& x)
+{
+  this->END_THETA_ = x;
+}
+
+void ROTATE::
+END_THETA (::std::auto_ptr< END_THETA_type > x)
+{
+  this->END_THETA_.set (x);
+}
+
+const ROTATE::STEP_THETA_optional& ROTATE::
+STEP_THETA () const
+{
+  return this->STEP_THETA_;
+}
+
+ROTATE::STEP_THETA_optional& ROTATE::
+STEP_THETA ()
+{
+  return this->STEP_THETA_;
+}
+
+void ROTATE::
+STEP_THETA (const STEP_THETA_type& x)
+{
+  this->STEP_THETA_.set (x);
+}
+
+void ROTATE::
+STEP_THETA (const STEP_THETA_optional& x)
+{
+  this->STEP_THETA_ = x;
+}
+
+void ROTATE::
+STEP_THETA (::std::auto_ptr< STEP_THETA_type > x)
+{
+  this->STEP_THETA_.set (x);
+}
+
+const ROTATE::Type_optional& ROTATE::
+Type () const
+{
+  return this->Type_;
+}
+
+ROTATE::Type_optional& ROTATE::
+Type ()
+{
+  return this->Type_;
+}
+
+void ROTATE::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void ROTATE::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void ROTATE::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
 }
 
 
@@ -4963,6 +5105,7 @@ LOAD ()
   NODESET_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
+  ROTATE_ (this),
   Type_ (this)
 {
 }
@@ -4978,6 +5121,7 @@ LOAD (const LOAD& x,
   NODESET_ (x.NODESET_, f, this),
   REAL_ (x.REAL_, f, this),
   IMAGINARY_ (x.IMAGINARY_, f, this),
+  ROTATE_ (x.ROTATE_, f, this),
   Type_ (x.Type_, f, this)
 {
 }
@@ -4993,6 +5137,7 @@ LOAD (const ::xercesc::DOMElement& e,
   NODESET_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
+  ROTATE_ (this),
   Type_ (this)
 {
   if ((f & ::xml_schema::flags::base) == 0)
@@ -5078,6 +5223,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
       continue;
     }
 
+    // ROTATE
+    //
+    if (n.name () == "ROTATE" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< ROTATE_type > r (
+        ROTATE_traits::create (i, f, this));
+
+      this->ROTATE_.push_back (r);
+      continue;
+    }
+
     break;
   }
 
@@ -5114,6 +5270,7 @@ operator= (const LOAD& x)
     this->NODESET_ = x.NODESET_;
     this->REAL_ = x.REAL_;
     this->IMAGINARY_ = x.IMAGINARY_;
+    this->ROTATE_ = x.ROTATE_;
     this->Type_ = x.Type_;
   }
 
@@ -5604,6 +5761,144 @@ operator= (const COUPLINGNODESET& x)
 
 COUPLINGNODESET::
 ~COUPLINGNODESET ()
+{
+}
+
+// ROTATE
+//
+
+ROTATE::
+ROTATE ()
+: ::xml_schema::type (),
+  START_THETA_ (this),
+  END_THETA_ (this),
+  STEP_THETA_ (this),
+  Type_ (this)
+{
+}
+
+ROTATE::
+ROTATE (const ROTATE& x,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  START_THETA_ (x.START_THETA_, f, this),
+  END_THETA_ (x.END_THETA_, f, this),
+  STEP_THETA_ (x.STEP_THETA_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+ROTATE::
+ROTATE (const ::xercesc::DOMElement& e,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  START_THETA_ (this),
+  END_THETA_ (this),
+  STEP_THETA_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void ROTATE::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // START_THETA
+    //
+    if (n.name () == "START_THETA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< START_THETA_type > r (
+        START_THETA_traits::create (i, f, this));
+
+      if (!this->START_THETA_)
+      {
+        this->START_THETA_.set (r);
+        continue;
+      }
+    }
+
+    // END_THETA
+    //
+    if (n.name () == "END_THETA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< END_THETA_type > r (
+        END_THETA_traits::create (i, f, this));
+
+      if (!this->END_THETA_)
+      {
+        this->END_THETA_.set (r);
+        continue;
+      }
+    }
+
+    // STEP_THETA
+    //
+    if (n.name () == "STEP_THETA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< STEP_THETA_type > r (
+        STEP_THETA_traits::create (i, f, this));
+
+      if (!this->STEP_THETA_)
+      {
+        this->STEP_THETA_.set (r);
+        continue;
+      }
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+ROTATE* ROTATE::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class ROTATE (*this, f, c);
+}
+
+ROTATE& ROTATE::
+operator= (const ROTATE& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->START_THETA_ = x.START_THETA_;
+    this->END_THETA_ = x.END_THETA_;
+    this->STEP_THETA_ = x.STEP_THETA_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+ROTATE::
+~ROTATE ()
 {
 }
 

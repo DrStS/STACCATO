@@ -132,6 +132,18 @@ void MetaDatabase::buildXML(HMesh& _hMesh) {
 		}
 		_hMesh.addNodeSet(std::string(iSets->NODESET()[k].Name()->c_str()), idList);
 	}
+	STACCATO_XML::LOADS_const_iterator iLoads(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
+	// Reference Node
+	for (int k = 0; k < iLoads->LOAD().size(); k++)	{
+		if (std::string(iLoads->LOAD()[k].Type()->c_str()) == "DistributingCouplingForce") {
+			std::vector<int> nextLabel = { _hMesh.getNodeLabels().back() + 1 };
+			_hMesh.addNode(nextLabel[0], std::atof(iLoads->LOAD()[k].REFERENCENODE().begin()->X()->c_str()), std::atof(iLoads->LOAD()[k].REFERENCENODE().begin()->Y()->c_str()), std::atof(iLoads->LOAD()[k].REFERENCENODE().begin()->Z()->c_str()));
+			_hMesh.referenceNodeLabel.push_back(nextLabel[0]);
+			_hMesh.addNodeSet(std::string(iLoads->LOAD()[k].REFERENCENODESET().begin()->Name()->c_str()), nextLabel);
+
+			std::cout << ">> Reference Node/NodeSet Found: Assigned with node label " << nextLabel[0] << ".\n";
+		}
+	}
 }
 
 void MetaDatabase::exportXML() {

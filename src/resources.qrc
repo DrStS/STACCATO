@@ -18,5 +18,6 @@
 				<file>Qt/resources/cursor.ico</file>
 				<file>Qt/resources/picker.ico</file>
 				<file>Qt/resources/list.ico</file>
+				<file>Qt/resources/animate.ico</file>
     </qresource>
 </RCC>

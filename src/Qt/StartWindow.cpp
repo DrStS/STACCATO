@@ -55,6 +55,7 @@
 #include <QtCharts/QLineSeries>
 //#include <QtCharts/QChart>
 #include <QtCharts/QChartView>
+#include <QSlider>
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -118,7 +119,6 @@ QT_CHARTS_USE_NAMESPACE
 
 //XML
 #include "MetaDatabase.h"
-
 
 StartWindow::StartWindow(QWidget *parent) :
 QMainWindow(parent),
@@ -333,6 +333,15 @@ void StartWindow::createActions(void)
 	my2dVisualizerVisibility->setFlat(true);
 	connect(my2dVisualizerVisibility, SIGNAL(clicked()), this, SLOT(my2dVisualizerInterface()));
 	my2dVisualizerVisibility->setEnabled(false);
+
+	myAnimationDockButton = new QPushButton(this);
+	myAnimationDockButton->setIcon(QIcon(":/Qt/resources/animate.ico"));
+	myAnimationDockButton->setStatusTip(tr("Enable Animation"));
+	myAnimationDockButton->setCheckable(true);
+	myAnimationDockButton->setChecked(false);
+	myAnimationDockButton->setFlat(true);
+	connect(myAnimationDockButton, SIGNAL(clicked()), this, SLOT(myAnimationDockTriggered()));
+	myAnimationDockButton->setEnabled(false);
 
 
 	// Create actions
@@ -557,6 +566,7 @@ void StartWindow::createToolBars(void)
 	myDisplayControlToolBar->addWidget(myScalarBarVisibility);
 	myDisplayControlToolBar->addWidget(myWarpVectorVisibility);
 	myDisplayControlToolBar->addWidget(my2dVisualizerVisibility);
+	myDisplayControlToolBar->addWidget(myAnimationDockButton);
 	myDisplayControlToolBar->setOrientation(Qt::Vertical);
 }
 
@@ -663,6 +673,7 @@ void StartWindow::importXMLFile(void) {
 		myScalarBarVisibility->setEnabled(true);
 		myWarpVectorVisibility->setEnabled(true);
 		my2dVisualizerVisibility->setEnabled(true);
+		myAnimationDockButton->setEnabled(true);
 
 		anaysisTimer01.start();
 		myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
@@ -1208,18 +1219,18 @@ void StartWindow::mySubFrameAnimate() {
 
 		myPreviousFrameButton = new QPushButton(tr("<"), this);
 		myPreviousFrameButton->setFixedWidth(40);
-		myPreviousFrameButton->setStatusTip(tr("Previous Frequency"));
+		myPreviousFrameButton->setStatusTip(tr("Previous Fram"));
 		connect(myPreviousFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
 
 		myNextFrameButton = new QPushButton(tr(">"), this);
 		myNextFrameButton->setFixedWidth(40);
-		myNextFrameButton->setStatusTip(tr("Next Frequency"));
+		myNextFrameButton->setStatusTip(tr("Next Frame"));
 		connect(myNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
 
 		mySubFrameAnimateButton = new QPushButton(tr("||"), this);
 		mySubFrameAnimateButton->setFixedWidth(40);
 		mySubFrameAnimateButton->setStatusTip(tr("Play/Pause"));
-		//connect(mySubFrameAnimateButton, SIGNAL(clicked()), this, SLOT(myTimeStepAddProc()));
+		connect(mySubFrameAnimateButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
 
 		mySubFrameText = new QLineEdit(tr("0 deg"), this);
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
@@ -1235,6 +1246,8 @@ void StartWindow::mySubFrameAnimate() {
 		mySubFrameAnimatorToolBar->addWidget(myNextFrameButton);
 		mySubFrameAnimatorToolBar->addSeparator();
 		mySubFrameAnimatorToolBar->addWidget(mySubFrameAnimateButton);
+
+		myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh);
 	}
 	else {
 		mySubFrameAnimatorToolBar->hide();
@@ -1246,7 +1259,9 @@ void StartWindow::mySubFramePrevProc(void) {
 		isSubFrame = true;
 		mySubFrameIndex--;
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myViewPropertyUpdate();
+		//myViewPropertyUpdate();
+
+		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
 	}
 }
 
@@ -1255,6 +1270,85 @@ void StartWindow::mySubFrameNextProc(void) {
 		isSubFrame = true;
 		mySubFrameIndex++;
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myViewPropertyUpdate();
+		//myViewPropertyUpdate();
+		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
+	}
+}
+
+void StartWindow::mySubFramePlayProv(void) {
+	std::cout << ">> Animation Data ... " << std::endl;
+	myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh);
+
+
+}
+
+void StartWindow::myAnimationDockTriggered() {
+	if (myAnimationDockButton->isChecked()) {
+		myAnimationDock = new QDockWidget(tr("Create Animation"), this);
+		myAnimationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
+
+		myUMAInterfaceButton = new QPushButton(tr("Parse SIM File"), this);
+		connect(myUMAInterfaceButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
+
+		mySIMImportButton = new QPushButton(tr("Import SIM to HMesh"), this);
+		connect(mySIMImportButton, SIGNAL(clicked()), this, SLOT(myUMAHMesh()));
+
+		myAnimateSolutionTypeLabel = new QLabel(tr("Component: "), this);
+
+		myAnimationSolutionSelector = new QComboBox();
+		myAnimationSolutionSelector->setStatusTip(tr("Select Vector Component"));
+		for (int i = 0; i < allDispVectorComponents.size(); i++)
+			myAnimationSolutionSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
+		myAnimationSolutionSelector->setEnabled(false);
+
+		myScalingFactorLabel = new QLabel(tr("Scaling Factor"), this);
+
+		myAnimateScalingFactor = new QLineEdit(this);
+		myAnimateScalingFactor->setText("1");
+
+		myCreateFrameAnimationButton = new QPushButton(tr("Animate"), this);
+		connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
+
+		myResetFrameAnimationButton = new QPushButton(tr("Reset"), this);
+		//connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
+
+		mySubFrameText = new QLineEdit(tr("0 deg"), this);
+		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+		mySubFrameText->setFixedWidth(50);
+		mySubFrameText->setAlignment(Qt::AlignHCenter);
+		mySubFrameText->setReadOnly(true);
+
+		myHorizontalSlider = new QSlider(Qt::Horizontal);
+
+		myAnimatePlayPauseButton = new QPushButton(tr("Play/Pause"), this);
+		//connect(myAnimatePlayPauseButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
+
+		myAnimateRepeat = new QCheckBox(tr("Repeat"), this);
+		myAnimateRepeat->setChecked(false);
+		//connect(myAnimateRepeat, SIGNAL(clicked()), this, SLOT(myAutoScalingState()));
+
+		myAnimatePrevFrameButton = new QPushButton(tr("Prev"), this);
+		connect(myAnimatePrevFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
+
+		myAnimateNextFrameButton = new QPushButton(tr("Next"), this);
+		connect(myAnimateNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
+
+		QFormLayout *layout = new QFormLayout;
+		layout->addRow(myAnimateSolutionTypeLabel, myAnimationSolutionSelector);
+		layout->addRow(myScalingFactorLabel, myAnimateScalingFactor);
+		layout->addRow(myCreateFrameAnimationButton, myResetFrameAnimationButton);
+		layout->addRow(mySubFrameText, myHorizontalSlider);
+		layout->addRow(myAnimatePlayPauseButton, myAnimateRepeat);
+		layout->addRow(myAnimatePrevFrameButton, myAnimateNextFrameButton);
+		QWidget* temp = new QWidget(this);
+		temp->setLayout(layout);
+
+		myAnimationDock->setWidget(temp);
+		myAnimationDock->show();
+
+		addDockWidget(Qt::LeftDockWidgetArea, myAnimationDock);
+	}
+	else {
+		removeDockWidget(myAnimationDock);
 	}
 }

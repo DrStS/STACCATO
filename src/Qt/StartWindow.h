@@ -51,6 +51,7 @@ class QCheckBox;
 class QGroupBox;
 class QSpinBox;
 class QFormLayout;
+class QSlider;
 
 namespace Ui {
 	class StartWindow;
@@ -109,6 +110,8 @@ private slots:
 	void mySubFrameAnimate(void);
 	void mySubFramePrevProc(void);
 	void mySubFrameNextProc(void);
+	void mySubFramePlayProv(void);
+	void myAnimationDockTriggered(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -171,6 +174,7 @@ private:
 	QComboBox* mySolutionSelector;
 	QComboBox* myComponentSelector;
 	QComboBox* myViewModeSelector;
+	QComboBox* myAnimationSolutionSelector;
 
 	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;
@@ -186,6 +190,7 @@ private:
 	/// Labels
 	QLabel* myTimeStepLabel;
 	QLabel* myScalingFactorLabel;
+	QLabel* myAnimateSolutionTypeLabel;
 
 	/// Check Boxes
 	QCheckBox* myAutoScaling;
@@ -198,6 +203,7 @@ private:
 	QPushButton* my2dVisualizerVisibility;
 	QPushButton* myRotateModeButton;
 	QPushButton* myPickModeButton;
+	QPushButton* myAnimationDockButton;
 
 	/// Picker View ToolBar Buttons
 	QPushButton* myPickerModeNone;
@@ -214,6 +220,10 @@ private:
 	QDockWidget *myWarpDock;
 	QDockWidget *myUMADock;
 	QDockWidget *myViewPropertyDock;
+	QDockWidget *myAnimationDock;
+
+	/// QLineEdits
+	QLineEdit* myAnimateScalingFactor;
 
 	/// UMA Widgets
 	QPushButton* myUMAInterfaceButton;
@@ -234,6 +244,13 @@ private:
 	QPushButton* myNextFrameButton;
 	QPushButton* mySubFrameAnimateButton;
 	QLineEdit* mySubFrameText;
+	QPushButton* myCreateFrameAnimationButton;
+	QPushButton* myResetFrameAnimationButton;
+	QPushButton* myAnimatePlayPauseButton;
+	QPushButton* myAnimateNextFrameButton;
+	QPushButton* myAnimatePrevFrameButton;
+	QCheckBox* myAnimateRepeat;
+	QSlider *myHorizontalSlider;
 
 	int myFreqIndex;
 	int mySubFrameIndex;

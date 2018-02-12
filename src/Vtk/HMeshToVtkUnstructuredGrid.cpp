@@ -32,6 +32,7 @@
 #include <vtkFloatArray.h>
 #include <vtkWarpVector.h>
 
+
 //================================================================
 // Function : Constructor
 // Purpose  :
@@ -123,5 +124,4 @@ void HMeshToVtkUnstructuredGrid::setVectorFieldAtNodes(std::vector<double> _x, s
 
 	myVtkUnstructuredGrid->GetPointData()->AddArray(vectorField);
 	myVtkUnstructuredGrid->GetPointData()->SetActiveVectors(vectorField->GetName());
-
 }

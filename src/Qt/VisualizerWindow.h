@@ -40,8 +40,6 @@
 #include <QValueAxis>
 #include <QLogValueAxis>
 
-
-
 QT_CHARTS_USE_NAMESPACE
 
 // OCC

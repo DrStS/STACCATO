@@ -40,6 +40,8 @@ class vtkActor;
 class QColor;
 class vtkScalarBarWidget;
 class vtkUnstructuredGrid;
+class vtkWarpVector;
+class vtkLookupTable;
 
 
 class VtkViewer : public QVTKOpenGLWidget
@@ -126,6 +128,12 @@ private:
 	vtkSmartPointer<vtkScalarBarWidget> myScalarBarWidget;
 	vtkSmartPointer<vtkActor> selectedPickActor;
 
+	// Array
+	vtkSmartPointer<vtkActor> *myArrayActor;
+	vtkSmartPointer<vtkDataSetMapper> *myArrayMapper;
+	vtkSmartPointer<vtkWarpVector>* warpFilterArray;
+	vtkSmartPointer<vtkLookupTable>* hueLutArray;
+
 	STACCATO_Picker_type myCurrentPickerType;
 
 	///Display Properties
@@ -150,6 +158,8 @@ public slots:
 	void setPickerModeNone() { setPickerMode(STACCATO_Picker_None); }
 	void setPickerModeNode() { setPickerMode(STACCATO_Picker_Node); }
 	void setPickerModeElement() { setPickerMode(STACCATO_Picker_Element); }
+	void animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh);
+	void plotVectorFieldAtIndex(int _index);
 };
 
 Q_DECLARE_METATYPE(VtkViewer*)

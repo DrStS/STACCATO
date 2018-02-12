@@ -70,6 +70,7 @@ public:
 	void buildXML(HMesh& _hMesh);
 	void exportXML();
 	void outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath);
+
 };
 
 #endif /* METADATABASE_H_ */

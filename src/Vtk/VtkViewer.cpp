@@ -56,6 +56,7 @@
 #include <QInputEvent>
 
 
+
 VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	vtkNew<vtkGenericOpenGLRenderWindow> window;
 	SetRenderWindow(window.Get());
@@ -421,4 +422,121 @@ void VtkViewer::myUpdateVisualizerWindow(){
 		VW->setSelection(mySelectedNodes);
 	else if (myCurrentPickerType == STACCATO_Picker_Element)
 		VW->setSelection(mySelectedElements);
+}
+
+void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh) {
+	int k = _hMesh.getResultsSubFrameDescription().size();
+	myArrayActor = new vtkSmartPointer<vtkActor>[k];
+	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[k];
+	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[k];
+	hueLutArray = new vtkSmartPointer<vtkLookupTable>[k];
+
+	for (int i = 0; i < k; i++)
+	{
+		int resultIndex = i*_hMesh.getResultsTimeDescription().size() + 0;
+		std::cout << "Animating for Index: " << resultIndex << std::endl;
+		_vtkUnstructuredGrid.setScalarFieldAtNodes(_hMesh.getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex));
+		_vtkUnstructuredGrid.setVectorFieldAtNodes(_hMesh.getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex), _hMesh.getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex), _hMesh.getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
+
+		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
+		myArrayMapper[i]->SetInputData(_vtkUnstructuredGrid.getVtkUnstructuredGrid());
+
+		myArrayMapper[i]->ScalarVisibilityOn();
+		myArrayMapper[i]->SetScalarModeToUsePointData();
+		myArrayMapper[i]->SetColorModeToMapScalars();
+
+		myArrayActor[i] = vtkSmartPointer<vtkActor>::New();
+		myArrayActor[i]->SetMapper(myArrayMapper[i]);
+
+		double scalarRange[2];
+		_vtkUnstructuredGrid.getVtkUnstructuredGrid()->GetPointData()->GetScalars()->GetRange(scalarRange);
+
+		// Set the color for edges of the sphere
+		mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
+		mySelectedActor->GetProperty()->EdgeVisibilityOff();
+		std::cout << "Animating for Index: " << resultIndex << std::endl;
+		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
+		warpFilterArray[i]->SetInputData(_vtkUnstructuredGrid.getVtkUnstructuredGrid());
+		warpFilterArray[i]->SetScaleFactor(2000);
+		warpFilterArray[i]->Update();
+		warpFilterArray[i]->SetInputData(warpFilterArray[i]->GetUnstructuredGridOutput());
+
+		myArrayMapper[i]->UseLookupTableScalarRangeOn();
+		// Create a lookup table to share between the mapper and the scalarbar
+		hueLutArray[i] = vtkSmartPointer<vtkLookupTable>::New();
+		hueLutArray[i]->SetTableRange(scalarRange[0], scalarRange[1]);
+		hueLutArray[i]->SetHueRange(0.667, 0.0);
+		hueLutArray[i]->SetValueRange(1, 1);
+		hueLutArray[i]->Build();
+
+		myArrayMapper[i]->SetLookupTable(hueLutArray[i]);
+		std::cout << "Animating for Index: " << resultIndex << std::endl;
+	}
+		
+}
+
+void VtkViewer::plotVectorFieldAtIndex(int _index) {
+	mySelectedActor = myArrayActor[_index];
+	mySelectedMapper = myArrayMapper[_index];
+	
+	// Reset the Renderer
+	myRenderer->RemoveAllViewProps();
+	mySelectedMapper->ScalarVisibilityOn();
+	mySelectedMapper->SetScalarModeToUsePointData();
+	mySelectedMapper->SetColorModeToMapScalars();
+
+	mySelectedActor->SetMapper(mySelectedMapper);
+	
+	// Set the color for edges of the sphere
+	mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
+	mySelectedActor->GetProperty()->EdgeVisibilityOff();
+
+	mySelectedMapper->SetInputData(warpFilterArray[_index]->GetUnstructuredGridOutput());
+
+	mySelectedMapper->UseLookupTableScalarRangeOn();
+	// Create a lookup table to share between the mapper and the scalarbar
+
+	warpFilterArray[_index]->SetScaleFactor(2000);
+	mySelectedMapper->SetLookupTable(hueLutArray[_index]);
+
+	myScalarBarWidget->SetResizable(true);
+	myScalarBarWidget->SetInteractor(GetRenderWindow()->GetInteractor());
+	myScalarBarWidget->GetScalarBarActor()->SetTitle(myTitle);
+	myScalarBarWidget->GetScalarBarActor()->SetNumberOfLabels(4);
+	myScalarBarWidget->GetScalarBarActor()->SetLookupTable(hueLutArray[_index]);
+	myScalarBarWidget->EnabledOn();
+
+	this->getRenderer()->AddActor(myEdgeActor);
+
+	if (myEdgeVisibility) {
+		//Edge vis
+		vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
+		edgeExtractor->SetInputData(warpFilterArray[_index]->GetUnstructuredGridOutput());
+		vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
+		edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
+		myEdgeActor->SetMapper(edgeMapper);
+		myEdgeActor->GetProperty()->SetColor(0., 0., 0.);
+		myEdgeActor->GetProperty()->SetLineWidth(3);
+		edgeMapper->ScalarVisibilityOff();
+	}
+	else
+		myRenderer->RemoveActor(myEdgeActor);
+
+	if (!mySurfaceVisiiblity)
+		this->getRenderer()->RemoveActor(mySelectedActor);
+	else
+		this->getRenderer()->AddActor(mySelectedActor);
+
+	if (myScalarBarVisibility)
+		this->getRenderer()->AddActor2D(myScalarBarWidget->GetScalarBarActor());
+	else
+		this->getRenderer()->RemoveActor2D(myScalarBarWidget->GetScalarBarActor());
+
+	static bool resetCamera = true;
+	if (resetCamera) {
+		this->getRenderer()->ResetCamera();
+		resetCamera = false;
+	}
+	this->GetRenderWindow()->Render();
+	
 }

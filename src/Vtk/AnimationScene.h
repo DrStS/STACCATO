@@ -1,47 +1,12 @@
 #include <vtkSmartPointer.h>
 #include <vtkAnimationCue.h>
-#include <vtkRenderer.h>
-#include <vtkSphereSource.h>
-#include <vtkDataSetMapper.h>
 #include <vtkCommand.h>
-#include <vtkAnimationScene.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderWindowInteractor.h>
 #include <vtkUnstructuredGrid.h>
-#include <vtkWarpVector.h>
-#include <vtkExtractEdges.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkProperty.h>
 #include "HMesh.h"
 #include "HMeshToVtkUnstructuredGrid.h"
 
-#include <vtkCamera.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkOrientationMarkerWidget.h>
-#include <vtkAxesActor.h>
-#include <vtkRenderer.h>
-#include <vtkCellPicker.h>
-#include <vtkActor.h>
-#include <vtkIdTypeArray.h>
-#include <vtkSelectionNode.h>
-#include <vtkSelection.h>
-#include <vtkExtractSelection.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkFloatArray.h>
-#include <vtkPointData.h>
-#include <vtkScalarBarActor.h>
-#include <vtkScalarBarWidget.h>
-#include <vtkLookupTable.h>
-#include <vtkRenderWindow.h>
-#include <vtkWarpVector.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkExtractEdges.h>
-#include <vtkXMLUnstructuredGridWriter.h>
-#include <vtkPointPicker.h>
-
 #include "vtkViewer.h"
 #include <QApplication>
-#include <vtkAnimationScene.h>
 
 class CueAnimator
 {

@@ -435,7 +435,6 @@ void StartWindow::myViewPropertyUpdate(void) {
 	}
 
 	int resultIndex = mySubFrameIndex*myHMesh->getResultsTimeDescription().size() + myFreqIndex;
-	std::cout << "Plotting for Index: " << resultIndex << std::endl;
 
 	// Update Solution
 	if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
@@ -1247,7 +1246,7 @@ void StartWindow::mySubFrameAnimate() {
 		mySubFrameAnimatorToolBar->addSeparator();
 		mySubFrameAnimatorToolBar->addWidget(mySubFrameAnimateButton);
 
-		myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh);
+		myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh, STACCATO_Ux_Re, 1);
 	}
 	else {
 		mySubFrameAnimatorToolBar->hide();
@@ -1259,8 +1258,7 @@ void StartWindow::mySubFramePrevProc(void) {
 		isSubFrame = true;
 		mySubFrameIndex--;
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		//myViewPropertyUpdate();
-
+		myHorizontalSlider->setValue(mySubFrameIndex + 1);
 		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
 	}
 }
@@ -1270,16 +1268,101 @@ void StartWindow::mySubFrameNextProc(void) {
 		isSubFrame = true;
 		mySubFrameIndex++;
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		//myViewPropertyUpdate();
+		myHorizontalSlider->setValue(mySubFrameIndex + 1);
 		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
 	}
 }
 
+void StartWindow::myUpdateAnimationSlider(int _currentIndex) {
+	isSubFrame = true;
+	mySubFrameIndex = _currentIndex-1;
+	mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+	myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
+}
+
 void StartWindow::mySubFramePlayProv(void) {
+	anaysisTimer01.start();
 	std::cout << ">> Animation Data ... " << std::endl;
-	myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh);
+	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	static bool edge = false;
+	static bool surface = true;
 
+	// Update View Mode
+	if (myViewModeSelector->currentText().toStdString() == allViewModes[0]) {			// Surface With Edges
+		edge = false;
+		surface = true;
+	}
+	else if (myViewModeSelector->currentText().toStdString() == allViewModes[1]) {			// Surface With Edges
+		edge = true;
+		surface = true;
+	}
+	else if (myViewModeSelector->currentText().toStdString() == allViewModes[2]) {		// Wireframe
+		edge = true;
+		surface = false;
+	}		
 
+	STACCATO_Result_type type;
+	// Update Solution
+	if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
+		type = STACCATO_Ux_Re;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
+		type = STACCATO_Uy_Re;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
+		type = STACCATO_Uz_Re;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
+		type = STACCATO_Magnitude_Re;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
+		type = STACCATO_Ux_Im;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
+		type = STACCATO_Uy_Im;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
+		type = STACCATO_Uz_Im;
+	}
+	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
+		type = STACCATO_Magnitude_Im;
+	}
+	
+	myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh, type, QString(myAnimateScalingFactor->text()).toDouble());
+	myVtkViewer->setDisplayProperties(type, edge, surface, myScalarBarVisibility->isChecked());
+
+	anaysisTimer02.start();
+	// Buffer Frames
+	std::cout << ">> Buffering " << myHMesh->getResultsSubFrameDescription().size() << " Frames ... ";
+	for (int i = 0; i < myHMesh->getResultsSubFrameDescription().size(); i++)	{
+		myVtkViewer->plotVectorFieldAtIndex(i);
+	}
+	std::cout << "Finished.\n";
+	anaysisTimer02.stop();
+	std::cout << "Duration for Frame Buffering: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
+	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+	mySubFrameText->setEnabled(true);
+	myHorizontalSlider->setEnabled(true);
+	myAnimatePlayButton->setEnabled(true);
+	myAnimateStopButton->setEnabled(true);
+	myAnimateRepeat->setEnabled(true);
+	myAnimatePrevFrameButton->setEnabled(true);
+	myAnimateNextFrameButton->setEnabled(true);
+
+	myHorizontalSlider->setFocusPolicy(Qt::StrongFocus);
+	myHorizontalSlider->setTickPosition(QSlider::TicksBothSides);
+	myHorizontalSlider->setTickInterval(myHMesh->getResultsSubFrameDescription().size() - 1);
+	myHorizontalSlider->setSingleStep(1);
+	myHorizontalSlider->setMinimum(1);
+	myHorizontalSlider->setMaximum(myHMesh->getResultsSubFrameDescription().size());
+	myHorizontalSlider->connect(myHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(myUpdateAnimationSlider(int)));
+	
+	myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
+
+	anaysisTimer01.stop();
+	std::cout << "Duration for Frame Generation: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
 void StartWindow::myAnimationDockTriggered() {
@@ -1287,58 +1370,79 @@ void StartWindow::myAnimationDockTriggered() {
 		myAnimationDock = new QDockWidget(tr("Create Animation"), this);
 		myAnimationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
 
-		myUMAInterfaceButton = new QPushButton(tr("Parse SIM File"), this);
-		connect(myUMAInterfaceButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
-
-		mySIMImportButton = new QPushButton(tr("Import SIM to HMesh"), this);
-		connect(mySIMImportButton, SIGNAL(clicked()), this, SLOT(myUMAHMesh()));
+		myAnimationDataLabel = new QLabel(this);
+		myAnimationDataLabel->setText("<b>Select Data</b>");
 
 		myAnimateSolutionTypeLabel = new QLabel(tr("Component: "), this);
 
 		myAnimationSolutionSelector = new QComboBox();
 		myAnimationSolutionSelector->setStatusTip(tr("Select Vector Component"));
-		for (int i = 0; i < allDispVectorComponents.size(); i++)
+		for (int i = 0; i < allDispVectorComponents.size() / 2; i++)
 			myAnimationSolutionSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
-		myAnimationSolutionSelector->setEnabled(false);
 
 		myScalingFactorLabel = new QLabel(tr("Scaling Factor"), this);
 
 		myAnimateScalingFactor = new QLineEdit(this);
 		myAnimateScalingFactor->setText("1");
 
-		myCreateFrameAnimationButton = new QPushButton(tr("Animate"), this);
+		myAnimationControlLabel = new QLabel(this);
+		myAnimationControlLabel->setText("<b>Animate Controls</b>");
+
+		myCreateFrameAnimationButton = new QPushButton(tr("Generate Frames"), this);
 		connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
 
-		myResetFrameAnimationButton = new QPushButton(tr("Reset"), this);
-		//connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
+		myResetFrameAnimationButton = new QPushButton(tr("Reset Frames"), this);
+		connect(myResetFrameAnimationButton, SIGNAL(clicked()), this, SLOT(myAnimationResetProc()));
+
+		myAnimationDurationLabel = new QLabel(tr("Duration (sec)"), this);
+
+		myAnimationDuration = new QLineEdit(this);
+		myAnimationDuration->setText("5");
+
+		myAnimatePlayButton = new QPushButton(tr("Play"), this);
+		connect(myAnimatePlayButton, SIGNAL(clicked()), this, SLOT(myAnimationSceneProc()));
+		myAnimatePlayButton->setEnabled(false);
+
+		myAnimateStopButton = new QPushButton(tr("Stop"), this);
+		connect(myAnimateStopButton, SIGNAL(clicked()), myVtkViewer, SLOT(myAnimationSceneStopProc()));
+		myAnimateStopButton->setEnabled(false);
+
+		myAnimateRepeat = new QCheckBox(tr("Repeat"), this);
+		myAnimateRepeat->setChecked(true);
+		myAnimateRepeat->setEnabled(false);
+
+		myManualFrameControlLabel = new QLabel(this);
+		myManualFrameControlLabel->setText("<b>Frame Controls</b>");
 
 		mySubFrameText = new QLineEdit(tr("0 deg"), this);
 		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
 		mySubFrameText->setFixedWidth(50);
 		mySubFrameText->setAlignment(Qt::AlignHCenter);
 		mySubFrameText->setReadOnly(true);
+		mySubFrameText->setEnabled(false);
 
 		myHorizontalSlider = new QSlider(Qt::Horizontal);
-
-		myAnimatePlayPauseButton = new QPushButton(tr("Play/Pause"), this);
-		//connect(myAnimatePlayPauseButton, SIGNAL(clicked()), this, SLOT(myUMAImport()));
-
-		myAnimateRepeat = new QCheckBox(tr("Repeat"), this);
-		myAnimateRepeat->setChecked(false);
-		//connect(myAnimateRepeat, SIGNAL(clicked()), this, SLOT(myAutoScalingState()));
+		myHorizontalSlider->setEnabled(false);
 
 		myAnimatePrevFrameButton = new QPushButton(tr("Prev"), this);
 		connect(myAnimatePrevFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
+		myAnimatePrevFrameButton->setEnabled(false);
 
 		myAnimateNextFrameButton = new QPushButton(tr("Next"), this);
 		connect(myAnimateNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
+		myAnimateNextFrameButton->setEnabled(false);
 
 		QFormLayout *layout = new QFormLayout;
+		layout->addRow(myAnimationDataLabel);
 		layout->addRow(myAnimateSolutionTypeLabel, myAnimationSolutionSelector);
 		layout->addRow(myScalingFactorLabel, myAnimateScalingFactor);
+		layout->addRow(myAnimationControlLabel);
 		layout->addRow(myCreateFrameAnimationButton, myResetFrameAnimationButton);
+		layout->addRow(myAnimationDurationLabel, myAnimationDuration);
+		layout->addRow(myAnimatePlayButton, myAnimateStopButton);
+		layout->addRow(myAnimateRepeat);
+		layout->addRow(myManualFrameControlLabel);
 		layout->addRow(mySubFrameText, myHorizontalSlider);
-		layout->addRow(myAnimatePlayPauseButton, myAnimateRepeat);
 		layout->addRow(myAnimatePrevFrameButton, myAnimateNextFrameButton);
 		QWidget* temp = new QWidget(this);
 		temp->setLayout(layout);
@@ -1351,4 +1455,28 @@ void StartWindow::myAnimationDockTriggered() {
 	else {
 		removeDockWidget(myAnimationDock);
 	}
+}
+
+void StartWindow::myAnimationResetProc() {
+	mySubFrameText->setEnabled(false);
+	myHorizontalSlider->setEnabled(false);
+	myAnimatePlayButton->setEnabled(false);
+	myAnimateStopButton->setEnabled(false);
+	myAnimateRepeat->setEnabled(false);
+	myAnimatePrevFrameButton->setEnabled(false);
+	myAnimateNextFrameButton->setEnabled(false);
+
+	mySubFrameIndex = 0;
+	mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
+	myHorizontalSlider->setValue(mySubFrameIndex + 1);
+	myViewPropertyUpdate();
+	myVtkViewer->myAnimationSceneStopProc();
+}
+
+void StartWindow::myAnimationSceneProc() {
+	int duration = std::stoi(myAnimationDuration->text().toStdString());
+	if (myAnimateRepeat->isChecked()) 
+		myVtkViewer->myAnimationSceneProc(*myHMeshToVtkUnstructuredGrid, *myHMesh, duration, 1);
+	else
+		myVtkViewer->myAnimationSceneProc(*myHMeshToVtkUnstructuredGrid, *myHMesh, duration, 0);
 }

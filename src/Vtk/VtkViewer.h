@@ -32,6 +32,8 @@
 #include <QVTKOpenGLWidget.h>
 #include <vtkSmartPointer.h>
 
+#include <vtkAnimationScene.h>
+
 class QVTKOpenGLWidget;
 class vtkOrientationMarkerWidget;
 class vtkRenderer;
@@ -42,7 +44,8 @@ class vtkScalarBarWidget;
 class vtkUnstructuredGrid;
 class vtkWarpVector;
 class vtkLookupTable;
-
+class vtkExtractEdges;
+class vtkPolyDataMapper;
 
 class VtkViewer : public QVTKOpenGLWidget
 {
@@ -127,9 +130,12 @@ private:
 	vtkSmartPointer<vtkActor> myEdgeActor;
 	vtkSmartPointer<vtkScalarBarWidget> myScalarBarWidget;
 	vtkSmartPointer<vtkActor> selectedPickActor;
+	vtkSmartPointer<vtkExtractEdges> edgeExtractor;
+	vtkSmartPointer<vtkPolyDataMapper> edgeMapper;
 
 	// Array
 	vtkSmartPointer<vtkActor> *myArrayActor;
+	vtkSmartPointer<vtkActor> *myArrayEdgeActor;
 	vtkSmartPointer<vtkDataSetMapper> *myArrayMapper;
 	vtkSmartPointer<vtkWarpVector>* warpFilterArray;
 	vtkSmartPointer<vtkLookupTable>* hueLutArray;
@@ -151,6 +157,7 @@ private:
 	std::vector<int> mySelectedElements;
 
 	VisualizerWindow* VW;
+	vtkSmartPointer<vtkAnimationScene> scene;
 
 public slots:
 	//! Zoom to the extent of the data set in the scene
@@ -158,8 +165,10 @@ public slots:
 	void setPickerModeNone() { setPickerMode(STACCATO_Picker_None); }
 	void setPickerModeNode() { setPickerMode(STACCATO_Picker_Node); }
 	void setPickerModeElement() { setPickerMode(STACCATO_Picker_Element); }
-	void animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh);
+	void animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh, STACCATO_Result_type _type, double _scalingFactor);
 	void plotVectorFieldAtIndex(int _index);
+	void myAnimationSceneProc(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh, int _duration, int _fps);
+	void myAnimationSceneStopProc();
 };
 
 Q_DECLARE_METATYPE(VtkViewer*)

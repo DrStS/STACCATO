@@ -112,6 +112,9 @@ private slots:
 	void mySubFrameNextProc(void);
 	void mySubFramePlayProv(void);
 	void myAnimationDockTriggered(void);
+	void myAnimationResetProc(void);
+	void myUpdateAnimationSlider(int);
+	void myAnimationSceneProc(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -243,14 +246,20 @@ private:
 	QPushButton* myPreviousFrameButton;
 	QPushButton* myNextFrameButton;
 	QPushButton* mySubFrameAnimateButton;
-	QLineEdit* mySubFrameText;
 	QPushButton* myCreateFrameAnimationButton;
 	QPushButton* myResetFrameAnimationButton;
-	QPushButton* myAnimatePlayPauseButton;
+	QPushButton* myAnimatePlayButton;
 	QPushButton* myAnimateNextFrameButton;
 	QPushButton* myAnimatePrevFrameButton;
+	QPushButton* myAnimateStopButton;
+	QLineEdit* mySubFrameText;
+	QLineEdit* myAnimationDuration;
 	QCheckBox* myAnimateRepeat;
 	QSlider *myHorizontalSlider;
+	QLabel* myAnimationDataLabel;
+	QLabel* myManualFrameControlLabel;
+	QLabel* myAnimationControlLabel;
+	QLabel* myAnimationDurationLabel;
 
 	int myFreqIndex;
 	int mySubFrameIndex;

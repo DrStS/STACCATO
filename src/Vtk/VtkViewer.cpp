@@ -52,15 +52,19 @@
 #include <vtkExtractEdges.h>
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkPointPicker.h>
+#include <vtkAnimationScene.h>
+#include <vtkAnimationCue.h>
+#include <vtkCommand.h>
+
 //QT5
 #include <QInputEvent>
 
-
+#include "AnimationScene.h"
 
 VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	vtkNew<vtkGenericOpenGLRenderWindow> window;
 	SetRenderWindow(window.Get());
-
+	
 	// Camera
 	vtkSmartPointer<vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
 	camera->SetViewUp(0, 1, 0);
@@ -87,6 +91,8 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	selectedPickActor = vtkActor::New();
 	//mySelectedProperty = vtkSmartPointer<vtkProperty>::New();
 	myEdgeActor = vtkActor::New();
+	edgeExtractor = vtkExtractEdges::New();
+	edgeMapper = vtkPolyDataMapper::New();
 
 	//Properties
 	myEdgeVisibility = false;
@@ -280,6 +286,8 @@ void VtkViewer::setPickerMode(STACCATO_Picker_type _currentPickerType) {
 }
 
 void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstructuredGrid) {
+
+
 	// Reset the Renderer
 	myRenderer->RemoveAllViewProps();
 
@@ -325,9 +333,7 @@ void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstru
 
 	if (myEdgeVisibility) {
 		//Edge vis
-		vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
 		edgeExtractor->SetInputData(warpFilter->GetUnstructuredGridOutput());
-		vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
 		edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
 		myEdgeActor->SetMapper(edgeMapper);
 		myEdgeActor->GetProperty()->SetColor(0., 0., 0.);
@@ -424,18 +430,28 @@ void VtkViewer::myUpdateVisualizerWindow(){
 		VW->setSelection(mySelectedElements);
 }
 
-void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh) {
+void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh, STACCATO_Result_type _type, double _scalingFactor) {
+	if (scene) {
+		scene->Stop();
+	}
+	
+	delete[] myArrayActor;
+	delete[] myArrayMapper;
+	delete[] warpFilterArray;
+	delete[] hueLutArray;
+	delete[] myArrayEdgeActor;
+
 	int k = _hMesh.getResultsSubFrameDescription().size();
 	myArrayActor = new vtkSmartPointer<vtkActor>[k];
 	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[k];
 	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[k];
 	hueLutArray = new vtkSmartPointer<vtkLookupTable>[k];
+	myArrayEdgeActor = new vtkSmartPointer<vtkActor>[k];
 
 	for (int i = 0; i < k; i++)
 	{
 		int resultIndex = i*_hMesh.getResultsTimeDescription().size() + 0;
-		std::cout << "Animating for Index: " << resultIndex << std::endl;
-		_vtkUnstructuredGrid.setScalarFieldAtNodes(_hMesh.getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex));
+		_vtkUnstructuredGrid.setScalarFieldAtNodes(_hMesh.getResultScalarFieldAtNodes(_type, resultIndex));
 		_vtkUnstructuredGrid.setVectorFieldAtNodes(_hMesh.getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex), _hMesh.getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex), _hMesh.getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
 
 		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
@@ -454,10 +470,9 @@ void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh 
 		// Set the color for edges of the sphere
 		mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
 		mySelectedActor->GetProperty()->EdgeVisibilityOff();
-		std::cout << "Animating for Index: " << resultIndex << std::endl;
 		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
 		warpFilterArray[i]->SetInputData(_vtkUnstructuredGrid.getVtkUnstructuredGrid());
-		warpFilterArray[i]->SetScaleFactor(2000);
+		warpFilterArray[i]->SetScaleFactor(_scalingFactor);
 		warpFilterArray[i]->Update();
 		warpFilterArray[i]->SetInputData(warpFilterArray[i]->GetUnstructuredGridOutput());
 
@@ -470,15 +485,28 @@ void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh 
 		hueLutArray[i]->Build();
 
 		myArrayMapper[i]->SetLookupTable(hueLutArray[i]);
-		std::cout << "Animating for Index: " << resultIndex << std::endl;
+
+		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
+		if (myEdgeVisibility) {
+			//Edge vis
+			vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
+			edgeExtractor->SetInputData(warpFilterArray[i]->GetUnstructuredGridOutput());
+			vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
+			edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
+			myArrayEdgeActor[i]->SetMapper(edgeMapper);
+			myArrayEdgeActor[i]->GetProperty()->SetColor(0., 0., 0.);
+			myArrayEdgeActor[i]->GetProperty()->SetLineWidth(3);
+			edgeMapper->ScalarVisibilityOff();
+		}
 	}
-		
 }
 
 void VtkViewer::plotVectorFieldAtIndex(int _index) {
+	this->getRenderer()->RemoveActor(mySelectedActor);
+
 	mySelectedActor = myArrayActor[_index];
 	mySelectedMapper = myArrayMapper[_index];
-	
+
 	// Reset the Renderer
 	myRenderer->RemoveAllViewProps();
 	mySelectedMapper->ScalarVisibilityOn();
@@ -490,7 +518,6 @@ void VtkViewer::plotVectorFieldAtIndex(int _index) {
 	// Set the color for edges of the sphere
 	mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
 	mySelectedActor->GetProperty()->EdgeVisibilityOff();
-
 	mySelectedMapper->SetInputData(warpFilterArray[_index]->GetUnstructuredGridOutput());
 
 	mySelectedMapper->UseLookupTableScalarRangeOn();
@@ -506,18 +533,10 @@ void VtkViewer::plotVectorFieldAtIndex(int _index) {
 	myScalarBarWidget->GetScalarBarActor()->SetLookupTable(hueLutArray[_index]);
 	myScalarBarWidget->EnabledOn();
 
-	this->getRenderer()->AddActor(myEdgeActor);
-
+	myEdgeActor = myArrayEdgeActor[_index];
 	if (myEdgeVisibility) {
 		//Edge vis
-		vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
-		edgeExtractor->SetInputData(warpFilterArray[_index]->GetUnstructuredGridOutput());
-		vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
-		edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
-		myEdgeActor->SetMapper(edgeMapper);
-		myEdgeActor->GetProperty()->SetColor(0., 0., 0.);
-		myEdgeActor->GetProperty()->SetLineWidth(3);
-		edgeMapper->ScalarVisibilityOff();
+		this->getRenderer()->AddActor(myEdgeActor);
 	}
 	else
 		myRenderer->RemoveActor(myEdgeActor);
@@ -539,4 +558,60 @@ void VtkViewer::plotVectorFieldAtIndex(int _index) {
 	}
 	this->GetRenderWindow()->Render();
 	
+}
+
+void VtkViewer::myAnimationSceneProc(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh &_hMesh, int _duration, int _loops) {
+	// Reset the Renderer
+	this->getRenderer()->RemoveAllViewProps();
+	getRenderer()->GetRenderWindow()->SetMultiSamples(0);
+	getRenderer()->GetRenderWindow()->GetInteractor()->SetRenderWindow(getRenderer()->GetRenderWindow());
+	getRenderer()->GetRenderWindow()->AddRenderer(getRenderer());
+	getRenderer()->GetRenderWindow()->Render();
+	
+	if (scene) {
+		scene->Stop();
+	}
+	// Create an Animation Scene
+	scene =	vtkSmartPointer<vtkAnimationScene>::New();
+
+	scene->SetModeToRealTime();
+	//scene->SetModeToSequence();
+
+
+	int startTime = 0;
+
+	scene->SetLoop(_loops);
+	scene->SetFrameRate(1000000);
+	scene->SetStartTime(0);
+	scene->SetEndTime(_duration+startTime);
+
+	// Create an Animation Cue.
+	vtkSmartPointer<vtkAnimationCue> cue1 =
+		vtkSmartPointer<vtkAnimationCue>::New();
+	cue1->SetStartTime(startTime);
+	cue1->SetEndTime(startTime + _duration);
+	scene->AddCue(cue1);
+
+	// Create cue animator;
+	CueAnimator* animator;
+	animator = new CueAnimator(_vtkUnstructuredGrid, _hMesh, *this);
+
+	// Create Cue observer.
+	vtkSmartPointer<vtkAnimationCueObserver> observer =
+		vtkSmartPointer<vtkAnimationCueObserver>::New();
+	observer->Renderer = getRenderer();
+	observer->Animator = animator;
+	observer->RenWin = getRenderer()->GetRenderWindow();
+	cue1->AddObserver(vtkCommand::StartAnimationCueEvent, observer);
+	cue1->AddObserver(vtkCommand::EndAnimationCueEvent, observer);
+	cue1->AddObserver(vtkCommand::AnimationCueTickEvent, observer);
+	
+	scene->Play();
+	//scene->Stop();
+}
+
+void VtkViewer::myAnimationSceneStopProc(){
+	if (scene) {
+		scene->Stop();
+	}
 }

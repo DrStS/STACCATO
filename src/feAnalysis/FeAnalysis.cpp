@@ -283,7 +283,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			std::cout << ">> Building RHS Matrix for Neumann...\n";
 			//Add cload rhs contribution 
 			anaysisTimer02.start();
-			std::cout << ">> Control to BoundaryCondition with bReal Size = " << bReal.size() << std::endl;
 			BoundaryCondition neumannBoundaryCondition(*myHMesh);
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 				neumannBoundaryCondition.addConcentratedForce(bReal);
@@ -291,7 +290,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
 				neumannBoundaryCondition.addConcentratedForce(bComplex);
 			}
-			std::cout << ">> Control returned to FeAnalysis with bReal Size = " << bReal.size() << std::endl;
 			std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
 			anaysisTimer02.stop();
 			infoOut << "Duration for applying Neumann conditions: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
@@ -349,6 +347,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer01.stop();
 			infoOut << "Duration for direct solver check: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+			
 			anaysisTimer01.start();
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 				(*AReal).factorize(neumannBoundaryCondition.nRHS);
@@ -387,7 +386,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			
 			anaysisTimer01.stop();
 			anaysisTimer02.stop();
-			infoOut << "Duration for direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+			infoOut << "direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
@@ -409,7 +408,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}
 			}*/			
 
-			
+			anaysisTimer01.start();
 
 			for (int k = 0; k < neumannBoundaryCondition.nRHS; k++) {
 				std::cout << ">> Storing for " << k << " RHSs.\n";
@@ -483,6 +482,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					thetaResultsMagRe.push_back(resultMagRe);
 				}
 			}
+			anaysisTimer01.stop();
+
+			infoOut << "Duration for Storing: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			anaysisTimer01.start();
 

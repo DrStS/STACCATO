@@ -46,6 +46,9 @@ class vtkWarpVector;
 class vtkLookupTable;
 class vtkExtractEdges;
 class vtkPolyDataMapper;
+class vtkAnimationCueObserver;
+class vtkAnimationCue;
+class CueAnimator;
 
 class VtkViewer : public QVTKOpenGLWidget
 {
@@ -132,6 +135,8 @@ private:
 	vtkSmartPointer<vtkActor> selectedPickActor;
 	vtkSmartPointer<vtkExtractEdges> edgeExtractor;
 	vtkSmartPointer<vtkPolyDataMapper> edgeMapper;
+	vtkSmartPointer<vtkWarpVector> warpFilter;
+	vtkSmartPointer<vtkLookupTable> hueLut;
 
 	// Array
 	vtkSmartPointer<vtkActor> *myArrayActor;
@@ -158,6 +163,9 @@ private:
 
 	VisualizerWindow* VW;
 	vtkSmartPointer<vtkAnimationScene> scene;
+	vtkSmartPointer<vtkAnimationCue> cue1;
+	vtkSmartPointer<vtkAnimationCueObserver> observer;
+	CueAnimator* animator;
 
 public slots:
 	//! Zoom to the extent of the data set in the scene

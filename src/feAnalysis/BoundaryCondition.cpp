@@ -21,6 +21,7 @@
 #include "MetaDatabase.h"
 #include "HMesh.h"
 #include <iostream>
+#include "Timer.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -51,21 +52,19 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 			else
 				std::cout << ">> " << std::string(iLoads->LOAD()[k].Type()->c_str()) << " " << iLoads->LOAD()[k].NODESET().begin()->Name()->c_str() << " is loaded.\n";
 
-			int flagLabel = 0;
+			bool flagLabel = true;
 
-			for (int j = 0; j < numNodes; j++)
-			{
-				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
+			for (int m = 0; m < nodeSet.size(); m++) {
+				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(nodeSet[m]));
 				for (int l = 0; l < numDoFsPerNode; l++) {
-					for (int m = 0; m < nodeSet.size(); m++) {
-						if (myHMesh->getNodeLabels()[j] == myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])]) {
-							flagLabel = 1;
+						if (myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])] == nodeSet[m]) {
+							flagLabel = false;
 
 							std::complex<double> temp_Fx(std::atof(iLoads->LOAD()[k].REAL().begin()->X()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->X()->data()));
 							std::complex<double> temp_Fy(std::atof(iLoads->LOAD()[k].REAL().begin()->Y()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Y()->data()));
 							std::complex<double> temp_Fz(std::atof(iLoads->LOAD()[k].REAL().begin()->Z()->data()), std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Z()->data()));
 
-							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])][l];
 							switch (l) {
 							case 0:
 								_rhsReal[dofIndex] += temp_Fx.real();
@@ -80,10 +79,9 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 								break;
 							}
 						}
-					}
 				}
 			}
-			if (flagLabel == 0)
+			if (flagLabel)
 				std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not found.\n";
 
 		}
@@ -149,31 +147,30 @@ void BoundaryCondition::addConcentratedForce(std::vector<double> &_rhsReal){
 					std::cerr << ">> Error in DistributingCouplingForce Input.\n" << std::endl;
 
 				bool flagLabel = false;
-				for (int j = 0; j < numNodes; j++)
+				for (int j = 0; j < couplingNodes.size(); j++)
 				{
-					int numDoFsPerNode = myHMesh->getNumDoFsPerNode(j);
+					int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(couplingNodes[j]));
 					for (int l = 0; l < numDoFsPerNode; l++) {
-						for (int m = 0; m < couplingNodes.size(); m++) {
-							if (myHMesh->getNodeLabels()[j] == couplingNodes[m]) {
-								flagLabel = true;
-								int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
-								switch (l) {
-								case 0:
-									_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[m * 3 + 0].real();
-									break;
-								case 1:
-									_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[m * 3 + 1].real();
-									break;
-								case 2:
-									_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[m * 3 + 2].real();
-									break;
-								default:
-									break;
-								}
+						if (myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(couplingNodes[j])] == couplingNodes[j]) {
+							flagLabel = true;
+							int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(couplingNodes[j])][l];
+							switch (l) {
+							case 0:
+								_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[j * 3 + 0].real();
+								break;
+							case 1:
+								_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[j * 3 + 1].real();
+								break;
+							case 2:
+								_rhsReal[i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex] += distributedCouplingLoad[j * 3 + 2].real();
+								break;
+							default:
+								break;
 							}
 						}
 					}
 				}
+				
 				if (flagLabel)
 					std::cout << ">> Building RHS with DistributedCouplingForce Finished." << std::endl;
 				else
@@ -264,7 +261,7 @@ void BoundaryCondition::addConcentratedForce(std::vector<MKL_Complex16> &_rhsCom
 				distributedCouplingLoad = computeDistributingCouplingLoad(refNode, couplingNodes, loadVector);
 			else
 				std::cerr << ">> Error in DistributingCouplingForce Input.\n" << std::endl;
-
+			
 			bool flagLabel = false;
 			for (int j = 0; j < numNodes; j++)
 			{

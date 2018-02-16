@@ -93,6 +93,8 @@ VtkViewer::VtkViewer(QWidget* parent): QVTKOpenGLWidget(parent){
 	myEdgeActor = vtkActor::New();
 	edgeExtractor = vtkExtractEdges::New();
 	edgeMapper = vtkPolyDataMapper::New();
+	warpFilter = vtkWarpVector::New();
+	hueLut = vtkLookupTable::New();
 
 	//Properties
 	myEdgeVisibility = false;
@@ -286,8 +288,6 @@ void VtkViewer::setPickerMode(STACCATO_Picker_type _currentPickerType) {
 }
 
 void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstructuredGrid) {
-
-
 	// Reset the Renderer
 	myRenderer->RemoveAllViewProps();
 
@@ -306,7 +306,7 @@ void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstru
 	mySelectedActor->GetProperty()->SetEdgeColor(0.0, 0.0, 0.0); //(R,G,B)
 	mySelectedActor->GetProperty()->EdgeVisibilityOff();
 
-	vtkSmartPointer<vtkWarpVector> warpFilter = vtkWarpVector::New();
+	
 	warpFilter->SetInputData(_vtkUnstructuredGrid);
 	warpFilter->SetScaleFactor(myScaleFactor);
 	warpFilter->Update();
@@ -314,7 +314,6 @@ void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstru
 
 	mySelectedMapper->UseLookupTableScalarRangeOn();
 	// Create a lookup table to share between the mapper and the scalarbar
-	vtkSmartPointer<vtkLookupTable> hueLut = vtkLookupTable::New();
 	hueLut->SetTableRange(scalarRange[0], scalarRange[1]);
 	hueLut->SetHueRange(0.667, 0.0);
 	hueLut->SetValueRange(1, 1);
@@ -360,13 +359,13 @@ void VtkViewer::plotVectorField(vtkSmartPointer<vtkUnstructuredGrid>& _vtkUnstru
 	}
 	this->GetRenderWindow()->Render();
 
-	vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkXMLUnstructuredGridWriter::New();
-	writer->SetFileName("3dTestGrid");
-	writer->SetInputData(_vtkUnstructuredGrid);
-	writer->Write();
-	anaysisTimer01.stop();
-	//debugOut << "Duration for display Hmesh and results: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	//debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	//vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer = vtkXMLUnstructuredGridWriter::New();
+	//writer->SetFileName("3dTestGrid");
+	//writer->SetInputData(_vtkUnstructuredGrid);
+	//writer->Write();
+	//anaysisTimer01.stop();
+	//std::cout << "Duration for drawing: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	//std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
 void VtkViewer::setDisplayProperties(STACCATO_Result_type _type, bool _edge, bool _surface, bool _scalarBar) {
@@ -489,14 +488,14 @@ void VtkViewer::animate(HMeshToVtkUnstructuredGrid& _vtkUnstructuredGrid, HMesh 
 		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
 		if (myEdgeVisibility) {
 			//Edge vis
-			vtkSmartPointer<vtkExtractEdges> edgeExtractor = vtkExtractEdges::New();
-			edgeExtractor->SetInputData(warpFilterArray[i]->GetUnstructuredGridOutput());
-			vtkSmartPointer<vtkPolyDataMapper> edgeMapper = vtkPolyDataMapper::New();
-			edgeMapper->SetInputConnection(edgeExtractor->GetOutputPort());
-			myArrayEdgeActor[i]->SetMapper(edgeMapper);
+			vtkSmartPointer<vtkExtractEdges> edgeExtractorTemp = vtkExtractEdges::New();
+			edgeExtractorTemp->SetInputData(warpFilterArray[i]->GetUnstructuredGridOutput());
+			vtkSmartPointer<vtkPolyDataMapper> edgeMapperTemp = vtkPolyDataMapper::New();
+			edgeMapperTemp->SetInputConnection(edgeExtractorTemp->GetOutputPort());
+			myArrayEdgeActor[i]->SetMapper(edgeMapperTemp);
 			myArrayEdgeActor[i]->GetProperty()->SetColor(0., 0., 0.);
 			myArrayEdgeActor[i]->GetProperty()->SetLineWidth(3);
-			edgeMapper->ScalarVisibilityOff();
+			edgeMapperTemp->ScalarVisibilityOff();
 		}
 	}
 }
@@ -568,9 +567,8 @@ void VtkViewer::myAnimationSceneProc(HMeshToVtkUnstructuredGrid& _vtkUnstructure
 	getRenderer()->GetRenderWindow()->AddRenderer(getRenderer());
 	getRenderer()->GetRenderWindow()->Render();
 	
-	if (scene) {
-		scene->Stop();
-	}
+	myAnimationSceneStopProc();
+
 	// Create an Animation Scene
 	scene =	vtkSmartPointer<vtkAnimationScene>::New();
 
@@ -586,14 +584,12 @@ void VtkViewer::myAnimationSceneProc(HMeshToVtkUnstructuredGrid& _vtkUnstructure
 	scene->SetEndTime(_duration+startTime);
 
 	// Create an Animation Cue.
-	vtkSmartPointer<vtkAnimationCue> cue1 =
-		vtkSmartPointer<vtkAnimationCue>::New();
+	cue1 = vtkSmartPointer<vtkAnimationCue>::New();
 	cue1->SetStartTime(startTime);
 	cue1->SetEndTime(startTime + _duration);
 	scene->AddCue(cue1);
 
 	// Create cue animator;
-	CueAnimator* animator;
 	animator = new CueAnimator(_vtkUnstructuredGrid, _hMesh, *this);
 
 	// Create Cue observer.
@@ -607,7 +603,6 @@ void VtkViewer::myAnimationSceneProc(HMeshToVtkUnstructuredGrid& _vtkUnstructure
 	cue1->AddObserver(vtkCommand::AnimationCueTickEvent, observer);
 	
 	scene->Play();
-	//scene->Stop();
 }
 
 void VtkViewer::myAnimationSceneStopProc(){

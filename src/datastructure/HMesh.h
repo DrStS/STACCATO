@@ -245,6 +245,10 @@ private:
 	std::vector<double> nodeCoordsSortElementIndices;
 	/// DoF list sorted  element index 0..ne
 	std::vector<int> elementDoFList;
+	/// DoF list sorted  element index 0..ne with entries -1 for homogeneous Dirichlet DoF; -2 for non-homogeneous Dirichlet
+	std::vector<int> elementDoFListRestricted;
+	/// vector holding affected DOFs for Dirichlet
+	std::vector<int> restrictedHomogeneousDoFList;
     /// labels of all nodes
 	std::vector<int> nodeLabels;
     /// number of nodes of each element
@@ -304,14 +308,11 @@ private:
 
 	/* -- Class Members and Functions for DBC -- */
 private:
-	/// vector holding affected DOFs for Dirichlet
-	std::vector<int> dirichletDOF;
 	/// Map holding NodeSets
 	std::map<std::string, std::vector<int>> nodeSetsMap;
-	/// Map holding NodeSets
+	/// Map holding ElementSets
 	std::map<std::string, std::vector<int>> elemSetsMap;
-	/// DoF list sorted  element index 0..ne with entries -1 for Dirichlet DoF
-	std::vector<int> elementDoFListBC;
+
 public:
 	/***********************************************************************************************
 	* \brief Add a Node Set
@@ -332,13 +333,13 @@ public:
 	* \param[out] Handle to the Killed Element-DoF List
 	* \author Harikrishnan Sreekumar
 	***********/
-	std::vector<int>&  getElementDoFListBC() { return elementDoFListBC; }
+	std::vector<int>&  getElementDoFListRestricted() { return elementDoFListRestricted; }
 	/***********************************************************************************************
 	* \brief Get the list of DoFs with Dirichlet Condition
 	* \param[out] dirichletDOF
 	* \author Harikrishnan Sreekumar
 	***********/
-	std::vector<int>  getDirichletDOF() { return dirichletDOF; }
+	std::vector<int>  getRestrictedHomogeneousDoFList() { return restrictedHomogeneousDoFList; }
 	/***********************************************************************************************
 	* \brief Kills / Mark the DoFs with Dirichlet Condition as -1
 	* \param[in] _nodeSetName
@@ -366,13 +367,6 @@ public:
 	bool hasParts;
 	bool isSIM;
 	std::vector<int> referenceNodeLabel;
-
-	/* -- Class Members and Functions for SubFrame -- */
-private:
-	std::vector<int> resultsSubFrameDescription;
-public:
-	void addResultsSubFrameDescription(int _resultsSubFrameDescription);
-	std::vector<int>& getResultsSubFrameDescription();
 };
 
 #endif /* HMESH_H_ */

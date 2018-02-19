@@ -240,7 +240,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			for (int iElement = 0; iElement < numElements; iElement++)
 			{
 				int numDoFsPerElement = myHMesh->getNumDoFsPerElement()[iElement];
-				int*  eleDoFs = &myHMesh->getElementDoFListBC()[lastIndex];
+				int*  eleDoFs = &myHMesh->getElementDoFListRestricted()[lastIndex];
 				lastIndex += numDoFsPerElement;
 				double omega = 2 * M_PI*freq[iFreqCounter];
 				//Assembly routine symmetric stiffness
@@ -299,9 +299,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";
 			// Implement DBC
 			// Applying Dirichlet
-			for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
+			for (int m = 0; m < myHMesh->getRestrictedHomogeneousDoFList().size(); m++) {
 
-				int dofIndex = myHMesh->getDirichletDOF()[m];
+				int dofIndex = myHMesh->getRestrictedHomogeneousDoFList()[m];
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					(*AReal)(dofIndex, dofIndex) = 1;
 					bReal[dofIndex] = 0;
@@ -315,9 +315,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 			}
 			for (int l = 0; l < neumannBoundaryCondition.nRHS; l++) {
-				for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
+				for (int m = 0; m < myHMesh->getRestrictedHomogeneousDoFList().size(); m++) {
 
-					int dofIndex = l*myHMesh->getTotalNumOfDoFsRaw() + myHMesh->getDirichletDOF()[m];
+					int dofIndex = l*myHMesh->getTotalNumOfDoFsRaw() + myHMesh->getRestrictedHomogeneousDoFList()[m];
 					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 						bReal[dofIndex] = 0;
 					}

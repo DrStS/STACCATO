@@ -61,7 +61,7 @@ MetaDatabase::~MetaDatabase() {
 
 void MetaDatabase::printXML() {
 
-	std::cout << "==================================\n";
+	/*std::cout << "==================================\n";
 	std::cout << "========= STACCATO IMPORT ========\n";
 	std::cout << "==================================\n\n";
 
@@ -86,7 +86,7 @@ void MetaDatabase::printXML() {
 		}
 	}
 
-	std::cout << "\n==================================\n";
+	std::cout << "\n==================================\n";*/
 }
 
 void MetaDatabase::buildXML(HMesh& _hMesh) {

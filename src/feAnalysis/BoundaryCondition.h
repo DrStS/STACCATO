@@ -18,10 +18,10 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file BoundaryCondition.h
- * This file holds the class BoundaryCondition
- * \date 2/2/2018
- **************************************************************************************************/
+																								 * \file BoundaryCondition.h
+																								 * This file holds the class BoundaryCondition
+																								 * \date 2/2/2018
+																								 **************************************************************************************************/
 
 #ifndef BOUNDARYCONDITION_H_
 #define BOUNDARYCONDITION_H_
@@ -30,24 +30,25 @@
 #include <vector>
 #include <assert.h>
 #include "MathLibrary.h"
+#include <HMesh.h>
 
 class HMesh;
 /********//**
- * \brief This implements all boundary condtions
- **************************************************************************************************/
+		  * \brief This implements all boundary condtions
+		  **************************************************************************************************/
 template<class T>
 class BoundaryCondition {
 public:
 	/***********************************************************************************************
-	 * \brief Constructor
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Constructor
+	* \author Stefan Sicklinger
+	***********/
 	BoundaryCondition(HMesh& _hMesh) : myHMesh(&_hMesh) {};
 	/***********************************************************************************************
-	 * \brief Destructor
-	 *
-	 * \author Stefan Sicklinger
-	 ***********/
+	* \brief Destructor
+	*
+	* \author Stefan Sicklinger
+	***********/
 	virtual ~BoundaryCondition(void) {};
 	/***********************************************************************************************
 	* \brief Compute distributing coupling loads

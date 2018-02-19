@@ -26,6 +26,7 @@
 #define AUXILIARYPARAMETERS_H_
 
 
+
 #if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) || defined(__ghs__)
 # define CURRENT_FUNCTION __PRETTY_FUNCTION__
 #elif defined(__DMC__) && (__DMC__ >= 0x810)
@@ -46,9 +47,9 @@
 
 #include <string>
 #include <mkl.h>
+<<<<<<< HEAD
 
 typedef MKL_Complex16 STACCATOComplexDouble;
-
 namespace STACCATO {
 /********//**
  * \brief Class AuxiliaryParameters provides a central place for STACCATO wide parameters

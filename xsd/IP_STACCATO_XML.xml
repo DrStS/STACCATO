@@ -1,6 +1,6 @@
 <STACCATO_XML>
 	<FILEIMPORT Name="FCoupleFelgeDynamicODB" Type="AbqODB">
-		<FILE>felgeStaticKinematic.odb</FILE>
+		<FILE>FelgeStaticDistributing.odb</FILE>
 		<IMPORT Type="Nodes">
 			<LIST>ALL</LIST>
 		</IMPORT>
@@ -22,12 +22,31 @@
 	<ANALYSIS>
 		<NAME>ForceCouplingFelgeStaticRotate</NAME>
 		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
-	</ANALYSIS>
-	<FREQUENCY Type="STEP">
-		<START_FREQ>250</START_FREQ>
-		<END_FREQ>250</END_FREQ>
-		<STEP_FREQ>750</STEP_FREQ>
-	</FREQUENCY>
+		<FREQUENCY Type="STEP">
+			<START_FREQ>250</START_FREQ>
+			<END_FREQ>250</END_FREQ>
+			<STEP_FREQ>750</STEP_FREQ>
+	  </FREQUENCY>
+	  <BCCASE Name="ALL-BCs">
+			<BC Name = "DisplacementBC"/>
+		</BCCASE>
+		<LOADCASES>
+			<LOADCASE Type="RotateGenerate" NamePrefix="LG-1"> 
+				<LOAD Name = "LOAD-1"/>
+				<START_THETA>0</START_THETA>
+				<END_THETA>360</END_THETA>
+				<STEP_THETA>20</STEP_THETA>
+			</LOADCASE>
+			<LOADCASE Type="LoadCase" Name="LC-2">
+				<LOAD Name = "LOAD-1"/>
+				<LOAD Name = "LOAD-2"/>
+			</LOADCASE>
+			<LOADCASE Type="LoadCase" Name="LC-2">
+				<LOAD Name = "LOAD-1"/>
+				<LOAD Name = "LOAD-2"/>
+			</LOADCASE>
+		</LOADCASES>
+	</ANALYSIS>	
 	<MATERIALS>
 		<MATERIAL Name="Steel" Type="Isotropic">
 			<E>211000</E>
@@ -63,22 +82,24 @@
 		<NODESET Name="clamp22"><LIST>3407</LIST></NODESET>
 	</SETS>
 	<LOADS>
-		<LOAD Type="RotatingDistributingCouplingForce">
+		<LOAD Type="DistributingCouplingForce" Name='LOAD-1'>
 			<REFERENCENODESET Name="REFNODE"/>
 			<REFERENCENODE><X>0.000</X><Y>500.000</Y><Z>0.000</Z></REFERENCENODE>
 			<COUPLINGNODESET Name="SLAVENODES"/>
 			<REAL><X>5000.000</X><Y>150.000</Y><Z>180.000</Z></REAL>
 			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-			<ROTATE Type="STEP">
-				<START_THETA>0</START_THETA>
-				<END_THETA>360</END_THETA>
-				<STEP_THETA>20</STEP_THETA>
-			</ROTATE>
+		</LOAD>
+		<LOAD Type="ConcentratedForce" Name='LOAD-2'>
+			<NODESET Name="clamp22"/>
+			<REAL><X>5000.000</X><Y>150.000</Y><Z>180.000</Z></REAL>
+			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
 		</LOAD>
 	</LOADS>
-	<BC>
-		<DBC><NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY></DBC>
-	</BC>
+	<BC_DEF>
+		<DISPLACEMENT Name="DisplacementBC">
+			<NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
+		</DISPLACEMENT>
+	</BC_DEF>
 	<COUPLE Type="NODE">
 		<Part Name="FelgeStaticODB"><NODESET Name="P1C"/></Part>
 		<Part Name="B31SIM"><NODESET Name="P2C"/></Part>

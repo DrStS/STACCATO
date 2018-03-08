@@ -1,6 +1,6 @@
 <STACCATO_XML>
 	<FILEIMPORT Name="FCoupleFelgeDynamicODB" Type="AbqODB">
-		<FILE>felgeStaticKinematic.odb</FILE>
+		<FILE>FelgeStaticDistributing.odb</FILE>
 		<IMPORT Type="Nodes">
 			<LIST>ALL</LIST>
 		</IMPORT>

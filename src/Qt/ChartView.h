@@ -22,8 +22,7 @@
  * This file holds the class of ChartView.
  * \date 20/1/2018
  **************************************************************************************************/
-#ifndef CHARTVIEW_H
-#define CHARTVIEW_H
+#pragma once
 
 #include <QtCharts/QChartView>
 #include <QtWidgets/QRubberBand>
@@ -47,5 +46,3 @@ private:
 	bool m_isTouching;
 	QPointF myPanStart;
 };
-
-#endif

@@ -22,8 +22,7 @@
  * This file holds the class of AuxiliaryParameters.
  * \date 4/2/2016
  **************************************************************************************************/
-#ifndef AUXILIARYPARAMETERS_H_
-#define AUXILIARYPARAMETERS_H_
+#pragma once
 
 
 #if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) || defined(__ghs__)
@@ -69,4 +68,3 @@ public:
 };
 
 } /* namespace STACCATO */
-#endif /* AUXILIARYFUNCTIONS_H_ */

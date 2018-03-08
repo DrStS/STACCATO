@@ -22,8 +22,7 @@
 * This file holds the class of VisualizerWindow.
 * \date 12/06/2017
 **************************************************************************************************/
-#ifndef VISUALIZERWINDOW_H
-#define VISUALIZERWINDOW_H
+#pragma once
 
 #include "HMeshToVtkUnstructuredGrid.h"
 #include <STACCATO_Enum.h>
@@ -247,4 +246,3 @@ private:
 	std::vector<int> myPickedNodes;
 };
 
-#endif /* VISUALIZERWINDOW_H */

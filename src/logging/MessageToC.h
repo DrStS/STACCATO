@@ -22,9 +22,7 @@
  * Adapter C++ -> C for MKL
  * \date 1/10/2017
  **************************************************************************************************/
-
-#ifndef MESSAGETOC_H_
-#define MESSAGETOC_H_
+#pragma once
 
 #ifdef __cplusplus
 extern "C" { ///Define extern C if C++ compiler is used
@@ -38,4 +36,3 @@ extern "C" { ///Define extern C if C++ compiler is used
 }
 #endif
 
-#endif /* MESSAGETOC_H_ */

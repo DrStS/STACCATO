@@ -22,9 +22,7 @@
 * This file holds the class SimuliaUMA which adds the capability to read Abaqus SIM files
 * \date 2/1/2018
 **************************************************************************************************/
-
-#ifndef SIMULIAUMA_H_
-#define SIMULIAUMA_H_
+#pragma once
 
 #include <string>
 #include <assert.h>
@@ -67,6 +65,3 @@ private:
 	/// Number of DoFs per Node
 	int numDoFperNode;
 };
-
-
-#endif /* SIMULIAUMA_H_ */

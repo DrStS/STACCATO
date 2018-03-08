@@ -18,7 +18,6 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include "VisualizerWindow.h"
-//#include "ui_VisualizerWindow.h"
 
 //QT5
 #include <QToolBar>

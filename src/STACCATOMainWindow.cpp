@@ -17,9 +17,9 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "StartWindow.h"
+#include "STACCATOMainWindow.h"
 #include "SimuliaUMA.h"
-#include "ui_StartWindow.h"
+#include "ui_STACCATOMainWindow.h"
 #include "OccViewer.h"
 #include "VtkViewer.h"
 #include "OcctQtProcessIndicator.h"
@@ -120,11 +120,9 @@ QT_CHARTS_USE_NAMESPACE
 //XML
 #include "MetaDatabase.h"
 
-StartWindow::StartWindow(QWidget *parent) :
-QMainWindow(parent),
-ui(new Ui::StartWindow)
+STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), myGui(new Ui::STACCATOMainWindow)
 {
-	ui->setupUi(this);
+	myGui->setupUi(this);
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
 	//myOccViewer = new OccViewer(this);
@@ -146,19 +144,19 @@ ui(new Ui::StartWindow)
 	myHMesh = new HMesh("default");
 }
 
-StartWindow::~StartWindow()
+STACCATOMainWindow::~STACCATOMainWindow()
 {
 	//delete myOccViewer;
 	delete myVtkViewer;
 }
 
 
-void StartWindow::openDataFlowWindow(void){
+void STACCATOMainWindow::openDataFlowWindow(void){
 	newWin = new QNEMainWindow();
 	newWin->show();
 }
 
-void StartWindow::createActions(void)
+void STACCATOMainWindow::createActions(void)
 {
 	// File actions
 	myExitAction = new QAction(tr("Exit"), this);
@@ -416,7 +414,7 @@ void StartWindow::createActions(void)
 
 }
 
-void StartWindow::myViewPropertyUpdate(void) {
+void STACCATOMainWindow::myViewPropertyUpdate(void) {
 	static bool edge = false;
 	static bool surface = true;	
 
@@ -467,7 +465,7 @@ void StartWindow::myViewPropertyUpdate(void) {
 	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());		// Update Plot
 }
 
-void StartWindow::myTimeStepLessProc(void) {
+void STACCATOMainWindow::myTimeStepLessProc(void) {
 	if (myFreqIndex > 0) {
 		isSubFrame = false;
 		myFreqIndex--;
@@ -476,7 +474,7 @@ void StartWindow::myTimeStepLessProc(void) {
 	}
 }
 
-void StartWindow::myTimeStepAddProc(void) {
+void STACCATOMainWindow::myTimeStepAddProc(void) {
 	if (myFreqIndex < myHMesh->getResultsTimeDescription().size()-1) {
 		isSubFrame = false;
 		myFreqIndex++;
@@ -485,7 +483,7 @@ void StartWindow::myTimeStepAddProc(void) {
 	}
 }
 
-void StartWindow::createMenus(void)
+void STACCATOMainWindow::createMenus(void)
 {
 	myFileMenu = menuBar()->addMenu(tr("&File"));
 	myFileMenu->addAction(myReadFileAction);
@@ -520,7 +518,7 @@ void StartWindow::createMenus(void)
 	myHelpMenu->addAction(myAboutAction);
 }
 
-void StartWindow::createToolBars(void)
+void STACCATOMainWindow::createToolBars(void)
 {
 	myFileToolBar = addToolBar(tr("&File"));
 	myFileToolBar->addAction(myReadFileAction);
@@ -569,7 +567,7 @@ void StartWindow::createToolBars(void)
 	myDisplayControlToolBar->setOrientation(Qt::Vertical);
 }
 
-void StartWindow::createDockWindows()
+void STACCATOMainWindow::createDockWindows()
 {
 	QDockWidget *dock = new QDockWidget(tr("Output"), this);
 	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
@@ -604,7 +602,7 @@ void StartWindow::createDockWindows()
 }
 
 
-void StartWindow::about(){
+void STACCATOMainWindow::about(){
 	myOccViewer->showGrid(Standard_True);
 	myOccViewer->viewTop();
 	myOccViewer->fitAll();
@@ -615,7 +613,7 @@ void StartWindow::about(){
 		"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
-void StartWindow::importXMLFile(void) {
+void STACCATOMainWindow::importXMLFile(void) {
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -691,7 +689,7 @@ void StartWindow::importXMLFile(void) {
 	}
 }
 
-void StartWindow::importFile(void)
+void STACCATOMainWindow::importFile(void)
 {
 
 	QString myWorkingFolder = "";
@@ -720,7 +718,7 @@ void StartWindow::importFile(void)
 	}
 }
 
-void StartWindow::readSTEP(QString fileName){
+void STACCATOMainWindow::readSTEP(QString fileName){
 	// create additional log file
 	STEPControl_Reader aReader;
 	IFSelect_ReturnStatus status = aReader.ReadFile(fileName.toUtf8().constData());
@@ -750,7 +748,7 @@ void StartWindow::readSTEP(QString fileName){
 
 }
 
-void StartWindow::readIGES(QString fileName){
+void STACCATOMainWindow::readIGES(QString fileName){
 
 	IGESControl_Reader Reader;
 
@@ -764,7 +762,7 @@ void StartWindow::readIGES(QString fileName){
 }
 
 
-void StartWindow::readSTL(QString fileName){
+void STACCATOMainWindow::readSTL(QString fileName){
 	Handle(Message_ProgressIndicator) aIndicator = new OcctQtProcessIndicator(this);
 	aIndicator->SetRange(0, 100);
 	OSD_Path aFile(fileName.toUtf8().constData());
@@ -798,7 +796,7 @@ void StartWindow::readSTL(QString fileName){
 //void StartWindow::drawInt2DLine(void){
 //}
 
-void StartWindow::drawCantilever(void){
+void STACCATOMainWindow::drawCantilever(void){
 	//3D cartesian point
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
@@ -847,7 +845,7 @@ void StartWindow::drawCantilever(void){
 	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
-void StartWindow::animateObject(void){
+void STACCATOMainWindow::animateObject(void){
 
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(-150., -150., -0.0001);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(150., 150., 0.);
@@ -932,7 +930,7 @@ void StartWindow::animateObject(void){
 }
 
 
-void StartWindow::handleSelectionChanged(void){
+void STACCATOMainWindow::handleSelectionChanged(void){
 
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
@@ -1054,11 +1052,11 @@ void StartWindow::handleSelectionChanged(void){
 
 }
 
-void StartWindow::myViewModeTriggered() {
+void STACCATOMainWindow::myViewModeTriggered() {
 	myVtkViewer->setViewMode(myRotateModeButton->isChecked());
 }
 
-void StartWindow::myWarpVectorTriggered() {
+void STACCATOMainWindow::myWarpVectorTriggered() {
 	if (myDockWarpVectorAction->isChecked() || myWarpVectorVisibility->isChecked()) {
 		myWarpDock = new QDockWidget(tr("Warp Vector"), this);
 		myWarpDock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1092,7 +1090,7 @@ void StartWindow::myWarpVectorTriggered() {
 	}
 }
 
-void StartWindow::myViewPropertyDockTriggered() {
+void STACCATOMainWindow::myViewPropertyDockTriggered() {
 	if (myViewPropertyAction->isChecked()) {
 		myViewPropertyDock = new QDockWidget(tr("View Property"), this);
 		myViewPropertyDock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1118,7 +1116,7 @@ void StartWindow::myViewPropertyDockTriggered() {
 }
 
 
-void StartWindow::myAutoScalingState() {
+void STACCATOMainWindow::myAutoScalingState() {
 	if (myAutoScaling->isChecked()) {
 		myScalingFactorValue = 1;
 		myScalingFactor->setValue(myScalingFactorValue);
@@ -1131,18 +1129,18 @@ void StartWindow::myAutoScalingState() {
 	}
 }
 
-void StartWindow::myScalingFactorState() {
+void STACCATOMainWindow::myScalingFactorState() {
 	double factor = QString(myScalingFactor->text()).toDouble();
 	myVtkViewer->setScalingFactor(factor);
 	myScalingFactorValue = factor;
 	myViewPropertyUpdate();
 }
 
-void StartWindow::my2dVisualizerInterface() {
+void STACCATOMainWindow::my2dVisualizerInterface() {
 	myVtkViewer->my2dVisualizerInterface(*myHMesh);
 }
 
-void StartWindow::myUMATriggered() {
+void STACCATOMainWindow::myUMATriggered() {
 	if (myUMAAction->isChecked()) {
 		myUMADock = new QDockWidget(tr("SIM via UMA"), this);
 		myUMADock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1175,13 +1173,13 @@ void StartWindow::myUMATriggered() {
 	}
 }
 
-void StartWindow::myUMAImport() {
+void STACCATOMainWindow::myUMAImport() {
 	std::cout << ">> Trying to start UMA Interface ... " << std::endl;
 	//myUMA->openSIM(mySIMFileName->text().toLocal8Bit().data());
 
 }
 
-void StartWindow::myUMAHMesh() {
+void STACCATOMainWindow::myUMAHMesh() {
 	// Intialize XML Parsing
 	std::string inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML_B31_fe.xml";
 	MetaDatabase::init(inputFileName);
@@ -1208,12 +1206,12 @@ void StartWindow::myUMAHMesh() {
 	}
 }
 
-void StartWindow::myReferenceNodeTriggered() {
+void STACCATOMainWindow::myReferenceNodeTriggered() {
 	if (myHMesh->referenceNodeLabel.size() != 0)
 		myReferenceNode->setEnabled(true);
 }
 
-void StartWindow::mySubFrameAnimate() {
+void STACCATOMainWindow::mySubFrameAnimate() {
 	if (mySubFrameAnimateAction->isChecked()) {
 
 		myPreviousFrameButton = new QPushButton(tr("<"), this);
@@ -1253,7 +1251,7 @@ void StartWindow::mySubFrameAnimate() {
 	}
 }
 
-void StartWindow::mySubFramePrevProc(void) {
+void STACCATOMainWindow::mySubFramePrevProc(void) {
 	if (mySubFrameIndex > 0) {
 		isSubFrame = true;
 		mySubFrameIndex--;
@@ -1263,7 +1261,7 @@ void StartWindow::mySubFramePrevProc(void) {
 	}
 }
 
-void StartWindow::mySubFrameNextProc(void) {
+void STACCATOMainWindow::mySubFrameNextProc(void) {
 	if (mySubFrameIndex < myHMesh->getResultsSubFrameDescription().size() - 1) {
 		isSubFrame = true;
 		mySubFrameIndex++;
@@ -1273,14 +1271,14 @@ void StartWindow::mySubFrameNextProc(void) {
 	}
 }
 
-void StartWindow::myUpdateAnimationSlider(int _currentIndex) {
+void STACCATOMainWindow::myUpdateAnimationSlider(int _currentIndex) {
 	isSubFrame = true;
 	mySubFrameIndex = _currentIndex-1;
 	mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
 	myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
 }
 
-void StartWindow::mySubFramePlayProv(void) {
+void STACCATOMainWindow::mySubFramePlayProv(void) {
 	anaysisTimer01.start();
 	std::cout << ">> Animation Data ... " << std::endl;
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -1365,7 +1363,7 @@ void StartWindow::mySubFramePlayProv(void) {
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
-void StartWindow::myAnimationDockTriggered() {
+void STACCATOMainWindow::myAnimationDockTriggered() {
 	if (myAnimationDockButton->isChecked()) {
 		myAnimationDock = new QDockWidget(tr("Create Animation"), this);
 		myAnimationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1457,7 +1455,7 @@ void StartWindow::myAnimationDockTriggered() {
 	}
 }
 
-void StartWindow::myAnimationResetProc() {
+void STACCATOMainWindow::myAnimationResetProc() {
 	mySubFrameText->setEnabled(false);
 	myHorizontalSlider->setEnabled(false);
 	myAnimatePlayButton->setEnabled(false);
@@ -1473,7 +1471,7 @@ void StartWindow::myAnimationResetProc() {
 	myVtkViewer->myAnimationSceneStopProc();
 }
 
-void StartWindow::myAnimationSceneProc() {
+void STACCATOMainWindow::myAnimationSceneProc() {
 	int duration = std::stoi(myAnimationDuration->text().toStdString());
 	if (myAnimateRepeat->isChecked()) 
 		myVtkViewer->myAnimationSceneProc(*myHMeshToVtkUnstructuredGrid, *myHMesh, duration, 1);

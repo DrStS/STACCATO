@@ -7,6 +7,8 @@
 
 #include "vtkViewer.h"
 #include <QApplication>
+#pragma once
+
 
 class CueAnimator
 {

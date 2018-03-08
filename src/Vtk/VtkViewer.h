@@ -22,8 +22,7 @@
 * This file holds the class of VtkViewer.
 * \date 9/11/2017
 **************************************************************************************************/
-#ifndef _VTKVIEWER_H_
-#define _VTKVIEWER_H_
+#pragma once
 
 #include <STACCATO_Enum.h>
 #include "HMesh.h"
@@ -180,5 +179,3 @@ public slots:
 };
 
 Q_DECLARE_METATYPE(VtkViewer*)
-
-#endif // _VTKVIEWER_H_

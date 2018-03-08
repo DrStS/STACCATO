@@ -22,9 +22,8 @@
  * This file holds the class SimuliaODb which adds the capability to read Abaqus odb files
  * \date 1/18/2017
  **************************************************************************************************/
+#pragma once
 
-#ifndef SIMULIAODB_H_
-#define SIMULIAODB_H_
 
 #include <string>
 #include <assert.h>
@@ -60,6 +59,3 @@ private:
 	/// HMesh object 
 	HMesh *myHMesh;
 };
-
-
-#endif /* SIMULIAODB_H_ */

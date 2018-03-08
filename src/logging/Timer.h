@@ -22,9 +22,7 @@
  * This file holds the class timer
  * \date 9/6/2017
  **************************************************************************************************/
-
-#ifndef TIMER_H_
-#define TIMER_H_
+#pragma once
 
 #include <iostream>
 #include <chrono>
@@ -93,4 +91,3 @@ extern Timer anaysisTimer01;
 extern Timer anaysisTimer02;
 extern Timer anaysisTimer03;
 
-#endif /* TIMER_H_ */

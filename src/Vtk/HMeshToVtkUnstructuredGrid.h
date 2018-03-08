@@ -22,8 +22,7 @@
 * This file holds the class of HMeshToVtkUnstructuredGrid.
 * \date 9/12/2017
  **************************************************************************************************/
-#ifndef HMESHTOVTKUNSTRUCTUREDGRID
-#define HMESHTOVTKUNSTRUCTUREDGRID
+#pragma once
 
 #include <vector>
 
@@ -61,9 +60,3 @@ private:
 	vtkSmartPointer<vtkUnstructuredGrid> myVtkUnstructuredGrid;
 
 };
-
-
-
-
-
-#endif // HMESHTOVTKUNSTRUCTUREDGRID

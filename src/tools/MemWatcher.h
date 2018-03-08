@@ -24,9 +24,7 @@
  * This file holds the class MemWatcher
  * \date 9/6/2017
  **************************************************************************************************/
-
-#ifndef MEMWATCHER_H_
-#define MEMWATCHER_H_
+#pragma once
 
 
 #if defined(_WIN32) || defined(__WIN32__) 
@@ -79,7 +77,4 @@ private:
 
 };
 
-
 extern MemWatcher memWatcher;
-
-#endif /* MEMWATCHER_H_ */

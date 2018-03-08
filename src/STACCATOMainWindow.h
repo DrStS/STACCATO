@@ -18,12 +18,11 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file StartWindow.h
+* \file STACCATOMainWindow.h
 * This file holds the class of StartWindow.
 * \date 9/16/2016
 **************************************************************************************************/
-#ifndef STARTWINDOW_H
-#define STARTWINDOW_H
+#pragma once
 
 #include "HMeshToVtkUnstructuredGrid.h"
 
@@ -54,12 +53,12 @@ class QFormLayout;
 class QSlider;
 
 namespace Ui {
-	class StartWindow;
+	class STACCATOMainWindow;
 }
 /********//**
-* \brief Class StartWindow the core of the GUI
+* \brief Class STACCATOMainWindow the core of the GUI
 ***********/
-class StartWindow : public QMainWindow {
+class STACCATOMainWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
@@ -67,12 +66,12 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	explicit StartWindow(QWidget *parent = 0);
+	explicit STACCATOMainWindow(QWidget *parent = 0);
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
-	~StartWindow(); 
+	~STACCATOMainWindow(); 
 protected:
 	/***********************************************************************************************
 	* \brief Creat all Actions of Qt
@@ -123,7 +122,7 @@ private:
 
 	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
 
-	Ui::StartWindow *ui;
+	Ui::STACCATOMainWindow *myGui;
 	/// File action.
 	QAction* myExitAction;
     QAction* myReadFileAction;
@@ -272,5 +271,3 @@ private:
 public:
 	bool isSubFrame;
 };
-
-#endif /* STARTWINDOW_H */

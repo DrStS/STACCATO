@@ -12,9 +12,7 @@
 //
 // Alternatively, this file may be used under the terms of Open CASCADE
 // commercial license or contractual agreement.
-
-#ifndef HMESHTOMESHVS_DATASOURCE
-#define HMESHTOMESHVS_DATASOURCE
+#pragma once
 
 #include <Standard.hxx>
 #include <Standard_Type.hxx>
@@ -99,11 +97,3 @@ private:
   Handle(TColStd_HArray2OfReal) myElemNormals;
 
 };
-
-
-
-
-
-
-
-#endif // HMESHTOMESHVS_DATASOURCE

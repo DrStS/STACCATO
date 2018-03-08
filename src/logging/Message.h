@@ -22,9 +22,7 @@
  * This file holds the class Message
  * \date 1/10/2017
  **************************************************************************************************/
-
-#ifndef MESSAGE_H_
-#define MESSAGE_H_
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -176,5 +174,3 @@ extern Message warningOut;
 ***********/
 #define WARNING_OUT(string) /*
  */                warningOut(string)
-
-#endif /* MESSAGE_H_ */

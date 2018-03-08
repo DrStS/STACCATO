@@ -22,8 +22,7 @@
  * This file holds all enumerations (specifying types) of the program
  * \date 27/1/2017
  **************************************************************************************************/
-#ifndef STACCATO_ENUM_H_
-#define STACCATO_ENUM_H_
+#pragma once
 
 enum STACCATO_Element_type {
 	STACCATO_Mass,
@@ -54,4 +53,3 @@ enum STACCATO_Picker_type {
 	STACCATO_Picker_Element
 };
 
-#endif /* STACCATO_ENUM_H_ */

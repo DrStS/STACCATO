@@ -23,8 +23,7 @@
  * i.e. lightweight descriptive data, e.g. material, section, anaylsis type, solver properties
  * \date 20/1/2018
  **************************************************************************************************/
-#ifndef METADATABASE_H_
-#define METADATABASE_H_
+#pragma once
 
 #include <vector>
 #include <string>
@@ -72,5 +71,3 @@ public:
 	void outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath);
 
 };
-
-#endif /* METADATABASE_H_ */

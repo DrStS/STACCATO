@@ -22,9 +22,7 @@
 * This file holds the class HMesh which is holds a finite element h mesh
 * \date 1/25/2017
 **************************************************************************************************/
-
-#ifndef HMESH_H_
-#define HMESH_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -374,5 +372,3 @@ public:
 	void addResultsSubFrameDescription(int _resultsSubFrameDescription);
 	std::vector<int>& getResultsSubFrameDescription();
 };
-
-#endif /* HMESH_H_ */

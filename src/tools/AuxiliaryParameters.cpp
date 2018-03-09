@@ -19,7 +19,7 @@
  */
 #include "AuxiliaryParameters.h"
 #include <limits>
-#define GIT_SHA1 "c91d42c0b9eefd60e18de320d037fa1bb3f2dd2e" //Cmake will set this value
+#define GIT_SHA1 "5966255fc29f3c6b105d82cdcea6ab467d3cf8a9" //Cmake will set this value
 #define GIT_TAG  "GIT-NOTFOUND"  //Cmake will set this value
 
 namespace STACCATO {

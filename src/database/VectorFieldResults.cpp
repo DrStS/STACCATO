@@ -35,6 +35,7 @@ void VectorFieldResults::buildLabelMap() {
 		setResultsEvaluationType(STACCATO_Evaluation_Nodal);
 
 		myLabel = "U";
+		std::cout << ">> Displacement Recorded!";
 		myResultLabelMap[myLabel + "1"] = STACCATO_x_Re;
 		myResultLabelMap[myLabel + "2"] = STACCATO_y_Re;
 		myResultLabelMap[myLabel + "3"] = STACCATO_z_Re;

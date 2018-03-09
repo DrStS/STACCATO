@@ -120,6 +120,15 @@ protected:
 	void myResultCaseChanged(void);
 
 private:
+<<<<<<< HEAD:src/STACCATOMainWindow.h
+=======
+	std::vector<std::string> allDispSolutionTypes;
+	std::vector<std::string> allDispVectorComponents;
+	std::vector<std::string> allViewModes;
+
+	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
+
+>>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.h
 	Ui::STACCATOMainWindow *myGui;
 	/// File action.
 	QAction* myExitAction;

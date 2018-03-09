@@ -17,11 +17,11 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-/*************************************************************************************************
-* \file BoundaryCondition.h
-* This file holds the class BoundaryCondition
-* \date 2/2/2018
-**************************************************************************************************/
+/***********************************************************************************************//**
+																								 * \file BoundaryCondition.h
+																								 * This file holds the class BoundaryCondition
+																								 * \date 2/2/2018
+																								 **************************************************************************************************/
 
 #ifndef BOUNDARYCONDITION_H_
 #define BOUNDARYCONDITION_H_
@@ -31,21 +31,11 @@
 #include <assert.h>
 #include "MathLibrary.h"
 #include <HMesh.h>
-#include <complex>
-using namespace std::complex_literals;
 
-#include <iostream>
-#include "Timer.h"
-
-#include <MetaDatabase.h>
-
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <type_traits>
-
-/**********
-* \brief This implements all boundary condtions
-**************************************************************************************************/
+class HMesh;
+/********//**
+		  * \brief This implements all boundary condtions
+		  **************************************************************************************************/
 template<class T>
 class BoundaryCondition {
 public:
@@ -68,9 +58,7 @@ public:
 	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
 	* \author Stefan Sicklinger
 	***********/
-	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<std::complex<double>> &_loadVector, std::vector<T> &_rhs) {
-		myCaseType = STACCATO_Case_Load;
-
+	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
 		int numCouplingNodes = _couplingNodes.size();
 		double weightingFactor = 1.0 / (double)numCouplingNodes;
 		double xMean[] = { 0, 0, 0 };
@@ -85,8 +73,8 @@ public:
 		//real branch
 		if (std::is_same<T, double>::value) {
 			for (int i = 0; i < 3; i++) {
-				forceVector.push_back(_loadVector[i].real());
-				momentVector.push_back(_loadVector[i + 3].real());
+				forceVector.push_back(_loadVector[i]);
+				momentVector.push_back(_loadVector[i + 3]);
 			}
 		}
 		//complex branch
@@ -115,9 +103,8 @@ public:
 		}
 
 		std::vector<double> r(numCouplingNodes * 3, 0);
-		std::vector<double> TVector(9, 0);
-		RForces.clear();
-		RForces.resize(numCouplingNodes * 3, 0);
+		std::vector<double> T(9, 0);
+		std::vector<std::complex<double>> RForces(numCouplingNodes * 3, 0);
 
 		// xMean Calculation
 		for (int i = 0; i < numCouplingNodes; i++) {
@@ -146,35 +133,43 @@ public:
 		for (int m = 0; m < 3; m++) {
 			for (int n = 0; n < 3; n++) {
 				for (int i = 0; i < numCouplingNodes; i++) {
-					TVector[m * 3 + n] += -weightingFactor*r[i * 3 + m] * r[i * 3 + n];
+					T[m * 3 + n] += -weightingFactor*r[i * 3 + m] * r[i * 3 + n];
 					if (m == n) {		// Diagonal Index Check
 						for (int j = 0; j < 3; j++) {
 							// Diagonals - Identity Summation
-							TVector[m * 3 + n] += weightingFactor*r[i * 3 + j] * r[i * 3 + j];
+							T[m * 3 + n] += weightingFactor*r[i * 3 + j] * r[i * 3 + j];
 						}
 					}
 				}
 			}
 		}
 
-		std::vector<double> temp = MathLibrary::solve3x3LinearSystem(TVector, momentRefereceD, 1e-14);
+		std::vector<double> temp = MathLibrary::solve3x3LinearSystem(T, momentRefereceD, 1e-14);
 		std::vector<double> tempIm;
 		//complex branch
 		if (std::is_same<T, STACCATOComplexDouble>::value) {
-			tempIm = MathLibrary::solve3x3LinearSystem(TVector, momentRefereceDIm, 1e-14);
+			tempIm = MathLibrary::solve3x3LinearSystem(T, momentRefereceDIm, 1e-14);
 		}
 
 		for (int i = 0; i < numCouplingNodes; i++) {
 			std::vector<double> rCurrent = { r[i * 3 + 0] , r[i * 3 + 1],r[i * 3 + 2] };
 			std::vector<double> temp2 = MathLibrary::computeVectorCrossProduct(temp, rCurrent);
 			std::vector<double> temp2Im;
-			if (analysisType == "STEADYSTATE_DYNAMIC") {
+			//complex branch
+			if (std::is_same<T, STACCATOComplexDouble>::value) {
 				temp2Im = MathLibrary::computeVectorCrossProduct(tempIm, rCurrent);
 			}
-			for (int j = 0; j < 3; j++) {
-				RForces[i * 3 + j].real(weightingFactor*(forceVector[j] + temp2[j]));
-				if (analysisType == "STEADYSTATE_DYNAMIC") {
-					RForces[i * 3 + j].imag(weightingFactor*(forceVectorIm[j] + temp2Im[j]));
+			//real branch
+			if (std::is_same<T, double>::value) {
+				for (int j = 0; j < 3; j++) {
+					_rhs[i * 3 + j](weightingFactor*(forceVector[j] + temp2[j]));
+				}
+			}
+			//complex branch
+			if (std::is_same<T, STACCATOComplexDouble>::value) {
+				for (int j = 0; j < 3; j++) {
+					_rhs[i * 3 + j].real(weightingFactor*(forceVector[j] + temp2[j]));
+					_rhs[i * 3 + j].imag(weightingFactor*(forceVectorIm[j] + temp2Im[j]));
 				}
 			}
 		}
@@ -185,140 +180,60 @@ public:
 	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
 	* \author Stefan Sicklinger
 	***********/
-	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<double> &_loadVector, std::vector<T> &_rhs) {
-		std::vector<std::complex<double>> loadVector(3);
-		loadVector[0] = { _loadVector[0], _loadVector[3] };
-		loadVector[1] = { _loadVector[1], _loadVector[4] };
-		loadVector[2] = { _loadVector[2], _loadVector[5] };
-
+	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<T> &_rhs) {
 		bool flagLabel = true;
 		for (int m = 0; m < _nodeList.size(); m++) {
-			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(_nodeList[m]));
+			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(nodeSet[m]));
 			for (int l = 0; l < numDoFsPerNode; l++) {
-				if (myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(_nodeList[m])] == _nodeList[m]) {
+				if (myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])] == _nodeList[m]) {
 					flagLabel = false;
-					int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(_nodeList[m])][l];
 
-					storeConcentratedLoadRHS(std::is_floating_point<T>{}, dofIndex, loadVector[l], _rhs);
+					//real branch
+					if (std::is_same<T, double>::value) {
+						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[m])][l];
+						switch (l) {
+						case 0:
+							_rhs[dofIndex] += std::atof(iLoads->LOAD()[k].REAL().begin()->X()->data());
+							break;
+						case 1:
+							_rhs[dofIndex] += std::atof(iLoads->LOAD()[k].REAL().begin()->Y()->data());
+							break;
+						case 2:
+							_rhs[dofIndex] += std::atof(iLoads->LOAD()[k].REAL().begin()->Z()->data());
+							break;
+						default:
+							break;
+						}
+					}
+					//complex branch
+					if (std::is_same<T, STACCATOComplexDouble>::value) {
+						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[j][l];
+						switch (l) {
+						case 0:
+							_rhs[dofIndex].real += std::atof(iLoads->LOAD()[k].REAL().begin()->X()->data());
+							_rhs[dofIndex].imag += std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->X()->data());
+							break;
+						case 1:
+							_rhs[dofIndex].real += iLoads->LOAD()[k].REAL().begin()->Y()->data());
+							_rhs[dofIndex].imag += std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Y()->data());
+							break;
+						case 2:
+							_rhs[dofIndex].real += temp_Fz(std::atof(iLoads->LOAD()[k].REAL().begin()->Z()->data());
+							_rhs[dofIndex].imag += std::atof(iLoads->LOAD()[k].IMAGINARY().begin()->Z()->data());
+							break;
+						default:
+							break;
+						}
+					}
 				}
 			}
 		}
 		if (flagLabel)
-			std::cerr << ">> Error while Loading: NODE of _nodeList not found.\n";
+			std::cerr << ">> Error while Loading: NODE of NODESET " << std::string(iLoads->LOAD()[k].NODESET().begin()->Name()->c_str()) << " not found.\n";
 	}
-	/***********************************************************************************************
-	* \brief addRotatingForceContribution
-	* \param[in] handle _nodeList
-	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
-	* \author Harikrishnan Sreekumar
-	***********/
-	void addRotatingForceContribution(std::vector<int> &_refNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector, std::vector<T> &_rhs) {
-		myCaseType = STACCATO_Case_Load;
-
-		std::cout << ">> Looking for Rotating Distributed Coupling ...\n";
-
-		// Resize RHS vector
-		int newSize = getBCCaseDescription().size()*_rhs.size();
-		_rhs.resize(newSize);
-
-		int i = 0;
-		do {
-			std::cout << ">> Computing for theta = " << getBCCaseDescription()[i] << " ...\n";
-			double loadRe[] = { _loadVector[0] , _loadVector[1] , _loadVector[2] };
-			double loadIm[] = { _loadVector[3] , _loadVector[4] , _loadVector[5] };
-			double loadMagnitudeRe = MathLibrary::computeDenseEuclideanNorm(loadRe, 3);
-			double loadMagnitudeIm = MathLibrary::computeDenseEuclideanNorm(loadIm, 3);
-
-			std::vector<std::complex<double>> loadVector(6);
-			loadVector[0] = { sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm };
-			loadVector[1] = { _loadVector[1], _loadVector[4] };
-			loadVector[2] = { cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm };
-			loadVector[3] = 0;
-			loadVector[4] = 0;
-			loadVector[5] = 0;
-
-			std::cout << ">> Load at theta " << getBCCaseDescription()[i] << " is " << loadVector[0] << " : " << loadVector[1] << " : " << loadVector[2] << std::endl;
-
-			if (_refNode.size() == 1 && _couplingNodes.size() != 0)
-				computeDistributingCouplingLoad(_refNode, _couplingNodes, loadVector, _rhs);
-			else
-				std::cerr << ">> Error in DistributingCouplingForce Input.\n" << std::endl;
-
-			bool flagLabel = false;
-			for (int j = 0; j < _couplingNodes.size(); j++)
-			{
-				int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[j]));
-				for (int l = 0; l < numDoFsPerNode; l++) {
-					if (myHMesh->getNodeLabels()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[j])] == _couplingNodes[j]) {
-						flagLabel = true;
-						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[j])][l];
-
-						storeConcentratedLoadRHS(std::is_floating_point<T>{}, i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex, RForces[j * 3 + l], _rhs);
-					}
-				}
-			}
-
-			if (flagLabel)
-				std::cout << ">> Building RHS with DistributedCouplingForce Finished." << std::endl;
-			else
-				std::cerr << ">> Error in building RHS with DistributedCouplingForce." << std::endl;
-			i++;
-		} while (i < getBCCaseDescription().size());
-	}
-	/***********************************************************************************************
-	* \brief Add Boundary Influenced Case Description
-	* \author Harikrishnan Sreekumar
-	***********/
-	void addBCCaseDescription(double _caseDescription) {
-		boundaryCaseDescription.push_back(_caseDescription);
-	}
-	/***********************************************************************************************
-	* \brief Get Boundary Influenced Case Description
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<double>& getBCCaseDescription() {
-		return boundaryCaseDescription;
-	}
-	/***********************************************************************************************
-	* \brief Get Number of RHS that is to be solved with BoundaryCondition
-	* \author Harikrishnan Sreekumar
-	***********/
-	int getNumberOfTotalCases() {
-		switch (myCaseType)
-		{
-		case STACCATO_Case_Load:
-			return getBCCaseDescription().size();
-		default:
-			return 1;
-		}
-	}
-	/***********************************************************************************************
-	* \brief Store Double Valued DataStructure. Syntax: _target[_targetIndex] += _source.real()
-	* \author Harikrishnan Sreekumar
-	***********/
-	void storeConcentratedLoadRHS(std::true_type, int _targetIndex, std::complex<double> _source, std::vector<T> &_target) {
-		_target[_targetIndex] += _source.real();
-	}
-	/***********************************************************************************************
-	* \brief Store Complex Valued DataStructure.
-	*        Syntax: _target[_targetIndex].real += _source.real();
-	*				 _target[_targetIndex].imag += _source.imag();
-	* \author Harikrishnan Sreekumar
-	***********/
-	void storeConcentratedLoadRHS(std::false_type, int _targetIndex, std::complex<double> _source, std::vector<T> &_target) {
-		_target[_targetIndex].real += _source.real();
-		_target[_targetIndex].imag += _source.imag();
-	}
-
 private:
 	/// HMesh object 
 	HMesh *myHMesh;
-	/// BC vector case description
-	std::vector<double> boundaryCaseDescription;
-	/// Computing Force Vector
-	std::vector<std::complex<double>> RForces;
-public:
-	STACCATO_ResultsCase_type myCaseType;
 };
 
 #endif /* BOUNDARYCONDITION_H_ */

@@ -17,9 +17,9 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "StartWindow.h"
+#include "STACCATOMainWindow.h"
 #include "SimuliaUMA.h"
-#include "ui_StartWindow.h"
+#include "ui_STACCATOMainWindow.h"
 #include "OccViewer.h"
 #include "VtkViewer.h"
 #include "OcctQtProcessIndicator.h"
@@ -33,8 +33,8 @@
 #include "qnemainwindow.h"
 #include "HMesh.h"
 #include "HMeshToVtkUnstructuredGrid.h"
-#include "VisualizerWindow.h"
 #include "Reader.h"
+#include "FieldDataVisualizer.h"
 
 //Q5
 #include <QToolBar>
@@ -120,45 +120,44 @@ QT_CHARTS_USE_NAMESPACE
 //XML
 #include "MetaDatabase.h"
 
-StartWindow::StartWindow(QWidget *parent) :
-QMainWindow(parent),
-ui(new Ui::StartWindow)
+STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), myGui(new Ui::STACCATOMainWindow)
 {
-	ui->setupUi(this);
+	myGui->setupUi(this);
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
 	//myOccViewer = new OccViewer(this);
 
-	myScalingFactorValue = 1;
+	// Works for one instance only
+	myHMesh = new HMesh("default");
 
-	myVtkViewer = new VtkViewer(this);
+	myFieldDataVisualizer = new FieldDataVisualizer(this);
+	myFieldDataVisualizer->setHMesh(*myHMesh);
 
-	mySubFrameIndex = 0;
+	myVisualizerSetting = new VisualizerSetting();
+	myVisualizerSetting->setCommuniationToFieldDataVisualizer(*myFieldDataVisualizer);
+
 	isSubFrame = false;
 
-	setCentralWidget(myVtkViewer);
+	setCentralWidget(myFieldDataVisualizer);
 	createActions();
 	createMenus();
 	createToolBars();
 	createDockWindows();
-
-	// Works for one instance only
-	myHMesh = new HMesh("default");
 }
 
-StartWindow::~StartWindow()
+STACCATOMainWindow::~STACCATOMainWindow()
 {
 	//delete myOccViewer;
-	delete myVtkViewer;
+	delete myFieldDataVisualizer;
 }
 
 
-void StartWindow::openDataFlowWindow(void){
+void STACCATOMainWindow::openDataFlowWindow(void) {
 	newWin = new QNEMainWindow();
 	newWin->show();
 }
 
-void StartWindow::createActions(void)
+void STACCATOMainWindow::createActions(void)
 {
 	// File actions
 	myExitAction = new QAction(tr("Exit"), this);
@@ -168,6 +167,7 @@ void StartWindow::createActions(void)
 	connect(myExitAction, SIGNAL(triggered()), this, SLOT(close()));
 
 	myImportXMLFileAction = new QAction(tr("Import XML file"), this);
+	myImportXMLFileAction->setIcon(QIcon(":/Qt/resources/xmlFile.ico"));
 	myImportXMLFileAction->setStatusTip(tr("Import STACCATO XML file"));
 	connect(myImportXMLFileAction, SIGNAL(triggered()), this, SLOT(importXMLFile()));
 
@@ -177,7 +177,8 @@ void StartWindow::createActions(void)
 	connect(myReadFileAction, SIGNAL(triggered()), this, SLOT(importFile()));
 
 	// Time Step
-	myTimeStepLabel = new QLabel(tr("Frequency (in Hz):"), this);
+	myTimeStepLabel = new QLabel(tr("Analysis:"), this);
+
 	myTimeStepLessAction = new QPushButton(tr("<"), this);
 	myTimeStepLessAction->setFixedWidth(40);
 	myTimeStepLessAction->setStatusTip(tr("Previous Frequency"));
@@ -188,48 +189,62 @@ void StartWindow::createActions(void)
 	myTimeStepAddAction->setStatusTip(tr("Next Frequency"));
 	connect(myTimeStepAddAction, SIGNAL(clicked()), this, SLOT(myTimeStepAddProc()));
 
-	myTimeStepText = new QLineEdit(tr("0 Hz"),this);
+	myTimeStepText = new QLineEdit(this);
+	myTimeStepText->setText("-");
 	myTimeStepText->setFixedWidth(50);
 	myTimeStepText->setAlignment(Qt::AlignHCenter);
 	myTimeStepText->setReadOnly(true);
-	myFreqIndex = 0;
 
-	// Solution Selector
-	allDispSolutionTypes.push_back("Displacement");
-	
-	allDispVectorComponents.push_back("Ux_Re");
-	allDispVectorComponents.push_back("Uy_Re");
-	allDispVectorComponents.push_back("Uz_Re");
-	allDispVectorComponents.push_back("Magnitude_Re");
-	allDispVectorComponents.push_back("Ux_Im");
-	allDispVectorComponents.push_back("Uy_Im");
-	allDispVectorComponents.push_back("Uz_Im");
-	allDispVectorComponents.push_back("Magnitude_Im");
+	myResultCaseSelector = new QComboBox();
+	myResultCaseSelector->addItem("Case..");
+	QStandardItemModel* model = qobject_cast<QStandardItemModel*>(myResultCaseSelector->model());
+	QStandardItem* item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+	myResultCaseSelector->setStatusTip(tr("Select Case Type"));
+	connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
+	myResultCaseSelector->setEnabled(true);
 
-	allViewModes.push_back("Surface");
-	allViewModes.push_back("Surface with Edges");
-	allViewModes.push_back("Wireframe");
+	myAnimatePrevFrameButton = new QPushButton(tr("<"), this);
+	connect(myAnimatePrevFrameButton, SIGNAL(clicked()), this, SLOT(myCaseStepLessProc()));
+	myAnimatePrevFrameButton->setEnabled(false);
+	myAnimatePrevFrameButton->setFixedWidth(40);
+	myAnimatePrevFrameButton->setEnabled(true);
+
+	myAnimateNextFrameButton = new QPushButton(tr(">"), this);
+	connect(myAnimateNextFrameButton, SIGNAL(clicked()), this, SLOT(myCaseStepAddProc()));
+	myAnimateNextFrameButton->setEnabled(false);
+	myAnimateNextFrameButton->setFixedWidth(40);
+	myAnimateNextFrameButton->setEnabled(true);
+
+	myCaseStepText = new QLineEdit(tr("-"), this);
+	myCaseStepText->setFixedWidth(50);
+	myCaseStepText->setAlignment(Qt::AlignHCenter);
+	myCaseStepText->setReadOnly(true);
+	myCaseStepText->setEnabled(true);
 
 	mySolutionSelector = new QComboBox();
+	mySolutionSelector->addItem("Solution..");
+	model = qobject_cast<QStandardItemModel*>(mySolutionSelector->model());
+	item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
 	mySolutionSelector->setStatusTip(tr("Select Solution Type"));
-	for (int i = 0; i < allDispSolutionTypes.size(); i++)
-		mySolutionSelector->addItem(QString::fromStdString(allDispSolutionTypes[i]));
 	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	mySolutionSelector->setEnabled(false);
 
 	myComponentSelector = new QComboBox();
+	myComponentSelector->addItem("Component..");
+	model = qobject_cast<QStandardItemModel*>(myComponentSelector->model());
+	item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
 	myComponentSelector->setStatusTip(tr("Select Vector Component"));
-	for (int i = 0; i < allDispVectorComponents.size() ; i++)
-		myComponentSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
 	connect(myComponentSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	myComponentSelector->setEnabled(false);
 
 	myViewModeSelector = new QComboBox();
+	myViewModeSelector->addItem("View Mode..");
+	model = qobject_cast<QStandardItemModel*>(myViewModeSelector->model());
+	item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
 	myViewModeSelector->setStatusTip(tr("Select Viewing Mode"));
-	for (int i = 0; i < allViewModes.size() ; i++)
-		myViewModeSelector->addItem(QString::fromStdString(allViewModes[i]));
 	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	myViewModeSelector->setEnabled(false);
 
 	// 
 
@@ -240,21 +255,21 @@ void StartWindow::createActions(void)
 	myPickerModeNone->setCheckable(true);
 	myPickerModeNone->setFlat(true);
 	myPickerModeNone->setChecked(true);
-	connect(myPickerModeNone, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeNone()));
+	connect(myPickerModeNone, SIGNAL(clicked()), myFieldDataVisualizer, SLOT(setPickerModeNone()));
 
 	myPickerModeNode = new QPushButton(this);
 	myPickerModeNode->setIcon(QIcon(":/Qt/resources/add.ico"));
 	myPickerModeNode->setStatusTip(tr("Select Node"));
 	myPickerModeNode->setCheckable(true);
 	myPickerModeNode->setFlat(true);
-	connect(myPickerModeNode, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeNode()));
+	connect(myPickerModeNode, SIGNAL(clicked()), myFieldDataVisualizer, SLOT(setPickerModeNode()));
 
 	myPickerModeElement = new QPushButton(this);
 	myPickerModeElement->setIcon(QIcon(":/Qt/resources/selectElement.ico"));
 	myPickerModeElement->setStatusTip(tr("Select Element"));
 	myPickerModeElement->setCheckable(true);
 	myPickerModeElement->setFlat(true);
-	connect(myPickerModeElement, SIGNAL(clicked()), myVtkViewer, SLOT(setPickerModeElement()));
+	connect(myPickerModeElement, SIGNAL(clicked()), myFieldDataVisualizer, SLOT(setPickerModeElement()));
 
 	myPickerButtonGroup = new QButtonGroup(this);
 	myPickerButtonGroup->addButton(myPickerModeNone);
@@ -271,7 +286,7 @@ void StartWindow::createActions(void)
 	myPickModeButton->setFlat(true);
 	connect(myPickModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
-	myRotateModeButton = new QPushButton( this);
+	myRotateModeButton = new QPushButton(this);
 	myRotateModeButton->setStatusTip(tr("Rotation Mode"));
 	myRotateModeButton->setIcon(QIcon(":/Qt/resources/rotate.png"));
 	myRotateModeButton->setStatusTip(tr("Rotate the view"));
@@ -279,9 +294,9 @@ void StartWindow::createActions(void)
 	myRotateModeButton->setFlat(true);
 	connect(myRotateModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
-	myPickerButtonGroup = new QButtonGroup(this);
-	myPickerButtonGroup->addButton(myPickModeButton);
-	myPickerButtonGroup->addButton(myRotateModeButton);
+	myViewButtonGroup = new QButtonGroup(this);
+	myViewButtonGroup->addButton(myPickModeButton);
+	myViewButtonGroup->addButton(myRotateModeButton);
 
 	/*
 	// View actions
@@ -304,7 +319,7 @@ void StartWindow::createActions(void)
 	myRotateAction->setIcon(QIcon(":/Qt/resources/rotate.png"));
 	myRotateAction->setStatusTip(tr("Rotate the view"));
 	connect(myRotateAction, SIGNAL(triggered()), myOccViewer, SLOT(rotation()));
-	
+
 	connect(myOccViewer, SIGNAL(selectionChanged()), this, SLOT(handleSelectionChanged()));
 	*/
 
@@ -327,22 +342,12 @@ void StartWindow::createActions(void)
 	connect(myWarpVectorVisibility, SIGNAL(clicked()), this, SLOT(myWarpVectorTriggered()));
 	myWarpVectorVisibility->setEnabled(false);
 
-	my2dVisualizerVisibility = new QPushButton(this);
-	my2dVisualizerVisibility->setIcon(QIcon(":/Qt/resources/2dPlot.ico"));
-	my2dVisualizerVisibility->setStatusTip(tr("Enable 2D Visualizer"));
-	my2dVisualizerVisibility->setFlat(true);
-	connect(my2dVisualizerVisibility, SIGNAL(clicked()), this, SLOT(my2dVisualizerInterface()));
-	my2dVisualizerVisibility->setEnabled(false);
-
-	myAnimationDockButton = new QPushButton(this);
-	myAnimationDockButton->setIcon(QIcon(":/Qt/resources/animate.ico"));
-	myAnimationDockButton->setStatusTip(tr("Enable Animation"));
-	myAnimationDockButton->setCheckable(true);
-	myAnimationDockButton->setChecked(false);
-	myAnimationDockButton->setFlat(true);
-	connect(myAnimationDockButton, SIGNAL(clicked()), this, SLOT(myAnimationDockTriggered()));
-	myAnimationDockButton->setEnabled(false);
-
+	mySignalDataVisualizerVisiblility = new QPushButton(this);
+	mySignalDataVisualizerVisiblility->setIcon(QIcon(":/Qt/resources/2dPlot.ico"));
+	mySignalDataVisualizerVisiblility->setStatusTip(tr("Enable Signal Data Visualizer"));
+	mySignalDataVisualizerVisiblility->setFlat(true);
+	connect(mySignalDataVisualizerVisiblility, SIGNAL(clicked()), this, SLOT(mySignalDataVisualizerInterface()));
+	mySignalDataVisualizerVisiblility->setEnabled(false);
 
 	// Create actions
 	myDrawCantileverAction = new QAction(tr("Draw Cantilever"), this);
@@ -362,15 +367,15 @@ void StartWindow::createActions(void)
 	// Selection actions
 	mySetSelectionModeNoneAction = new QAction(tr("Reset selection"), this);
 	mySetSelectionModeNoneAction->setStatusTip(tr("Reset selection"));
-	connect(mySetSelectionModeNoneAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeNone()));
+	connect(mySetSelectionModeNoneAction, SIGNAL(triggered()), myFieldDataVisualizer, SLOT(setPickerModeNone()));
 
 	mySetSelectionModeNodeAction = new QAction(tr("Select a node"), this);
 	mySetSelectionModeNodeAction->setStatusTip(tr("Select a node"));
-	connect(mySetSelectionModeNodeAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeNode()));
+	connect(mySetSelectionModeNodeAction, SIGNAL(triggered()), myFieldDataVisualizer, SLOT(setPickerModeNode()));
 
 	mySetSelectionModeElementAction = new QAction(tr("Select an element"), this);
 	mySetSelectionModeElementAction->setStatusTip(tr("Select an element"));
-	connect(mySetSelectionModeElementAction, SIGNAL(triggered()), myVtkViewer, SLOT(setPickerModeElement()));
+	connect(mySetSelectionModeElementAction, SIGNAL(triggered()), myFieldDataVisualizer, SLOT(setPickerModeElement()));
 
 	// Export Actions
 	myUMAAction = new QAction(tr("SIM via UMA"), this);
@@ -402,11 +407,11 @@ void StartWindow::createActions(void)
 	myViewPropertyAction->setChecked(false);
 	connect(myViewPropertyAction, SIGNAL(triggered()), this, SLOT(myViewPropertyDockTriggered()));
 
-	my2dVisualizerAction = new QAction(tr("2D Visualizer"));
-	my2dVisualizerAction->setStatusTip(tr("2D Visualizer"));
+	my2dVisualizerAction = new QAction(tr("Signal Data Visualizer"));
+	my2dVisualizerAction->setStatusTip(tr("Signal Data Visualizer"));
 	my2dVisualizerAction->setCheckable(true);
 	my2dVisualizerAction->setChecked(false);
-	connect(my2dVisualizerAction, SIGNAL(triggered()), this, SLOT(my2dVisualizerInterface()));
+	connect(my2dVisualizerAction, SIGNAL(triggered()), this, SLOT(mySignalDataVisualizerInterface()));
 
 	//Help actions
 	myAboutAction = new QAction(tr("About"), this);
@@ -414,78 +419,139 @@ void StartWindow::createActions(void)
 	myAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
 	connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 
+	// Animate Widgets
+	myAnimationButton = new QAction(this);
+	myAnimationButton->setIcon(QIcon(":/Qt/resources/animate.ico"));
+	myAnimationButton->setStatusTip(tr("Enable Animation"));
+	myAnimationButton->setCheckable(false);
+	myAnimationButton->setChecked(false);
+	connect(myAnimationButton, SIGNAL(triggered()), this, SLOT(myGenerateAnimationFramesProc()));
+	myAnimationButton->setEnabled(false);
+
+	myAnimationDurationLabel = new QLabel(tr("Duration (sec):"), this);
+
+	myAnimationDuration = new QLineEdit(this);
+	myAnimationDuration->setText("5");
+	myAnimationDuration->setAlignment(Qt::AlignHCenter);
+	myAnimationDuration->setFixedWidth(30);
+
+	myAnimateRepeatButton = new QAction(this);
+	myAnimateRepeatButton->setIcon(QIcon(":/Qt/resources/repeat.ico"));
+	myAnimateRepeatButton->setCheckable(true);
+	myAnimateRepeatButton->setChecked(true);
+	myAnimateRepeatButton->setEnabled(false);
+
+	myAnimatePlayButton = new QAction(this);
+	myAnimatePlayButton->setIcon(QIcon(":/Qt/resources/play.ico"));
+	connect(myAnimatePlayButton, SIGNAL(triggered()), this, SLOT(myAnimationScenePlayProc()));
+	myAnimatePlayButton->setEnabled(false);
+
+	myAnimateStopButton = new QAction(this);
+	myAnimateStopButton->setIcon(QIcon(":/Qt/resources/stop.ico"));
+	connect(myAnimateStopButton, SIGNAL(triggered()), this, SLOT(myAnimationSceneStopProc()));
+	myAnimateStopButton->setEnabled(false);
+
+	myHorizontalSlider = new QSlider(Qt::Horizontal);
+	myHorizontalSlider->setEnabled(false);
+	myHorizontalSlider->setFixedWidth(60);
+
+	myResetFrameAnimationButton = new QAction(this);
+	myResetFrameAnimationButton->setIcon(QIcon(":/Qt/resources/delete.ico"));
+	connect(myResetFrameAnimationButton, SIGNAL(triggered()), this, SLOT(myAnimationResetProc()));
+	myResetFrameAnimationButton->setEnabled(false);
+
 }
 
-void StartWindow::myViewPropertyUpdate(void) {
-	static bool edge = false;
-	static bool surface = true;	
+void STACCATOMainWindow::fillFEResultInGUI() {
+	mySolutionSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
+	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldFromDatabase().size(); i++)					// Adding Vector Field
+		mySolutionSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[i].myLabel));
 
-	// Update View Mode
-	if (myViewModeSelector->currentText().toStdString() == allViewModes[0]) {			// Surface With Edges
-		edge = false;
-		surface = true;
+	mySolutionSelector->setCurrentIndex(1);
+	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+
+	myResultCaseSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
+	for (std::map<std::string, STACCATO_ResultsCase_type>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.end(); ++it) {
+		myResultCaseSelector->addItem(QString::fromStdString(it->first));
 	}
-	else if (myViewModeSelector->currentText().toStdString() == allViewModes[1]) {			// Surface With Edges
-		edge = true;
-		surface = true;
+	myResultCaseSelector->setCurrentIndex(1);
+	myResultCaseSelector->setFixedWidth(80);
+	connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
+
+	myComponentSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
+	for (std::map<std::string, STACCATO_VectorField_components>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.end(); ++it) {
+		myComponentSelector->addItem(QString::fromStdString(it->first));
 	}
-	else if (myViewModeSelector->currentText().toStdString() == allViewModes[2]) {		// Wireframe
-		edge = true;
-		surface = false;
+	myComponentSelector->setCurrentIndex(1);
+	connect(myComponentSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+
+	myViewModeSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
+	for (std::map<std::string, STACCATO_FieldProperty_type>::iterator it = myVisualizerSetting->myViewModeLabelMap.begin(); it != myVisualizerSetting->myViewModeLabelMap.end(); ++it)
+		myViewModeSelector->addItem(QString::fromStdString(it->first));
+	myViewModeSelector->setFixedWidth(120);
+	myViewModeSelector->setCurrentIndex(1);
+	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
+
+	// Setting Iterators
+	myFreqIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin();
+	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();
+
+	std::cout << "Frequency Description\n";
+	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end(); ++it) {
+		std::cout << "@ Index " << it->first << " Description: " << it->second << std::endl;
 	}
 
-	int resultIndex = mySubFrameIndex*myHMesh->getResultsTimeDescription().size() + myFreqIndex;
-
-	// Update Solution
-	if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Ux_Re, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Uy_Re, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Uz_Re, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Re, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Im, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Ux_Im, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Im, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Uy_Im, edge, surface, myScalarBarVisibility->isChecked());
-	} else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Im, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Uz_Im, edge, surface, myScalarBarVisibility->isChecked());
+	std::cout << "Case Description\n";
+	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().end(); ++it) {
+		std::cout << "@ Index " << it->first << " Description: " << it->second << std::endl;
 	}
-	else if (myComponentSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, resultIndex));
-		myVtkViewer->setDisplayProperties(STACCATO_Magnitude_Im, edge, surface, myScalarBarVisibility->isChecked());
-	}
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, resultIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, resultIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, resultIndex));
-	myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());		// Update Plot
 }
 
-void StartWindow::myTimeStepLessProc(void) {
-	if (myFreqIndex > 0) {
-		isSubFrame = false;
+void STACCATOMainWindow::myViewPropertyUpdate(void) {
+	myTimeStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[myFreqIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myTimeUnit));		// Update Slider
+	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myCaseUnit));		// Update Slider
+
+																																																												// Change in Properties
+	myVisualizerSetting->commitCurrentFrame(myFreqIndex->first + myCaseIndex->first);
+	myVisualizerSetting->commitVectorFieldComponent(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap[myComponentSelector->currentText().toStdString()]);	// Result Component
+	myVisualizerSetting->commitViewSetting(myVisualizerSetting->myViewModeLabelMap[myViewModeSelector->currentText().toStdString()]);						// View Mode
+	myVisualizerSetting->setScalarbarTitle(myComponentSelector->currentText().toStdString());																// Scalarbar Title
+	myVisualizerSetting->commitScalarBar(myScalarBarVisibility->isChecked());																				// Scalarbar Visibility
+
+	myVisualizerSetting->updateSetting();																								// Visualize Frame
+}
+
+void STACCATOMainWindow::myTimeStepLessProc(void) {
+	isSubFrame = false;
+	if (myFreqIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin())
 		myFreqIndex--;
-		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
-		myViewPropertyUpdate();
-	}
+	myViewPropertyUpdate();
 }
 
-void StartWindow::myTimeStepAddProc(void) {
-	if (myFreqIndex < myHMesh->getResultsTimeDescription().size()-1) {
-		isSubFrame = false;
+void STACCATOMainWindow::myTimeStepAddProc(void) {
+	isSubFrame = false;
+	if (myFreqIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end())
 		myFreqIndex++;
-		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));		// Update Slider
-		myViewPropertyUpdate();
-	}
+	myViewPropertyUpdate();
 }
 
-void StartWindow::createMenus(void)
+
+void STACCATOMainWindow::myCaseStepLessProc(void) {
+	isSubFrame = true;
+	if (myCaseIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin())
+		--myCaseIndex;
+	myViewPropertyUpdate();
+}
+
+void STACCATOMainWindow::myCaseStepAddProc(void) {
+	isSubFrame = true;
+	if (myCaseIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().end()) {
+		++myCaseIndex;
+	}
+	myViewPropertyUpdate();
+}
+
+void STACCATOMainWindow::createMenus(void)
 {
 	myFileMenu = menuBar()->addMenu(tr("&File"));
 	myFileMenu->addAction(myReadFileAction);
@@ -520,10 +586,11 @@ void StartWindow::createMenus(void)
 	myHelpMenu->addAction(myAboutAction);
 }
 
-void StartWindow::createToolBars(void)
+void STACCATOMainWindow::createToolBars(void)
 {
 	myFileToolBar = addToolBar(tr("&File"));
 	myFileToolBar->addAction(myReadFileAction);
+	myFileToolBar->addAction(myImportXMLFileAction);
 	myCreateToolBar = addToolBar(tr("Create"));
 	myCreateToolBar->addAction(myDataFlowAction);
 
@@ -545,6 +612,12 @@ void StartWindow::createToolBars(void)
 	myTimeToolBar->addWidget(myTimeStepText);
 	myTimeToolBar->addWidget(myTimeStepAddAction);
 
+	myTimeToolBar->addSeparator();
+	myTimeToolBar->addWidget(myResultCaseSelector);
+	myTimeToolBar->addWidget(myAnimatePrevFrameButton);
+	myTimeToolBar->addWidget(myCaseStepText);
+	myTimeToolBar->addWidget(myAnimateNextFrameButton);
+
 	mySolutionToolBar = addToolBar(tr("View Solution"));
 	mySolutionToolBar->addWidget(mySolutionSelector);
 	mySolutionToolBar->addSeparator();
@@ -564,16 +637,29 @@ void StartWindow::createToolBars(void)
 	addToolBar(Qt::RightToolBarArea, myDisplayControlToolBar);
 	myDisplayControlToolBar->addWidget(myScalarBarVisibility);
 	myDisplayControlToolBar->addWidget(myWarpVectorVisibility);
-	myDisplayControlToolBar->addWidget(my2dVisualizerVisibility);
-	myDisplayControlToolBar->addWidget(myAnimationDockButton);
+	myDisplayControlToolBar->addWidget(mySignalDataVisualizerVisiblility);
 	myDisplayControlToolBar->setOrientation(Qt::Vertical);
+
+	mySubFrameAnimatorToolBar = addToolBar(tr("Animate"));
+	mySubFrameAnimatorToolBar->addAction(myAnimationButton);
+	mySubFrameAnimatorToolBar->addSeparator();
+	mySubFrameAnimatorToolBar->addWidget(myAnimationDurationLabel);
+	mySubFrameAnimatorToolBar->addWidget(myAnimationDuration);
+	mySubFrameAnimatorToolBar->addSeparator();
+	mySubFrameAnimatorToolBar->addAction(myAnimateRepeatButton);
+	mySubFrameAnimatorToolBar->addSeparator();
+	mySubFrameAnimatorToolBar->addAction(myAnimatePlayButton);
+	mySubFrameAnimatorToolBar->addAction(myAnimateStopButton);
+	mySubFrameAnimatorToolBar->addAction(myResetFrameAnimationButton);
+	mySubFrameAnimatorToolBar->addSeparator();
+	mySubFrameAnimatorToolBar->addWidget(myHorizontalSlider);
 }
 
-void StartWindow::createDockWindows()
+void STACCATOMainWindow::createDockWindows()
 {
 	QDockWidget *dock = new QDockWidget(tr("Output"), this);
 	dock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
-	
+
 	//Create dockable widget
 	textOutput = new QTextEdit(dock);
 	QPalette pal;
@@ -604,18 +690,18 @@ void StartWindow::createDockWindows()
 }
 
 
-void StartWindow::about(){
+void STACCATOMainWindow::about() {
 	myOccViewer->showGrid(Standard_True);
 	myOccViewer->viewTop();
 	myOccViewer->fitAll();
 	myOccViewer->viewGrid();
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
-		"<p>Copyright &copy; 2017 "
-		"<p>STACCATO is using Qt and OpenCASCADE."));
+			"<p>Copyright &copy; 2017 "
+			"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
-void StartWindow::importXMLFile(void) {
+void STACCATOMainWindow::importXMLFile(void) {
 	QString myWorkingFolder = "";
 	QString fileType;
 	QFileInfo fileInfo;
@@ -665,33 +751,28 @@ void StartWindow::importXMLFile(void) {
 		debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
+		fillFEResultInGUI();
+
 		// Enable Tools
-		mySolutionSelector->setEnabled(true);
-		myComponentSelector->setEnabled(true);
-		myViewModeSelector->setEnabled(true);
 		myScalarBarVisibility->setEnabled(true);
 		myWarpVectorVisibility->setEnabled(true);
-		my2dVisualizerVisibility->setEnabled(true);
-		myAnimationDockButton->setEnabled(true);
+		mySignalDataVisualizerVisiblility->setEnabled(true);
+		myAnimationButton->setEnabled(true);
 
 		anaysisTimer01.start();
-		myHMeshToVtkUnstructuredGrid = new HMeshToVtkUnstructuredGrid(*myHMesh);
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridInitializer();
 		anaysisTimer01.stop();
 		debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-		// Update Slider
-		myTimeStepText->setText(QString::fromStdString(std::to_string(std::stoi(myHMesh->getResultsTimeDescription()[myFreqIndex])) + " Hz"));
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(STACCATO_x_Re, myFreqIndex->first);
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFreqIndex->first);
 
-		myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex));
-		myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, myFreqIndex), myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, myFreqIndex));
-
-		// Plot Vector Field
-		myVtkViewer->plotVectorField(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
+		myViewPropertyUpdate();
 	}
 }
 
-void StartWindow::importFile(void)
+void STACCATOMainWindow::importFile(void)
 {
 
 	QString myWorkingFolder = "";
@@ -700,13 +781,13 @@ void StartWindow::importFile(void)
 
 	QString fileName = QFileDialog::getOpenFileName(this,
 		tr("Import file"), myWorkingFolder, tr(
-		"STEP (*.step *.stp);;"
-		"IGES (*.iges *.igs);;"
-		"STL  (*.stl)"));
+			"STEP (*.step *.stp);;"
+			"IGES (*.iges *.igs);;"
+			"STL  (*.stl)"));
 
 	fileInfo.setFile(fileName);
 	fileType = fileInfo.suffix();
-	if (!fileName.isEmpty() && !fileName.isNull()){
+	if (!fileName.isEmpty() && !fileName.isNull()) {
 		if (fileType.toLower() == tr("step") || fileType.toLower() == tr("stp")) {
 			readSTEP(fileName);
 		}
@@ -720,11 +801,11 @@ void StartWindow::importFile(void)
 	}
 }
 
-void StartWindow::readSTEP(QString fileName){
+void STACCATOMainWindow::readSTEP(QString fileName) {
 	// create additional log file
 	STEPControl_Reader aReader;
 	IFSelect_ReturnStatus status = aReader.ReadFile(fileName.toUtf8().constData());
-	if (status != IFSelect_RetDone){
+	if (status != IFSelect_RetDone) {
 		return;
 	}
 
@@ -750,7 +831,7 @@ void StartWindow::readSTEP(QString fileName){
 
 }
 
-void StartWindow::readIGES(QString fileName){
+void STACCATOMainWindow::readIGES(QString fileName) {
 
 	IGESControl_Reader Reader;
 
@@ -764,7 +845,7 @@ void StartWindow::readIGES(QString fileName){
 }
 
 
-void StartWindow::readSTL(QString fileName){
+void STACCATOMainWindow::readSTL(QString fileName) {
 	Handle(Message_ProgressIndicator) aIndicator = new OcctQtProcessIndicator(this);
 	aIndicator->SetRange(0, 100);
 	OSD_Path aFile(fileName.toUtf8().constData());
@@ -783,7 +864,7 @@ void StartWindow::readSTL(QString fileName){
 	// Hide all nodes by default
 	Handle(TColStd_HPackedMapOfInteger) aNodes = new TColStd_HPackedMapOfInteger();
 	Standard_Integer aLen = aSTLMesh->Vertices().Length();
-	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++){
+	for (Standard_Integer anIndex = 1; anIndex <= aLen; anIndex++) {
 		aNodes->ChangeMap().Add(anIndex);
 	}
 	aMesh->SetHiddenNodes(aNodes);
@@ -792,13 +873,13 @@ void StartWindow::readSTL(QString fileName){
 	myOccViewer->getContext()->Deactivate(aMesh);
 	myOccViewer->getContext()->Load(aMesh, -1, Standard_True);
 	myOccViewer->getContext()->Activate(aMesh, 1); // Node selection
-	//myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
+												   //myOccViewer->getContext()->Activate(aMesh, 8); // Element selection
 }
 
-//void StartWindow::drawInt2DLine(void){
+//void STACCATOMainWindow::drawInt2DLine(void){
 //}
 
-void StartWindow::drawCantilever(void){
+void STACCATOMainWindow::drawCantilever(void) {
 	//3D cartesian point
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
@@ -847,7 +928,7 @@ void StartWindow::drawCantilever(void){
 	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
-void StartWindow::animateObject(void){
+void STACCATOMainWindow::animateObject(void) {
 
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(-150., -150., -0.0001);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(150., 150., 0.);
@@ -863,7 +944,7 @@ void StartWindow::animateObject(void){
 
 	STEPControl_Reader aReader;
 	IFSelect_ReturnStatus status = aReader.ReadFile("KreiselTrafo.stp");
-	if (status != IFSelect_RetDone){
+	if (status != IFSelect_RetDone) {
 		return;
 	}
 
@@ -874,7 +955,7 @@ void StartWindow::animateObject(void){
 	Standard_Integer nbr = aReader.NbRootsForTransfer();
 	aReader.PrintCheckTransfer(failsonly, IFSelect_ItemsByEntity);
 	for (Standard_Integer n = 1; n <= nbr; n++) {
-		 aReader.TransferRoot(n);
+		aReader.TransferRoot(n);
 	}
 
 	// Collecting resulting entities
@@ -903,12 +984,12 @@ void StartWindow::animateObject(void){
 	Standard_Real  a34 = 0.0;
 	Standard_Real  phi;
 	Standard_Real  alpha;
-	Standard_Real  gamma=asin(5.0/12.0);
+	Standard_Real  gamma = asin(5.0 / 12.0);
 
-	for (int i = 0; i < numSteps; i++){
+	for (int i = 0; i < numSteps; i++) {
 		gp_Trsf myTrafo;
 		phi = ((double)i / numSteps) * 3600 * (M_PI / 180);
-		alpha = (12 / (5*cos(gamma)))*phi;
+		alpha = (12 / (5 * cos(gamma)))*phi;
 
 		a11 = cos(phi)*cos(-gamma);
 		a12 = -sin(phi)*cos(-alpha) + cos(phi)*sin(-gamma)*sin(-alpha);
@@ -932,83 +1013,83 @@ void StartWindow::animateObject(void){
 }
 
 
-void StartWindow::handleSelectionChanged(void){
+void STACCATOMainWindow::handleSelectionChanged(void) {
 
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
 		Handle(AIS_InteractiveObject) anIO = myOccViewer->getContext()->SelectedInteractive();
 		infoOut << "anIO->Type() : " << anIO->Type() << std::endl;
 
-		if (anIO->Type() == AIS_KOI_None){
-				Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
-				Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
+		if (anIO->Type() == AIS_KOI_None) {
+			Handle(SelectMgr_Selection) aSelection = anIO->CurrentSelection();
+			Handle(SelectMgr_EntityOwner) aEntOwn = myOccViewer->getContext()->SelectedOwner();
 
-				// If statement to check for valid for DownCast
-				Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
-				Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
-				Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
-				Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
+			// If statement to check for valid for DownCast
+			Handle_MeshVS_MeshEntityOwner owner = Handle_MeshVS_MeshEntityOwner::DownCast(aEntOwn);
+			Handle(MeshVS_Mesh) aisMesh = Handle(MeshVS_Mesh)::DownCast(anIO);
+			Handle_MeshVS_DataSource source = aisMesh->GetDataSource();
+			Handle_MeshVS_Drawer drawer = aisMesh->GetDrawer();
 
-				infoOut << "AIS_KOI_None -> owner->Type(): " << owner->Type() << std::endl;
+			infoOut << "AIS_KOI_None -> owner->Type(): " << owner->Type() << std::endl;
 
-				if (owner->Type() == MeshVS_ET_Face)
+			if (owner->Type() == MeshVS_ET_Face)
+			{
+				int maxFaceNodes;
+				if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
 				{
-					int maxFaceNodes;
-					if (drawer->GetInteger(MeshVS_DA_MaxFaceNodes, maxFaceNodes) && maxFaceNodes > 0)
-					{
-						MeshVS_Buffer coordsBuf(3 * maxFaceNodes * sizeof(Standard_Real));
-						TColStd_Array1OfReal coords(coordsBuf, 1, 3 * maxFaceNodes);
+					MeshVS_Buffer coordsBuf(3 * maxFaceNodes * sizeof(Standard_Real));
+					TColStd_Array1OfReal coords(coordsBuf, 1, 3 * maxFaceNodes);
 
-						int nbNodes = 0;
-						MeshVS_EntityType entityType;
-						infoOut << "A Element" << std::endl;
-						if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
-						{
-							if (nbNodes >= 3)
-							{
-								infoOut << "==========" << std::endl;
-								infoOut << "ID: " << owner->ID() << std::endl;
-								int i;
-								for (i = 0; i < nbNodes; i++)
-								{
-									infoOut << "Node: " << i << std::endl;
-									gp_Pnt p = gp_Pnt(coords((i * 3) + 1), coords((i * 3) + 2), coords((i * 3) + 3));
-									infoOut << "X: " << p.X() << std::endl;
-									infoOut << "Y: " << p.Y() << std::endl;
-									infoOut << "Z: " << p.Z() << std::endl;
-								}
-								infoOut << "==========" << std::endl;
-							}
-						}
-					}
-
-				}
-				else if (owner->Type() == MeshVS_ET_Node){
-					infoOut << "A Node" << endl;
-					int maxNodes = 1;
-					MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
-					TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
 					int nbNodes = 0;
 					MeshVS_EntityType entityType;
-					if (source->GetGeom(owner->ID(), Standard_False, coords, nbNodes, entityType))
+					infoOut << "A Element" << std::endl;
+					if (source->GetGeom(owner->ID(), Standard_True, coords, nbNodes, entityType))
 					{
-						if (nbNodes == 1)
+						if (nbNodes >= 3)
 						{
-							gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
-							infoOut << "ID: " << owner->ID() << std::endl;
 							infoOut << "==========" << std::endl;
-							infoOut << "X: " << p1.X() << std::endl;
-							infoOut << "Y: " << p1.Y() << std::endl;
-							infoOut << "Z: " << p1.Z() << std::endl;
+							infoOut << "ID: " << owner->ID() << std::endl;
+							int i;
+							for (i = 0; i < nbNodes; i++)
+							{
+								infoOut << "Node: " << i << std::endl;
+								gp_Pnt p = gp_Pnt(coords((i * 3) + 1), coords((i * 3) + 2), coords((i * 3) + 3));
+								infoOut << "X: " << p.X() << std::endl;
+								infoOut << "Y: " << p.Y() << std::endl;
+								infoOut << "Z: " << p.Z() << std::endl;
+							}
 							infoOut << "==========" << std::endl;
 						}
 					}
 				}
 
+			}
+			else if (owner->Type() == MeshVS_ET_Node) {
+				infoOut << "A Node" << endl;
+				int maxNodes = 1;
+				MeshVS_Buffer coordsBuf(3 * maxNodes * sizeof(Standard_Real));
+				TColStd_Array1OfReal coords(coordsBuf, maxNodes, 3);
+				int nbNodes = 0;
+				MeshVS_EntityType entityType;
+				if (source->GetGeom(owner->ID(), Standard_False, coords, nbNodes, entityType))
+				{
+					if (nbNodes == 1)
+					{
+						gp_Pnt p1 = gp_Pnt(coords(1), coords(2), coords(3));
+						infoOut << "ID: " << owner->ID() << std::endl;
+						infoOut << "==========" << std::endl;
+						infoOut << "X: " << p1.X() << std::endl;
+						infoOut << "Y: " << p1.Y() << std::endl;
+						infoOut << "Z: " << p1.Z() << std::endl;
+						infoOut << "==========" << std::endl;
+					}
+				}
+			}
+
 		}
-		else if (anIO->Type() == AIS_KOI_Datum){
+		else if (anIO->Type() == AIS_KOI_Datum) {
 			infoOut << "anIO: " << anIO->Signature() << endl;
-			if (anIO->Signature() == 1){//datum point
+			if (anIO->Signature() == 1) {//datum point
 				Handle(AIS_Point) aAISPoint = Handle(AIS_Point)::DownCast(anIO);
 				TopoDS_Vertex vertex = aAISPoint->Vertex();
 				gp_Pnt myPoint = BRep_Tool::Pnt(TopoDS::Vertex(vertex));
@@ -1018,11 +1099,11 @@ void StartWindow::handleSelectionChanged(void){
 				infoOut << "Z: " << myPoint.Z() << std::endl;
 				infoOut << "==========" << std::endl;
 			}
-			else if (anIO->Signature() == 1){//datum axis
+			else if (anIO->Signature() == 1) {//datum axis
 
 			}
 		}
-		else if (anIO->Type() == AIS_KOI_Shape){
+		else if (anIO->Type() == AIS_KOI_Shape) {
 			TopoDS_Shape vertexShape = Handle(AIS_Shape)::DownCast(anIO)->Shape();
 			infoOut << "TopoDS_Shape: " << vertexShape.ShapeType() << endl;
 			if (TopAbs_VERTEX == vertexShape.ShapeType())
@@ -1036,13 +1117,13 @@ void StartWindow::handleSelectionChanged(void){
 			}
 
 		}
-		else if (anIO->Type() == AIS_KOI_Object){
+		else if (anIO->Type() == AIS_KOI_Object) {
 
 		}
-		else if (anIO->Type() == AIS_KOI_Relation){
+		else if (anIO->Type() == AIS_KOI_Relation) {
 
 		}
-		else if (anIO->Type() == AIS_KOI_Dimension){
+		else if (anIO->Type() == AIS_KOI_Dimension) {
 
 		}
 
@@ -1054,14 +1135,14 @@ void StartWindow::handleSelectionChanged(void){
 
 }
 
-void StartWindow::myViewModeTriggered() {
-	myVtkViewer->setViewMode(myRotateModeButton->isChecked());
+void STACCATOMainWindow::myViewModeTriggered() {
+	myFieldDataVisualizer->setViewMode(myRotateModeButton->isChecked());
 }
 
-void StartWindow::myWarpVectorTriggered() {
+void STACCATOMainWindow::myWarpVectorTriggered() {
 	if (myDockWarpVectorAction->isChecked() || myWarpVectorVisibility->isChecked()) {
 		myWarpDock = new QDockWidget(tr("Warp Vector"), this);
-		myWarpDock->setAllowedAreas(Qt::LeftDockWidgetArea);
+		myWarpDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
 
 		myAutoScaling = new QCheckBox(tr("Default Scaling"), this);
 		myAutoScaling->setChecked(true);
@@ -1071,7 +1152,7 @@ void StartWindow::myWarpVectorTriggered() {
 
 		myScalingFactor = new QSpinBox;
 		myScalingFactor->setRange(0, 10000000000);
-		myScalingFactor->setValue(myScalingFactorValue);
+		myScalingFactor->setValue(myVisualizerSetting->PROPERTY_SCALING_FACTOR);
 		myScalingFactor->setSingleStep(1);
 		myScalingFactor->setEnabled(false);
 		connect(myScalingFactor, SIGNAL(editingFinished()), this, SLOT(myScalingFactorState()));
@@ -1092,7 +1173,7 @@ void StartWindow::myWarpVectorTriggered() {
 	}
 }
 
-void StartWindow::myViewPropertyDockTriggered() {
+void STACCATOMainWindow::myViewPropertyDockTriggered() {
 	if (myViewPropertyAction->isChecked()) {
 		myViewPropertyDock = new QDockWidget(tr("View Property"), this);
 		myViewPropertyDock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1118,31 +1199,36 @@ void StartWindow::myViewPropertyDockTriggered() {
 }
 
 
-void StartWindow::myAutoScalingState() {
+void STACCATOMainWindow::myAutoScalingState() {
 	if (myAutoScaling->isChecked()) {
-		myScalingFactorValue = 1;
-		myScalingFactor->setValue(myScalingFactorValue);
+		myScalingFactor->setValue(1);
 		myScalingFactor->setEnabled(false);
-		myViewPropertyUpdate();
 	}
-	else{
-		myScalingFactor->setValue(myScalingFactorValue);
+	else {
+		myScalingFactor->setValue(myVisualizerSetting->PROPERTY_SCALING_FACTOR);
 		myScalingFactor->setEnabled(true);
 	}
+	myScalingFactorState();
 }
 
-void StartWindow::myScalingFactorState() {
-	double factor = QString(myScalingFactor->text()).toDouble();
-	myVtkViewer->setScalingFactor(factor);
-	myScalingFactorValue = factor;
+void STACCATOMainWindow::myScalingFactorState() {
+	myVisualizerSetting->commitScalingFactor(QString(myScalingFactor->text()).toDouble());
 	myViewPropertyUpdate();
 }
 
-void StartWindow::my2dVisualizerInterface() {
-	myVtkViewer->my2dVisualizerInterface(*myHMesh);
+void STACCATOMainWindow::mySignalDataVisualizerInterface() {
+	static bool mySignalDataVisualizerActive = false;
+	if (!mySignalDataVisualizerActive) {
+		mySignalDataVisualizer = new SignalDataVisualizer();
+		mySignalDataVisualizer->setHMesh(*myHMesh);
+		mySignalDataVisualizer->attachSubject(myFieldDataVisualizer);
+		mySignalDataVisualizer->initiate();
+		mySignalDataVisualizerActive = true;
+	}
+	mySignalDataVisualizer->show();
 }
 
-void StartWindow::myUMATriggered() {
+void STACCATOMainWindow::myUMATriggered() {
 	if (myUMAAction->isChecked()) {
 		myUMADock = new QDockWidget(tr("SIM via UMA"), this);
 		myUMADock->setAllowedAreas(Qt::LeftDockWidgetArea);
@@ -1175,13 +1261,13 @@ void StartWindow::myUMATriggered() {
 	}
 }
 
-void StartWindow::myUMAImport() {
+void STACCATOMainWindow::myUMAImport() {
 	std::cout << ">> Trying to start UMA Interface ... " << std::endl;
 	//myUMA->openSIM(mySIMFileName->text().toLocal8Bit().data());
 
 }
 
-void StartWindow::myUMAHMesh() {
+void STACCATOMainWindow::myUMAHMesh() {
 	// Intialize XML Parsing
 	std::string inputFileName = "C:/software/repos/STACCATO/xsd/IP_STACCATO_XML_B31_fe.xml";
 	MetaDatabase::init(inputFileName);
@@ -1208,275 +1294,80 @@ void StartWindow::myUMAHMesh() {
 	}
 }
 
-void StartWindow::myReferenceNodeTriggered() {
+void STACCATOMainWindow::myReferenceNodeTriggered() {
 	if (myHMesh->referenceNodeLabel.size() != 0)
 		myReferenceNode->setEnabled(true);
 }
 
-void StartWindow::mySubFrameAnimate() {
+void STACCATOMainWindow::mySubFrameAnimate() {
 	if (mySubFrameAnimateAction->isChecked()) {
-
-		myPreviousFrameButton = new QPushButton(tr("<"), this);
-		myPreviousFrameButton->setFixedWidth(40);
-		myPreviousFrameButton->setStatusTip(tr("Previous Fram"));
-		connect(myPreviousFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
-
-		myNextFrameButton = new QPushButton(tr(">"), this);
-		myNextFrameButton->setFixedWidth(40);
-		myNextFrameButton->setStatusTip(tr("Next Frame"));
-		connect(myNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
-
-		mySubFrameAnimateButton = new QPushButton(tr("||"), this);
-		mySubFrameAnimateButton->setFixedWidth(40);
-		mySubFrameAnimateButton->setStatusTip(tr("Play/Pause"));
-		connect(mySubFrameAnimateButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
-
-		mySubFrameText = new QLineEdit(tr("0 deg"), this);
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		mySubFrameText->setFixedWidth(50);
-		mySubFrameText->setAlignment(Qt::AlignHCenter);
-		mySubFrameText->setReadOnly(true);
-
-		mySubFrameAnimatorToolBar = addToolBar(tr("Animate"));
-		mySubFrameAnimatorToolBar->addWidget(myPreviousFrameButton);
-		mySubFrameAnimatorToolBar->addSeparator();
-		mySubFrameAnimatorToolBar->addWidget(mySubFrameText);
-		mySubFrameAnimatorToolBar->addSeparator();
-		mySubFrameAnimatorToolBar->addWidget(myNextFrameButton);
-		mySubFrameAnimatorToolBar->addSeparator();
-		mySubFrameAnimatorToolBar->addWidget(mySubFrameAnimateButton);
-
-		myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh, STACCATO_Ux_Re, 1);
+		mySubFrameAnimatorToolBar->show();
 	}
 	else {
 		mySubFrameAnimatorToolBar->hide();
 	}
 }
 
-void StartWindow::mySubFramePrevProc(void) {
-	if (mySubFrameIndex > 0) {
-		isSubFrame = true;
-		mySubFrameIndex--;
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myHorizontalSlider->setValue(mySubFrameIndex + 1);
-		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
-	}
-}
-
-void StartWindow::mySubFrameNextProc(void) {
-	if (mySubFrameIndex < myHMesh->getResultsSubFrameDescription().size() - 1) {
-		isSubFrame = true;
-		mySubFrameIndex++;
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myHorizontalSlider->setValue(mySubFrameIndex + 1);
-		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
-	}
-}
-
-void StartWindow::myUpdateAnimationSlider(int _currentIndex) {
+void STACCATOMainWindow::myUpdateAnimationSlider(int _currentIndex) {
 	isSubFrame = true;
-	mySubFrameIndex = _currentIndex-1;
-	mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-	myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
+	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().find(_currentIndex - 1);
+	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first]));		// Update Slider
+	myFieldDataVisualizer->plotVectorFieldAtIndex(myCaseIndex->first);
 }
 
-void StartWindow::mySubFramePlayProv(void) {
+void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 	anaysisTimer01.start();
 	std::cout << ">> Animation Data ... " << std::endl;
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	static bool edge = false;
-	static bool surface = true;
 
-	// Update View Mode
-	if (myViewModeSelector->currentText().toStdString() == allViewModes[0]) {			// Surface With Edges
-		edge = false;
-		surface = true;
-	}
-	else if (myViewModeSelector->currentText().toStdString() == allViewModes[1]) {			// Surface With Edges
-		edge = true;
-		surface = true;
-	}
-	else if (myViewModeSelector->currentText().toStdString() == allViewModes[2]) {		// Wireframe
-		edge = true;
-		surface = false;
-	}		
+	myVisualizerSetting->generateAnimation();
 
-	STACCATO_Result_type type;
-	// Update Solution
-	if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[0]) {	//u_x_Re
-		type = STACCATO_Ux_Re;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[1]) {	//u_y_Re
-		type = STACCATO_Uy_Re;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[2]) {	//u_z_Re
-		type = STACCATO_Uz_Re;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[3]) {	//u_Mag_Re
-		type = STACCATO_Magnitude_Re;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[4]) {	//u_x_Im
-		type = STACCATO_Ux_Im;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[5]) {	//u_y_Im
-		type = STACCATO_Uy_Im;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[6]) {	//u_z_Im
-		type = STACCATO_Uz_Im;
-	}
-	else if (myAnimationSolutionSelector->currentText().toStdString() == allDispVectorComponents[7]) {	//u_Mag_Im
-		type = STACCATO_Magnitude_Im;
-	}
-	
-	myVtkViewer->animate(*myHMeshToVtkUnstructuredGrid, *myHMesh, type, QString(myAnimateScalingFactor->text()).toDouble());
-	myVtkViewer->setDisplayProperties(type, edge, surface, myScalarBarVisibility->isChecked());
-
-	anaysisTimer02.start();
-	// Buffer Frames
-	std::cout << ">> Buffering " << myHMesh->getResultsSubFrameDescription().size() << " Frames ... ";
-	for (int i = 0; i < myHMesh->getResultsSubFrameDescription().size(); i++)	{
-		myVtkViewer->plotVectorFieldAtIndex(i);
-	}
-	std::cout << "Finished.\n";
-	anaysisTimer02.stop();
-	std::cout << "Duration for Frame Buffering: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
-	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	mySubFrameText->setEnabled(true);
+	myCaseStepText->setEnabled(true);
 	myHorizontalSlider->setEnabled(true);
 	myAnimatePlayButton->setEnabled(true);
 	myAnimateStopButton->setEnabled(true);
-	myAnimateRepeat->setEnabled(true);
-	myAnimatePrevFrameButton->setEnabled(true);
-	myAnimateNextFrameButton->setEnabled(true);
+	myAnimateRepeatButton->setEnabled(true);
+	myResetFrameAnimationButton->setEnabled(true);
 
 	myHorizontalSlider->setFocusPolicy(Qt::StrongFocus);
 	myHorizontalSlider->setTickPosition(QSlider::TicksBothSides);
-	myHorizontalSlider->setTickInterval(myHMesh->getResultsSubFrameDescription().size() - 1);
+	myHorizontalSlider->setTickInterval(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size() - 1);
 	myHorizontalSlider->setSingleStep(1);
 	myHorizontalSlider->setMinimum(1);
-	myHorizontalSlider->setMaximum(myHMesh->getResultsSubFrameDescription().size());
+	myHorizontalSlider->setMaximum(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
 	myHorizontalSlider->connect(myHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(myUpdateAnimationSlider(int)));
-	
-	myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
 
 	anaysisTimer01.stop();
 	std::cout << "Duration for Frame Generation: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
-void StartWindow::myAnimationDockTriggered() {
-	if (myAnimationDockButton->isChecked()) {
-		myAnimationDock = new QDockWidget(tr("Create Animation"), this);
-		myAnimationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
-
-		myAnimationDataLabel = new QLabel(this);
-		myAnimationDataLabel->setText("<b>Select Data</b>");
-
-		myAnimateSolutionTypeLabel = new QLabel(tr("Component: "), this);
-
-		myAnimationSolutionSelector = new QComboBox();
-		myAnimationSolutionSelector->setStatusTip(tr("Select Vector Component"));
-		for (int i = 0; i < allDispVectorComponents.size() / 2; i++)
-			myAnimationSolutionSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
-
-		myScalingFactorLabel = new QLabel(tr("Scaling Factor"), this);
-
-		myAnimateScalingFactor = new QLineEdit(this);
-		myAnimateScalingFactor->setText("1");
-
-		myAnimationControlLabel = new QLabel(this);
-		myAnimationControlLabel->setText("<b>Animate Controls</b>");
-
-		myCreateFrameAnimationButton = new QPushButton(tr("Generate Frames"), this);
-		connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
-
-		myResetFrameAnimationButton = new QPushButton(tr("Reset Frames"), this);
-		connect(myResetFrameAnimationButton, SIGNAL(clicked()), this, SLOT(myAnimationResetProc()));
-
-		myAnimationDurationLabel = new QLabel(tr("Duration (sec)"), this);
-
-		myAnimationDuration = new QLineEdit(this);
-		myAnimationDuration->setText("5");
-
-		myAnimatePlayButton = new QPushButton(tr("Play"), this);
-		connect(myAnimatePlayButton, SIGNAL(clicked()), this, SLOT(myAnimationSceneProc()));
-		myAnimatePlayButton->setEnabled(false);
-
-		myAnimateStopButton = new QPushButton(tr("Stop"), this);
-		connect(myAnimateStopButton, SIGNAL(clicked()), myVtkViewer, SLOT(myAnimationSceneStopProc()));
-		myAnimateStopButton->setEnabled(false);
-
-		myAnimateRepeat = new QCheckBox(tr("Repeat"), this);
-		myAnimateRepeat->setChecked(true);
-		myAnimateRepeat->setEnabled(false);
-
-		myManualFrameControlLabel = new QLabel(this);
-		myManualFrameControlLabel->setText("<b>Frame Controls</b>");
-
-		mySubFrameText = new QLineEdit(tr("0 deg"), this);
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		mySubFrameText->setFixedWidth(50);
-		mySubFrameText->setAlignment(Qt::AlignHCenter);
-		mySubFrameText->setReadOnly(true);
-		mySubFrameText->setEnabled(false);
-
-		myHorizontalSlider = new QSlider(Qt::Horizontal);
-		myHorizontalSlider->setEnabled(false);
-
-		myAnimatePrevFrameButton = new QPushButton(tr("Prev"), this);
-		connect(myAnimatePrevFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
-		myAnimatePrevFrameButton->setEnabled(false);
-
-		myAnimateNextFrameButton = new QPushButton(tr("Next"), this);
-		connect(myAnimateNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
-		myAnimateNextFrameButton->setEnabled(false);
-
-		QFormLayout *layout = new QFormLayout;
-		layout->addRow(myAnimationDataLabel);
-		layout->addRow(myAnimateSolutionTypeLabel, myAnimationSolutionSelector);
-		layout->addRow(myScalingFactorLabel, myAnimateScalingFactor);
-		layout->addRow(myAnimationControlLabel);
-		layout->addRow(myCreateFrameAnimationButton, myResetFrameAnimationButton);
-		layout->addRow(myAnimationDurationLabel, myAnimationDuration);
-		layout->addRow(myAnimatePlayButton, myAnimateStopButton);
-		layout->addRow(myAnimateRepeat);
-		layout->addRow(myManualFrameControlLabel);
-		layout->addRow(mySubFrameText, myHorizontalSlider);
-		layout->addRow(myAnimatePrevFrameButton, myAnimateNextFrameButton);
-		QWidget* temp = new QWidget(this);
-		temp->setLayout(layout);
-
-		myAnimationDock->setWidget(temp);
-		myAnimationDock->show();
-
-		addDockWidget(Qt::LeftDockWidgetArea, myAnimationDock);
-	}
-	else {
-		removeDockWidget(myAnimationDock);
-	}
-}
-
-void StartWindow::myAnimationResetProc() {
-	mySubFrameText->setEnabled(false);
+void STACCATOMainWindow::myAnimationResetProc() {
 	myHorizontalSlider->setEnabled(false);
 	myAnimatePlayButton->setEnabled(false);
 	myAnimateStopButton->setEnabled(false);
-	myAnimateRepeat->setEnabled(false);
-	myAnimatePrevFrameButton->setEnabled(false);
-	myAnimateNextFrameButton->setEnabled(false);
+	myAnimateRepeatButton->setEnabled(false);
+	myResetFrameAnimationButton->setEnabled(false);
 
-	mySubFrameIndex = 0;
-	mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-	myHorizontalSlider->setValue(mySubFrameIndex + 1);
+	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();
+	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first]));		// Update Slider
+	myHorizontalSlider->setValue(myCaseIndex->first + 1);
 	myViewPropertyUpdate();
-	myVtkViewer->myAnimationSceneStopProc();
+	myVisualizerSetting->stopAnimation();
 }
 
-void StartWindow::myAnimationSceneProc() {
+void STACCATOMainWindow::myAnimationScenePlayProc() {
+	myAnimatePlayButton->setEnabled(false);
 	int duration = std::stoi(myAnimationDuration->text().toStdString());
-	if (myAnimateRepeat->isChecked()) 
-		myVtkViewer->myAnimationSceneProc(*myHMeshToVtkUnstructuredGrid, *myHMesh, duration, 1);
-	else
-		myVtkViewer->myAnimationSceneProc(*myHMeshToVtkUnstructuredGrid, *myHMesh, duration, 0);
+	int repeat = (myAnimateRepeatButton->isChecked()) ? 1 : 0;
+
+	myVisualizerSetting->visualizeAnimationFrames(duration, repeat);
+	myAnimatePlayButton->setEnabled(true);
+}
+
+void STACCATOMainWindow::myAnimationSceneStopProc() {
+	myVisualizerSetting->stopAnimation();
+}
+
+void STACCATOMainWindow::myResultCaseChanged() {
 }

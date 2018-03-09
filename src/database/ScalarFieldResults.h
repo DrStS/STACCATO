@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,43 +18,43 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /*************************************************************************************************
-* \file VtkViewer.h
-* This file holds the class VtkViewer
-* \date 2/19/2018
+* \file ScalarFieldResults.h
+* This file holds the class of ScalarFieldResults.
+* \date 3/5/2018
 **************************************************************************************************/
+#ifndef _SCALARFIELDRESULTS_H_
+#define _SCALARFIELDRESULTS_H_
 
-#ifndef VTKVIEWER_H_
-#define VTKVIEWER_H_
+#include <Results.h>
 
-#include "FieldDataVisualizer.h"
-
-/*************************************************************************************************
-* \brief Class VtkViewer
-**************************************************************************************************/
-class VtkViewer
+class ScalarFieldResults: public Results
 {
 public:
 	/***********************************************************************************************
 	* \brief Constructor
+	* \param[in] _resultType STACCATO_Results_type
+	* \param[in] _analysisType STACCATO_Analysis_type
 	* \author Harikrishnan Sreekumar
 	***********/
-	VtkViewer(FieldDataVisualizer& _fieldDataVisualizer);
+	ScalarFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType);
 	/***********************************************************************************************
-	* \brief Constructor
+	* \brief Destructor
 	* \author Harikrishnan Sreekumar
 	***********/
-	~VtkViewer();
+	~ScalarFieldResults();
 	/***********************************************************************************************
-	* \brief Set VTK Viewer with Vector Field
+	* \brief Build Label with Nomenclature
 	* \author Harikrishnan Sreekumar
 	***********/
-	void plotVectorField();
+	void buildLabelMap();
 private:
-	// Handle to Field Data Visualizer
-	FieldDataVisualizer* myFieldDataVisualizer;
+	/// Result Label to Component Enum Map
+	std::map<std::string, STACCATO_ScalarField_components> myResultLabelMap;
 
-	
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsRe;
+	/// result Vector node index to result value
+	std::vector<std::vector<double>> resultsIm;
 };
 
-
-#endif /* VTKVIEWER_H_ */
+#endif // _SCALARFIELDRESULTS_H_

@@ -18,43 +18,30 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /*************************************************************************************************
-* \file VtkViewer.h
-* This file holds the class VtkViewer
+* \file DiscreteVisualizer.h
+* This file holds the class DiscreteVisualizer; Base class for a Discrete Visualization
 * \date 2/19/2018
 **************************************************************************************************/
 
-#ifndef VTKVIEWER_H_
-#define VTKVIEWER_H_
+#ifndef DISCRETEVISUALIZER_H_
+#define DISCRETEVISUALIZER_H_
 
-#include "FieldDataVisualizer.h"
+#include "HMesh.h"
 
 /*************************************************************************************************
-* \brief Class VtkViewer
+* \brief Class DiscreteVisualizer
 **************************************************************************************************/
-class VtkViewer
-{
-public:
-	/***********************************************************************************************
-	* \brief Constructor
-	* \author Harikrishnan Sreekumar
-	***********/
-	VtkViewer(FieldDataVisualizer& _fieldDataVisualizer);
-	/***********************************************************************************************
-	* \brief Constructor
-	* \author Harikrishnan Sreekumar
-	***********/
-	~VtkViewer();
-	/***********************************************************************************************
-	* \brief Set VTK Viewer with Vector Field
-	* \author Harikrishnan Sreekumar
-	***********/
-	void plotVectorField();
-private:
-	// Handle to Field Data Visualizer
-	FieldDataVisualizer* myFieldDataVisualizer;
 
-	
+class DiscreteVisualizer {
+public:
+	DiscreteVisualizer ();
+	~DiscreteVisualizer ();
+	void setHMesh(HMesh &_hMesh) { myHMesh = &_hMesh;	}
+	HMesh* getHMesh() { return myHMesh; }
+
+protected:
+	/// HMesh object 
+	HMesh *myHMesh;
 };
 
-
-#endif /* VTKVIEWER_H_ */
+#endif /* DISCRETEVISUALIZER_H_ */

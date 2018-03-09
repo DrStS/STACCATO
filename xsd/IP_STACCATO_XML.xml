@@ -37,6 +37,7 @@
 				<END_THETA>360</END_THETA>
 				<STEP_THETA>20</STEP_THETA>
 			</LOADCASE>
+			<!--
 			<LOADCASE Type="LoadCase" Name="LC-2">
 				<LOAD Name = "LOAD-1"/>
 				<LOAD Name = "LOAD-2"/>
@@ -45,6 +46,7 @@
 				<LOAD Name = "LOAD-1"/>
 				<LOAD Name = "LOAD-2"/>
 			</LOADCASE>
+			-->
 		</LOADCASES>
 	</ANALYSIS>	
 	<MATERIALS>

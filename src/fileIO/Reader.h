@@ -22,9 +22,7 @@
 * This file holds the class Reader; Base class for a Fe element
 * \date 2/1/2018
 **************************************************************************************************/
-
-#ifndef READER_H_
-#define READER_H_
+#pragma once
 
 /********//**
 * \brief Class Reader
@@ -45,6 +43,3 @@ public:
 protected:
 
 };
-
-
-#endif /* READER_H_ */

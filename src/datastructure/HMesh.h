@@ -22,14 +22,14 @@
 * This file holds the class HMesh which is holds a finite element h mesh
 * \date 1/25/2017
 **************************************************************************************************/
-
-#ifndef HMESH_H_
-#define HMESH_H_
+#pragma once
 
 #include <string>
 #include <vector>
 #include <map>
 #include "STACCATO_Enum.h"
+
+#include "OutputDatabase.h"
 
 class Message;
 /********//**
@@ -199,43 +199,10 @@ public:
 	***********/
 	void buildDataStructure(void);
 	/***********************************************************************************************
-	* \brief Add a result to database
-	* \param[in] _type
-	* \param[in] _valueVec
-	* \author Stefan Sicklinger
-	***********/
-	void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec);
-	/***********************************************************************************************
-	* \brief Get results for all time description
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<std::string>& HMesh::getResultsTimeDescription();
-	/***********************************************************************************************
-	* \brief Add a result time description
-	* \param[in] _resultsTimeDescription
-	* \author Stefan Sicklinger
-	***********/
-	void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription);
-	/***********************************************************************************************
-	* \brief Add a result to database
-	* \param[in] _type
-	* \param[out] reference to std vector
-	* \author Stefan Sicklinger
-	***********/
-	std::vector<double>& HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type, int index);
-	/***********************************************************************************************
 	* \brief build DOF graph and local element coord vectors
 	* \author Stefan Sicklinger
 	***********/
 	void buildDoFGraph(void);
-	/***********************************************************************************************
-	* \brief Get result from data base at particular node for all frequencies
-	* \param[in] _type
-	* \param[in] _nodeLabel
-	* \param[out] reference to std vector
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _type, int _nodeLabel);
 private:
 	/// mesh name
 	std::string name;
@@ -245,6 +212,10 @@ private:
 	std::vector<double> nodeCoordsSortElementIndices;
 	/// DoF list sorted  element index 0..ne
 	std::vector<int> elementDoFList;
+	/// DoF list sorted  element index 0..ne with entries -1 for homogeneous Dirichlet DoF; -2 for non-homogeneous Dirichlet
+	std::vector<int> elementDoFListRestricted;
+	/// vector holding affected DOFs for Dirichlet
+	std::vector<int> restrictedHomogeneousDoFList;
     /// labels of all nodes
 	std::vector<int> nodeLabels;
     /// number of nodes of each element
@@ -275,24 +246,6 @@ private:
 	int domainDimension;
 	/// relation of node index to DoF indexes: 1 to nd
 	std::vector<std::vector<int>> nodeIndexToDoFIndices;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUxRe;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUyRe;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUzRe;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUxIm;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUyIm;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsUzIm;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsMagRe;
-	/// result Vector node index to result value
-	std::vector<std::vector<double>> resultsMagIm;
-	/// result vector description in time domain 
-	std::vector<std::string> resultsTimeDescription;
     /// unit test class
     friend class TestFEMesh;
 private:
@@ -304,14 +257,11 @@ private:
 
 	/* -- Class Members and Functions for DBC -- */
 private:
-	/// vector holding affected DOFs for Dirichlet
-	std::vector<int> dirichletDOF;
 	/// Map holding NodeSets
 	std::map<std::string, std::vector<int>> nodeSetsMap;
-	/// Map holding NodeSets
+	/// Map holding ElementSets
 	std::map<std::string, std::vector<int>> elemSetsMap;
-	/// DoF list sorted  element index 0..ne with entries -1 for Dirichlet DoF
-	std::vector<int> elementDoFListBC;
+
 public:
 	/***********************************************************************************************
 	* \brief Add a Node Set
@@ -332,13 +282,13 @@ public:
 	* \param[out] Handle to the Killed Element-DoF List
 	* \author Harikrishnan Sreekumar
 	***********/
-	std::vector<int>&  getElementDoFListBC() { return elementDoFListBC; }
+	std::vector<int>&  getElementDoFListRestricted() { return elementDoFListRestricted; }
 	/***********************************************************************************************
 	* \brief Get the list of DoFs with Dirichlet Condition
 	* \param[out] dirichletDOF
 	* \author Harikrishnan Sreekumar
 	***********/
-	std::vector<int>  getDirichletDOF() { return dirichletDOF; }
+	std::vector<int>  getRestrictedHomogeneousDoFList() { return restrictedHomogeneousDoFList; }
 	/***********************************************************************************************
 	* \brief Kills / Mark the DoFs with Dirichlet Condition as -1
 	* \param[in] _nodeSetName
@@ -367,12 +317,5 @@ public:
 	bool isSIM;
 	std::vector<int> referenceNodeLabel;
 
-	/* -- Class Members and Functions for SubFrame -- */
-private:
-	std::vector<int> resultsSubFrameDescription;
-public:
-	void addResultsSubFrameDescription(int _resultsSubFrameDescription);
-	std::vector<int>& getResultsSubFrameDescription();
+	OutputDatabase* myOutputDatabase;
 };
-
-#endif /* HMESH_H_ */

@@ -35,6 +35,7 @@
 #include "MemWatcher.h"
 
 #include "MetaDatabase.h"
+#include "VectorFieldResults.h"
 #include <string.h>
 
 #include <complex>
@@ -126,6 +127,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iSection->SECTION()[j].ELEMENTSET()->c_str()) << " not Found.\n";
 		}
 
+		std::cout << ">> Section Material Assignment is Complete." << std::endl;
 		anaysisTimer01.stop();
 		infoOut << "Duration for element loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -137,7 +139,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			++iAnalysis)
 		{
 			std::string analysisType =iAnalysis->TYPE()->data();
-
+			std::cout << "=============Starting Anaylsis: " << iAnalysis->NAME()->data() << "=============n";
 			if (analysisType != "STATIC") {
 				// Routine to accomodate Step Distribution
 				double start_freq = std::atof(iAnalysis->FREQUENCY().begin()->START_FREQ()->c_str());
@@ -185,13 +187,18 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			std::vector<MKL_Complex16> bComplex;
 			std::vector<MKL_Complex16> solComplex;
 
+			VectorFieldResults* displacementVector;
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 				bReal.resize(totalDoF);
 				solReal.resize(totalDoF);
+
+				displacementVector = new VectorFieldResults(STACCATO_Result_Displacement, analysisType == "STATIC" ? STACCATO_Analysis_Static : STACCATO_Analysis_DynamicReal);
 			}
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
 				bComplex.resize(totalDoF);
 				solComplex.resize(totalDoF);
+
+				displacementVector = new VectorFieldResults(STACCATO_Result_Displacement, STACCATO_Analysis_Dynamic);
 			}
 			else {
 				std::cerr << "Unsupported Analysis Type! \n-Hint: Check XML Input \n-Exiting STACCATO." << std::endl;
@@ -248,7 +255,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				for (int iElement = 0; iElement < numElements; iElement++)
 				{
 					int numDoFsPerElement = myHMesh->getNumDoFsPerElement()[iElement];
-					int*  eleDoFs = &myHMesh->getElementDoFListBC()[lastIndex];
+					int*  eleDoFs = &myHMesh->getElementDoFList()[lastIndex];
 					lastIndex += numDoFsPerElement;
 					double omega = 2 * M_PI*freq[iFreqCounter];
 					//Assembly routine symmetric stiffness
@@ -291,11 +298,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << ">> Building RHS Matrix for Neumann...\n";
 				//Add cload rhs contribution 
 				anaysisTimer02.start();
-				BoundaryCondition<double> neumannBoundaryCondition(*myHMesh);
+				BoundaryCondition<double> neumannBoundaryConditionReal(*myHMesh);
+				BoundaryCondition<STACCATOComplexDouble> neumannBoundaryConditionComplex(*myHMesh);
 
 				for (int l = 0; l < iAnalysis->LOADCASES().begin()->LOADCASE().size(); l++){
 					std::string loadCaseType = iAnalysis->LOADCASES().begin()->LOADCASE().at(l).Type()->data();
-					if (loadCaseType == "LoadCase") {
+					if (loadCaseType == "ConcentratedLoadCase") {
+
 						for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().size(); m++)
 						{
 							// Search for Load Description
@@ -304,22 +313,78 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 							{
 								if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()));
 								{
+									// Get Load
+									std::vector<double> loadVector(6);
+									loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
+									loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
+									loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
+									loadVector[3] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data());
+									loadVector[4] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data());
+									loadVector[5] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data());
+
 									std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iLoad->LOAD()[n].NODESET().begin()->Name()->c_str()));
 
 									if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-										neumannBoundaryCondition.addConcentratedForceContribution(nodeSet, bReal);
+										neumannBoundaryConditionReal.addConcentratedForceContribution(nodeSet, loadVector, bReal);
 									}
-									//else if (analysisType == "STEADYSTATE_DYNAMIC") {
-									//	neumannBoundaryCondition.addConcentratedForceContribution(nodeSet, bComplex);
-									//	}
+									else if (analysisType == "STEADYSTATE_DYNAMIC") {
+
+										neumannBoundaryConditionComplex.addConcentratedForceContribution(nodeSet, loadVector, bComplex);
+									}
+								}
+							}
+						}
+					}
+					else if (loadCaseType == "RotateGenerate") {
+						for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().size(); m++)
+						{
+							// Search for Load Description
+							STACCATO_XML::LOADS_const_iterator iLoad(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
+							for (int n = 0; n< iLoad->LOAD().size(); n++)
+							{
+								if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()) && std::string(iLoad->LOAD().at(n).Type()->data()) == "DistributingCouplingForce");
+								{
+									// Get Load
+									std::vector<double> loadVector(6);
+									loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
+									loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
+									loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
+									loadVector[3] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data());
+									loadVector[4] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data());
+									loadVector[5] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data());
+
+									// Routine to accomodate Step Distribution
+									double start_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).START_THETA()->c_str());
+									neumannBoundaryConditionReal.addBCCaseDescription(start_theta);		// Push back starting angle in any case
+									neumannBoundaryConditionComplex.addBCCaseDescription(start_theta);		// Push back starting angle in any case
+
+									// Step Distribute
+									double end_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).END_THETA()->c_str());
+									double step_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).STEP_THETA()->c_str());
+									double push_theta = start_theta + step_theta;
+
+									while (push_theta <= end_theta) {
+										neumannBoundaryConditionReal.addBCCaseDescription(push_theta);
+										neumannBoundaryConditionComplex.addBCCaseDescription(push_theta);
+										push_theta += step_theta;
+									}
+
+									std::vector<int> refNode = myHMesh->convertNodeSetNameToLabels(std::string(iLoad->LOAD()[n].REFERENCENODESET().begin()->Name()->c_str()));
+									std::vector<int> couplingNodes = myHMesh->convertNodeSetNameToLabels(std::string(iLoad->LOAD()[n].COUPLINGNODESET().begin()->Name()->c_str()));
+
+									if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+
+										neumannBoundaryConditionReal.addRotatingForceContribution(refNode, couplingNodes, loadVector, bReal);
+									}
+									else if (analysisType == "STEADYSTATE_DYNAMIC") {
+
+										neumannBoundaryConditionComplex.addRotatingForceContribution(refNode, couplingNodes, loadVector, bComplex);
+									}
 								}
 							}
 						}
 					}
 				}
-
-				
-				
 				std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
 				anaysisTimer02.stop();
 				infoOut << "Duration for applying Neumann conditions: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
@@ -329,25 +394,28 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << ">> Rebuilding RHS Matrix for Dirichlets ...";
 				// Implement DBC
 				// Applying Dirichlet
-				for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
+				int size = 0;
+				for (int m = 0; m < myHMesh->getRestrictedHomogeneousDoFList().size(); m++) {
 
-					int dofIndex = myHMesh->getDirichletDOF()[m];
+					int dofIndex = myHMesh->getRestrictedHomogeneousDoFList()[m];
 					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 						(*AReal)(dofIndex, dofIndex) = 1;
 						bReal[dofIndex] = 0;
+						size = neumannBoundaryConditionReal.getNumberOfTotalCases();
 					}
 					else if (analysisType == "STEADYSTATE_DYNAMIC") {
 						(*AComplex)(dofIndex, dofIndex).real = 1;
 						(*AComplex)(dofIndex, dofIndex).imag = 1;
 						bComplex[dofIndex].real = 0;
 						bComplex[dofIndex].imag = 0;
+						size = neumannBoundaryConditionComplex.getNumberOfTotalCases();
 					}
 
 				}
-				for (int l = 0; l < neumannBoundaryCondition.nRHS; l++) {
-					for (int m = 0; m < myHMesh->getDirichletDOF().size(); m++) {
+				for (int l = 0; l < size; l++) {
+					for (int m = 0; m < myHMesh->getRestrictedHomogeneousDoFList().size(); m++) {
 
-						int dofIndex = l*myHMesh->getTotalNumOfDoFsRaw() + myHMesh->getDirichletDOF()[m];
+						int dofIndex = l*myHMesh->getTotalNumOfDoFsRaw() + myHMesh->getRestrictedHomogeneousDoFList()[m];
 						if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 							bReal[dofIndex] = 0;
 						}
@@ -380,16 +448,16 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 				anaysisTimer01.start();
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					(*AReal).factorize(neumannBoundaryCondition.nRHS);
+					(*AReal).factorize(neumannBoundaryConditionReal.getNumberOfTotalCases());
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).factorize(neumannBoundaryCondition.nRHS);
+					(*AComplex).factorize(neumannBoundaryConditionReal.getNumberOfTotalCases());
 				}
 				anaysisTimer01.stop();
 				infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 				debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 				anaysisTimer01.start();
-				if (neumannBoundaryCondition.nRHS == 1) {
+				if (neumannBoundaryConditionReal.getNumberOfTotalCases() == 1) {
 					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 						(*AReal).solveDirect(&solReal[0], &bReal[0]);
 					}
@@ -400,17 +468,17 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				else
 				{
 					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-						solReal.resize(neumannBoundaryCondition.nRHS*totalDoF);
+						solReal.resize(neumannBoundaryConditionReal.getNumberOfTotalCases()*totalDoF);
 					}
 					else if (analysisType == "STEADYSTATE_DYNAMIC") {
-						solComplex.resize(neumannBoundaryCondition.nRHS*totalDoF);
+						solComplex.resize(neumannBoundaryConditionReal.getNumberOfTotalCases()*totalDoF);
 					}
-					std::cout << ">> Solving for all " << neumannBoundaryCondition.nRHS << " RHSs.\n";
+					std::cout << ">> Solving for all " << neumannBoundaryConditionReal.getNumberOfTotalCases() << " RHSs.\n";
 					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-						(*AReal).solveDirect(&solReal[0], &bReal[0], neumannBoundaryCondition.nRHS);
+						(*AReal).solveDirect(&solReal[0], &bReal[0], neumannBoundaryConditionReal.getNumberOfTotalCases());
 					}
 					else if (analysisType == "STEADYSTATE_DYNAMIC") {
-						(*AComplex).solveDirect(&solComplex[0], &bComplex[0], neumannBoundaryCondition.nRHS);
+						(*AComplex).solveDirect(&solComplex[0], &bComplex[0], neumannBoundaryConditionReal.getNumberOfTotalCases());
 					}
 				}
 
@@ -439,8 +507,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}*/
 
 				anaysisTimer01.start();
-
-				for (int k = 0; k < neumannBoundaryCondition.nRHS; k++) {
+				static bool fillOnce = false;
+				for (int k = 0; k < neumannBoundaryConditionReal.getNumberOfTotalCases(); k++) {
 					std::cout << ">> Storing for " << k << " RHSs.\n";
 					// Store results
 					for (int j = 0; j < numNodes; j++)
@@ -490,20 +558,40 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 
 					std::cout << ">> Adding.\n";
-					
 					// Store results to database
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Ux_Re, resultUxRe);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Uy_Re, resultUyRe);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Re, resultUzRe);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Magnitude_Re, resultMagRe);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Re, resultUxRe);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_y_Re, resultUyRe);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_z_Re, resultUzRe);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_Magnitude_Re, resultMagRe);
 
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Ux_Im, resultUxIm);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Uy_Im, resultUyIm);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Uz_Im, resultUzIm);
-					myHMesh->addResultScalarFieldAtNodes(STACCATO_Magnitude_Im, resultMagIm);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Im, resultUxIm);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_y_Im, resultUyIm);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_z_Im, resultUzIm);
+					displacementVector->addResultScalarFieldAtNodes(STACCATO_Magnitude_Im, resultMagIm);
 
-					myHMesh->addResultsTimeDescription(std::to_string(freq[iFreqCounter]));
+					// Distinguish Cases
+					if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+						if (neumannBoundaryConditionReal.myCaseType == STACCATO_Case_Load && !fillOnce) {
+							displacementVector->setResultsCase(STACCATO_Case_Load);
+							displacementVector->addResultsCaseDescription(std::to_string(static_cast<int>(neumannBoundaryConditionReal.getBCCaseDescription()[k])));
+						}
+					}
+					else if (analysisType == "STEADYSTATE_DYNAMIC") {
+						if (neumannBoundaryConditionComplex.myCaseType == STACCATO_Case_Load && !fillOnce) {
+							displacementVector->setResultsCase(STACCATO_Case_Load);
+							displacementVector->addResultsCaseDescription(std::to_string(static_cast<int>(neumannBoundaryConditionComplex.getBCCaseDescription()[k])));
+						}
+					}
 				}
+				fillOnce = true;
+
+				if (analysisType == "STATIC") {
+					displacementVector->addResultsTimeDescription("STATIC");
+				}
+				else if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC") {
+					displacementVector->addResultsTimeDescription(std::to_string(static_cast<int>(freq[iFreqCounter])));
+				}
+
 				anaysisTimer01.stop();
 
 				infoOut << "Duration for Storing: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
@@ -524,6 +612,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				infoOut << "Duration for Cleaning System Matrix: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 				debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 			}
+			// Add Result to OutputDataBase
+			myHMesh->myOutputDatabase->addVectorFieldToDatabase(displacementVector);
+			myHMesh->myOutputDatabase->addVectorFieldAnalysisDescription(std::string(MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin()->NAME()->c_str()), displacementVector->getResultsAnalysisType());
 		}
 		
 }

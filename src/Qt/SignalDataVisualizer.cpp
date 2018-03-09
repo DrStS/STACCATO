@@ -17,8 +17,7 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "VisualizerWindow.h"
-//#include "ui_VisualizerWindow.h"
+#include "SignalDataVisualizer.h"
 
 //QT5
 #include <QToolBar>
@@ -56,19 +55,20 @@ QT_CHARTS_USE_NAMESPACE
 #include "HMesh.h"
 #include "chartview.h"
 
-namespace Ui {
-	class VisualizerWindow;
+SignalDataVisualizer::SignalDataVisualizer()
+{
+	
 }
 
-VisualizerWindow::VisualizerWindow(HMesh& _hMesh) : myHMesh(& _hMesh)
-{
+SignalDataVisualizer::~SignalDataVisualizer() {
+}
+
+void SignalDataVisualizer::initiate() {
 	setWindowIcon(QIcon(":/Qt/resources/STACCATO.png"));
 	setWindowTitle("STACCATO Visualizer");
-
 	createActions();
 	createMenus();
 	createDockWindow();
-	
 	// Chart Properties
 	myChart2D = new QChart();
 	myAxisX = new QValueAxis();
@@ -86,10 +86,20 @@ VisualizerWindow::VisualizerWindow(HMesh& _hMesh) : myHMesh(& _hMesh)
 
 	setCentralWidget(chartView2D);
 }
-VisualizerWindow::~VisualizerWindow() {
+
+void SignalDataVisualizer::attachSubject(FieldDataVisualizer* _fieldDataVisualizer) {
+	myFieldDataVisualizerSubject = _fieldDataVisualizer;
+	_fieldDataVisualizer->attachObserver(this);
 }
 
-void VisualizerWindow::createMenus(void)
+void SignalDataVisualizer::update() {
+	if (myFieldDataVisualizerSubject->myCurrentPickerType == STACCATO_Picker_Node)
+		setSelection(myFieldDataVisualizerSubject->mySelectedNodes);
+	else if (myFieldDataVisualizerSubject->myCurrentPickerType == STACCATO_Picker_Element)
+		setSelection(myFieldDataVisualizerSubject->mySelectedElements);
+}
+
+void SignalDataVisualizer::createMenus(void)
 {
 	myFileMenu = menuBar()->addMenu(tr("&File"));
 	myFileMenu->addAction(myExitAction);
@@ -98,7 +108,7 @@ void VisualizerWindow::createMenus(void)
 	myHelpMenu->addAction(myAboutAction);
 }
 
-void VisualizerWindow::createActions(void)
+void SignalDataVisualizer::createActions(void)
 {
 	// File actions
 	myExitAction = new QAction(tr("Exit"), this);
@@ -114,49 +124,52 @@ void VisualizerWindow::createActions(void)
 	//connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
 }
 
-void VisualizerWindow::createChart() {
+void SignalDataVisualizer::createChart() {
 	// Add a Sample Plot
 	if (getSelection().size() != 0) {
 		for (int i = 0; i < getSelection().size(); i++) {
 			addChildToTree(myHistoryRoot, QString::fromStdString("Ux_Re at Node " + std::to_string(getSelection()[i])), false);
-			add2dPlotToChart(getSelection()[i], STACCATO_Ux_Re);
+			add2dPlotToChart(getSelection()[i], STACCATO_x_Re);
 		}
 		myOutputTree->expandAll();
 	}
 }
 
-void VisualizerWindow::add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _type) {
+void SignalDataVisualizer::add2dPlotToChart(int _nodeLabel, STACCATO_VectorField_components _type) {
 	// Preparing Plot Data
 	xValues.clear();
 	yValues.clear();
 
-	for (std::vector<std::string>::iterator it = myHMesh->getResultsTimeDescription().begin(); it != myHMesh->getResultsTimeDescription().end(); it++) {
-		xValues.push_back(std::stoi(*it));
+	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end(); it++) {
+		if (myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsAnalysisType() == STACCATO_Analysis_Static)
+			xValues.push_back(0);
+		else
+			xValues.push_back(std::stoi(it->second));
 	}
 	for (int i = 0; i < xValues.size(); i++) {
-		yValues.push_back(myHMesh->getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
+		yValues.push_back(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
 	}
 	// Data Series
 	mySeries2D = new QLineSeries();
 	for (int i = 0; i < xValues.size(); i++) {
 		mySeries2D->append(xValues[i], yValues[i]);;
 	}
-	if (_type == STACCATO_Ux_Re) {
+	if (_type == STACCATO_x_Re) {
 		mySeries2D->setName(tr("Ux_Re Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
-	else if (_type == STACCATO_Uy_Re) {
+	else if (_type == STACCATO_y_Re) {
 		mySeries2D->setName(tr("Uy_Re Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
-	else if (_type == STACCATO_Uz_Re) {
+	else if (_type == STACCATO_z_Re) {
 		mySeries2D->setName(tr("Uz_Re Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
-	else if (_type == STACCATO_Ux_Im) {
+	else if (_type == STACCATO_x_Im) {
 		mySeries2D->setName(tr("Ux_Im Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
-	else if (_type == STACCATO_Uy_Im) {
+	else if (_type == STACCATO_y_Im) {
 		mySeries2D->setName(tr("Uy_Im Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
-	else if (_type == STACCATO_Uz_Im) {
+	else if (_type == STACCATO_z_Im) {
 		mySeries2D->setName(tr("Uz_Im Node ") + QString::fromStdString(std::to_string(_nodeLabel)));
 	}
 	mySeries2D->setPointsVisible(myPointVisibilityBox->isChecked());
@@ -171,7 +184,6 @@ void VisualizerWindow::add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _ty
 	pen.setWidth(myLineWidthText->text().toDouble());
 	mySeriesList.last()->setPen(pen);
 
-	// Chart Axes
 	myAxisX->setTitleText("Frequency (in Hz)");
 	myAxisX->setLabelFormat("%d");
 	//myAxisX->setMinorTickCount(0);
@@ -182,7 +194,14 @@ void VisualizerWindow::add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _ty
 	myAxisLogX->setBase(10.0);
 	myAxisLogX->setMinorTickCount(-1);
 
-	if (_type == STACCATO_Ux_Re || _type == STACCATO_Uy_Re || _type == STACCATO_Uz_Re || _type == STACCATO_Ux_Im || _type == STACCATO_Uy_Im || _type == STACCATO_Uz_Im) {
+	// Chart Axes
+	if (myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsAnalysisType() == STACCATO_Analysis_Static)
+	{
+		myAxisX->setTitleText("Static");
+		myAxisLogX->setTitleText("Static, Log Scale");
+	}
+
+	if (_type == STACCATO_x_Re || _type == STACCATO_y_Re || _type == STACCATO_z_Re || _type == STACCATO_x_Im || _type == STACCATO_y_Im || _type == STACCATO_z_Im) {
 		myAxisY->setTitleText("Displacement");
 	}
 	else {
@@ -191,8 +210,8 @@ void VisualizerWindow::add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _ty
 	myAxisY->setLabelFormat("%d");
 
 	// Set Connections
-	connect(mySeriesList.last(), &QLineSeries::clicked, this, &VisualizerWindow::handleClickedPoint);
-	connect(mySeriesList.last(), &QLineSeries::hovered, this, &VisualizerWindow::tooltip);
+	connect(mySeriesList.last(), &QLineSeries::clicked, this, &SignalDataVisualizer::handleClickedPoint);
+	connect(mySeriesList.last(), &QLineSeries::hovered, this, &SignalDataVisualizer::tooltip);
 
 	enableInteractiveClick(mySeriesList.last());		// Enable Scattering
 
@@ -231,7 +250,7 @@ void VisualizerWindow::add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _ty
 	}
 }
 
-void VisualizerWindow::updateLegends(){
+void SignalDataVisualizer::updateLegends(){
 	const auto markers = myChart2D->legend()->markers();
 	for (QLegendMarker *marker : markers) {
 		if (marker->series()->name().toStdString() == "DeleteSeriesLegend") {
@@ -240,7 +259,7 @@ void VisualizerWindow::updateLegends(){
 	}
 }
 	
-void VisualizerWindow::autoScale(double _yValueMinNew, double _yValueMaxNew) {
+void SignalDataVisualizer::autoScale(double _yValueMinNew, double _yValueMaxNew) {
 	// Update Properties
 	double margin = 0.1;
 	myMinX->setText(QString::fromStdString(std::to_string(*std::min_element(xValues.begin(), xValues.end()))));
@@ -284,32 +303,32 @@ void VisualizerWindow::autoScale(double _yValueMinNew, double _yValueMaxNew) {
 	updateAxesConnections();
 }
 
-void VisualizerWindow::updateAxesConnections(void) {
+void SignalDataVisualizer::updateAxesConnections(void) {
 	connect(myChart2D->axisX(), SIGNAL(rangeChanged(qreal, qreal)), this, SLOT(myRangeWidgetXUpdate(qreal, qreal)));
 	connect(myChart2D->axisY(), SIGNAL(rangeChanged(qreal, qreal)), this, SLOT(myRangeWidgetYUpdate(qreal, qreal)));
 }
 
-void VisualizerWindow::myRangeWidgetXUpdate(qreal _min, qreal _max) {
+void SignalDataVisualizer::myRangeWidgetXUpdate(qreal _min, qreal _max) {
 	myMinX->setText(QString::number(_min));
 	myMaxX->setText(QString::number(_max));
 }
 
-void VisualizerWindow::myRangeWidgetYUpdate(qreal _min, qreal _max) {
+void SignalDataVisualizer::myRangeWidgetYUpdate(qreal _min, qreal _max) {
 	myMinY->setText(QString::number(_min));
 	myMaxY->setText(QString::number(_max));
 }
 
-void VisualizerWindow::enableInteractiveClick(QLineSeries* _lineSeries) {
+void SignalDataVisualizer::enableInteractiveClick(QLineSeries* _lineSeries) {
 	mySeries2scatter->setName(tr("DeleteSeriesLegend"));
 	mySeries2scatter->setMarkerSize(15.0);
 	myChart2D->addSeries(mySeries2scatter);
 	mySnapSeries2scatter->setName(tr("DeleteSeriesLegend"));
 	mySnapSeries2scatter->setMarkerSize(15.0);
-	connect(mySnapSeries2scatter, &QScatterSeries::hovered, this, &VisualizerWindow::tooltip);
+	connect(mySnapSeries2scatter, &QScatterSeries::hovered, this, &SignalDataVisualizer::tooltip);
 	myChart2D->addSeries(mySnapSeries2scatter);
 }
 
-void VisualizerWindow::handleClickedPoint(const QPointF &_point) {
+void SignalDataVisualizer::handleClickedPoint(const QPointF &_point) {
 	QPointF clickedPoint = _point;
 	// Find the closest point from series 1
 	QPointF closest(INT_MAX, INT_MAX);
@@ -387,7 +406,7 @@ void VisualizerWindow::handleClickedPoint(const QPointF &_point) {
 	chartView2D->repaint();
 }
 
-void VisualizerWindow::tooltip(QPointF _point, bool _state) {
+void SignalDataVisualizer::tooltip(QPointF _point, bool _state) {
 	static bool myToolTipActive = false;
 	if (!myToolTipActive) {
 		myToolTip = new ChartViewToolTip(myChart2D);
@@ -422,7 +441,7 @@ void VisualizerWindow::tooltip(QPointF _point, bool _state) {
 
 }
 
-QTreeWidgetItem* VisualizerWindow::addRootToTree(QTreeWidget* _tree, QString _name, bool _checkable) {
+QTreeWidgetItem* SignalDataVisualizer::addRootToTree(QTreeWidget* _tree, QString _name, bool _checkable) {
 	QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
 	item->setText(0, _name);
 	item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
@@ -434,7 +453,7 @@ QTreeWidgetItem* VisualizerWindow::addRootToTree(QTreeWidget* _tree, QString _na
 	return item;
 }
 
-void VisualizerWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name, bool _checkable) {
+void SignalDataVisualizer::addChildToTree(QTreeWidgetItem* _parent, QString _name, bool _checkable) {
 	QTreeWidgetItem* item = new QTreeWidgetItem();
 	item->setText(0, _name);
 	if (_checkable) {
@@ -444,7 +463,7 @@ void VisualizerWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name, b
 	_parent->addChild(item);
 }
 
-void VisualizerWindow::prepareTreeMenu(const QPoint& _pos){
+void SignalDataVisualizer::prepareTreeMenu(const QPoint& _pos){
 	QMenu* treeMenu = new QMenu();
 
 	myAddAxisAction = new QAction(tr("Add as new axis"), this);
@@ -460,7 +479,7 @@ void VisualizerWindow::prepareTreeMenu(const QPoint& _pos){
 	treeMenu->exec(myOutputTree->mapToGlobal(_pos));
 }
 
-void VisualizerWindow::createDockWindow(void) {
+void SignalDataVisualizer::createDockWindow(void) {
 	myOutputTreeDock = new QDockWidget(tr("Output Tree"), this);
 	myOutputTreeDock->setAllowedAreas(Qt::LeftDockWidgetArea);
 
@@ -468,7 +487,7 @@ void VisualizerWindow::createDockWindow(void) {
 	myOutputTree->setColumnCount(1);
 	myOutputTree->header()->close();
 	myOutputTree->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(myOutputTree, &QTreeWidget::customContextMenuRequested, this, &VisualizerWindow::prepareTreeMenu);
+	connect(myOutputTree, &QTreeWidget::customContextMenuRequested, this, &SignalDataVisualizer::prepareTreeMenu);
 
 	myPickTree = new QTreeWidget;
 	myPickTree->setColumnCount(1);
@@ -511,29 +530,27 @@ void VisualizerWindow::createDockWindow(void) {
 
 	myResetButton = new QPushButton("Reset", this);
 	connect(myResetButton, SIGNAL(clicked()), this, SLOT(resetChart()));
-
-	QGridLayout *layout = new QGridLayout;
-	layout->addWidget(myOutputTree, 1, 1, 1, -1, Qt::AlignLeft);
-	layout->addWidget(myNodePickLabel, 2, 1);
-	layout->addWidget(myNodePickText, 2, 2, 1, 2);
-	layout->addWidget(myPickListButton, 2, 4);
-	layout->addWidget(myNodePickRadio, 3, 2);
-	layout->addWidget(myElementPickRadio, 3, 3);
-	layout->addWidget(myPickerButton, 3, 4);
-	layout->addWidget(myForceNodeRadio, 4, 2);
-	layout->addWidget(myForceIntPointsRadio, 4, 3);
-	layout->addWidget(myPickAddButton, 4, 4);
-	layout->addWidget(myPickTree, 5, 1, 1, -1, Qt::AlignLeft);
-	layout->addWidget(mySaveButton, 6, 1, 1, 2, Qt::AlignCenter);
-	layout->addWidget(myResetButton, 6, 3, 1, 2, Qt::AlignCenter);
+	QGridLayout *layoutTemp = new QGridLayout;
+	layoutTemp->addWidget(myOutputTree, 1, 1, 1, -1, Qt::AlignLeft);
+	layoutTemp->addWidget(myNodePickLabel, 2, 1);
+	layoutTemp->addWidget(myNodePickText, 2, 2, 1, 2);
+	layoutTemp->addWidget(myPickListButton, 2, 4);
+	layoutTemp->addWidget(myNodePickRadio, 3, 2);
+	layoutTemp->addWidget(myElementPickRadio, 3, 3);
+	layoutTemp->addWidget(myPickerButton, 3, 4);
+	layoutTemp->addWidget(myForceNodeRadio, 4, 2);
+	layoutTemp->addWidget(myForceIntPointsRadio, 4, 3);
+	layoutTemp->addWidget(myPickAddButton, 4, 4);
+	layoutTemp->addWidget(myPickTree, 5, 1, 1, -1, Qt::AlignLeft);
+	layoutTemp->addWidget(mySaveButton, 6, 1, 1, 2, Qt::AlignCenter);
+	layoutTemp->addWidget(myResetButton, 6, 3, 1, 2, Qt::AlignCenter);
 	QWidget* temp = new QWidget(this);
-	temp->setLayout(layout);
-
+	temp->setLayout(layoutTemp);
+	
 	myOutputTreeDock->setWidget(temp);
 	myOutputTreeDock->show();
 
 	addDockWidget(Qt::LeftDockWidgetArea, myOutputTreeDock);
-
 	// Chart Properties
 	myChartPropertiesDock = new QDockWidget(tr("Chart Properties"), this);
 	myChartPropertiesDock->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -701,14 +718,14 @@ void VisualizerWindow::createDockWindow(void) {
 	addDockWidget(Qt::RightDockWidgetArea, myChartPropertiesDock);
 }
 
-std::vector<int> VisualizerWindow::getSelection() {
+std::vector<int> SignalDataVisualizer::getSelection() {
 	myPickedNodes.clear();
 	myPickedNodes.push_back(2);
 
 	return myPickedNodes;
 }
 
-void VisualizerWindow::setSelection(std::vector<int> _selected){
+void SignalDataVisualizer::setSelection(std::vector<int> _selected){
 	for each(int item in _selected)
 		myPickedNodes.push_back(item);
 	if (myPickerButton->isChecked()) {
@@ -716,7 +733,7 @@ void VisualizerWindow::setSelection(std::vector<int> _selected){
 	}
 }
 
-void VisualizerWindow::updateList() {
+void SignalDataVisualizer::updateList() {
 	if (myNodePickRadio->isChecked()) {
 		QTreeWidgetItem* R1;
 		R1 = addRootToTree(myPickTree, "Node " + myNodePickText->text(), false);
@@ -731,16 +748,16 @@ void VisualizerWindow::updateList() {
 		int nodeIndex = myHMesh->convertNodeLabelToNodeIndex(std::stoi(myNodePickText->text().toStdString()));
 		
 		std::cout << "\n-----Selected Node Displacement-----\n";
-		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->getResultsTimeDescription()[0]<< "Hz ----\n";
-		std::cout << std::showpos << "\tReal x: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tReal y: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tReal z: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tMagni.: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[0]<< "Hz ----\n";
+		std::cout << std::showpos << "\tReal x: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tReal y: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tReal z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, 0)[nodeIndex] << std::endl;
 		std::cout << "------------------------------------\n";
-		std::cout << "\tImag x: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Ux_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tImag y: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uy_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tImag z: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Uz_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tMagni.: " << myHMesh->getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag x: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag y: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, 0)[nodeIndex] << std::endl;
 		std::cout << std::noshowpos << "------------------------------------\n";
 	}
 	else if (myElementPickRadio->isChecked()) {
@@ -749,23 +766,23 @@ void VisualizerWindow::updateList() {
 
 }
 
-void VisualizerWindow::updateOutputTree() {
+void SignalDataVisualizer::updateOutputTree() {
 	if (myNodePickRadio->isChecked()) {
 		QList<QTreeWidgetItem*> List = myPickTree->selectedItems();
 		for each (QTreeWidgetItem* item in List){
 			addChildToTree(myHistoryRoot, item->text(0) + " at Node " + myNodePickText->text(), false);
 			if (item->text(0) == "Ux_Re")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Ux_Re);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_x_Re);
 			else if (item->text(0) == "Uy_Re")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Uy_Re);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_y_Re);
 			else if (item->text(0) == "Uz_Re")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Uz_Re);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_z_Re);
 			else if (item->text(0) == "Ux_Im")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Ux_Im);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_x_Im);
 			else if (item->text(0) == "Uy_Im")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Uy_Im);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_y_Im);
 			else if (item->text(0) == "Uz_Im")
-				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_Uz_Im);
+				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_z_Im);
 		}
 		myPickTree->expandAll();
 	}
@@ -774,13 +791,13 @@ void VisualizerWindow::updateOutputTree() {
 	}
 }
 
-void VisualizerWindow::myChartRangeUpdate() {
+void SignalDataVisualizer::myChartRangeUpdate() {
 	myAxisX->setRange(myMinX->text().toDouble(), myMaxX->text().toDouble());
 	myAxisY->setRange(myMinY->text().toDouble(), myMaxY->text().toDouble());
 	myAxisLogX->setRange(myMinX->text().toDouble(), myMaxX->text().toDouble());
 }
 
-void VisualizerWindow::myClearPointSelection(){
+void SignalDataVisualizer::myClearPointSelection(){
 	mySeries2scatter->clear();
 	mySnapSeries2scatter->clear();
 
@@ -797,7 +814,7 @@ void VisualizerWindow::myClearPointSelection(){
 	}
 }
 
-void VisualizerWindow::updateSeriesProperty() {
+void SignalDataVisualizer::updateSeriesProperty() {
 	for each (QLineSeries* series in mySeriesList) {
 		if (myPointVisibilityBox->isChecked()) {
 			series->setPointsVisible(true);
@@ -811,7 +828,7 @@ void VisualizerWindow::updateSeriesProperty() {
 	}
 }
 
-void VisualizerWindow::setLineWidthWidgets() {
+void SignalDataVisualizer::setLineWidthWidgets() {
 	myLineWidthLabel->setEnabled(myLineWidthBox->isChecked());
 	myLineWidthText->setEnabled(myLineWidthBox->isChecked());
 	if (!myLineWidthBox->isChecked()) {
@@ -820,7 +837,7 @@ void VisualizerWindow::setLineWidthWidgets() {
 	}
 }
 
-void VisualizerWindow::updateToolTip() {
+void SignalDataVisualizer::updateToolTip() {
 	if (!myToolTipBox->isChecked()) {
 		for each (ChartViewToolTip *callout in myCallOuts) {
 			callout->scene()->removeItem(callout);
@@ -829,7 +846,7 @@ void VisualizerWindow::updateToolTip() {
 	}
 }
 
-void VisualizerWindow::deleteSeries(){
+void SignalDataVisualizer::deleteSeries(){
 	QList<QTreeWidgetItem*> List = myOutputTree->selectedItems();
 	for each (QTreeWidgetItem* item in List) {
 		int currIndex = myOutputTree->currentIndex().row();
@@ -843,7 +860,7 @@ void VisualizerWindow::deleteSeries(){
 	}
 }
 
-void VisualizerWindow::addOrdinateToSeries() {
+void SignalDataVisualizer::addOrdinateToSeries() {
 	QList<QTreeWidgetItem*> List = myOutputTree->selectedItems();
 	for each (QTreeWidgetItem* item in List) {
 		int currIndex = myOutputTree->currentIndex().row();
@@ -860,7 +877,7 @@ void VisualizerWindow::addOrdinateToSeries() {
 	}
 }
 
-void VisualizerWindow::resetChart() {
+void SignalDataVisualizer::resetChart() {
 	for (int i = mySeriesList.size()-1; i >=0 ; i--) {
 		myChart2D->removeSeries(mySeriesList.at(i));
 		mySeriesList.removeAt(i);
@@ -869,7 +886,7 @@ void VisualizerWindow::resetChart() {
 	myClearPointSelection();
 }
 
-void VisualizerWindow::saveChart() {
+void SignalDataVisualizer::saveChart() {
 	QFileDialog* saveWindow = new QFileDialog(this);
 	QString fileName = QFileDialog::getSaveFileName(this, "Save Image", "STACCATO_Chart", ".png");
 
@@ -877,7 +894,7 @@ void VisualizerWindow::saveChart() {
 	imageHandle.save(fileName + ".png", "PNG", -1);
 }
 
-void VisualizerWindow::myLogScaleTriggered() {
+void SignalDataVisualizer::myLogScaleTriggered() {
 	if (myLogXAxisBox->isChecked()) {
 		myChart2D->removeAxis(myAxisX);
 		myChart2D->addAxis(myAxisLogX, Qt::AlignBottom);
@@ -902,12 +919,12 @@ void VisualizerWindow::myLogScaleTriggered() {
 	updateAxesConnections();
 }
 
-void VisualizerWindow::myColorSelectionTriggered() {
+void SignalDataVisualizer::myColorSelectionTriggered() {
 	myPickColorButton->setEnabled(mySetColorBox->isChecked());
 	myColorText->setEnabled(mySetColorBox->isCheckable());
 }
 
-void VisualizerWindow::myColorPickWidget() {
+void SignalDataVisualizer::myColorPickWidget() {
 	QColorDialog* colorPickDialog = new QColorDialog(this);
 	QColor color = colorPickDialog->getColor(Qt::yellow, this);
 	if (color.isValid()) {
@@ -924,11 +941,11 @@ void VisualizerWindow::myColorPickWidget() {
 	}
 }
 
-void VisualizerWindow::myResetChart() {
+void SignalDataVisualizer::myResetChart() {
 	myChart2D->zoomReset();
 }
 
-void VisualizerWindow::updateSnap() {
+void SignalDataVisualizer::updateSnap() {
 	if(!mySnapOnHoverBox->isChecked())
 		mySnapSeries2scatter->clear();
 }

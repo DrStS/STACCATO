@@ -45,75 +45,6 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	}
 }
 
-void HMesh::addResultScalarFieldAtNodes(STACCATO_Result_type _type, std::vector<double> _valueVec) {
-	if (_type == STACCATO_Ux_Re) {
-		resultsUxRe.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Uy_Re) {
-		resultsUyRe.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Uz_Re) {
-		resultsUzRe.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Ux_Im) {
-		resultsUxIm.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Uy_Im) {
-		resultsUyIm.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Uz_Im) {
-		resultsUzIm.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Magnitude_Re) {
-		resultsMagRe.push_back(_valueVec);
-	}
-	else if (_type == STACCATO_Magnitude_Im) {
-		resultsMagIm.push_back(_valueVec);
-	}
-}
-
-std::vector<double>&  HMesh::getResultScalarFieldAtNodes(STACCATO_Result_type _type, int index) {
-	if (_type == STACCATO_Ux_Re){
-		return resultsUxRe[index];
-	}
-	else if(_type == STACCATO_Uy_Re){
-		return resultsUyRe[index];
-	}
-	else if (_type == STACCATO_Uz_Re) {
-		return resultsUzRe[index];
-	}
-	else if (_type == STACCATO_Ux_Im) {
-		return resultsUxIm[index];
-	}
-	else if (_type == STACCATO_Uy_Im) {
-		return resultsUyIm[index];
-	}
-	else if (_type == STACCATO_Uz_Im) {
-		return resultsUzIm[index];
-	}
-	else if (_type == STACCATO_Magnitude_Re) {
-		return resultsMagRe[index];
-	}
-	else if (_type == STACCATO_Magnitude_Im) {
-		return resultsMagIm[index];
-	}
-}
-
-void HMesh::addResultsTimeDescription(std::string _resultsTimeDescription) {
-	resultsTimeDescription.push_back(_resultsTimeDescription);
-}
-void HMesh::addResultsSubFrameDescription(int _resultsSubFrameDescription) {
-	resultsSubFrameDescription.push_back(_resultsSubFrameDescription);
-}
-
-std::vector<std::string>& HMesh::getResultsTimeDescription() {		// Getter Function to return all frequency steps
-	return resultsTimeDescription;
-}
-
-std::vector<int>& HMesh::getResultsSubFrameDescription() {		// Getter Function to return all subframe steps
-	return resultsSubFrameDescription;
-}
-
 void HMesh::buildDataStructure(void){
 	//Node loop	
 	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
@@ -218,22 +149,13 @@ void HMesh::buildDoFGraph(void) {
 			// Generate DoF table
 			for (int l = 0; l < numDoFsPerNode[nodeIndex]; l++) {
 				elementDoFList.push_back(nodeIndexToDoFIndices[nodeIndex][l]);
-				elementDoFListBC.push_back(nodeIndexToDoFIndices[nodeIndex][l]);	// Create a copy for Dirichlet DoF Killing
+				elementDoFListRestricted.push_back(nodeIndexToDoFIndices[nodeIndex][l]);	// Create a copy for Dirichlet DoF Killing
 				numDoFsPerElement++;
 			}
 
 		}
 		numDoFsPerElem[iElement] = numDoFsPerElement;
 	}
-}
-
-std::vector<double>& HMesh::getResultScalarFieldOfNode(STACCATO_Result_type _type, int _nodeLabel) {
-	std::vector<double> results;
-	for (int i = 0; i < this->getResultsTimeDescription().size(); i++){
-		results.push_back(this->getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
-		std::cout << results[i] << "\n";
-	}
-	return results;
 }
 
 void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restrictedDOF) {
@@ -247,7 +169,7 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 		int numDoFsPerNode = getNumDoFsPerNode(nodeIndex);
 		for (int iMap = 0; iMap < numDoFsPerNode; iMap++) {
 			if (_restrictedDOF[iMap] == 1) {
-				dirichletDOF.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
+				restrictedHomogeneousDoFList.push_back(getNodeIndexToDoFIndices()[nodeIndex][iMap]);
 			}
 		}
 	}
@@ -259,12 +181,12 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 		std::vector<int> affectedElements = getNodeIndexToElementIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
 		// Create a list of Dofs with -1 indicating Dirichlet enforced DoF
 		int totalDoFsPerElem = getNumDoFsPerNode(convertNodeLabelToNodeIndex(nodeSet[n]))*getNumNodesPerElement()[0];
-		for (int iMap = 0; iMap < affectedElements.size(); iMap++) {
-			for (int jMap = totalDoFsPerElem*affectedElements[iMap]; jMap < totalDoFsPerElem*affectedElements[iMap] + totalDoFsPerElem; jMap++)
+		for (int iIndex = 0; iIndex < affectedElements.size(); iIndex++) {
+			for (int jIndex = totalDoFsPerElem*affectedElements[iIndex]; jIndex < totalDoFsPerElem*affectedElements[iIndex] + totalDoFsPerElem; jIndex++)
 			{
 				for (int kMap = 0; kMap < indexAffected.size(); kMap++) {
-					if (indexAffected[kMap] == elementDoFList[jMap]) {
-						elementDoFListBC[jMap] = -1;
+					if (indexAffected[kMap] == elementDoFList[jIndex]) {
+						elementDoFListRestricted[jIndex] = -1;
 						flag = true;
 					}
 				}

@@ -22,8 +22,7 @@
  * This file holds the class of AuxiliaryParameters.
  * \date 4/2/2016
  **************************************************************************************************/
-#ifndef AUXILIARYPARAMETERS_H_
-#define AUXILIARYPARAMETERS_H_
+#pragma once
 
 
 
@@ -47,6 +46,7 @@
 
 #include <string>
 #include <mkl.h>
+
 typedef MKL_Complex16 STACCATOComplexDouble;
 namespace STACCATO {
 /********//**
@@ -71,4 +71,3 @@ public:
 };
 
 } /* namespace STACCATO */
-#endif /* AUXILIARYFUNCTIONS_H_ */

@@ -22,8 +22,7 @@
 * The header file of math functions in STACCATO.
 * \date 8/28/2017
 **************************************************************************************************/
-#ifndef MATHLIBRARY_H_
-#define MATHLIBRARY_H_
+#pragma once
 
 #include <fstream>
 #include <map>
@@ -962,4 +961,3 @@ namespace MathLibrary {
 	};
 	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
 } /* namespace Math */
-#endif /* MATHLIBRARY_H_ */

@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,40 +18,17 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
- * \file STACCATO_Enum.h
- * This file holds all enumerations (specifying types) of the program
- * \date 27/1/2017
+ * \file STACCATO_Visualizer_Enum.h
+ * This file holds all enumerations (specifying types) for the VisualizerSetting
+ * \date 05/03/2018
  **************************************************************************************************/
-#ifndef STACCATO_ENUM_H_
-#define STACCATO_ENUM_H_
+#ifndef STACCATO_VISUALIZER_ENUM_H_
+#define STACCATO_VISUALIZER_ENUM_H_
 
-enum STACCATO_Element_type {
-	STACCATO_Mass,
-	STACCATO_Spring,
-	STACCATO_Truss2D,
-	STACCATO_Truss3D,
-	STACCATO_PlainStrain4Node2D,
-	STACCATO_PlainStress4Node2D,
-	STACCATO_PlainStrain3Node2D,
-	STACCATO_Tetrahedron10Node3D,
-	STACCATO_UmaElement
+enum STACCATO_FieldProperty_type {
+	STACCATO_FieldProperty_Surface,
+	STACCATO_FieldProperty_SurfaceWithEdges,
+	STACCATO_FieldProperty_Wireframe
 };
 
-enum STACCATO_Result_type {
-	STACCATO_Ux_Re,
-	STACCATO_Uy_Re,
-	STACCATO_Uz_Re,
-	STACCATO_Magnitude_Re,
-	STACCATO_Ux_Im,
-	STACCATO_Uy_Im,
-	STACCATO_Uz_Im,
-	STACCATO_Magnitude_Im,
-};
-
-enum STACCATO_Picker_type {
-	STACCATO_Picker_None,
-	STACCATO_Picker_Node,
-	STACCATO_Picker_Element
-};
-
-#endif /* STACCATO_ENUM_H_ */
+#endif /* STACCATO_VISUALIZER_ENUM_H_ */

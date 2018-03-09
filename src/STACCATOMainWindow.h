@@ -18,12 +18,11 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file StartWindow.h
+* \file STACCATOMainWindow.h
 * This file holds the class of StartWindow.
 * \date 9/16/2016
 **************************************************************************************************/
-#ifndef STARTWINDOW_H
-#define STARTWINDOW_H
+#pragma once
 
 #include "HMeshToVtkUnstructuredGrid.h"
 
@@ -38,9 +37,11 @@
 // SimuliaOBD
 #include "SimuliaODB.h"
 /// Visualizer
-#include "VisualizerWindow.h"
+#include "SignalDataVisualizer.h"
+#include "VisualizerSetting.h"
 
-//#include <python.h>
+//Enums
+#include "STACCATO_Visualizer_Enum.h"
 
 // forward declaration
 class OccViewer;
@@ -54,12 +55,12 @@ class QFormLayout;
 class QSlider;
 
 namespace Ui {
-	class StartWindow;
+	class STACCATOMainWindow;
 }
 /********//**
-* \brief Class StartWindow the core of the GUI
+* \brief Class STACCATOMainWindow the core of the GUI
 ***********/
-class StartWindow : public QMainWindow {
+class STACCATOMainWindow : public QMainWindow {
 	Q_OBJECT
 
 public:
@@ -67,12 +68,12 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	explicit StartWindow(QWidget *parent = 0);
+	explicit STACCATOMainWindow(QWidget *parent = 0);
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
-	~StartWindow(); 
+	~STACCATOMainWindow(); 
 protected:
 	/***********************************************************************************************
 	* \brief Creat all Actions of Qt
@@ -85,8 +86,9 @@ protected:
 	void readSTEP(QString);
 	void readIGES(QString);
 	void readSTL(QString);
+	void fillFEResultInGUI();
 
-private slots:
+	private slots:
 	void about(void);
 	void importFile(void);
 	void drawCantilever(void);
@@ -99,7 +101,7 @@ private slots:
 	void myWarpVectorTriggered(void);
 	void myAutoScalingState(void);
 	void myScalingFactorState(void);
-	void my2dVisualizerInterface(void);
+	void mySignalDataVisualizerInterface(void);
 	void myViewModeTriggered(void);
 	void myUMATriggered(void);
 	void myUMAImport(void);
@@ -108,25 +110,20 @@ private slots:
 	void myViewPropertyDockTriggered(void);
 	void myReferenceNodeTriggered(void);
 	void mySubFrameAnimate(void);
-	void mySubFramePrevProc(void);
-	void mySubFrameNextProc(void);
-	void mySubFramePlayProv(void);
-	void myAnimationDockTriggered(void);
+	void myCaseStepLessProc(void);
+	void myCaseStepAddProc(void);
+	void myGenerateAnimationFramesProc(void);
 	void myAnimationResetProc(void);
 	void myUpdateAnimationSlider(int);
-	void myAnimationSceneProc(void);
+	void myAnimationScenePlayProc(void);
+	void myAnimationSceneStopProc(void);
+	void myResultCaseChanged(void);
 
 private:
-	std::vector<std::string> allDispSolutionTypes;
-	std::vector<std::string> allDispVectorComponents;
-	std::vector<std::string> allViewModes;
-
-	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
-
-	Ui::StartWindow *ui;
+	Ui::STACCATOMainWindow *myGui;
 	/// File action.
 	QAction* myExitAction;
-    QAction* myReadFileAction;
+	QAction* myReadFileAction;
 	QAction* myImportXMLFileAction;
 	/// Buttons
 	QPushButton* myTimeStepLessAction;
@@ -178,11 +175,15 @@ private:
 	QComboBox* myComponentSelector;
 	QComboBox* myViewModeSelector;
 	QComboBox* myAnimationSolutionSelector;
+	QComboBox* myResultCaseSelector;
 
 	/// wrapped the widget for occ.
 	OccViewer* myOccViewer;
 
-	VtkViewer* myVtkViewer;
+	FieldDataVisualizer* myFieldDataVisualizer;
+	SignalDataVisualizer* mySignalDataVisualizer;
+	VisualizerSetting* myVisualizerSetting;
+
 	/// the dockable widgets
 	QTextEdit* textOutput;
 	QLineEdit* myTimeStepText;
@@ -203,10 +204,9 @@ private:
 	QPushButton* myScalarBarVisibility;
 	QPushButton* myWarpVectorVisibility;
 	QPushButton* myUMAImportVisibility;
-	QPushButton* my2dVisualizerVisibility;
+	QPushButton* mySignalDataVisualizerVisiblility;
 	QPushButton* myRotateModeButton;
 	QPushButton* myPickModeButton;
-	QPushButton* myAnimationDockButton;
 
 	/// Picker View ToolBar Buttons
 	QPushButton* myPickerModeNone;
@@ -223,10 +223,6 @@ private:
 	QDockWidget *myWarpDock;
 	QDockWidget *myUMADock;
 	QDockWidget *myViewPropertyDock;
-	QDockWidget *myAnimationDock;
-
-	/// QLineEdits
-	QLineEdit* myAnimateScalingFactor;
 
 	/// UMA Widgets
 	QPushButton* myUMAInterfaceButton;
@@ -242,35 +238,31 @@ private:
 	QWidget* myVisualizerDockWidgets;
 
 	/// Sub Frame Animator Widgets
+	QAction* myAnimationButton;
 	QAction* mySubFrameAnimateAction;
-	QPushButton* myPreviousFrameButton;
-	QPushButton* myNextFrameButton;
-	QPushButton* mySubFrameAnimateButton;
-	QPushButton* myCreateFrameAnimationButton;
-	QPushButton* myResetFrameAnimationButton;
-	QPushButton* myAnimatePlayButton;
+	QAction* myCreateFrameAnimationButton;
+	QAction* myResetFrameAnimationButton;
+	QAction* myAnimatePlayButton;
 	QPushButton* myAnimateNextFrameButton;
 	QPushButton* myAnimatePrevFrameButton;
-	QPushButton* myAnimateStopButton;
-	QLineEdit* mySubFrameText;
+	QAction* myAnimateStopButton;
+	QLineEdit* myCaseStepText;
 	QLineEdit* myAnimationDuration;
-	QCheckBox* myAnimateRepeat;
+	QAction* myAnimateRepeatButton;
 	QSlider *myHorizontalSlider;
 	QLabel* myAnimationDataLabel;
 	QLabel* myManualFrameControlLabel;
 	QLabel* myAnimationControlLabel;
 	QLabel* myAnimationDurationLabel;
 
-	int myFreqIndex;
-	int mySubFrameIndex;
-	int myScalingFactorValue;
+	std::map<int, std::string>::iterator myFreqIndex;
+	std::map<int, std::string>::iterator myCaseIndex;
 
 private:
 	/// HMesh object 
 	HMesh *myHMesh;
 
 public:
+	int globalFrame;
 	bool isSubFrame;
 };
-
-#endif /* STARTWINDOW_H */

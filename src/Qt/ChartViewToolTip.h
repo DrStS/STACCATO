@@ -22,8 +22,7 @@
  * This file holds the class of ChartViewToolTip.
  * \date 20/1/2018
  **************************************************************************************************/
-#ifndef CHARTVIEWTOOLTIP_H
-#define CHARTVIEWTOOLTIP_H
+#pragma once
 
 #include <QtCharts/QChartGlobal>
 #include <QtWidgets/QGraphicsItem>
@@ -58,5 +57,3 @@ private:
 	QRectF myTextRect;
 	QFont myFont;
 };
-
-#endif CHARTVIEWTOOLTIP_H

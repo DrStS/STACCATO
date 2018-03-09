@@ -67,7 +67,7 @@
 //VTK
 #include <QVTKOpenGLWidget.h>
 //USER
-#include <StartWindow.h>
+#include <STACCATOMainWindow.h>
 
 
 
@@ -84,9 +84,9 @@ int main(int argc, char **argv) {
 
 	QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
 
-    QApplication a(argc, argv);
-    StartWindow* mSW= new StartWindow();
-	mSW->show();
-    return a.exec();
+    QApplication mySTACCATO(argc, argv);
+	STACCATOMainWindow* mySTACCATOMainWindow = new STACCATOMainWindow();
+	mySTACCATOMainWindow->show();
+    return mySTACCATO.exec();
 }
 

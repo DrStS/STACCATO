@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,43 +18,42 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /*************************************************************************************************
-* \file VtkViewer.h
-* This file holds the class VtkViewer
-* \date 2/19/2018
+* \file FieldDataSetting.h
+* This file holds the class of FieldDataSetting.
+* \date 3/2/2018
 **************************************************************************************************/
+#ifndef _FIELDDATASETTING_H_
+#define _FIELDDATASETTING_H_
 
-#ifndef VTKVIEWER_H_
-#define VTKVIEWER_H_
-
-#include "FieldDataVisualizer.h"
-
-/*************************************************************************************************
-* \brief Class VtkViewer
-**************************************************************************************************/
-class VtkViewer
+class FieldDataSetting
 {
 public:
 	/***********************************************************************************************
 	* \brief Constructor
 	* \author Harikrishnan Sreekumar
 	***********/
-	VtkViewer(FieldDataVisualizer& _fieldDataVisualizer);
+	FieldDataSetting();
 	/***********************************************************************************************
-	* \brief Constructor
+	* \brief Destructor
 	* \author Harikrishnan Sreekumar
 	***********/
-	~VtkViewer();
+	~FieldDataSetting();
 	/***********************************************************************************************
-	* \brief Set VTK Viewer with Vector Field
+	* \brief Get Edge Visibility
 	* \author Harikrishnan Sreekumar
 	***********/
-	void plotVectorField();
-private:
-	// Handle to Field Data Visualizer
-	FieldDataVisualizer* myFieldDataVisualizer;
-
-	
+	bool getEdgeProperty() { return PROPERTY_SHOW_EDGE; }
+	/***********************************************************************************************
+	* \brief Get Surface Visibility
+	* \author Harikrishnan Sreekumar
+	***********/
+	bool getSurfaceProperty() { return PROPERTY_SHOW_SURFACE; }
+public:
+	// Enable/Disable Edge
+	bool PROPERTY_SHOW_EDGE;
+	// Enable/Disable Sruface
+	bool PROPERTY_SHOW_SURFACE;
 };
 
 
-#endif /* VTKVIEWER_H_ */
+#endif // _FIELDDATASETTING_H_

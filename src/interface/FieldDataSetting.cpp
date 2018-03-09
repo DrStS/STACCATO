@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2016, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -17,22 +17,12 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-/***********************************************************************************************//**
- * \file MessageToC.h
- * Adapter C++ -> C for MKL
- * \date 1/10/2017
- **************************************************************************************************/
-#pragma once
+#include <FieldDataSetting.h>
 
-#ifdef __cplusplus
-extern "C" { ///Define extern C if C++ compiler is used
-#endif
-		void printInfo(char* _message);
-		void printInfoNewLine(void);
-		void initMKLProgressBar(void);
-		void updateMKLProgressBar(int status);
-		int  userBreakProgressBar(void);
-#ifdef __cplusplus
+FieldDataSetting::FieldDataSetting()
+{
 }
-#endif
 
+FieldDataSetting::~FieldDataSetting()
+{
+}

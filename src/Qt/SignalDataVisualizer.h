@@ -18,15 +18,18 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file VisualizerWindow.h
-* This file holds the class of VisualizerWindow.
-* \date 12/06/2017
+* \file SignalDataVisualizer.h
+* This file holds the class of SignalDataVisualizer.
+* \date 2/20/2018
 **************************************************************************************************/
-#ifndef VISUALIZERWINDOW_H
-#define VISUALIZERWINDOW_H
+#ifndef SIGNALDATAVISUALIZER_H
+#define SIGNALDATAVISUALIZER_H
 
 #include "HMeshToVtkUnstructuredGrid.h"
 #include <STACCATO_Enum.h>
+#include <DiscreteVisualizer.h>
+#include "FieldDataVisualizer.h"
+#include "observer.h"
 
 // QT5
 #include <QMainWindow>
@@ -66,12 +69,12 @@ class QGestureEvent;
 class HMesh;
 
 namespace Ui {
-	class VisualizerWindow;
+	class SignalDataVisualizer;
 }
 /********//**
-* \brief Class VisualizerWindow the core of the GUI
+* \brief Class SignalDataVisualizer the core of the GUI
 ***********/
-class VisualizerWindow : public QMainWindow {
+class SignalDataVisualizer : public QMainWindow, public DiscreteVisualizer, public Observer {
 	Q_OBJECT
 
 public:
@@ -79,12 +82,27 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	explicit VisualizerWindow(HMesh& _HMesh);
+	explicit SignalDataVisualizer();
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
-	~VisualizerWindow();
+	~SignalDataVisualizer();
+	/***********************************************************************************************
+	* \brief Initiate the SignalDataVisualizer
+	* \author Stefan Sicklinger
+	***********/
+	void initiate(void);
+	/***********************************************************************************************
+	* \brief Set Subject for the current Observer
+	* \author Harikrishnan Sreekumar
+	***********/
+	void attachSubject(FieldDataVisualizer* _fieldDataVisualizer);
+	/***********************************************************************************************
+	* \brief Interactive Update
+	* \author Harikrishnan Sreekumar
+	***********/
+	void update(void);
 
 protected:
 	/***********************************************************************************************
@@ -99,7 +117,7 @@ protected:
 	void addChildToTree(QTreeWidgetItem*, QString, bool);
 	std::vector<int> getSelection(void);
 	void enableInteractiveClick(QLineSeries*);
-	void add2dPlotToChart(int _nodeLabel, STACCATO_Result_type _type);
+	void add2dPlotToChart(int _nodeLabel, STACCATO_VectorField_components _type);
 	void autoScale(double, double);
 	void updateLegends(void);
 	void updateAxesConnections(void);
@@ -127,11 +145,8 @@ private slots:
 	void updateSnap(void);
 public:
 	void setSelection(std::vector<int>);
-
+	QPushButton* myPickerButton;
 private:
-	Ui::VisualizerWindow *ui;
-
-	HMesh *myHMesh;
 	/// File action.
 	QAction* myExitAction;
 	/// Help Action
@@ -189,7 +204,6 @@ private:
 	QRadioButton* myForceIntPointsRadio;
 
 	/// Push Buttons
-	QPushButton* myPickerButton;
 	QPushButton* myPickListButton;
 	QPushButton* myPickAddButton;
 	QPushButton* mySaveButton;
@@ -245,6 +259,8 @@ private:
 
 	/// Picking
 	std::vector<int> myPickedNodes;
+
+	FieldDataVisualizer* myFieldDataVisualizerSubject;
 };
 
-#endif /* VISUALIZERWINDOW_H */
+#endif /* SIGNALDATAVISUALIZER_H */

@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -18,43 +18,29 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /*************************************************************************************************
-* \file VtkViewer.h
-* This file holds the class VtkViewer
-* \date 2/19/2018
+* \file WireFrameSetting.h
+* This file holds the class of WireFrameSetting.
+* \date 3/2/2018
 **************************************************************************************************/
+#ifndef _WIREFRAMESETTING_H_
+#define _WIREFRAMESETTING_H_
 
-#ifndef VTKVIEWER_H_
-#define VTKVIEWER_H_
+#include <FieldDataSetting.h>
 
-#include "FieldDataVisualizer.h"
-
-/*************************************************************************************************
-* \brief Class VtkViewer
-**************************************************************************************************/
-class VtkViewer
+class WireFrameSetting : public FieldDataSetting
 {
 public:
 	/***********************************************************************************************
 	* \brief Constructor
 	* \author Harikrishnan Sreekumar
 	***********/
-	VtkViewer(FieldDataVisualizer& _fieldDataVisualizer);
+	WireFrameSetting();
 	/***********************************************************************************************
-	* \brief Constructor
+	* \brief Destructor
 	* \author Harikrishnan Sreekumar
 	***********/
-	~VtkViewer();
-	/***********************************************************************************************
-	* \brief Set VTK Viewer with Vector Field
-	* \author Harikrishnan Sreekumar
-	***********/
-	void plotVectorField();
-private:
-	// Handle to Field Data Visualizer
-	FieldDataVisualizer* myFieldDataVisualizer;
-
-	
+	~WireFrameSetting();
 };
 
 
-#endif /* VTKVIEWER_H_ */
+#endif // _WIREFRAMESETTING_H_

@@ -152,11 +152,7 @@ STACCATOMainWindow::~STACCATOMainWindow()
 }
 
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::openDataFlowWindow(void) {
-=======
-void STACCATOMainWindow::openDataFlowWindow(void){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	newWin = new QNEMainWindow();
 	newWin->show();
 }
@@ -466,16 +462,10 @@ void STACCATOMainWindow::createActions(void)
 
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::fillFEResultInGUI() {
 	mySolutionSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
 	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldFromDatabase().size(); i++)					// Adding Vector Field
 		mySolutionSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[i].myLabel));
-=======
-void STACCATOMainWindow::myViewPropertyUpdate(void) {
-	static bool edge = false;
-	static bool surface = true;	
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 
 	mySolutionSelector->setCurrentIndex(1);
 	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
@@ -517,7 +507,6 @@ void STACCATOMainWindow::myViewPropertyUpdate(void) {
 	}
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::myViewPropertyUpdate(void) {
 	myTimeStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[myFreqIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myTimeUnit));		// Update Slider
 	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myCaseUnit));		// Update Slider
@@ -535,23 +524,13 @@ void STACCATOMainWindow::myViewPropertyUpdate(void) {
 void STACCATOMainWindow::myTimeStepLessProc(void) {
 	isSubFrame = false;
 	if (myFreqIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin())
-=======
-void STACCATOMainWindow::myTimeStepLessProc(void) {
-	if (myFreqIndex > 0) {
-		isSubFrame = false;
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 		myFreqIndex--;
 	myViewPropertyUpdate();
 }
 
 void STACCATOMainWindow::myTimeStepAddProc(void) {
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 	isSubFrame = false;
 	if (myFreqIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end())
-=======
-	if (myFreqIndex < myHMesh->getResultsTimeDescription().size()-1) {
-		isSubFrame = false;
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 		myFreqIndex++;
 	myViewPropertyUpdate();
 }
@@ -711,11 +690,7 @@ void STACCATOMainWindow::createDockWindows()
 }
 
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::about() {
-=======
-void STACCATOMainWindow::about(){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	myOccViewer->showGrid(Standard_True);
 	myOccViewer->viewTop();
 	myOccViewer->fitAll();
@@ -826,11 +801,7 @@ void STACCATOMainWindow::importFile(void)
 	}
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::readSTEP(QString fileName) {
-=======
-void STACCATOMainWindow::readSTEP(QString fileName){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	// create additional log file
 	STEPControl_Reader aReader;
 	IFSelect_ReturnStatus status = aReader.ReadFile(fileName.toUtf8().constData());
@@ -860,11 +831,7 @@ void STACCATOMainWindow::readSTEP(QString fileName){
 
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::readIGES(QString fileName) {
-=======
-void STACCATOMainWindow::readIGES(QString fileName){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 
 	IGESControl_Reader Reader;
 
@@ -878,11 +845,7 @@ void STACCATOMainWindow::readIGES(QString fileName){
 }
 
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::readSTL(QString fileName) {
-=======
-void STACCATOMainWindow::readSTL(QString fileName){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	Handle(Message_ProgressIndicator) aIndicator = new OcctQtProcessIndicator(this);
 	aIndicator->SetRange(0, 100);
 	OSD_Path aFile(fileName.toUtf8().constData());
@@ -916,11 +879,7 @@ void STACCATOMainWindow::readSTL(QString fileName){
 //void STACCATOMainWindow::drawInt2DLine(void){
 //}
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::drawCantilever(void) {
-=======
-void STACCATOMainWindow::drawCantilever(void){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	//3D cartesian point
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(0., 0., 0.);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(0., 100., 100.);
@@ -969,11 +928,7 @@ void STACCATOMainWindow::drawCantilever(void){
 	myOccViewer->getContext()->Display(myAIS_Point);
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::animateObject(void) {
-=======
-void STACCATOMainWindow::animateObject(void){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 
 	gp_Pnt mGp_Pnt_Start = gp_Pnt(-150., -150., -0.0001);
 	gp_Pnt mGp_Pnt_End = gp_Pnt(150., 150., 0.);
@@ -1058,11 +1013,7 @@ void STACCATOMainWindow::animateObject(void){
 }
 
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::handleSelectionChanged(void) {
-=======
-void STACCATOMainWindow::handleSelectionChanged(void){
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 
 	for (myOccViewer->getContext()->InitSelected(); myOccViewer->getContext()->MoreSelected(); myOccViewer->getContext()->NextSelected())
 	{
@@ -1185,11 +1136,7 @@ void STACCATOMainWindow::handleSelectionChanged(void){
 }
 
 void STACCATOMainWindow::myViewModeTriggered() {
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 	myFieldDataVisualizer->setViewMode(myRotateModeButton->isChecked());
-=======
-	myVtkViewer->setViewMode(myRotateModeButton->isChecked());
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 }
 
 void STACCATOMainWindow::myWarpVectorTriggered() {
@@ -1265,7 +1212,6 @@ void STACCATOMainWindow::myAutoScalingState() {
 }
 
 void STACCATOMainWindow::myScalingFactorState() {
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 	myVisualizerSetting->commitScalingFactor(QString(myScalingFactor->text()).toDouble());
 	myViewPropertyUpdate();
 }
@@ -1280,16 +1226,6 @@ void STACCATOMainWindow::mySignalDataVisualizerInterface() {
 		mySignalDataVisualizerActive = true;
 	}
 	mySignalDataVisualizer->show();
-=======
-	double factor = QString(myScalingFactor->text()).toDouble();
-	myVtkViewer->setScalingFactor(factor);
-	myScalingFactorValue = factor;
-	myViewPropertyUpdate();
-}
-
-void STACCATOMainWindow::my2dVisualizerInterface() {
-	myVtkViewer->my2dVisualizerInterface(*myHMesh);
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 }
 
 void STACCATOMainWindow::myUMATriggered() {
@@ -1372,29 +1308,6 @@ void STACCATOMainWindow::mySubFrameAnimate() {
 	}
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
-=======
-void STACCATOMainWindow::mySubFramePrevProc(void) {
-	if (mySubFrameIndex > 0) {
-		isSubFrame = true;
-		mySubFrameIndex--;
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myHorizontalSlider->setValue(mySubFrameIndex + 1);
-		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
-	}
-}
-
-void STACCATOMainWindow::mySubFrameNextProc(void) {
-	if (mySubFrameIndex < myHMesh->getResultsSubFrameDescription().size() - 1) {
-		isSubFrame = true;
-		mySubFrameIndex++;
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		myHorizontalSlider->setValue(mySubFrameIndex + 1);
-		myVtkViewer->plotVectorFieldAtIndex(mySubFrameIndex);
-	}
-}
-
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::myUpdateAnimationSlider(int _currentIndex) {
 	isSubFrame = true;
 	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().find(_currentIndex - 1);
@@ -1402,11 +1315,7 @@ void STACCATOMainWindow::myUpdateAnimationSlider(int _currentIndex) {
 	myFieldDataVisualizer->plotVectorFieldAtIndex(myCaseIndex->first);
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
-=======
-void STACCATOMainWindow::mySubFramePlayProv(void) {
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	anaysisTimer01.start();
 	std::cout << ">> Animation Data ... " << std::endl;
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -1433,104 +1342,7 @@ void STACCATOMainWindow::mySubFramePlayProv(void) {
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::myAnimationResetProc() {
-=======
-void STACCATOMainWindow::myAnimationDockTriggered() {
-	if (myAnimationDockButton->isChecked()) {
-		myAnimationDock = new QDockWidget(tr("Create Animation"), this);
-		myAnimationDock->setAllowedAreas(Qt::LeftDockWidgetArea);
-
-		myAnimationDataLabel = new QLabel(this);
-		myAnimationDataLabel->setText("<b>Select Data</b>");
-
-		myAnimateSolutionTypeLabel = new QLabel(tr("Component: "), this);
-
-		myAnimationSolutionSelector = new QComboBox();
-		myAnimationSolutionSelector->setStatusTip(tr("Select Vector Component"));
-		for (int i = 0; i < allDispVectorComponents.size() / 2; i++)
-			myAnimationSolutionSelector->addItem(QString::fromStdString(allDispVectorComponents[i]));
-
-		myScalingFactorLabel = new QLabel(tr("Scaling Factor"), this);
-
-		myAnimateScalingFactor = new QLineEdit(this);
-		myAnimateScalingFactor->setText("1");
-
-		myAnimationControlLabel = new QLabel(this);
-		myAnimationControlLabel->setText("<b>Animate Controls</b>");
-
-		myCreateFrameAnimationButton = new QPushButton(tr("Generate Frames"), this);
-		connect(myCreateFrameAnimationButton, SIGNAL(clicked()), this, SLOT(mySubFramePlayProv()));
-
-		myResetFrameAnimationButton = new QPushButton(tr("Reset Frames"), this);
-		connect(myResetFrameAnimationButton, SIGNAL(clicked()), this, SLOT(myAnimationResetProc()));
-
-		myAnimationDurationLabel = new QLabel(tr("Duration (sec)"), this);
-
-		myAnimationDuration = new QLineEdit(this);
-		myAnimationDuration->setText("5");
-
-		myAnimatePlayButton = new QPushButton(tr("Play"), this);
-		connect(myAnimatePlayButton, SIGNAL(clicked()), this, SLOT(myAnimationSceneProc()));
-		myAnimatePlayButton->setEnabled(false);
-
-		myAnimateStopButton = new QPushButton(tr("Stop"), this);
-		connect(myAnimateStopButton, SIGNAL(clicked()), myVtkViewer, SLOT(myAnimationSceneStopProc()));
-		myAnimateStopButton->setEnabled(false);
-
-		myAnimateRepeat = new QCheckBox(tr("Repeat"), this);
-		myAnimateRepeat->setChecked(true);
-		myAnimateRepeat->setEnabled(false);
-
-		myManualFrameControlLabel = new QLabel(this);
-		myManualFrameControlLabel->setText("<b>Frame Controls</b>");
-
-		mySubFrameText = new QLineEdit(tr("0 deg"), this);
-		mySubFrameText->setText(QString::fromStdString(std::to_string(myHMesh->getResultsSubFrameDescription()[mySubFrameIndex]) + " deg"));		// Update Slider
-		mySubFrameText->setFixedWidth(50);
-		mySubFrameText->setAlignment(Qt::AlignHCenter);
-		mySubFrameText->setReadOnly(true);
-		mySubFrameText->setEnabled(false);
-
-		myHorizontalSlider = new QSlider(Qt::Horizontal);
-		myHorizontalSlider->setEnabled(false);
-
-		myAnimatePrevFrameButton = new QPushButton(tr("Prev"), this);
-		connect(myAnimatePrevFrameButton, SIGNAL(clicked()), this, SLOT(mySubFramePrevProc()));
-		myAnimatePrevFrameButton->setEnabled(false);
-
-		myAnimateNextFrameButton = new QPushButton(tr("Next"), this);
-		connect(myAnimateNextFrameButton, SIGNAL(clicked()), this, SLOT(mySubFrameNextProc()));
-		myAnimateNextFrameButton->setEnabled(false);
-
-		QFormLayout *layout = new QFormLayout;
-		layout->addRow(myAnimationDataLabel);
-		layout->addRow(myAnimateSolutionTypeLabel, myAnimationSolutionSelector);
-		layout->addRow(myScalingFactorLabel, myAnimateScalingFactor);
-		layout->addRow(myAnimationControlLabel);
-		layout->addRow(myCreateFrameAnimationButton, myResetFrameAnimationButton);
-		layout->addRow(myAnimationDurationLabel, myAnimationDuration);
-		layout->addRow(myAnimatePlayButton, myAnimateStopButton);
-		layout->addRow(myAnimateRepeat);
-		layout->addRow(myManualFrameControlLabel);
-		layout->addRow(mySubFrameText, myHorizontalSlider);
-		layout->addRow(myAnimatePrevFrameButton, myAnimateNextFrameButton);
-		QWidget* temp = new QWidget(this);
-		temp->setLayout(layout);
-
-		myAnimationDock->setWidget(temp);
-		myAnimationDock->show();
-
-		addDockWidget(Qt::LeftDockWidgetArea, myAnimationDock);
-	}
-	else {
-		removeDockWidget(myAnimationDock);
-	}
-}
-
-void STACCATOMainWindow::myAnimationResetProc() {
-	mySubFrameText->setEnabled(false);
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	myHorizontalSlider->setEnabled(false);
 	myAnimatePlayButton->setEnabled(false);
 	myAnimateStopButton->setEnabled(false);
@@ -1544,12 +1356,8 @@ void STACCATOMainWindow::myAnimationResetProc() {
 	myVisualizerSetting->stopAnimation();
 }
 
-<<<<<<< HEAD:src/STACCATOMainWindow.cpp
 void STACCATOMainWindow::myAnimationScenePlayProc() {
 	myAnimatePlayButton->setEnabled(false);
-=======
-void STACCATOMainWindow::myAnimationSceneProc() {
->>>>>>> 451ab87a21159c2a853d79b192b5ca7d87c3191d:src/STACCATOMainWindow.cpp
 	int duration = std::stoi(myAnimationDuration->text().toStdString());
 	int repeat = (myAnimateRepeatButton->isChecked()) ? 1 : 0;
 

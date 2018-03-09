@@ -41,7 +41,7 @@
 #include "VisualizerSetting.h"
 
 //Enums
-#include "STACCATO_Visualizer_Enum.h"
+#include "STACCATO_Enum.h"
 
 // forward declaration
 class OccViewer;

@@ -463,15 +463,14 @@ void STACCATOMainWindow::createActions(void)
 }
 
 void STACCATOMainWindow::fillFEResultInGUI() {
-	std::cout << "Frequency Description\n";
+	myVisualizerSetting->setResultAvailable(true);
+
 	mySolutionSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
-	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldFromDatabase().size(); i++) {				// Adding Vector Field
-		std::cout << "Frequency Description " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[i].myLabel << std::endl;
+	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldFromDatabase().size(); i++) 				// Adding Vector Field
 		mySolutionSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[i].myLabel));
-	}
 	mySolutionSelector->setCurrentIndex(1);
 	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	std::cout << "Frequency Description\n";
+
 	myResultCaseSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
 	for (std::map<std::string, STACCATO_ResultsCase_type>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.end(); ++it) {
 		myResultCaseSelector->addItem(QString::fromStdString(it->first));
@@ -479,21 +478,21 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 	myResultCaseSelector->setCurrentIndex(1);
 	myResultCaseSelector->setFixedWidth(80);
 	connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
-	std::cout << "Frequency Description\n";
+
 	myComponentSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
 	for (std::map<std::string, STACCATO_VectorField_components>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.end(); ++it) {
 		myComponentSelector->addItem(QString::fromStdString(it->first));
 	}
 	myComponentSelector->setCurrentIndex(1);
 	connect(myComponentSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	std::cout << "Frequency Description\n";
+
 	myViewModeSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
 	for (std::map<std::string, STACCATO_FieldProperty_type>::iterator it = myVisualizerSetting->myViewModeLabelMap.begin(); it != myVisualizerSetting->myViewModeLabelMap.end(); ++it)
 		myViewModeSelector->addItem(QString::fromStdString(it->first));
 	myViewModeSelector->setFixedWidth(120);
 	myViewModeSelector->setCurrentIndex(1);
 	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-	std::cout << "Frequency Description\n";
+
 	// Setting Iterators
 	myFreqIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin();
 	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();

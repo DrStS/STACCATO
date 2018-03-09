@@ -22,9 +22,7 @@
 * This file holds the class AnimationCueObserver
 * \date 2/20/2018
 **************************************************************************************************/
-
-#ifndef ANIMATIONCUEOBSERVER_H_
-#define ANIMATIONCUEOBSERVER_H_
+#pragma once
 
 #include <vtkSmartPointer.h>
 #include <vtkAnimationCue.h>
@@ -89,5 +87,3 @@ protected:
 		this->RenWin = 0;
 	}
 };
-
-#endif /* ANIMATIONCUEOBSERVER_H_ */

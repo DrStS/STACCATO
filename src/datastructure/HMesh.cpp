@@ -25,19 +25,21 @@
 HMesh::HMesh(std::string _name) : name(_name) {
 	hasParts = false;
 	isSIM = false;
+
+	myOutputDatabase = new OutputDatabase();
 }
 
 HMesh::~HMesh() {
 }
 
-void HMesh::addNode(int _label, double _xCoord, double _yCoord, double _zCoord){
+void HMesh::addNode(int _label, double _xCoord, double _yCoord, double _zCoord) {
 	nodeLabels.push_back(_label);
 	nodeCoords.push_back(_xCoord);
 	nodeCoords.push_back(_yCoord);
 	nodeCoords.push_back(_zCoord);
 }
 
-void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology){
+void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int> _elementTopology) {
 	elementLabels.push_back(_label);
 	elementTyps.push_back(_type);
 	for (std::vector<int>::size_type i = 0; i != _elementTopology.size(); i++) {
@@ -45,7 +47,7 @@ void HMesh::addElement(int _label, STACCATO_Element_type _type, std::vector<int>
 	}
 }
 
-void HMesh::buildDataStructure(void){
+void HMesh::buildDataStructure(void) {
 	//Node loop	
 	for (std::vector<int>::size_type i = 0; i != nodeLabels.size(); i++) {
 		nodeLabelToNodeIndexMap[nodeLabels[i]] = i;
@@ -63,8 +65,8 @@ void HMesh::buildDataStructure(void){
 		elementLabelToElementIndexMap[elementLabels[i]] = i;
 
 		int numDoFsPerNodeCurrent;
-		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D){
-			numNodesPerElem[i]=4;
+		if (elementTyps[i] == STACCATO_PlainStrain4Node2D || elementTyps[i] == STACCATO_PlainStress4Node2D) {
+			numNodesPerElem[i] = 4;
 			//1. DoF -> u_x
 			//2. DoF -> u_y
 			numDoFsPerNodeCurrent = 2;
@@ -80,24 +82,24 @@ void HMesh::buildDataStructure(void){
 		}
 		else if (elementTyps[i] == STACCATO_UmaElement) {
 			numNodesPerElem[i] = 5;  // Take care of this
-			//1. DoF -> u_x
-			//2. DoF -> u_y
-			//3. DoF -> u_z
-			//4. DoF -> phi_x
-			//5. DoF -> phi_y
-			//6. DoF -> phi_z
+									 //1. DoF -> u_x
+									 //2. DoF -> u_y
+									 //3. DoF -> u_z
+									 //4. DoF -> phi_x
+									 //5. DoF -> phi_y
+									 //6. DoF -> phi_z
 			numDoFsPerNodeCurrent = 6;
 			domainDimension = 3;
 		}
 
-		for (int j = 0; j < numNodesPerElem[i]; j++){
+		for (int j = 0; j < numNodesPerElem[i]; j++) {
 			lastIndexInElementTopology++;
 			int nodeLabel = getElementTopology()[lastIndexInElementTopology];
 			int nodeIndex = convertNodeLabelToNodeIndex(nodeLabel);
 			nodeIndexToElementIndices[nodeIndex].push_back(i);
-			elementIndexToNodesIndices[i].push_back(nodeIndex);	
+			elementIndexToNodesIndices[i].push_back(nodeIndex);
 
-			if (numDoFsPerNodeCurrent > numDoFsPerNode[nodeIndex]){
+			if (numDoFsPerNodeCurrent > numDoFsPerNode[nodeIndex]) {
 				numDoFsPerNode[nodeIndex] = numDoFsPerNodeCurrent;
 			}
 		}
@@ -181,12 +183,12 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 		std::vector<int> affectedElements = getNodeIndexToElementIndices()[convertNodeLabelToNodeIndex(nodeSet[n])];
 		// Create a list of Dofs with -1 indicating Dirichlet enforced DoF
 		int totalDoFsPerElem = getNumDoFsPerNode(convertNodeLabelToNodeIndex(nodeSet[n]))*getNumNodesPerElement()[0];
-		for (int iIndex = 0; iIndex < affectedElements.size(); iIndex++) {
-			for (int jIndex = totalDoFsPerElem*affectedElements[iIndex]; jIndex < totalDoFsPerElem*affectedElements[iIndex] + totalDoFsPerElem; jIndex++)
+		for (int iMap = 0; iMap < affectedElements.size(); iMap++) {
+			for (int jMap = totalDoFsPerElem*affectedElements[iMap]; jMap < totalDoFsPerElem*affectedElements[iMap] + totalDoFsPerElem; jMap++)
 			{
 				for (int kMap = 0; kMap < indexAffected.size(); kMap++) {
-					if (indexAffected[kMap] == elementDoFList[jIndex]) {
-						elementDoFListRestricted[jIndex] = -1;
+					if (indexAffected[kMap] == elementDoFList[jMap]) {
+						elementDoFListRestricted[jMap] = -1;
 						flag = true;
 					}
 				}
@@ -194,7 +196,7 @@ void HMesh::killDirichletDOF(std::string _nodeSetName, std::vector<int> _restric
 			}
 		}
 	}
-	if(flag)
+	if (flag)
 		std::cout << ">> Dirichlet DoF killing performed on NODESET: " << _nodeSetName << std::endl;
 
 }
@@ -212,7 +214,7 @@ std::vector<int> HMesh::convertNodeSetNameToLabels(std::string _nodeSetName) {
 		return nodeSetsMap.find(_nodeSetName)->second;
 	}
 	else
-		return {};
+		return{};
 }
 
 std::vector<int> HMesh::convertElementSetNameToLabels(std::string _elemSetName) {

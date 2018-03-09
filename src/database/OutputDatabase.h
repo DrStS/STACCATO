@@ -22,8 +22,7 @@
 * This file holds the class of OutputDatabase.
 * \date 3/6/2018
 **************************************************************************************************/
-#ifndef _OUTPUTDATABASE_H_
-#define _OUTPUTDATABASE_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -69,6 +68,3 @@ private:
 
 	std::vector<std::string> myVectorFieldAnalysisDectription;
 };
-
-
-#endif // _OUTPUTDATABASE_H_

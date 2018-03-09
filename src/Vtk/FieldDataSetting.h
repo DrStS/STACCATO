@@ -22,8 +22,7 @@
 * This file holds the class of FieldDataSetting.
 * \date 3/2/2018
 **************************************************************************************************/
-#ifndef _FIELDDATASETTING_H_
-#define _FIELDDATASETTING_H_
+#pragma once
 
 class FieldDataSetting
 {
@@ -54,6 +53,3 @@ public:
 	// Enable/Disable Sruface
 	bool PROPERTY_SHOW_SURFACE;
 };
-
-
-#endif // _FIELDDATASETTING_H_

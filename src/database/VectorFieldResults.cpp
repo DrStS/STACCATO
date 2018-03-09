@@ -18,7 +18,6 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include <VectorFieldResults.h>
-#include "STACCATO_Enum.h"
 #include <iostream>
 
 VectorFieldResults::VectorFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType) : Results(_resultType, _analysisType) {
@@ -35,7 +34,6 @@ void VectorFieldResults::buildLabelMap() {
 		setResultsEvaluationType(STACCATO_Evaluation_Nodal);
 
 		myLabel = "U";
-		std::cout << ">> Displacement Recorded!";
 		myResultLabelMap[myLabel + "1"] = STACCATO_x_Re;
 		myResultLabelMap[myLabel + "2"] = STACCATO_y_Re;
 		myResultLabelMap[myLabel + "3"] = STACCATO_z_Re;

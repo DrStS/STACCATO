@@ -23,8 +23,7 @@
 * \date 2/2/2018
 **************************************************************************************************/
 
-#ifndef BOUNDARYCONDITION_H_
-#define BOUNDARYCONDITION_H_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -312,5 +311,3 @@ private:
 public:
 	STACCATO_ResultsCase_type myCaseType;
 };
-
-#endif /* BOUNDARYCONDITION_H_ */

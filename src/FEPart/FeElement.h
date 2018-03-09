@@ -22,9 +22,7 @@
  * This file holds the class FeElement; Base class for a Fe element
  * \date 8/28/2017
  **************************************************************************************************/
-
-#ifndef FEELEMENT_H_
-#define FEELEMENT_H_
+#pragma once
 
 #include <cstddef>
 #include <assert.h>
@@ -75,6 +73,3 @@ protected:
 	/// Material
 	Material * myMaterial;
 };
-
-
-#endif /* FEELEMENT_H_ */

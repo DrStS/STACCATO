@@ -162,7 +162,7 @@ void FieldDataVisualizer::mousePressEvent(QMouseEvent * 	_event) {
 	
 		// The button mappings can be used as a mask. This code prevents conflicts
 		// when more than one button pressed simultaneously.
-		if (_event->button() & Qt::LeftButton && !myRotateMode) {
+		if (_event->button() & Qt::LeftButton && !myRotateMode && myVisualizerSetting->PROPERTY_RESULTS_AVALABLE) {
 			// Some Picker VtkObjects
 			vtkSmartPointer<vtkDataSetMapper> selectedPickMapper = vtkDataSetMapper::New();
 

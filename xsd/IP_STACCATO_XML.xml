@@ -9,101 +9,166 @@
 			<TRANSLATETO Source="C3D10" Target="STACCATO_Tetrahedron10Node3D"/>
 		</IMPORT>
 		<IMPORT Type="Sets">
-				<NODE>
-					<TRANSLATETO Source="CLOAD" Target="REFNODE"/>
-					<TRANSLATETO Source="CLAMP" Target="BOUNDARY"/>
-					<TRANSLATETO Source="SLAVENODES" Target="SLAVENODES"/>
-				</NODE>
-				<ELEMENT>
-					<TRANSLATETO Source="allEle" Target="LOAD"/>
-				</ELEMENT>
+			<NODE>
+				<TRANSLATETO Source="CLOAD" Target="REFNODE"/>
+				<TRANSLATETO Source="CLAMP" Target="BOUNDARY"/>
+				<TRANSLATETO Source="SLAVENODES" Target="SLAVENODES"/>
+			</NODE>
+			<ELEMENT>
+				<TRANSLATETO Source="allEle" Target="LOAD"/>
+			</ELEMENT>
 		</IMPORT>
 	</FILEIMPORT>
 	<ANALYSIS>
-		<NAME>ForceCouplingFelgeStaticRotate</NAME>
-		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
-		<FREQUENCY Type="STEP">
-			<START_FREQ>250</START_FREQ>
-			<END_FREQ>250</END_FREQ>
-			<STEP_FREQ>750</STEP_FREQ>
-	  </FREQUENCY>
-	  <BCCASE Name="ALL-BCs">
-			<BC Name = "DisplacementBC"/>
-		</BCCASE>
-		<LOADCASES>
-			<LOADCASE Type="RotateGenerate" NamePrefix="LG-1"> 
-				<LOAD Name = "LOAD-1"/>
-				<START_THETA>0</START_THETA>
-				<END_THETA>360</END_THETA>
-				<STEP_THETA>20</STEP_THETA>
-			</LOADCASE>
-			<!--
-			<LOADCASE Type="LoadCase" Name="LC-2">
-				<LOAD Name = "LOAD-1"/>
-				<LOAD Name = "LOAD-2"/>
-			</LOADCASE>
-			<LOADCASE Type="LoadCase" Name="LC-2">
-				<LOAD Name = "LOAD-1"/>
-				<LOAD Name = "LOAD-2"/>
-			</LOADCASE>
-			-->
-		</LOADCASES>
-	</ANALYSIS>	
-	<MATERIALS>
+	<NAME>ForceCouplingFelgeStaticRotate</NAME>
+	<TYPE>STATIC</TYPE> 	<!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
+	<FREQUENCY Type="STEP">
+		<START_FREQ>250</START_FREQ>
+		<END_FREQ>500</END_FREQ>
+		<STEP_FREQ>250</STEP_FREQ>
+	</FREQUENCY>
+	<BCCASE Name="ALL-BCs">
+		<BC Name = "DisplacementBC"/>
+	</BCCASE>
+	<LOADCASES>
+		<LOADCASE Type="RotateGenerate" NamePrefix="LG-1">
+			<LOAD Name = "LOAD-1"/>
+			<START_THETA>0</START_THETA>
+			<END_THETA>360</END_THETA>
+			<STEP_THETA>20</STEP_THETA>
+		</LOADCASE>
+		<!--
+		<LOADCASE Type="LoadCase" Name="LC-2">
+		<LOAD Name = "LOAD-1"/>
+		<LOAD Name = "LOAD-2"/>
+		</LOADCASE>
+		<LOADCASE Type="LoadCase" Name="LC-2">
+		<LOAD Name = "LOAD-1"/>
+		<LOAD Name = "LOAD-2"/>
+		</LOADCASE>
+		-->
+	</LOADCASES>
+</ANALYSIS>
+<MATERIALS>
 		<MATERIAL Name="Steel" Type="Isotropic">
 			<E>211000</E>
 			<nu>0.3</nu>
 			<rho>7.85e-6</rho>
 			<eta>0.01</eta>
 		</MATERIAL>
-	</MATERIALS>
-	<SECTIONS>
-		<SECTION Name="Sec">
-			<ELEMENTSET>allElem</ELEMENTSET>
-			<MATERIAL>Steel</MATERIAL>
-		</SECTION>
-	</SECTIONS>
-	<NODES>
-		<NODE><ID>1</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>2</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>3</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>4</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>5</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>6</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>7</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>8</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>9</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-		<NODE><ID>10</ID><X>0.000</X><Y>0.000</Y><Z>0.000</Z></NODE>
-	</NODES>
-	<ELEMENTS>
-		<ELEMENT Type="FeTetrahedron10NodeElement"><ID>1</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
-		<ELEMENT Type="FeTetrahedron10NodeElement"><ID>2</ID><NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT></ELEMENT>
-	</ELEMENTS>
-	<SETS>
+</MATERIALS>
+<SECTIONS>
+	<SECTION Name="Sec">
+		<ELEMENTSET>allElem</ELEMENTSET>
+		<MATERIAL>Steel</MATERIAL>
+	</SECTION>
+</SECTIONS>
+<NODES>
+	<NODE>
+		<ID>1</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>2</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>3</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>4</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>5</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>6</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>7</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>8</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>9</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+	<NODE>
+		<ID>10</ID>
+		<X>0.000</X>
+		<Y>0.000</Y>
+		<Z>0.000</Z>
+	</NODE>
+</NODES>
+<ELEMENTS>
+	<ELEMENT Type="FeTetrahedron10NodeElement">
+		<ID>1</ID>
+		<NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT>
+	</ELEMENT>
+	<ELEMENT Type="FeTetrahedron10NodeElement">
+		<ID>2</ID>
+		<NODECONNECT>1 2 3 4 5 6 7 8 9 10</NODECONNECT>
+	</ELEMENT>
+</ELEMENTS>
+<SETS>
 		<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
 		<NODESET Name="clamp22"><LIST>3407</LIST></NODESET>
 	</SETS>
-	<LOADS>
+<LOADS>
 		<LOAD Type="DistributingCouplingForce" Name='LOAD-1'>
-			<REFERENCENODESET Name="REFNODE"/>
+		<REFERENCENODESET Name="REFNODE"/>
 			<REFERENCENODE><X>0.000</X><Y>500.000</Y><Z>0.000</Z></REFERENCENODE>
 			<COUPLINGNODESET Name="SLAVENODES"/>
 			<REAL><X>5000.000</X><Y>150.000</Y><Z>180.000</Z></REAL>
 			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-		</LOAD>
-		<LOAD Type="ConcentratedForce" Name='LOAD-2'>
-			<NODESET Name="clamp22"/>
-			<REAL><X>5000.000</X><Y>150.000</Y><Z>180.000</Z></REAL>
-			<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-		</LOAD>
+	</LOAD>
 	</LOADS>
-	<BC_DEF>
-		<DISPLACEMENT Name="DisplacementBC">
-			<NODESET Name="BOUNDARY"/><REAL><X>0.000</X><Y>0.000</Y><Z>0.000</Z></REAL><IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
-		</DISPLACEMENT>
-	</BC_DEF>
-	<COUPLE Type="NODE">
-		<Part Name="FelgeStaticODB"><NODESET Name="P1C"/></Part>
-		<Part Name="B31SIM"><NODESET Name="P2C"/></Part>
-	</COUPLE>
+<BC_DEF>
+	<DISPLACEMENT Name="DisplacementBC">
+		<NODESET Name="BOUNDARY"/>
+		<REAL>
+			<X>0.000</X>
+			<Y>0.000</Y>
+			<Z>0.000</Z>
+		</REAL>
+		<IMAGINARY>
+			<X>0.000</X>
+			<Y>0.000</Y>
+			<Z>0.000</Z>
+		</IMAGINARY>
+	</DISPLACEMENT>
+</BC_DEF>
+<COUPLE Type="NODE">
+	<Part Name="FelgeStaticODB">
+		<NODESET Name="P1C"/>
+	</Part>
+	<Part Name="B31SIM">
+		<NODESET Name="P2C"/>
+	</Part>
+</COUPLE>
 </STACCATO_XML>

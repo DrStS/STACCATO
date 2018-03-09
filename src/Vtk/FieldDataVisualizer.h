@@ -22,8 +22,7 @@
 * This file holds the class of FieldDataVisualizer.
 * \date 9/11/2017
 **************************************************************************************************/
-#ifndef _FIELDDATAVISUALIZER_H_
-#define _FIELDDATAVISUALIZER_H_
+#pragma once
 
 #include <STACCATO_Enum.h>
 #include "HMesh.h"
@@ -34,7 +33,7 @@
 #include <vtkAnimationScene.h>
 #include <DiscreteVisualizer.h>
 #include <HMeshToVtkUnstructuredGrid.h>
-#include "subject.h"
+#include "VisualizerSettingSubject.h"
 
 class QVTKOpenGLWidget;
 class vtkOrientationMarkerWidget;
@@ -52,7 +51,7 @@ class VtkAnimator;
 class VtkViewer;
 class VisualizerSetting;
 
-class FieldDataVisualizer : public QVTKOpenGLWidget, public DiscreteVisualizer, public Subject
+class FieldDataVisualizer : public QVTKOpenGLWidget, public DiscreteVisualizer, public VisualizerSettingSubject
 {
 	Q_OBJECT
 public:
@@ -222,5 +221,3 @@ public slots:
 };
 
 Q_DECLARE_METATYPE(FieldDataVisualizer*)
-
-#endif // _FIELDDATAVISUALIZER_H_

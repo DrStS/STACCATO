@@ -22,8 +22,7 @@
 * This file holds the class of VisualizerSetting.
 * \date 3/2/2018
 **************************************************************************************************/
-#ifndef _VISUALIZERSETTING_H_
-#define _VISUALIZERSETTING_H_
+#pragma once
 
 #include <FieldDataVisualizer.h>
 #include <FieldDataSetting.h>
@@ -32,7 +31,8 @@
 #include <SurfaceWithEdgesSetting.h>
 #include <WireframeSetting.h>
 
-#include <STACCATO_Visualizer_Enum.h>
+using namespace STACCATO_Visualizer;
+using namespace STACCATO_Results;
 
 class VisualizerSetting
 {
@@ -116,6 +116,11 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void stopAnimation();
+	/***********************************************************************************************
+	* \brief Stop Animation
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setResultAvailable(bool);
 
 private:
 	// FieldDataVisualizer
@@ -142,7 +147,6 @@ public:
 	int PROPERTY_ANIMATION_REPEAT;
 	// View Label to Enum Map
 	std::map<std::string, STACCATO_FieldProperty_type> myViewModeLabelMap;
+	// FeAnalysis performed
+	bool PROPERTY_RESULTS_AVALABLE;
 };
-
-
-#endif // _VISUALIZERSETTING_H_

@@ -31,6 +31,8 @@ VisualizerSetting::VisualizerSetting()
 	PROPERTY_ANIMATION_DURATION = 5;
 	PROPERTY_ANIMATION_REPEAT   = 1;
 
+	PROPERTY_RESULTS_AVALABLE = false;
+
 	myViewModeLabelMap["Surface"] = STACCATO_FieldProperty_Surface;
 	myViewModeLabelMap["Surface with Edges"] = STACCATO_FieldProperty_SurfaceWithEdges;
 	myViewModeLabelMap["Wireframe"] = STACCATO_FieldProperty_Wireframe;
@@ -118,3 +120,6 @@ void VisualizerSetting::visualizeAnimationFrames(int _duration, int _repeat) {
 	playAnimation();
 }
 
+void VisualizerSetting::setResultAvailable(bool _available) {
+	PROPERTY_RESULTS_AVALABLE = _available;
+}

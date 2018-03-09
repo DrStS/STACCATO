@@ -22,8 +22,7 @@
 * This file holds the class of WireFrameSetting.
 * \date 3/2/2018
 **************************************************************************************************/
-#ifndef _WIREFRAMESETTING_H_
-#define _WIREFRAMESETTING_H_
+#pragma once
 
 #include <FieldDataSetting.h>
 
@@ -41,6 +40,3 @@ public:
 	***********/
 	~WireFrameSetting();
 };
-
-
-#endif // _WIREFRAMESETTING_H_

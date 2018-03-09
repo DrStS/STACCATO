@@ -23,8 +23,7 @@
  * \date 8/28/2017
  **************************************************************************************************/
 
-#ifndef MATERIAL_H_
-#define MATERIAL_H_
+#pragma once
 
 #include <cstddef>
 #include <assert.h>
@@ -79,6 +78,3 @@ private:
 	double myDensity;
 	double myDampingParameter;
 };
-
-
-#endif /* MATERIAL_H_ */

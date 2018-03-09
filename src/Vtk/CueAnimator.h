@@ -22,9 +22,7 @@
 * This file holds the class CueAnimator
 * \date 2/20/2018
 **************************************************************************************************/
-
-#ifndef CUEANIMATOR_H_
-#define CUEANIMATOR_H_
+#pragma once
 
 #include <vtkSmartPointer.h>
 #include <vtkAnimationCue.h>
@@ -99,5 +97,3 @@ protected:
 	{
 	}
 };
-
-#endif /* CUEANIMATOR_H_ */

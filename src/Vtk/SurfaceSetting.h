@@ -22,8 +22,7 @@
 * This file holds the class of SurfaceSetting.
 * \date 3/2/2018
 **************************************************************************************************/
-#ifndef _SURFACESETTING_H_
-#define _SURFACESETTING_H_
+#pragma once
 
 #include <FieldDataSetting.h>
 
@@ -41,6 +40,3 @@ public:
 	***********/
 	~SurfaceSetting();
 };
-
-
-#endif // _SURFACESETTING_H_

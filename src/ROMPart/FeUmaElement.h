@@ -23,8 +23,7 @@
 * \date 1/31/2018
 **************************************************************************************************/
 
-#ifndef FEUMAELEMENT_H_
-#define FEUMAELEMENT_H_
+#pragma once
 
 #include <cstddef>
 #include <assert.h>
@@ -64,6 +63,3 @@ public:
 	***********/
 	const std::vector<double> & getMassMatrix(void) const { return myMe; }
 };
-
-
-#endif /* FEUMAELEMENT_H_ */

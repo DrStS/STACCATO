@@ -22,13 +22,15 @@
 * This file holds the class of Results.
 * \date 3/5/2018
 **************************************************************************************************/
-#ifndef _RESULTS_H_
-#define _RESULTS_H_
+#pragma once
 
 #include <string>
 #include <vector>
 #include <map>
-#include "STACCATO_Enum.h"
+
+#include <STACCATO_Enum.h>
+
+using namespace STACCATO_Results;
 
 class Results {
 public:
@@ -55,7 +57,7 @@ public:
 	* \param[out] myAnalsisType
 	* \author Harikrishnan Sreekumar
 	***********/
-	STACCATO_Analysis_type getResultsAnalysisType() { return myAnalsisType; }
+	STACCATO_Results::STACCATO_Analysis_type getResultsAnalysisType() { return myAnalsisType; }
 	/***********************************************************************************************
 	* \brief Set Type of Result
 	* \param[in] _resultType
@@ -126,6 +128,3 @@ public:
 	/// Result Case Label to Enum Map
 	std::map<std::string, STACCATO_ResultsCase_type> myResultCaseLabelMap;
 };
-
-
-#endif // _RESULTS_H_

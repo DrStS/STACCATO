@@ -22,9 +22,7 @@
  * This file holds the class of linear four node plane stress element
  * \date 8/28/2017
  **************************************************************************************************/
-
-#ifndef FEPLAINSTRESS4NODEELEMENT_H_
-#define FEPLAINSTRESS4NODEELEMENT_H_
+#pragma once
 
 #include <cstddef>
 #include <assert.h>
@@ -77,6 +75,3 @@ private:
 	***********/
 	void evalQuad4IsoPShapeFunDer(const double* _eleCoords, const double _xi, const double _eta, double *_N, double *_dNx, double *_dNy, double &_Jdet);
 };
-
-
-#endif /* FEPLAINSTRESS4NODEELEMENT_H_ */

@@ -22,9 +22,7 @@
  * This file holds the class of quadratic tetrahedron element
  * \date 8/28/2017
  **************************************************************************************************/
-
-#ifndef FETETRAHEDRON10NODEELEMENT_H_
-#define FETETRAHEDRON10NODEELEMENT_H_
+#pragma once
 
 #include <cstddef>
 #include <assert.h>
@@ -79,6 +77,3 @@ private:
 	***********/
 	void evalTet10IsoPShapeFunDer(const double* _eleCoords, const double _xi1, const double _xi2, const double _xi3, const double _xi4, double *_N, double *_dNx, double *_dNy, double *_dNz, double &_Jdet);
 };
-
-
-#endif /* FETETRAHEDRON10NODEELEMENT_H_ */

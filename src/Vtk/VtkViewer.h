@@ -22,9 +22,7 @@
 * This file holds the class VtkViewer
 * \date 2/19/2018
 **************************************************************************************************/
-
-#ifndef VTKVIEWER_H_
-#define VTKVIEWER_H_
+#pragma once
 
 #include "FieldDataVisualizer.h"
 
@@ -55,6 +53,3 @@ private:
 
 	
 };
-
-
-#endif /* VTKVIEWER_H_ */

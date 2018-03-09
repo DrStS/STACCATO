@@ -36,45 +36,54 @@ enum STACCATO_Element_type {
 	STACCATO_UmaElement
 };
 
-enum STACCATO_ScalarField_components {
-	STACCATO_Scalar_Re,
-	STACCATO_Scalar_Im
-};
-
-enum STACCATO_VectorField_components {
-	STACCATO_x_Re,
-	STACCATO_y_Re,
-	STACCATO_z_Re,
-	STACCATO_Magnitude_Re,
-	STACCATO_x_Im,
-	STACCATO_y_Im,
-	STACCATO_z_Im,
-	STACCATO_Magnitude_Im,
-};
-
-enum STACCATO_Results_type {
-	STACCATO_Result_Displacement
-};
-
-enum STACCATO_Analysis_type {
-	STACCATO_Analysis_Static,
-	STACCATO_Analysis_DynamicReal,
-	STACCATO_Analysis_Dynamic
-};
-
-enum STACCATO_ResultsCase_type {
-	STACCATO_Case_None,
-	STACCATO_Case_Load
-};
-
-enum STACCATO_ResultsEvaluation_type {
-	STACCATO_Evaluation_Nodal,
-	STACCATO_Evaluation_Elemental
-};
-
 enum STACCATO_Picker_type {
 	STACCATO_Picker_None,
 	STACCATO_Picker_Node,
 	STACCATO_Picker_Element
 };
 
+namespace STACCATO_Results {
+	enum STACCATO_ScalarField_components {
+		STACCATO_Scalar_Re,
+		STACCATO_Scalar_Im
+	};
+
+	enum STACCATO_VectorField_components {
+		STACCATO_x_Re,
+		STACCATO_y_Re,
+		STACCATO_z_Re,
+		STACCATO_Magnitude_Re,
+		STACCATO_x_Im,
+		STACCATO_y_Im,
+		STACCATO_z_Im,
+		STACCATO_Magnitude_Im,
+	};
+
+	enum STACCATO_Results_type {
+		STACCATO_Result_Displacement
+	};
+
+	enum STACCATO_Analysis_type {
+		STACCATO_Analysis_Static,
+		STACCATO_Analysis_DynamicReal,
+		STACCATO_Analysis_Dynamic
+	};
+
+	enum STACCATO_ResultsCase_type {
+		STACCATO_Case_None,
+		STACCATO_Case_Load
+	};
+
+	enum STACCATO_ResultsEvaluation_type {
+		STACCATO_Evaluation_Nodal,
+		STACCATO_Evaluation_Elemental
+	};
+}
+
+namespace STACCATO_Visualizer {
+	enum STACCATO_FieldProperty_type {
+		STACCATO_FieldProperty_Surface,
+		STACCATO_FieldProperty_SurfaceWithEdges,
+		STACCATO_FieldProperty_Wireframe
+	};
+}

@@ -22,10 +22,11 @@
 * This file holds the class of ScalarFieldResults.
 * \date 3/5/2018
 **************************************************************************************************/
-#ifndef _SCALARFIELDRESULTS_H_
-#define _SCALARFIELDRESULTS_H_
+#pragma once
 
 #include <Results.h>
+
+using namespace STACCATO_Results;
 
 class ScalarFieldResults: public Results
 {
@@ -56,5 +57,3 @@ private:
 	/// result Vector node index to result value
 	std::vector<std::vector<double>> resultsIm;
 };
-
-#endif // _SCALARFIELDRESULTS_H_

@@ -18,25 +18,31 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /*************************************************************************************************
-* \file SurfaceWithEdgesSetting.h
-* This file holds the class of SurfaceWithEdgesSetting.
-* \date 3/2/2018
+* \file SettingSubject.h
+* This file holds the class SettingSubject which form the Subject of Observer Pattern
+* \date 8/28/2017
 **************************************************************************************************/
 #pragma once
 
-#include <FieldDataSetting.h>
+#include "VisualizerSettingObserver.h"
+#include <vector>
 
-class SurfaceWithEdgesSetting : public FieldDataSetting
-{
+class VisualizerSettingSubject {
 public:
-	/***********************************************************************************************
-	* \brief Constructor
-	* \author Harikrishnan Sreekumar
-	***********/
-	SurfaceWithEdgesSetting();
-	/***********************************************************************************************
-	* \brief Destructor
-	* \author Harikrishnan Sreekumar
-	***********/
-	~SurfaceWithEdgesSetting();
+
+	virtual void attachObserver(VisualizerSettingObserver* observer) {
+		this->observers.push_back(observer);
+	}
+
+	virtual void notify() {
+		for (std::vector<VisualizerSettingObserver*>::iterator it = observers.begin();
+			it != observers.end();
+			++it) {
+			(*it)->update();
+		}
+	}
+
+	// attribute
+protected:
+	std::vector<VisualizerSettingObserver*> observers;
 };

@@ -212,10 +212,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 		anaysisTimer02.start();
 		// Prepare elementDof for Enforcing Dirichlet BC
-		for (int j = 0; j < iAnalysis->BCCASE().size(); j++) {
+		for (int jBC = 0; jBC < iAnalysis->BCCASE().size(); jBC++) {
 			for (int k = 0; k < MetaDatabase::getInstance()->xmlHandle->BC_DEF().size(); k++)
 			{
-				if (std::string(iAnalysis->BCCASE().at(j).BC().begin()->Name()->data()) == std::string(MetaDatabase::getInstance()->xmlHandle->BC_DEF().begin()->DISPLACEMENT().at(k).Name()->data())) {
+				if (std::string(iAnalysis->BCCASE().at(jBC).BC().begin()->Name()->data()) == std::string(MetaDatabase::getInstance()->xmlHandle->BC_DEF().begin()->DISPLACEMENT().at(k).Name()->data())) {
 					// Prepare restricted DOF vector
 					std::vector<int> restrictedDOF;
 					restrictedDOF.push_back(1);				// 1: FIXED
@@ -260,7 +260,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			for (int iElement = 0; iElement < numElements; iElement++)
 			{
 				int numDoFsPerElement = myHMesh->getNumDoFsPerElement()[iElement];
-				int*  eleDoFs = &myHMesh->getElementDoFList()[lastIndex];
+				int*  eleDoFs = &myHMesh->getElementDoFListRestricted()[lastIndex];
 				lastIndex += numDoFsPerElement;
 				double omega = 2 * M_PI*freq[iFreqCounter];
 				//Assembly routine symmetric stiffness
@@ -306,17 +306,17 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			BoundaryCondition<double> neumannBoundaryConditionReal(*myHMesh);
 			BoundaryCondition<STACCATOComplexDouble> neumannBoundaryConditionComplex(*myHMesh);
 
-			for (int l = 0; l < iAnalysis->LOADCASES().begin()->LOADCASE().size(); l++) {	
-				std::string loadCaseType = iAnalysis->LOADCASES().begin()->LOADCASE().at(l).Type()->data();
+			for (int iLoadCase = 0; iLoadCase < iAnalysis->LOADCASES().begin()->LOADCASE().size(); iLoadCase++) {	
+				std::string loadCaseType = iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).Type()->data();
 				if (loadCaseType == "ConcentratedLoadCase") {
 
-					for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().size(); m++)	
+					for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().size(); m++)	
 					{
 						// Search for Load Description
 						STACCATO_XML::LOADS_const_iterator iLoad(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 						for (int n = 0; n< iLoad->LOAD().size(); n++)	
 						{
-							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()));
+							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()));
 							{
 								// Get Load
 								std::vector<double> loadVector(6);
@@ -341,18 +341,17 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 				}
 				else if (loadCaseType == "RotateGenerate") {
-					for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().size(); m++)
+					for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().size(); m++)
 					{
 						// Search for Load Description
 						STACCATO_XML::LOADS_const_iterator iLoad(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 						for (int n = 0; n< iLoad->LOAD().size(); n++)
 						{
-							std::cout << "LoadCase Load: " << iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().at(m).Name()->data() << std::endl;
+							std::cout << "LoadCase Load: " << iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data() << std::endl;
 							std::cout << "Loads    Load: " << iLoad->LOAD().at(n).Name()->data() << std::endl;
 							std::cout << "Loads    Type: " << iLoad->LOAD().at(n).Type()->data() << std::endl;
-							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()) && std::string(iLoad->LOAD().at(n).Type()->data()) == "DistributingCouplingForce")
+							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()) && std::string(iLoad->LOAD().at(n).Type()->data()) == "DistributingCouplingForce")
 							{
-								std::cout << "Running... " << n << std::endl;
 								// Get Load
 								std::vector<double> loadVector(6);
 								loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
@@ -363,13 +362,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 								loadVector[5] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data());
 
 								// Routine to accomodate Step Distribution
-								double start_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).START_THETA()->c_str());
+								double start_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).START_THETA()->c_str());
 								neumannBoundaryConditionReal.addBCCaseDescription(start_theta);			// Push back starting angle
 								neumannBoundaryConditionComplex.addBCCaseDescription(start_theta);		// Push back starting angle
 
 																										// Step Distribute
-								double end_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).END_THETA()->c_str());
-								double step_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(l).STEP_THETA()->c_str());
+								double end_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).END_THETA()->c_str());
+								double step_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).STEP_THETA()->c_str());
 								double push_theta = start_theta + step_theta;
 
 								while (push_theta <= end_theta) {
@@ -422,6 +421,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}
 
 			}
+
 			for (int l = 0; l < size; l++) {
 				for (int m = 0; m < myHMesh->getRestrictedHomogeneousDoFList().size(); m++) {
 
@@ -461,13 +461,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				(*AReal).factorize(neumannBoundaryConditionReal.getNumberOfTotalCases());
 			}
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
-				(*AComplex).factorize(neumannBoundaryConditionReal.getNumberOfTotalCases());
+				(*AComplex).factorize(neumannBoundaryConditionComplex.getNumberOfTotalCases());
 			}
 			anaysisTimer01.stop();
 			infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 			anaysisTimer01.start();
-			if (neumannBoundaryConditionReal.getNumberOfTotalCases() == 1) {
+			if (size == 1) {
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					(*AReal).solveDirect(&solReal[0], &bReal[0]);
 				}
@@ -481,14 +481,14 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					solReal.resize(neumannBoundaryConditionReal.getNumberOfTotalCases()*totalDoF);
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					solComplex.resize(neumannBoundaryConditionReal.getNumberOfTotalCases()*totalDoF);
+					solComplex.resize(neumannBoundaryConditionComplex.getNumberOfTotalCases()*totalDoF);
 				}
-				std::cout << ">> Solving for all " << neumannBoundaryConditionReal.getNumberOfTotalCases() << " RHSs.\n";
+				std::cout << ">> Solving for all " << size << " RHSs.\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					(*AReal).solveDirect(&solReal[0], &bReal[0], neumannBoundaryConditionReal.getNumberOfTotalCases());
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).solveDirect(&solComplex[0], &bComplex[0], neumannBoundaryConditionReal.getNumberOfTotalCases());
+					(*AComplex).solveDirect(&solComplex[0], &bComplex[0], neumannBoundaryConditionComplex.getNumberOfTotalCases());
 				}
 			}
 
@@ -517,10 +517,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			}*/
 
 			anaysisTimer01.start();
-
 			static bool fillOnce = false;
-
-			for (int k = 0; k < neumannBoundaryConditionReal.getNumberOfTotalCases(); k++) {
+			for (int k = 0; k < size; k++) {
 				std::cout << ">> Storing for " << k << " RHSs.\n";
 				// Store results
 				for (int j = 0; j < numNodes; j++)

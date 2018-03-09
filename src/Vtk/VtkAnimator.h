@@ -22,9 +22,7 @@
 * This file holds the class VtkAnimator
 * \date 2/19/2018
 **************************************************************************************************/
-
-#ifndef VTKANIMATOR_H_
-#define VTKANIMATOR_H_
+#pragma once
 
 #include "FieldDataVisualizer.h"
 #include "HMesh.h"
@@ -114,5 +112,3 @@ private:
 	vtkSmartPointer<vtkWarpVector>* warpFilterArray;
 	vtkSmartPointer<vtkLookupTable>* hueLutArray;
 };
-
-#endif /* VTKANIMATOR_H_ */

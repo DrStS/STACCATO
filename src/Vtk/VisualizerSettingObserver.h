@@ -1,4 +1,4 @@
-/*  Copyright &copy; 2018, Stefan Sicklinger, Munich
+/*  Copyright &copy; 2017, Stefan Sicklinger, Munich
 *
 *  All rights reserved.
 *
@@ -17,18 +17,14 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-/***********************************************************************************************//**
- * \file STACCATO_Visualizer_Enum.h
- * This file holds all enumerations (specifying types) for the VisualizerSetting
- * \date 05/03/2018
- **************************************************************************************************/
-#ifndef STACCATO_VISUALIZER_ENUM_H_
-#define STACCATO_VISUALIZER_ENUM_H_
+/*************************************************************************************************
+* \file VisualizerSettingObserver.h
+* This file holds the class VisualizerSettingObserver which form the Observer of Observer Pattern
+* \date 8/28/2017
+**************************************************************************************************/
+#pragma once
 
-enum STACCATO_FieldProperty_type {
-	STACCATO_FieldProperty_Surface,
-	STACCATO_FieldProperty_SurfaceWithEdges,
-	STACCATO_FieldProperty_Wireframe
+class VisualizerSettingObserver {
+public:
+	virtual void update() = 0;
 };
-
-#endif /* STACCATO_VISUALIZER_ENUM_H_ */

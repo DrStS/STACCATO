@@ -22,14 +22,13 @@
 * This file holds the class of SignalDataVisualizer.
 * \date 2/20/2018
 **************************************************************************************************/
-#ifndef SIGNALDATAVISUALIZER_H
-#define SIGNALDATAVISUALIZER_H
+#pragma once
 
 #include "HMeshToVtkUnstructuredGrid.h"
 #include <STACCATO_Enum.h>
 #include <DiscreteVisualizer.h>
 #include "FieldDataVisualizer.h"
-#include "observer.h"
+#include "VisualizerSettingObserver.h"
 
 // QT5
 #include <QMainWindow>
@@ -74,7 +73,7 @@ namespace Ui {
 /********//**
 * \brief Class SignalDataVisualizer the core of the GUI
 ***********/
-class SignalDataVisualizer : public QMainWindow, public DiscreteVisualizer, public Observer {
+class SignalDataVisualizer : public QMainWindow, public DiscreteVisualizer, public VisualizerSettingObserver {
 	Q_OBJECT
 
 public:
@@ -262,5 +261,3 @@ private:
 
 	FieldDataVisualizer* myFieldDataVisualizerSubject;
 };
-
-#endif /* SIGNALDATAVISUALIZER_H */

@@ -22,9 +22,7 @@
 * This file holds the class DiscreteVisualizer; Base class for a Discrete Visualization
 * \date 2/19/2018
 **************************************************************************************************/
-
-#ifndef DISCRETEVISUALIZER_H_
-#define DISCRETEVISUALIZER_H_
+#pragma once
 
 #include "HMesh.h"
 
@@ -43,5 +41,3 @@ protected:
 	/// HMesh object 
 	HMesh *myHMesh;
 };
-
-#endif /* DISCRETEVISUALIZER_H_ */

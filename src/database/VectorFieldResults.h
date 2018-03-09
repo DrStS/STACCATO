@@ -22,10 +22,11 @@
 * This file holds the class of VectorFieldResults.
 * \date 3/5/2018
 **************************************************************************************************/
-#ifndef _VECTORFIELDRESULTS_H_
-#define _VECTORFIELDRESULTS_H_
+#pragma once
 
 #include <Results.h>
+
+using namespace STACCATO_Results;
 
 class VectorFieldResults : public Results
 {
@@ -68,5 +69,3 @@ public:
 	// Label to Component Enum Map
 	std::map< std::string, STACCATO_VectorField_components> myResultLabelMap;
 };
-
-#endif // _VECTORFIELDRESULTS_H_

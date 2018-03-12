@@ -53,6 +53,8 @@
 
 #include <VisualizerSetting.h>
 
+#include "Timer.h"
+
 VtkViewer::VtkViewer(FieldDataVisualizer& _fieldDataVisualizer): myFieldDataVisualizer(&_fieldDataVisualizer)
 {
 }
@@ -64,9 +66,10 @@ VtkViewer::~VtkViewer()
 void VtkViewer::plotVectorField() {
 	// Reset the Renderer
 	myFieldDataVisualizer->getRenderer()->RemoveAllViewProps();
-
+	
 	myFieldDataVisualizer->setActiveMapper(myFieldDataVisualizer->mySelectedMapper);
 	myFieldDataVisualizer->setActiveActor(myFieldDataVisualizer->mySelectedActor);
+
 	myFieldDataVisualizer->setActiveWarpFilter(myFieldDataVisualizer->warpFilter);
 	myFieldDataVisualizer->setActiveHueLut(myFieldDataVisualizer->hueLut);
 	myFieldDataVisualizer->setActiveScalarBarWidget();

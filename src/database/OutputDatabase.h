@@ -62,6 +62,12 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void addVectorFieldAnalysisDescription(std::string _resultsAnalyisDescription, STACCATO_Analysis_type _type);
+	/***********************************************************************************************
+	* \brief Get vector field analysis description
+	* \param[out] VectorFieldAnalysisDectription
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<std::string>& getVectorFieldAnalysisDectription() { return myVectorFieldAnalysisDectription; }
 private:
 	std::vector<ScalarFieldResults> myScalarFieldResults;
 	std::vector<VectorFieldResults> myVectorFieldResults;

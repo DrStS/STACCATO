@@ -87,6 +87,9 @@ protected:
 	void readIGES(QString);
 	void readSTL(QString);
 	void fillFEResultInGUI();
+	void createAnimationOptionsDock(void);
+	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
+	void addChildToTree(QTreeWidgetItem*, QString, bool);
 
 	private slots:
 	void about(void);
@@ -118,6 +121,7 @@ protected:
 	void myAnimationScenePlayProc(void);
 	void myAnimationSceneStopProc(void);
 	void myResultCaseChanged(void);
+	void myAnimationOptionsTriggered(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -161,6 +165,7 @@ private:
 	QMenu* myCreateMenu;
 	QMenu* mySelectionMenu;
 	QMenu* myImportMenu;
+	QMenu* myAnimateMenu;
 	QMenu* myLayoutMenu;
 	QMenu* myHelpMenu;
 	/// SubMenus
@@ -229,6 +234,7 @@ private:
 	QDockWidget *myWarpDock;
 	QDockWidget *myUMADock;
 	QDockWidget *myViewPropertyDock;
+	QDockWidget *myAnimationOptionsDock;
 
 	/// UMA Widgets
 	QPushButton* myUMAInterfaceButton;
@@ -260,6 +266,28 @@ private:
 	QLabel* myManualFrameControlLabel;
 	QLabel* myAnimationControlLabel;
 	QLabel* myAnimationDurationLabel;
+
+	/// Visualizer Info Dock Widgets
+	///Labels
+	QLabel* myAnimationLabel;
+	QLabel* myAnalysisSelectorLabel;
+	///Radio Buttons
+	QRadioButton* myHarmonicAnimationRadio;
+	QRadioButton* myCaseAnimationRadio;
+	QRadioButton* myFrequencyAnimationRadio;
+	QButtonGroup* myAnimationButtonGroup;
+	///ComboBox
+	QComboBox* myAnalysisSelector;
+	QComboBox* myResultsCaseSelector_dummy;
+	///Tree
+	QTreeWidget* myAnimationAnalysisTree;
+	///PushButtons
+	QPushButton* myAnimationOptionApplyButton;
+	QPushButton* myAnimationSetDefaultButton;
+	///Actions
+	QAction* myAnimationOptionsDockAction;
+	///CheckBox
+	QCheckBox* myAnimationOptionPreview;
 
 	std::map<int, std::string>::iterator myFreqIndex;
 	std::map<int, std::string>::iterator myCaseIndex;

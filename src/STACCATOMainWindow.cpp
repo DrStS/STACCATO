@@ -143,6 +143,7 @@ STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), m
 	createMenus();
 	createToolBars();
 	createDockWindows();
+	createAnimationOptionsDock();
 }
 
 STACCATOMainWindow::~STACCATOMainWindow()
@@ -282,7 +283,7 @@ void STACCATOMainWindow::createActions(void)
 	myPickModeButton->setStatusTip(tr("Picking Mode"));
 	myPickModeButton->setStatusTip(tr("Panning the view"));
 	myPickModeButton->setCheckable(true);
-	myPickModeButton->setChecked(true);
+	myPickModeButton->setChecked(false);
 	myPickModeButton->setFlat(true);
 	connect(myPickModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
@@ -292,6 +293,7 @@ void STACCATOMainWindow::createActions(void)
 	myRotateModeButton->setStatusTip(tr("Rotate the view"));
 	myRotateModeButton->setCheckable(true);
 	myRotateModeButton->setFlat(true);
+	myRotateModeButton->setChecked(true);
 	connect(myRotateModeButton, SIGNAL(clicked()), this, SLOT(myViewModeTriggered()));
 
 	myViewButtonGroup = new QButtonGroup(this);
@@ -391,6 +393,12 @@ void STACCATOMainWindow::createActions(void)
 	mySubFrameAnimateAction->setChecked(false);
 	connect(mySubFrameAnimateAction, SIGNAL(triggered()), this, SLOT(mySubFrameAnimate()));
 
+	// Animate Actions
+	myAnimationOptionsDockAction = new QAction(tr("Options"), this);
+	myAnimationOptionsDockAction->setStatusTip(tr("Animation Options"));
+	myAnimationOptionsDockAction->setCheckable(false);
+	connect(myAnimationOptionsDockAction, SIGNAL(triggered()), this, SLOT(myAnimationOptionsTriggered()));
+
 	// Layout Actions
 	myResetLayoutAction = new QAction(tr("Reset Layout"), this);
 	myResetLayoutAction->setStatusTip(tr("Reset Layout"));
@@ -459,7 +467,6 @@ void STACCATOMainWindow::createActions(void)
 	myResetFrameAnimationButton->setIcon(QIcon(":/Qt/resources/delete.ico"));
 	connect(myResetFrameAnimationButton, SIGNAL(triggered()), this, SLOT(myAnimationResetProc()));
 	myResetFrameAnimationButton->setEnabled(false);
-
 }
 
 void STACCATOMainWindow::fillFEResultInGUI() {
@@ -493,6 +500,14 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 	myViewModeSelector->setCurrentIndex(1);
 	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
 
+	// Fill Animation Options
+	// - Analysis
+	myAnalysisSelector->disconnect();
+	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldAnalysisDectription().size(); i++)	{
+		myAnalysisSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldAnalysisDectription()[i]));
+	}
+	myAnalysisSelector->setCurrentIndex(1);
+
 	// Setting Iterators
 	myFreqIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin();
 	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();
@@ -509,17 +524,19 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 }
 
 void STACCATOMainWindow::myViewPropertyUpdate(void) {
+	myAnimationResetProc();
+
 	myTimeStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[myFreqIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myTimeUnit));		// Update Slider
 	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myCaseUnit));		// Update Slider
-
-																																																												// Change in Properties
+																																																			// Change in Properties
 	myVisualizerSetting->commitCurrentFrame(myFreqIndex->first + myCaseIndex->first);
 	myVisualizerSetting->commitVectorFieldComponent(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap[myComponentSelector->currentText().toStdString()]);	// Result Component
 	myVisualizerSetting->commitViewSetting(myVisualizerSetting->myViewModeLabelMap[myViewModeSelector->currentText().toStdString()]);						// View Mode
 	myVisualizerSetting->setScalarbarTitle(myComponentSelector->currentText().toStdString());																// Scalarbar Title
 	myVisualizerSetting->commitScalarBar(myScalarBarVisibility->isChecked());																				// Scalarbar Visibility
 
-	myVisualizerSetting->updateSetting();																								// Visualize Frame
+	myVisualizerSetting->updateSetting();	// Visualize Frame
+
 }
 
 void STACCATOMainWindow::myTimeStepLessProc(void) {
@@ -571,6 +588,9 @@ void STACCATOMainWindow::createMenus(void)
 
 	myImportMenu = menuBar()->addMenu(tr("Import"));
 	myImportMenu->addAction(myUMAAction);
+
+	myAnimateMenu = menuBar()->addMenu(tr("Animate"));
+	myAnimateMenu->addAction(myAnimationOptionsDockAction);
 
 	myLayoutMenu = menuBar()->addMenu(tr("Layout"));
 	myLayoutMenu->addAction(myResetLayoutAction);
@@ -690,6 +710,82 @@ void STACCATOMainWindow::createDockWindows()
 	//infoOut << QThread::currentThread() << std::endl;
 }
 
+void STACCATOMainWindow::createAnimationOptionsDock() {
+	/// Visualizer Info Dock Widget
+	myAnalysisSelectorLabel = new QLabel(tr("Analysis:"));
+
+	myAnalysisSelector = new QComboBox();
+	myAnalysisSelector->addItem("Select..");
+	QStandardItemModel* model = qobject_cast<QStandardItemModel*>(myAnalysisSelector->model());
+	QStandardItem* item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+	myAnalysisSelector->setStatusTip(tr("Select Analysis"));
+	//connect(myAnalysisSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
+	myAnalysisSelector->setEnabled(true);
+
+	myAnimationAnalysisTree = new QTreeWidget;
+	myAnimationAnalysisTree->setColumnCount(3);
+	myAnimationAnalysisTree->header()->close();
+	myAnimationAnalysisTree->setContextMenuPolicy(Qt::CustomContextMenu);
+	myAnimationAnalysisTree->setMinimumHeight(100);
+
+	myAnimationLabel = new QLabel(tr("Animate:"), this);
+
+	myFrequencyAnimationRadio = new QRadioButton(tr("&Frequency"));
+	myFrequencyAnimationRadio->setChecked(true);
+	//connect(myFrequencyAnimationRadio, SIGNAL(clicked()), this, SLOT(updateAnalysisTree()));
+	myHarmonicAnimationRadio = new QRadioButton(tr("&Harmonic"));
+	myCaseAnimationRadio = new QRadioButton(tr("&Case(s): "));
+
+	myResultsCaseSelector_dummy = new QComboBox();
+	myResultsCaseSelector_dummy->addItem("Case..");
+	model = qobject_cast<QStandardItemModel*>(myResultsCaseSelector_dummy->model());
+	item = model->item(0);
+	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
+	myResultsCaseSelector_dummy->setStatusTip(tr("Select Case Type"));
+	//connect(myResultsCaseSelector_dummy, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
+	myResultsCaseSelector_dummy->setEnabled(true);
+
+	myAnimationButtonGroup = new QButtonGroup(this);
+	myAnimationButtonGroup->addButton(myFrequencyAnimationRadio);
+	myAnimationButtonGroup->addButton(myHarmonicAnimationRadio);
+	myAnimationButtonGroup->addButton(myCaseAnimationRadio);
+
+	myAnimationOptionPreview = new QCheckBox(tr("Preview"), this);
+	myAnimationOptionPreview->setChecked(false);
+
+	myAnimationOptionApplyButton = new QPushButton(tr("Apply"));
+	connect(myAnimationOptionApplyButton, SIGNAL(clicked()), this, SLOT(myGenerateAnimationFramesProc()));
+	myAnimationSetDefaultButton = new QPushButton(tr("Set Default"));
+
+	myAnimationOptionsDock = new QDockWidget(tr("Options"), this);
+	myAnimationOptionsDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::TopDockWidgetArea | Qt::BottomDockWidgetArea);
+
+	QGridLayout *layout = new QGridLayout;
+	layout->addWidget(myAnalysisSelectorLabel, 1, 0);
+	layout->addWidget(myAnalysisSelector, 1, 1, 1, -1);
+	layout->addWidget(myAnimationLabel, 2, 0);
+	layout->addWidget(myFrequencyAnimationRadio, 2, 1);
+	layout->addWidget(myCaseAnimationRadio, 3, 1);
+	layout->addWidget(myResultsCaseSelector_dummy, 3, 2, 1, -1);
+	layout->addWidget(myHarmonicAnimationRadio, 4, 1);
+	layout->addWidget(myAnimationAnalysisTree, 5, 0, 1, -1);
+	layout->addWidget(myAnimationOptionPreview, 6, 0);
+	layout->addWidget(myAnimationOptionApplyButton, 6, 1);
+	layout->addWidget(myAnimationSetDefaultButton, 6, 2);
+
+	QWidget* temp = new QWidget(this);
+	temp->setLayout(layout);
+
+	myAnimationOptionsDock->setWidget(temp);
+
+	addDockWidget(Qt::LeftDockWidgetArea, myAnimationOptionsDock);
+	myAnimationOptionsDock->setFloating(true);
+	myAnimationOptionsDock->hide();
+	//myAnimationOptionsDock->setFixedHeight(myAnimationOptionsDock->rect().height());
+
+	myAnimationOptionsDock->move(QApplication::desktop()->screen()->rect().center() - myAnimationOptionsDock->rect().center());
+}
 
 void STACCATOMainWindow::about() {
 	myOccViewer->showGrid(Standard_True);
@@ -1286,7 +1382,7 @@ void STACCATOMainWindow::myUMAHMesh() {
 	}
 	if (flagSIM) {
 		std::cout << ">> SIM Import from XML Detected.\n";
-		//myUMA->importToHMesh(*myHMesh);
+		//myUMA->importToHMesh(*myHMesh); 
 		//Run FE Analysis
 		myHMesh->isSIM = true;
 		FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
@@ -1351,19 +1447,18 @@ void STACCATOMainWindow::myAnimationResetProc() {
 	myAnimateRepeatButton->setEnabled(false);
 	myResetFrameAnimationButton->setEnabled(false);
 
-	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();
-	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first]));		// Update Slider
-	myHorizontalSlider->setValue(myCaseIndex->first + 1);
-	myViewPropertyUpdate();
+	myHorizontalSlider->setValue(1);
 	myVisualizerSetting->stopAnimation();
 }
 
 void STACCATOMainWindow::myAnimationScenePlayProc() {
 	myAnimatePlayButton->setEnabled(false);
+
 	int duration = std::stoi(myAnimationDuration->text().toStdString());
 	int repeat = (myAnimateRepeatButton->isChecked()) ? 1 : 0;
 
 	myVisualizerSetting->visualizeAnimationFrames(duration, repeat);
+	
 	myAnimatePlayButton->setEnabled(true);
 }
 
@@ -1372,4 +1467,30 @@ void STACCATOMainWindow::myAnimationSceneStopProc() {
 }
 
 void STACCATOMainWindow::myResultCaseChanged() {
+}
+
+void STACCATOMainWindow::myAnimationOptionsTriggered() {
+	myAnimationOptionsDock->show();
+}
+
+QTreeWidgetItem* STACCATOMainWindow::addRootToTree(QTreeWidget* _tree, QString _name, bool _checkable) {
+	QTreeWidgetItem* item = new QTreeWidgetItem(_tree);
+	item->setText(0, _name);
+	item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+	if (_checkable) {
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(0, Qt::Unchecked);
+	}
+	_tree->addTopLevelItem(item);
+	return item;
+}
+
+void STACCATOMainWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name, bool _checkable) {
+	QTreeWidgetItem* item = new QTreeWidgetItem();
+	item->setText(0, _name);
+	if (_checkable) {
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(0, Qt::Unchecked);
+	}
+	_parent->addChild(item);
 }

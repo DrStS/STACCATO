@@ -94,6 +94,11 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void clearAnimationScene();
+	/***********************************************************************************************
+	* \brief Animation Scene Status of Playing or Stopped
+	* \author Harikrishnan Sreekumar
+	***********/
+	bool isAnimationScenePlaying();
 
 private:
 	// Handle to Field Visualizer

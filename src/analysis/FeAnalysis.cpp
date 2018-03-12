@@ -350,6 +350,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 							std::cout << "LoadCase Load: " << iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data() << std::endl;
 							std::cout << "Loads    Load: " << iLoad->LOAD().at(n).Name()->data() << std::endl;
 							std::cout << "Loads    Type: " << iLoad->LOAD().at(n).Type()->data() << std::endl;
+
 							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()) && std::string(iLoad->LOAD().at(n).Type()->data()) == "DistributingCouplingForce")
 							{
 								// Get Load

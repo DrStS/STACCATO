@@ -18,6 +18,7 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include <VisualizerSetting.h>
+#include <Timer.h>
 
 VisualizerSetting::VisualizerSetting()
 {
@@ -77,6 +78,7 @@ void VisualizerSetting::commitVectorFieldComponent(STACCATO_VectorField_componen
 }
 
 void VisualizerSetting::updateSetting() {
+	stopAnimation();			// If animation is played
 	myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(PROPERTY_FIELD_TYPE, PROPERTY_FRAMEID);
 	myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(PROPERTY_FRAMEID);
 	myFieldDataVisualizer->plotVectorField();																	// Update Plot
@@ -117,7 +119,9 @@ void VisualizerSetting::visualizeAnimationFrames(int _duration, int _repeat) {
 	PROPERTY_ANIMATION_DURATION = _duration;
 	PROPERTY_ANIMATION_REPEAT = _repeat;
 
+	myFieldDataVisualizer->setViewMode(true);
 	playAnimation();
+	myFieldDataVisualizer->setViewMode(false);
 }
 
 void VisualizerSetting::setResultAvailable(bool _available) {

@@ -55,6 +55,8 @@
 
 #include <VisualizerSetting.h>
 
+#include <qprogressdialog.h>
+
 VtkAnimator::VtkAnimator(FieldDataVisualizer& _fieldDataVisualizer) : myFieldDataVisualizer(&_fieldDataVisualizer)
 {
 	int sizeOfArray = myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size();
@@ -86,10 +88,14 @@ VtkAnimator ::~VtkAnimator()
 
 void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type) {
 	std::cout << ">> Generating frames and Buffering...\n";
+	QProgressDialog animationProgessDialog("Generating Animation...", "Cancel", 0, myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
+	animationProgessDialog.setWindowModality(Qt::WindowModal);
+
 	clearAnimationScene();
 
 	for (int i = 0; i <  myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size(); i++)
 	{
+		animationProgessDialog.setValue(i);
 		int resultIndex = i*myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().size() + 0;
 
 		myFieldDataVisualizer->myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(_type, resultIndex));
@@ -104,8 +110,12 @@ void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type) {
 		myFieldDataVisualizer->setActiveEdgeActor(myArrayEdgeActor[i]);
 		
 		// Buffer
-		myFieldDataVisualizer->plotVectorFieldAtIndex(i);
+		plotVectorFieldAtIndex(resultIndex);
+
+		if (animationProgessDialog.wasCanceled())
+			break;
 	}
+	animationProgessDialog.setValue(myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
 }
 
 void VtkAnimator::plotVectorFieldAtIndex(int _index) {
@@ -183,4 +193,8 @@ void VtkAnimator::clearAnimationScene(){
 	myAnimationScene->RemoveAllCues();
 	myAnimationScene->RemoveAllObservers();
 	myAnimationCue->RemoveAllObservers();
+}
+
+bool VtkAnimator::isAnimationScenePlaying() {
+	return myAnimationScene->IsInPlay() == 1 ? true : false;
 }

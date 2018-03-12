@@ -301,6 +301,31 @@ public:
 		_target[_targetIndex].imag += _source.imag();
 	}
 
+	std::vector<double>& getRealPartOfVector(std::true_type, std::vector<T> &_vector) {
+		return _vector;
+	}
+
+	std::vector<double>& getRealPartOfVector(std::false_type, std::vector<T> &_vector) {
+		std::vector<double> realVector;
+		for (int i = 0; i < _vector.size(); i++)		{
+			realVector.push_back(_vector[i].real);
+		}
+		return realVector;
+	}
+
+	std::vector<double>& getImagPartOfVector(std::true_type, std::vector<T> &_vector) {
+		return std::vector<double>(_vector.size(), 0);			// Imaginary part of Double Template Routine is by principle zero
+	}
+
+	std::vector<double>& getImagPartOfVector(std::false_type, std::vector<T> &_vector) {
+		std::vector<double> imagVector;
+		for (int i = 0; i < _vector.size(); i++) {
+			imagVector.push_back(_vector[i].imag);
+		}
+		return imagVector;
+	}
+
+
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

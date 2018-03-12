@@ -102,6 +102,8 @@ FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(pare
 	isAnimationSceneInstantiated = false;
 
 	myVtkViewer = new VtkViewer(*this);
+
+	myRotateMode = true;
 }
 
 void FieldDataVisualizer::myHMeshToVtkUnstructuredGridInitializer(){
@@ -162,7 +164,7 @@ void FieldDataVisualizer::mousePressEvent(QMouseEvent * 	_event) {
 	
 		// The button mappings can be used as a mask. This code prevents conflicts
 		// when more than one button pressed simultaneously.
-		if (_event->button() & Qt::LeftButton && !myRotateMode && myVisualizerSetting->PROPERTY_RESULTS_AVALABLE) {
+		if (_event->button() & Qt::LeftButton && (!myRotateMode || myCurrentPickerType != STACCATO_Picker_None) && myVisualizerSetting->PROPERTY_RESULTS_AVALABLE) {
 			// Some Picker VtkObjects
 			vtkSmartPointer<vtkDataSetMapper> selectedPickMapper = vtkDataSetMapper::New();
 
@@ -285,6 +287,7 @@ void FieldDataVisualizer::mousePressEvent(QMouseEvent * 	_event) {
 
 			if (myVisualizerSetting->myFieldDataSetting->getEdgeProperty())
 				myRenderer->AddActor(myEdgeActor);
+			
 			myRenderer->GetRenderWindow()->Render();
 		}
 		else if (_event->button() & Qt::RightButton) {
@@ -338,7 +341,8 @@ void FieldDataVisualizer::myAnimationScenePlayProc(int _duration, int _loops) {
 }
 
 void FieldDataVisualizer::myAnimationSceneStopProc(){
-	myVtkAnimator->stopAnimationScene();
+	if(myVtkAnimator)
+		myVtkAnimator->stopAnimationScene();
 }
 
 void FieldDataVisualizer::setActiveMapper(vtkSmartPointer<vtkDataSetMapper>& _mapper) {

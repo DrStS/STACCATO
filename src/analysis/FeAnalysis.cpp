@@ -318,21 +318,24 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						{
 							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()));
 							{
-								// Get Load
-								std::vector<double> loadVector(6);
-								loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
-								loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
-								loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
-								loadVector[3] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data());
-								loadVector[4] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data());
-								loadVector[5] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data());
-
 								std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iLoad->LOAD()[n].NODESET().begin()->Name()->c_str()));
 
 								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+									// Get Load
+									std::vector<double> loadVector(3);
+									loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
+									loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
+									loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
+
 									neumannBoundaryConditionReal.addConcentratedForceContribution(nodeSet, loadVector, bReal);
 								}
 								else if (analysisType == "STEADYSTATE_DYNAMIC") {
+
+									// Get Load
+									std::vector<STACCATOComplexDouble> loadVector(3);
+									loadVector[0] = { std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data()) };
+									loadVector[1] = { std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data()) };
+									loadVector[2] = { std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data()) };
 
 									neumannBoundaryConditionComplex.addConcentratedForceContribution(nodeSet, loadVector, bComplex);
 								}
@@ -347,21 +350,12 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						STACCATO_XML::LOADS_const_iterator iLoad(MetaDatabase::getInstance()->xmlHandle->LOADS().begin());
 						for (int n = 0; n< iLoad->LOAD().size(); n++)
 						{
-							std::cout << "LoadCase Load: " << iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data() << std::endl;
+							/*std::cout << "LoadCase Load: " << iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data() << std::endl;
 							std::cout << "Loads    Load: " << iLoad->LOAD().at(n).Name()->data() << std::endl;
-							std::cout << "Loads    Type: " << iLoad->LOAD().at(n).Type()->data() << std::endl;
+							std::cout << "Loads    Type: " << iLoad->LOAD().at(n).Type()->data() << std::endl;*/
 
 							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iLoad->LOAD().at(n).Name()->data()) && std::string(iLoad->LOAD().at(n).Type()->data()) == "DistributingCouplingForce")
 							{
-								// Get Load
-								std::vector<double> loadVector(6);
-								loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
-								loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
-								loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
-								loadVector[3] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data());
-								loadVector[4] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data());
-								loadVector[5] = std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data());
-
 								// Routine to accomodate Step Distribution
 								double start_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).START_THETA()->c_str());
 								neumannBoundaryConditionReal.addBCCaseDescription(start_theta);			// Push back starting angle
@@ -383,10 +377,20 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 
+									// Get Load
+									std::vector<double> loadVector(3);
+									loadVector[0] = std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data());
+									loadVector[1] = std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data());
+									loadVector[2] = std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data());
 									neumannBoundaryConditionReal.addRotatingForceContribution(refNode, couplingNodes, loadVector, bReal);
 								}
 								else if (analysisType == "STEADYSTATE_DYNAMIC") {
 
+									// Get Load
+									std::vector<STACCATOComplexDouble> loadVector(3);
+									loadVector[0] = { std::atof(iLoad->LOAD()[n].REAL().begin()->X()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->X()->data()) };
+									loadVector[1] = { std::atof(iLoad->LOAD()[n].REAL().begin()->Y()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Y()->data()) };
+									loadVector[2] = { std::atof(iLoad->LOAD()[n].REAL().begin()->Z()->data()), std::atof(iLoad->LOAD()[n].IMAGINARY().begin()->Z()->data()) };
 									neumannBoundaryConditionComplex.addRotatingForceContribution(refNode, couplingNodes, loadVector, bComplex);
 								}
 							}
@@ -519,8 +523,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 			anaysisTimer01.start();
 			static bool fillOnce = false;
+			std::cout << ">> Storing for " << size << " RHSs.\n";
 			for (int k = 0; k < size; k++) {
-				std::cout << ">> Storing for " << k << " RHSs.\n";
 				// Store results
 				for (int j = 0; j < numNodes; j++)
 				{
@@ -566,9 +570,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 
 				}
-
-
-				std::cout << ">> Adding.\n";
 				// Store results to database
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Re, resultUxRe);
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_y_Re, resultUyRe);
@@ -626,9 +627,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		// Add Result to OutputDataBase
 		myHMesh->myOutputDatabase->addVectorFieldToDatabase(displacementVector);
 		myHMesh->myOutputDatabase->addVectorFieldAnalysisDescription(std::string(iAnalysis->NAME()->c_str()), displacementVector->getResultsAnalysisType());
-
+		std::cout << "==== Anaylsis Completed: " << iAnalysis->NAME()->data() << " ====" << std::endl;
 	}
-
+	std::cout << ">> All Analysis Completed." << std::endl;
 }
 
 FeAnalysis::~FeAnalysis() {

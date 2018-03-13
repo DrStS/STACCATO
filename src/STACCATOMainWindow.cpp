@@ -514,12 +514,12 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 
 	std::cout << "Frequency Description\n";
 	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end(); ++it) {
-		std::cout << "@ Index " << it->first << " Description: " << it->second << std::endl;
+		printf(" - @ Index %02i Description %s\n", it->first, it->second);
 	}
 
 	std::cout << "Case Description\n";
 	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().end(); ++it) {
-		std::cout << "@ Index " << it->first << " Description: " << it->second << std::endl;
+		printf(" - @ Index %02i Description %s\n", it->first, it->second);
 	}
 }
 

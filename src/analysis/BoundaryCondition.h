@@ -30,8 +30,6 @@
 #include <assert.h>
 #include "MathLibrary.h"
 #include <HMesh.h>
-#include <complex>
-using namespace std::complex_literals;
 
 #include <iostream>
 #include "Timer.h"
@@ -67,7 +65,7 @@ public:
 	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
 	* \author Stefan Sicklinger
 	***********/
-	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<std::complex<double>> &_loadVector, std::vector<T> &_rhs) {
+	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
 		myCaseType = STACCATO_Case_Load;
 
 		int numCouplingNodes = _couplingNodes.size();
@@ -75,27 +73,21 @@ public:
 		double xMean[] = { 0, 0, 0 };
 
 		std::string analysisType = MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin()->TYPE()->data();
+		
+		// Seperation for Real and Imaginary Calculation
+		double* loadVectorReal = getRealPartOfVector(std::is_floating_point<T>{}, _loadVector);
+		double* loadVectorImag = getImagPartOfVector(std::is_floating_point<T>{}, _loadVector);
 
 		std::vector<double> forceVector;
 		std::vector<double> forceVectorIm;
 		std::vector<double> momentVector;
 		std::vector<double> momentVectorIm;
 
-		//real branch
-		if (std::is_same<T, double>::value) {
-			for (int i = 0; i < 3; i++) {
-				forceVector.push_back(_loadVector[i].real());
-				momentVector.push_back(_loadVector[i + 3].real());
-			}
-		}
-		//complex branch
-		if (std::is_same<T, STACCATOComplexDouble>::value) {
-			for (int i = 0; i < 3; i++) {
-				forceVector.push_back(_loadVector[i].real());
-				momentVector.push_back(_loadVector[i + 3].real());
-				forceVectorIm.push_back(_loadVector[i].imag());
-				momentVectorIm.push_back(_loadVector[i + 3].imag());
-			}
+		for (int i = 0; i < 3; i++) {
+			forceVector.push_back(loadVectorReal[i]);
+			momentVector.push_back(loadVectorReal[i + 3]);
+			forceVectorIm.push_back(loadVectorImag[i]);
+			momentVectorIm.push_back(loadVectorImag[i + 3]);
 		}
 
 		std::vector<double> referencePositionVector(3);
@@ -115,8 +107,10 @@ public:
 
 		std::vector<double> r(numCouplingNodes * 3, 0);
 		std::vector<double> TVector(9, 0);
+
 		RForces.clear();
-		RForces.resize(numCouplingNodes * 3, 0);
+
+		RForces.resize(numCouplingNodes * 3);
 
 		// xMean Calculation
 		for (int i = 0; i < numCouplingNodes; i++) {
@@ -167,14 +161,14 @@ public:
 			std::vector<double> rCurrent = { r[i * 3 + 0] , r[i * 3 + 1],r[i * 3 + 2] };
 			std::vector<double> temp2 = MathLibrary::computeVectorCrossProduct(temp, rCurrent);
 			std::vector<double> temp2Im;
-			if (analysisType == "STEADYSTATE_DYNAMIC") {
+			if (std::is_same<T, STACCATOComplexDouble>::value) {
 				temp2Im = MathLibrary::computeVectorCrossProduct(tempIm, rCurrent);
 			}
 			for (int j = 0; j < 3; j++) {
-				RForces[i * 3 + j].real(weightingFactor*(forceVector[j] + temp2[j]));
-				if (analysisType == "STEADYSTATE_DYNAMIC") {
-					RForces[i * 3 + j].imag(weightingFactor*(forceVectorIm[j] + temp2Im[j]));
-				}
+				if (std::is_same<T, STACCATOComplexDouble>::value)
+					assignScalarWithTemplate(std::is_floating_point<T>{}, RForces[i * 3 + j], weightingFactor*(forceVector[j] + temp2[j]), weightingFactor*(forceVectorIm[j] + temp2Im[j]));
+				else
+					assignScalarWithTemplate(std::is_floating_point<T>{}, RForces[i * 3 + j], weightingFactor*(forceVector[j] + temp2[j]), 0);
 			}
 		}
 	}
@@ -184,12 +178,7 @@ public:
 	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
 	* \author Stefan Sicklinger
 	***********/
-	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<double> &_loadVector, std::vector<T> &_rhs) {
-		std::vector<std::complex<double>> loadVector(3);
-		loadVector[0] = { _loadVector[0], _loadVector[3] };
-		loadVector[1] = { _loadVector[1], _loadVector[4] };
-		loadVector[2] = { _loadVector[2], _loadVector[5] };
-
+	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
 		bool flagLabel = true;
 		for (int m = 0; m < _nodeList.size(); m++) {
 			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(_nodeList[m]));
@@ -198,7 +187,7 @@ public:
 					flagLabel = false;
 					int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(_nodeList[m])][l];
 
-					storeConcentratedLoadRHS(std::is_floating_point<T>{}, dofIndex, loadVector[l], _rhs);
+					storeConcentratedLoadRHS(std::is_floating_point<T>{}, dofIndex, _loadVector[l], _rhs);
 				}
 			}
 		}
@@ -211,7 +200,7 @@ public:
 	* \param[in,out] handle to rhs: rhs beeing a vector of type T and length totalNumDofs times numRhs
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addRotatingForceContribution(std::vector<int> &_refNode, std::vector<int> &_couplingNodes, std::vector<double> &_loadVector, std::vector<T> &_rhs) {
+	void addRotatingForceContribution(std::vector<int> &_refNode, std::vector<int> &_couplingNodes, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
 		myCaseType = STACCATO_Case_Load;
 
 		std::cout << ">> Looking for Rotating Distributed Coupling ...\n";
@@ -222,21 +211,23 @@ public:
 
 		int i = 0;
 		do {
-			std::cout << ">> Computing for theta = " << getBCCaseDescription()[i] << " ...\n";
-			double loadRe[] = { _loadVector[0] , _loadVector[1] , _loadVector[2] };
-			double loadIm[] = { _loadVector[3] , _loadVector[4] , _loadVector[5] };
-			double loadMagnitudeRe = MathLibrary::computeDenseEuclideanNorm(loadRe, 3);
-			double loadMagnitudeIm = MathLibrary::computeDenseEuclideanNorm(loadIm, 3);
+			printf(">> Computing for theta = %03.0f ...", getBCCaseDescription()[i]);
+			
+			double* loadVectorReal = getRealPartOfVector(std::is_floating_point<T>{}, _loadVector);
+			double* loadVectorImag = getImagPartOfVector(std::is_floating_point<T>{}, _loadVector);
 
-			std::vector<std::complex<double>> loadVector(6);
-			loadVector[0] = { sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm };
-			loadVector[1] = { _loadVector[1], _loadVector[4] };
-			loadVector[2] = { cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm };
-			loadVector[3] = 0;
-			loadVector[4] = 0;
-			loadVector[5] = 0;
+			double loadMagnitudeRe = MathLibrary::computeDenseEuclideanNorm(loadVectorReal, 3);
+			double loadMagnitudeIm = MathLibrary::computeDenseEuclideanNorm(loadVectorImag, 3);
 
-			std::cout << ">> Load at theta " << getBCCaseDescription()[i] << " is " << loadVector[0] << " : " << loadVector[1] << " : " << loadVector[2] << std::endl;
+			std::vector<T> loadVector(6);
+			// Force Components
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[0], sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, sin(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm);
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[1], loadVectorReal[1], loadVectorImag[1]);
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[2], cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeRe, cos(getBCCaseDescription()[i] * M_PI / 180)*loadMagnitudeIm);
+			// Moment Components
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[3], 0, 0);
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[4], 0, 0);
+			assignScalarWithTemplate(std::is_floating_point<T>{}, loadVector[5], 0, 0);
 
 			if (_refNode.size() == 1 && _couplingNodes.size() != 0)
 				computeDistributingCouplingLoad(_refNode, _couplingNodes, loadVector, _rhs);
@@ -258,7 +249,7 @@ public:
 			}
 
 			if (flagLabel)
-				std::cout << ">> Building RHS with DistributedCouplingForce Finished." << std::endl;
+				std::cout << " Finished."<< std::endl;
 			else
 				std::cerr << ">> Error in building RHS with DistributedCouplingForce." << std::endl;
 			i++;
@@ -292,37 +283,55 @@ public:
 		}
 	}
 
-	void storeConcentratedLoadRHS(std::true_type, int _targetIndex, std::complex<double> _source, std::vector<T> &_target) {
-		_target[_targetIndex] += _source.real();
+	void storeConcentratedLoadRHS(std::true_type, int _targetIndex, T _source, std::vector<T> &_target) {
+		_target[_targetIndex] += _source;
 	}
 
-	void storeConcentratedLoadRHS(std::false_type, int _targetIndex, std::complex<double> _source, std::vector<T> &_target) {
-		_target[_targetIndex].real += _source.real();
-		_target[_targetIndex].imag += _source.imag();
+	void storeConcentratedLoadRHS(std::false_type, int _targetIndex, T _source, std::vector<T> &_target) {
+		_target[_targetIndex].real += _source.real;
+		_target[_targetIndex].imag += _source.imag;
 	}
 
-	std::vector<double>& getRealPartOfVector(std::true_type, std::vector<T> &_vector) {
-		return _vector;
-	}
-
-	std::vector<double>& getRealPartOfVector(std::false_type, std::vector<T> &_vector) {
-		std::vector<double> realVector;
-		for (int i = 0; i < _vector.size(); i++)		{
-			realVector.push_back(_vector[i].real);
+	double* getRealPartOfVector(std::true_type, std::vector<T> &_vector) {
+		double* realVector = new double[_vector.size()];
+		for (int i = 0; i < _vector.size(); i++) {
+			realVector[i] = _vector[i];
 		}
 		return realVector;
 	}
 
-	std::vector<double>& getImagPartOfVector(std::true_type, std::vector<T> &_vector) {
-		return std::vector<double>(_vector.size(), 0);			// Imaginary part of Double Template Routine is by principle zero
+	double* getRealPartOfVector(std::false_type, std::vector<T> &_vector) {
+		double* realVector = new double[_vector.size()];
+		for (int i = 0; i < _vector.size(); i++)		{
+			realVector[i] = _vector[i].real;
+		}
+		return realVector;
 	}
 
-	std::vector<double>& getImagPartOfVector(std::false_type, std::vector<T> &_vector) {
-		std::vector<double> imagVector;
+	double* getImagPartOfVector(std::true_type, std::vector<T> &_vector) {
+		double* imagVector = new double[_vector.size()];
 		for (int i = 0; i < _vector.size(); i++) {
-			imagVector.push_back(_vector[i].imag);
+			// Imaginary part of Double Template Routine is by principle zero
+			imagVector[i] = 0.0;			
+		}
+		return imagVector;			
+	}
+
+	double* getImagPartOfVector(std::false_type, std::vector<T> &_vector) {
+		double* imagVector = new double[_vector.size()];
+		for (int i = 0; i < _vector.size(); i++) {
+			imagVector[i] = _vector[i].imag;
 		}
 		return imagVector;
+	}
+
+	void assignScalarWithTemplate(std::true_type, T& _scalar, double _real, double _imag) {
+		_scalar += _real;
+	}
+
+	void assignScalarWithTemplate(std::false_type, T& _scalar, double _real, double _imag) {
+		_scalar.real += _real;
+		_scalar.imag += _imag;
 	}
 
 
@@ -332,7 +341,7 @@ private:
 	/// BC vector case description
 	std::vector<double> boundaryCaseDescription;
 	/// Computing Force Vector
-	std::vector<std::complex<double>> RForces;
+	std::vector<T> RForces;
 public:
 	STACCATO_ResultsCase_type myCaseType;
 };

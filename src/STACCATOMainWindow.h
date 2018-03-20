@@ -25,6 +25,7 @@
 #pragma once
 
 #include "HMeshToVtkUnstructuredGrid.h"
+#include "FeAnalysis.h"
 
 // QT5
 #include <QMainWindow>
@@ -89,7 +90,7 @@ protected:
 	void fillFEResultInGUI();
 	void createAnimationOptionsDock(void);
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
-	void addChildToTree(QTreeWidgetItem*, QString, bool);
+	void addChildToTree(QTreeWidgetItem*, QString , QString , bool);
 
 	private slots:
 	void about(void);
@@ -122,6 +123,9 @@ protected:
 	void myAnimationSceneStopProc(void);
 	void myResultCaseChanged(void);
 	void myAnimationOptionsTriggered(void);
+	void myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item);
+	void myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item);
+	void myAnalysisTreeUpdate(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -131,6 +135,10 @@ private:
 	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
 
 	Ui::STACCATOMainWindow *myGui;
+	
+	// Analysis
+	std::vector<FeAnalysis*> myAnalysis;
+
 	/// File action.
 	QAction* myExitAction;
 	QAction* myReadFileAction;
@@ -251,6 +259,7 @@ private:
 
 	/// Sub Frame Animator Widgets
 	QAction* myAnimationButton;
+	QAction* myAnimationOptions;
 	QAction* mySubFrameAnimateAction;
 	QAction* myCreateFrameAnimationButton;
 	QAction* myResetFrameAnimationButton;
@@ -270,6 +279,8 @@ private:
 	/// Visualizer Info Dock Widgets
 	///Labels
 	QLabel* myAnimationLabel;
+	QLabel* myAnimationAnalysisTreeLabel;
+	QLabel* myAnimationCaseTreeLabel;
 	QLabel* myAnalysisSelectorLabel;
 	///Radio Buttons
 	QRadioButton* myHarmonicAnimationRadio;
@@ -278,19 +289,18 @@ private:
 	QButtonGroup* myAnimationButtonGroup;
 	///ComboBox
 	QComboBox* myAnalysisSelector;
-	QComboBox* myResultsCaseSelector_dummy;
+	QComboBox* myAnimationOptionResultsCaseSelector;
 	///Tree
 	QTreeWidget* myAnimationAnalysisTree;
+	QTreeWidget* myAnimationCaseTree;
 	///PushButtons
 	QPushButton* myAnimationOptionApplyButton;
 	QPushButton* myAnimationSetDefaultButton;
-	///Actions
-	QAction* myAnimationOptionsDockAction;
 	///CheckBox
 	QCheckBox* myAnimationOptionPreview;
 
-	std::map<int, std::string>::iterator myFreqIndex;
-	std::map<int, std::string>::iterator myCaseIndex;
+	int myFreqIndex;
+	int myCaseIndex;
 
 private:
 	/// HMesh object 

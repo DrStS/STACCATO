@@ -94,7 +94,6 @@ HMeshToVtkUnstructuredGrid::HMeshToVtkUnstructuredGrid(HMesh& _HMesh)
 }
 
 void HMeshToVtkUnstructuredGrid::setScalarFieldAtNodes(std::vector<double> _scalarField) {
-
 	int numPts = myVtkUnstructuredGrid->GetPoints()->GetNumberOfPoints();
 	vtkSmartPointer<vtkFloatArray> scalarField = vtkSmartPointer<vtkFloatArray>::New();
 	scalarField->SetNumberOfValues(numPts);

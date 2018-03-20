@@ -35,7 +35,7 @@
 
 //#define DEBUG
 
-SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh) : myHMesh(&_hMesh) {
+SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHMesh(&_hMesh) {
 	myFileName = _fileName;
 	std::cout << ">> SIM Reader initialized for file " << myFileName << std::endl;
 	numNodes = 0;

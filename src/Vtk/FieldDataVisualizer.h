@@ -109,6 +109,11 @@ public:
 	***********/
 	void myHMeshToVtkUnstructuredGridSetScalar(STACCATO_VectorField_components _type, int _index);
 	/***********************************************************************************************
+	* \brief Set Scaled Scalar Field for HMeshToVtkUnstructuredGrid
+	* \author Harikrishnan Sreekumar
+	***********/
+	void myHMeshToVtkUnstructuredGridSetScaledScalar(STACCATO_VectorField_components _type, int _index);
+	/***********************************************************************************************
 	* \brief Set Vector Field for HMeshToVtkUnstructuredGrid
 	* \author Harikrishnan Sreekumar
 	***********/
@@ -208,13 +213,16 @@ public:
 	std::vector<int> mySelectedNodes;
 	std::vector<int> mySelectedElements;
 
+	double myHarmonicScale;
+
 public slots:
 	//! Zoom to the extent of the data set in the scene
 	void zoomToExtent();
 	void setPickerModeNone() { setPickerMode(STACCATO_Picker_None); }
 	void setPickerModeNode() { setPickerMode(STACCATO_Picker_Node); }
 	void setPickerModeElement() { setPickerMode(STACCATO_Picker_Element); }
-	void animate(STACCATO_VectorField_components _type);
+	void animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices);
+	void animateHarmonics(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices);
 	void plotVectorFieldAtIndex(int _index);
 	void myAnimationScenePlayProc(int _duration, int _loops);
 	void myAnimationSceneStopProc();

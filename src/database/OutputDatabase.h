@@ -34,6 +34,28 @@
 
 class OutputDatabase {
 public:
+	struct LoadCase {
+		std::string prefixName;										// XML Prefix Name
+		std::vector<std::vector<std::string>> loadNameToPart;		// XML Info of Which LoadName of Which Part
+		STACCATO_ResultsCase_type type;								// Type of LoadCase - To indicate for Subcase
+		std::vector<double> subCaseDescription;						// SubCase Values (now angles) of SubCases
+		std::string unit;											// SubCase Unit
+		int startIndex;												// StartIndex Within the AnalysisVectorIndex
+	};
+
+	struct TimeStep {
+		std::string timeDescription;								// Vector of Strings: With STATIC - "STATIC" or With DYNAMIC - Vector of Frequency Steps
+		std::string unit;											// TimeStep Unit
+		std::vector<LoadCase> caseList;								// Container of all LoadCases
+		int startIndex;												// StartIndex Within the AnalysisVectorIndex
+	};
+
+	struct Analysis {
+		std::string name;											// Name of Analysis
+		STACCATO_Analysis_type type;								// Staccato Type of Anaylsis
+		std::vector<TimeStep> timeSteps;							// Container of all TimeSteps
+		int startIndex;												// StartIndex Within the VectorFieldResults container
+	};
 	/***********************************************************************************************
 	* \brief Constructor
 	* \author Harikrishnan Sreekumar
@@ -49,7 +71,7 @@ public:
 	* \param[in] _vectorField
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addVectorFieldToDatabase(VectorFieldResults* _vectorField);
+	void addNewAnalysisVectorField( Analysis _analysis, VectorFieldResults* _vectorField);
 	/***********************************************************************************************
 	* \brief Get vector field result
 	* \param[out] vectorField
@@ -57,20 +79,132 @@ public:
 	***********/
 	std::vector<VectorFieldResults>& getVectorFieldFromDatabase() { return myVectorFieldResults; }
 	/***********************************************************************************************
-	* \brief Add Analyis Description for each VectorField
+	* \brief Analyis Description for each VectorField
 	* \param[in] _resultsTimeDescription
+	* \param[out] description syntax
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addVectorFieldAnalysisDescription(std::string _resultsAnalyisDescription, STACCATO_Analysis_type _type);
+	std::string getSyntaxAnalysisDescription(std::string _resultsAnalyisDescription, STACCATO_Analysis_type _type);
 	/***********************************************************************************************
-	* \brief Get vector field analysis description
-	* \param[out] VectorFieldAnalysisDectription
+	* \brief Find Analysis with it's name
+	* \param[in] _analysisName
+	* \param[out] index
 	* \author Harikrishnan Sreekumar
 	***********/
-	std::vector<std::string>& getVectorFieldAnalysisDectription() { return myVectorFieldAnalysisDectription; }
+	int findAnalysis(std::string _analysisName);
+	/***********************************************************************************************
+	* \brief Find TimeStep with it's name and Analysis Name
+	* \param[in] _analysisIndex
+	* \param[in] _timeStepName
+	* \param[out] index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int findTimeStep(int _analysisIndex, std::string _timeStepName);
+	/***********************************************************************************************
+	* \brief Find LoadCase with it's name prefix, Analysis Name and LoadCasePrefix Name
+	* \param[in] _analysisIndex
+	* \param[in] _timeStepIndex
+	* \param[in] _loadCasePrefixName
+	* \param[out] index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int findLoadCase(int _analysisIndex, int _timeStepIndex, std::string _loadCasePrefixName);
+	/***********************************************************************************************
+	* \brief Get Start Index for Analysis
+	* \param[out] index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getVectorFieldIndex(int _analysisIndex);
+	/***********************************************************************************************
+	* \brief Get Start Index for TimeStep
+	* \param[out] index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getVectorFieldIndex(int _analysisIndex, int _timeStepIndex);
+	/***********************************************************************************************
+	* \brief Get Start Index for LoadCase
+	* \param[out] index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getVectorFieldIndex(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
+	/***********************************************************************************************
+	* \brief Get Number of Analysis
+	* \param[out] size
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getNumberOfAnalyses();
+	/***********************************************************************************************
+	* \brief Get Number of TimeSteps
+	* \param[out] size
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getNumberOfTimeSteps(int _analysisIndex);
+	/***********************************************************************************************
+	* \brief Get Number of LoadCases
+	* \param[out] size
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getNumberOfLoadCases(int _analysisIndex, int _timeStepIndex);
+	/***********************************************************************************************
+	* \brief Get Number of Sub-LoadCases
+	* \param[out] size
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getNumberOfSubLoadCases(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
+	/***********************************************************************************************
+	* \brief Get Analysis Description
+	* \param[out] description vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<std::string> getAnalysisDescription();
+	/***********************************************************************************************
+	* \brief Get Time Description
+	* \param[out] description vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<std::string> getTimeDescription(int _analysisIndex);
+	/***********************************************************************************************
+	* \brief Get Sub-Case Description
+	* \param[out] description vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::vector<double> getSubCaseDescription(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
+	/***********************************************************************************************
+	* \brief Get Unit for Time Step
+	* \param[int] analysis type
+	* \param[out] syntax
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::string getSyntaxForTime(STACCATO_Analysis_type);
+	/***********************************************************************************************
+	* \brief Get Unit for SubLoad Step
+	* \param[int] case type
+	* \param[out] syntax
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::string getSyntaxForSubLoadCase(STACCATO_ResultsCase_type);
+	/***********************************************************************************************
+	* \brief Get Unit for Time Step
+	* \param[out] unit
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::string getUnit(int _analysisIndex, int _timeStepIndex);
+	/***********************************************************************************************
+	* \brief Get Unit for Load Step
+	* \param[out] unit
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::string getUnit(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
+	/***********************************************************************************************
+	* \brief Get Size of current vector field
+	* \param[out] size = next index
+	* \author Harikrishnan Sreekumar
+	***********/
+	int getStartIndexForNewAnalysis();
+
 private:
 	std::vector<ScalarFieldResults> myScalarFieldResults;
 	std::vector<VectorFieldResults> myVectorFieldResults;
-
-	std::vector<std::string> myVectorFieldAnalysisDectription;
+public:
+	std::vector<Analysis> myAnalyses;
 };

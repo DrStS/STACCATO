@@ -57,23 +57,11 @@
 
 #include <qprogressdialog.h>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 VtkAnimator::VtkAnimator(FieldDataVisualizer& _fieldDataVisualizer) : myFieldDataVisualizer(&_fieldDataVisualizer)
 {
-	int sizeOfArray = myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size();
-	myArrayActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
-	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[sizeOfArray];
-	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[sizeOfArray];
-	hueLutArray = new vtkSmartPointer<vtkLookupTable>[sizeOfArray];
-	myArrayEdgeActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
-
-	// Array Initialization
-	for (int i = 0; i <  myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size(); i++) {
-		myArrayActor[i] = vtkSmartPointer<vtkActor>::New(); 
-		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
-		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
-		hueLutArray[i] = vtkSmartPointer<vtkLookupTable>::New();
-		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
-	}
 
 	// Create an Animation Field
 	myAnimationCue = vtkSmartPointer<vtkAnimationCue>::New();
@@ -86,20 +74,44 @@ VtkAnimator ::~VtkAnimator()
 {
 }
 
-void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type) {
-	std::cout << ">> Generating frames and Buffering...\n";
-	QProgressDialog animationProgessDialog("Generating Animation...", "Cancel", 0, myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
+void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID) {
+	myFrameID = _frameID;
+
+	int sizeOfArray = myFrameID.size();
+	myArrayActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
+	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[sizeOfArray];
+	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[sizeOfArray];
+	hueLutArray = new vtkSmartPointer<vtkLookupTable>[sizeOfArray];
+	myArrayEdgeActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
+
+	// Array Initialization
+	for (int i = 0; i < sizeOfArray; i++) {
+		myArrayActor[i] = vtkSmartPointer<vtkActor>::New();
+		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
+		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
+		hueLutArray[i] = vtkSmartPointer<vtkLookupTable>::New();
+		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
+	}
+
+	std::cout << ">> Generating "<< myFrameID.size() <<" frames and Buffering...\n";
+
+	std::cout << "Animation: ";
+	for (int i = 0; i < _frameID.size(); i++) {
+		std::cout << _frameID[i] << " << ";
+	}
+	std::cout << std::endl;
+
+	QProgressDialog animationProgessDialog("Generating Animation...", "Cancel", 0, sizeOfArray);
 	animationProgessDialog.setWindowModality(Qt::WindowModal);
 
 	clearAnimationScene();
 
-	for (int i = 0; i <  myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size(); i++)
+	for (int i = 0; i <  sizeOfArray; i++)
 	{
 		animationProgessDialog.setValue(i);
-		int resultIndex = i*myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().size() + 0;
 
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(_type, resultIndex));
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Re, resultIndex), myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Re, resultIndex), myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Re, resultIndex));
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(_type, myFrameID[i]);
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFrameID[i]);
 
 		// Assign Properties
 		myFieldDataVisualizer->setActiveMapper(myArrayMapper[i]);
@@ -110,27 +122,87 @@ void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type) {
 		myFieldDataVisualizer->setActiveEdgeActor(myArrayEdgeActor[i]);
 		
 		// Buffer
-		plotVectorFieldAtIndex(resultIndex);
+		plotVectorFieldAtIndex(i);
 
 		if (animationProgessDialog.wasCanceled())
 			break;
 	}
-	animationProgessDialog.setValue(myFieldDataVisualizer->getHMesh()->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
+	animationProgessDialog.setValue(sizeOfArray);
+}
+
+void VtkAnimator::bufferHarmonicAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID) {
+	myFrameID = _frameID;
+
+	int sizeOfArray = _frameID.size();
+	myArrayActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
+	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[sizeOfArray];
+	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[sizeOfArray];
+	hueLutArray = new vtkSmartPointer<vtkLookupTable>[sizeOfArray];
+	myArrayEdgeActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
+
+	// Array Initialization
+	for (int i = 0; i < sizeOfArray; i++) {
+		myArrayActor[i] = vtkSmartPointer<vtkActor>::New();
+		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
+		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
+		hueLutArray[i] = vtkSmartPointer<vtkLookupTable>::New();
+		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
+	}
+
+	std::cout << ">> Generating " << sizeOfArray << " frames and Buffering...\n";
+
+	QProgressDialog animationProgessDialog("Generating Animation...", "Cancel", 0, sizeOfArray);
+	animationProgessDialog.setWindowModality(Qt::WindowModal);
+
+	clearAnimationScene();
+
+	for (int i = 0; i < sizeOfArray; i++)
+	{
+		animationProgessDialog.setValue(i);
+
+		if(_type == STACCATO_x_Re || _type == STACCATO_y_Re || _type == STACCATO_z_Re || _type == STACCATO_Magnitude_Re)  // Real Part
+			myFieldDataVisualizer->myHarmonicScale = cos(i * 2 * M_PI / (sizeOfArray - 1));
+		else if(_type == STACCATO_x_Im || _type == STACCATO_y_Im || _type == STACCATO_z_Im || _type == STACCATO_Magnitude_Im)
+			myFieldDataVisualizer->myHarmonicScale = sin(i * 2 * M_PI / (sizeOfArray - 1));
+		std::cout << ">> Scaling Factor: " << myFieldDataVisualizer->myHarmonicScale<< std::endl;
+
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScaledScalar(_type, myFieldDataVisualizer->myVisualizerSetting->PROPERTY_FRAMEID);
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFieldDataVisualizer->myVisualizerSetting->PROPERTY_FRAMEID);
+
+		// Assign Properties
+		myFieldDataVisualizer->setActiveMapper(myArrayMapper[i]);
+		myFieldDataVisualizer->setActiveActor(myArrayActor[i]);
+
+		myFieldDataVisualizer->setActiveWarpFilter(warpFilterArray[i]);
+		myFieldDataVisualizer->warpFilter = warpFilterArray[i];
+		myFieldDataVisualizer->setActiveHueLut(hueLutArray[i]);
+		myFieldDataVisualizer->setActiveEdgeActor(myArrayEdgeActor[i]);
+
+		// Buffer
+		plotVectorFieldAtIndex(i);
+
+		if (animationProgessDialog.wasCanceled())
+			break;
+	}
+	animationProgessDialog.setValue(sizeOfArray);
+	myFieldDataVisualizer->myHarmonicScale = 1;
 }
 
 void VtkAnimator::plotVectorFieldAtIndex(int _index) {
+	int index = _index;
+
 	myFieldDataVisualizer->getRenderer()->RemoveActor(myFieldDataVisualizer->mySelectedActor);
 
 	// Reset the Renderer
 	myFieldDataVisualizer->getRenderer()->RemoveAllViewProps();
 
-	myFieldDataVisualizer->mySelectedActor = myArrayActor[_index];
-	myFieldDataVisualizer->mySelectedMapper = myArrayMapper[_index];
-	myFieldDataVisualizer->myEdgeActor = myArrayEdgeActor[_index];
-	myFieldDataVisualizer->warpFilter = warpFilterArray[_index];
-	myFieldDataVisualizer->hueLut = hueLutArray[_index];
+	myFieldDataVisualizer->mySelectedActor = myArrayActor[index];
+	myFieldDataVisualizer->mySelectedMapper = myArrayMapper[index];
+	myFieldDataVisualizer->myEdgeActor = myArrayEdgeActor[index];
+	myFieldDataVisualizer->warpFilter = warpFilterArray[index];
+	myFieldDataVisualizer->hueLut = hueLutArray[index];
 
-	myFieldDataVisualizer->setNewMapper(myArrayMapper[_index]);
+	myFieldDataVisualizer->setNewMapper(myArrayMapper[index]);
 	myFieldDataVisualizer->setActiveScalarBarWidget();
 
 	myFieldDataVisualizer->enableActiveEdgeActor(myFieldDataVisualizer->myVisualizerSetting->myFieldDataSetting->getEdgeProperty());

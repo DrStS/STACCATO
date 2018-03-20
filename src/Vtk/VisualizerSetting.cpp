@@ -20,6 +20,8 @@
 #include <VisualizerSetting.h>
 #include <Timer.h>
 
+#include <SignalDataVisualizer.h>
+
 VisualizerSetting::VisualizerSetting()
 {
 	// Initialize default property
@@ -47,6 +49,12 @@ void VisualizerSetting::setCommuniationToFieldDataVisualizer(FieldDataVisualizer
 	myFieldDataVisualizer = &_fieldDataVisualizer;
 	myFieldDataVisualizer->connectVisualizerSetting(this);
 	std::cout << ">> Connection to FieldDataVisualizer is set by VisualizerSetting.\n";
+}
+
+void VisualizerSetting::setCommuniationToSignalDataVisualizer(SignalDataVisualizer& _signalDataVisualizer) {
+	mySignalDataVisualizer = &_signalDataVisualizer;
+	mySignalDataVisualizer->connectVisualizerSetting(this);
+	std::cout << ">> Connection to SignalDataVisualizer is set by VisualizerSetting.\n";
 }
 
 void VisualizerSetting::commitViewSetting(STACCATO_FieldProperty_type _property) {
@@ -102,9 +110,16 @@ void VisualizerSetting::setScalarbarTitle(std::string _title) {
 	strcpy(PROPERTY_SCALARBAR_TITLE, _title.c_str());
 }
 
-void VisualizerSetting::generateAnimation() {
-	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE);
-	myFieldDataVisualizer->plotVectorFieldAtIndex(PROPERTY_FRAMEID);
+void VisualizerSetting::generateSubCaseAnimation(std::vector<int> &_frameIndices) {
+
+	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE, _frameIndices);
+	myFieldDataVisualizer->plotVectorFieldAtIndex(0);
+}
+
+void VisualizerSetting::generateHarmonicAnimation(std::vector<int> &_frameIndices) {
+
+	myFieldDataVisualizer->animateHarmonics(PROPERTY_FIELD_TYPE, _frameIndices);
+	myFieldDataVisualizer->plotVectorFieldAtIndex(0);
 }
 
 void VisualizerSetting::playAnimation() {
@@ -126,4 +141,52 @@ void VisualizerSetting::visualizeAnimationFrames(int _duration, int _repeat) {
 
 void VisualizerSetting::setResultAvailable(bool _available) {
 	PROPERTY_RESULTS_AVALABLE = _available;
+}
+
+void VisualizerSetting::setCurrentAnalysis(std::string _analysisName) {
+	PROPERTY_CURRENT_ANALYSIS_INDEX = myFieldDataVisualizer->getHMesh()->myOutputDatabase->findAnalysis(_analysisName);
+
+	updateCurrentTimeStepIndex(PROPERTY_CURRENT_ANALYSIS_INDEX);
+	updateCurrentLoadCaseIndex(PROPERTY_CURRENT_TIMESTEP_INDEX);
+
+	commitCurrentFrame(PROPERTY_CURRENT_ANALYSIS_INDEX);						// Commit the frame as analysis
+}
+
+void VisualizerSetting::updateCurrentTimeStepIndex(int _analysisIndex) {
+	PROPERTY_CURRENT_TIMESTEP_INDEX = myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[_analysisIndex].startIndex;
+}
+
+void VisualizerSetting::updateCurrentLoadCaseIndex(int _timeStepIndex) {
+	PROPERTY_CURRENT_LOADCASE_INDEX = myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[_timeStepIndex].startIndex;
+	PROPERTY_CURRENT_SUBLOADCASE_INDEX = PROPERTY_CURRENT_LOADCASE_INDEX;		// Start Index of LoadCase
+}
+
+void VisualizerSetting::commitTimeStepIndex(int _timeStepIndex) {
+	PROPERTY_CURRENT_TIMESTEP_INDEX = _timeStepIndex;
+
+	updateCurrentLoadCaseIndex(_timeStepIndex);
+
+	commitCurrentFrame(PROPERTY_CURRENT_TIMESTEP_INDEX);						// Commit the frame as timestep
+}
+
+void VisualizerSetting::commitLoadCaseIndex(int _loadCaseIndex) {
+	PROPERTY_CURRENT_LOADCASE_INDEX = _loadCaseIndex;
+	PROPERTY_CURRENT_SUBLOADCASE_INDEX = PROPERTY_CURRENT_LOADCASE_INDEX;		// Start Index of LoadCase
+
+	commitCurrentFrame(PROPERTY_CURRENT_LOADCASE_INDEX);						// Commit the frame as loadCase
+}
+
+void VisualizerSetting::commitSubLoadCaseIndex(int _subLoadcaseIndex) {
+	PROPERTY_CURRENT_SUBLOADCASE_INDEX = _subLoadcaseIndex;
+
+	commitCurrentFrame(PROPERTY_CURRENT_SUBLOADCASE_INDEX);						// Commit the frame as sub-loadCase
+}
+
+void VisualizerSetting::listProperties() {
+	std::cout << "========= Visualizer Settings =========" << std::endl;
+	std::cout << "PROPERTY_CURRENT_ANALYSIS_INDEX: " << PROPERTY_CURRENT_ANALYSIS_INDEX << std::endl;
+	std::cout << "PROPERTY_CURRENT_TIMESTEP_INDEX: " << PROPERTY_CURRENT_TIMESTEP_INDEX << std::endl;
+	std::cout << "PROPERTY_CURRENT_LOADCASE_INDEX: " << PROPERTY_CURRENT_LOADCASE_INDEX << std::endl;
+	std::cout << "PROPERTY_CURRENT_SUBLOADCASE_INDEX: " << PROPERTY_CURRENT_SUBLOADCASE_INDEX << std::endl;
+	std::cout << "=======================================" << std::endl;
 }

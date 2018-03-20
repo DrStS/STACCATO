@@ -179,7 +179,9 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
+		myCaseType = STACCATO_Case_None;
 		bool flagLabel = true;
+		std::cout << ">> Looking for Concentrated Coupling ...\n";
 		for (int m = 0; m < _nodeList.size(); m++) {
 			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(_nodeList[m]));
 			for (int l = 0; l < numDoFsPerNode; l++) {
@@ -206,8 +208,7 @@ public:
 		std::cout << ">> Looking for Rotating Distributed Coupling ...\n";
 
 		// Resize RHS vector
-		int newSize = getBCCaseDescription().size()*_rhs.size();
-		_rhs.resize(newSize);
+		_rhs.resize(_rhs.size() + getBCCaseDescription().size()*myHMesh->getTotalNumOfDoFsRaw());
 
 		int i = 0;
 		do {

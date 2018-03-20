@@ -63,7 +63,13 @@ public:
 	* \param[in] _type Result Type, for which the frames are buffered into memory
 	* \author Harikrishnan Sreekumar
 	***********/
-	void bufferAnimationFrames(STACCATO_VectorField_components _type);
+	void bufferAnimationFrames(STACCATO_VectorField_components _type, std::vector<int> &_frameID);
+	/***********************************************************************************************
+	* \brief Buffer Harmonic Animation Frames
+	* \param[in] _type Result Type, the number of frames are buffered into memory
+	* \author Harikrishnan Sreekumar
+	***********/
+	void bufferHarmonicAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID);
 	/***********************************************************************************************
 	* \brief Plot Vector Field for an Index
 	* \param[in] _index Index of Frame
@@ -116,4 +122,6 @@ private:
 	vtkSmartPointer<vtkDataSetMapper> *myArrayMapper;
 	vtkSmartPointer<vtkWarpVector>* warpFilterArray;
 	vtkSmartPointer<vtkLookupTable>* hueLutArray;
+public:
+	std::vector<int> myFrameID;
 };

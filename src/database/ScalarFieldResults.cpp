@@ -21,7 +21,7 @@
 #include "STACCATO_Enum.h"
 #include <iostream>
 
-ScalarFieldResults::ScalarFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType) : Results(_resultType, _analysisType) {
+ScalarFieldResults::ScalarFieldResults() : Results() {
 
 }
 

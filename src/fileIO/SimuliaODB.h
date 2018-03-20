@@ -40,7 +40,7 @@ public:
      * \param[in] _filePath string which holds the path to the obd file
      * \author Stefan Sicklinger
      ***********/
-	SimuliaODB(std::string _fileName, HMesh& _hMesh);
+	SimuliaODB(std::string _fileName, HMesh& _hMesh, int _partID);
     /***********************************************************************************************
      * \brief Destructor
      *
@@ -58,4 +58,6 @@ private:
 	std::string myFileName;
 	/// HMesh object 
 	HMesh *myHMesh;
+	/// Part Id wrt XML
+	int myPartId;
 };

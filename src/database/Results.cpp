@@ -19,62 +19,20 @@
 */
 #include <Results.h>
 
-Results::Results(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType) {
-	setResultsType(_resultType);
-	setResultsAnalysisType(_analysisType);
-
+Results::Results() {
 	myResultCase = STACCATO_Case_None;			// no sub-cases
 	myResultEvaluationType = STACCATO_Evaluation_Nodal;
-
-	myTimeUnit = "";
-	myCaseUnit = "";
 }
 
 Results::~Results() {
 	
 }
 
-void Results::setResultsAnalysisType(STACCATO_Analysis_type _analysisType) {
-	myAnalsisType = _analysisType;
-
-	switch (_analysisType)
-	{
-	case STACCATO_Analysis_Static:
-		break;
-	case STACCATO_Analysis_DynamicReal:
-	case STACCATO_Analysis_Dynamic:
-		myTimeUnit = " Hz";
-		break;
-	default:
-		break;
-	}
-}
-
-void Results::setResultsType(STACCATO_Results_type _resultType) {
-	myResultType = _resultType;
-}
-
-void Results::setResultsCase(STACCATO_ResultsCase_type _resultCase) {
-	myResultCase = _resultCase;
-	buildLabelMap();
-}
-
 void Results::setResultsEvaluationType(STACCATO_ResultsEvaluation_type _evaluationType) {
 	myResultEvaluationType = _evaluationType;
 }
 
-void Results::addResultsTimeDescription(std::string _resultsTimeDescription) {
-	resultsTimeDescription[resultsTimeDescription.size() * resultsCaseDescription.size()] = _resultsTimeDescription;
-}
-
-std::map<int, std::string>& Results::getResultsTimeDescription() {		// Getter Function to return all frequency steps
-	return resultsTimeDescription;
-}
-
-void Results::addResultsCaseDescription(std::string _resultsCaseDescription) {
-	resultsCaseDescription[resultsCaseDescription.size()] = _resultsCaseDescription;
-}
-
-std::map<int, std::string>& Results::getResultsCaseDescription() {
-	return resultsCaseDescription;
+void Results::setResultsType(STACCATO_Results_type _type) {
+	myResultType = _type;
+	buildLabelMap();
 }

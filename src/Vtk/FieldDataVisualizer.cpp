@@ -104,6 +104,7 @@ FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(pare
 	myVtkViewer = new VtkViewer(*this);
 
 	myRotateMode = true;
+	myHarmonicScale = 1;
 }
 
 void FieldDataVisualizer::myHMeshToVtkUnstructuredGridInitializer(){
@@ -111,11 +112,15 @@ void FieldDataVisualizer::myHMeshToVtkUnstructuredGridInitializer(){
 }
 
 void FieldDataVisualizer::myHMeshToVtkUnstructuredGridSetScalar(STACCATO_VectorField_components _type, int _index) {
-	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(_type, _index));
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(_type, _index));
+}
+
+void FieldDataVisualizer::myHMeshToVtkUnstructuredGridSetScaledScalar(STACCATO_VectorField_components _type, int _index) {
+	myHMeshToVtkUnstructuredGrid->setScalarFieldAtNodes(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScaledScalarFieldAtNodes(_type, _index, myHarmonicScale));
 }
 
 void FieldDataVisualizer::myHMeshToVtkUnstructuredGridSetVector(int _index) {
-	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Re, _index), myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Re, _index), myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Re, _index));
+	myHMeshToVtkUnstructuredGrid->setVectorFieldAtNodes(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_x_Re, _index), myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Re, _index), myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Re, _index));
 }
 
 void FieldDataVisualizer::plotVectorField() {
@@ -316,13 +321,23 @@ std::vector<int> FieldDataVisualizer::getSelection(STACCATO_Picker_type _type) {
 		return mySelectedElements;
 }
 
-void FieldDataVisualizer::animate(STACCATO_VectorField_components _type) {
+void FieldDataVisualizer::animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices) {
 	static bool myVtkAnimatorActive = false;
 	if (!myVtkAnimatorActive) {
 		myVtkAnimator = new VtkAnimator(*this);
 		myVtkAnimatorActive = true;
 	}
-	myVtkAnimator->bufferAnimationFrames(_type);
+	myVtkAnimator->bufferAnimationFrames(_type, _animationIndices);
+	isAnimationSceneInstantiated = false;
+}
+
+void FieldDataVisualizer::animateHarmonics(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices) {
+	static bool myVtkAnimatorActive = false;
+	if (!myVtkAnimatorActive) {
+		myVtkAnimator = new VtkAnimator(*this);
+		myVtkAnimatorActive = true;
+	}
+	myVtkAnimator->bufferHarmonicAnimationFrames(_type, _animationIndices);
 	isAnimationSceneInstantiated = false;
 }
 
@@ -361,7 +376,7 @@ void FieldDataVisualizer::setActiveActor(vtkSmartPointer<vtkActor>& _actor) {
 
 void FieldDataVisualizer::setActiveWarpFilter(vtkSmartPointer<vtkWarpVector>& _warpFilter) {
 	_warpFilter->SetInputData(myHMeshToVtkUnstructuredGrid->getVtkUnstructuredGrid());
-	_warpFilter->SetScaleFactor(myVisualizerSetting->PROPERTY_SCALING_FACTOR);
+	_warpFilter->SetScaleFactor(myVisualizerSetting->PROPERTY_SCALING_FACTOR * myHarmonicScale);
 	_warpFilter->Update();
 	mySelectedMapper->SetInputData(_warpFilter->GetUnstructuredGridOutput());
 }

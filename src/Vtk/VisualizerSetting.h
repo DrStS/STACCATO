@@ -34,6 +34,8 @@
 using namespace STACCATO_Visualizer;
 using namespace STACCATO_Results;
 
+class SignalDataVisualizer;
+
 class VisualizerSetting
 {
 public:
@@ -53,6 +55,12 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void setCommuniationToFieldDataVisualizer(FieldDataVisualizer& _fieldDataVisualizer);
+	/***********************************************************************************************
+	* \brief Set the Signal Data visualizer for communication
+	* \param[in] _signalDataVisualizer Signal Data visualizer
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setCommuniationToSignalDataVisualizer(SignalDataVisualizer& _signalDataVisualizer);
 	/***********************************************************************************************
 	* \brief Set the Visualization Type
 	* \param[in] _property VisualizerProperty
@@ -98,7 +106,12 @@ public:
 	* \brief Generate Frames for Animation
 	* \author Harikrishnan Sreekumar
 	***********/
-	void generateAnimation();
+	void generateSubCaseAnimation(std::vector<int> &_frameIndices);
+	/***********************************************************************************************
+	* \brief Generate Frames for Harmonic Animation
+	* \author Harikrishnan Sreekumar
+	***********/
+	void generateHarmonicAnimation(std::vector<int> &_frameIndices);
 	/***********************************************************************************************
 	* \brief Set Animation Duration and Enable/Disable Repeat
 	* \param[in] _duration
@@ -121,10 +134,47 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void setResultAvailable(bool);
+	/***********************************************************************************************
+	* \brief Set Analysis for Visualization
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setCurrentAnalysis(std::string _analysisName);
+	/***********************************************************************************************
+	* \brief Update TimeStep for New Anaylsis
+	* \author Harikrishnan Sreekumar
+	***********/
+	void updateCurrentTimeStepIndex(int _analysisIndex);
+	/***********************************************************************************************
+	* \brief Update LoadCase for New TimeStep
+	* \author Harikrishnan Sreekumar
+	***********/
+	void updateCurrentLoadCaseIndex(int _timeStepIndex);
+	/***********************************************************************************************
+	* \brief Set TimeStep for Visualization
+	* \author Harikrishnan Sreekumar
+	***********/
+	void commitTimeStepIndex(int _timeStepIndex);
+	/***********************************************************************************************
+	* \brief Set LoadCase for Visualization
+	* \author Harikrishnan Sreekumar
+	***********/
+	void commitLoadCaseIndex(int _loadCaseIndex);
+	/***********************************************************************************************
+	* \brief Set Sub-LoadCase for Visualization
+	* \author Harikrishnan Sreekumar
+	***********/
+	void commitSubLoadCaseIndex(int _subLoadCaseIndex);
+	/***********************************************************************************************
+	* \brief List Properties
+	* \author Harikrishnan Sreekumar
+	***********/
+	void listProperties();
 
 private:
 	// FieldDataVisualizer
 	FieldDataVisualizer* myFieldDataVisualizer;
+	// SignalDataVisualizer
+	SignalDataVisualizer* mySignalDataVisualizer;
 	// Chosen Property for Surface or SurfaceWithEdges or Wireframe
 	STACCATO_FieldProperty_type myFieldProperty;
 
@@ -149,4 +199,12 @@ public:
 	std::map<std::string, STACCATO_FieldProperty_type> myViewModeLabelMap;
 	// FeAnalysis performed
 	bool PROPERTY_RESULTS_AVALABLE;
+	// Current Analysis
+	int PROPERTY_CURRENT_ANALYSIS_INDEX;
+	// Current TimeStep
+	int PROPERTY_CURRENT_TIMESTEP_INDEX;
+	// Current Load Case
+	int PROPERTY_CURRENT_LOADCASE_INDEX;
+	// Current SubLoad Case
+	int PROPERTY_CURRENT_SUBLOADCASE_INDEX;
 };

@@ -1,30 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xs:schema id="STACCATO_XML" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-  <xs:element name="NODE">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="ID" type="xs:string" minOccurs="0" />
-        <xs:element name="X" type="xs:string" minOccurs="0" />
-        <xs:element name="Y" type="xs:string" minOccurs="0" />
-        <xs:element name="Z" type="xs:string" minOccurs="0" />
-        <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
   <xs:element name="TRANSLATETO">
     <xs:complexType>
       <xs:attribute name="Source" type="xs:string" />
       <xs:attribute name="Target" type="xs:string" />
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="ELEMENT">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element name="ID" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
-        <xs:element name="NODECONNECT" type="xs:string" minOccurs="0" msdata:Ordinal="3" />
-        <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
-      </xs:sequence>
-      <xs:attribute name="Type" type="xs:string" />
     </xs:complexType>
   </xs:element>
   <xs:element name="NODESET">
@@ -33,6 +12,37 @@
         <xs:element name="LIST" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
       </xs:sequence>
       <xs:attribute name="Name" type="xs:string" />
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="LOAD">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
+        <xs:element name="REFERENCENODESET" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="Name" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="REFERENCENODE" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="X" type="xs:string" minOccurs="0" />
+              <xs:element name="Y" type="xs:string" minOccurs="0" />
+              <xs:element name="Z" type="xs:string" minOccurs="0" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="COUPLINGNODESET" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="Name" type="xs:string" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
+        <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />
+      </xs:sequence>
+      <xs:attribute name="Type" type="xs:string" />
+      <xs:attribute name="Name" type="xs:string" />
+      <xs:attribute name="Instance" type="xs:string" />
     </xs:complexType>
   </xs:element>
   <xs:element name="REAL">
@@ -56,30 +66,125 @@
   <xs:element name="STACCATO_XML" msdata:IsDataSet="true" msdata:Locale="en-US">
     <xs:complexType>
       <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element ref="NODE" />
         <xs:element ref="TRANSLATETO" />
-        <xs:element ref="ELEMENT" />
         <xs:element ref="NODESET" />
+        <xs:element ref="LOAD" />
         <xs:element ref="REAL" />
         <xs:element ref="IMAGINARY" />
-        <xs:element name="FILEIMPORT">
+        <xs:element name="PARTS">
           <xs:complexType>
             <xs:sequence>
-              <xs:element name="FILE" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-              <xs:element name="IMPORT" minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="PART" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="LIST" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
-                    <xs:element ref="NODE" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="ELEMENT" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
+                    <xs:element name="FILEIMPORT" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="FILE" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                          <xs:element name="IMPORT" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="LIST" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                                <xs:element name="NODE" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="ELEMENT" minOccurs="0" maxOccurs="unbounded">
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element ref="TRANSLATETO" minOccurs="0" maxOccurs="unbounded" />
+                              </xs:sequence>
+                              <xs:attribute name="Type" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="Type" type="xs:string" />
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="MATERIALS" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="MATERIAL" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="E" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                                <xs:element name="nu" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                                <xs:element name="rho" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+                                <xs:element name="eta" type="xs:string" minOccurs="0" msdata:Ordinal="3" />
+                              </xs:sequence>
+                              <xs:attribute name="Name" type="xs:string" />
+                              <xs:attribute name="Type" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="SECTIONS" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="SECTION" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="ELEMENTSET" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                                <xs:element name="MATERIAL" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                              </xs:sequence>
+                              <xs:attribute name="Name" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="SETS" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="ELEMENTSET" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="LIST" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                              </xs:sequence>
+                              <xs:attribute name="Name" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="LOADS" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element ref="LOAD" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="BC_DEF" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="DISPLACEMENT" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
+                                <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
+                                <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />
+                              </xs:sequence>
+                              <xs:attribute name="Name" type="xs:string" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
-                  <xs:attribute name="Type" type="xs:string" />
+                  <xs:attribute name="TYPE" type="xs:string" />
+                  <xs:attribute name="Name" type="xs:string" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
-            <xs:attribute name="Name" type="xs:string" />
-            <xs:attribute name="Type" type="xs:string" />
           </xs:complexType>
         </xs:element>
         <xs:element name="ANALYSIS">
@@ -87,154 +192,45 @@
             <xs:sequence>
               <xs:element name="NAME" type="xs:string" minOccurs="0" />
               <xs:element name="TYPE" type="xs:string" minOccurs="0" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="FREQUENCY">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="START_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-              <xs:element name="END_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
-              <xs:element name="STEP_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
-            </xs:sequence>
-            <xs:attribute name="Type" type="xs:string" />
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="MATERIALS">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="MATERIAL" minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="FREQUENCY" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="E" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-                    <xs:element name="nu" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
-                    <xs:element name="rho" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
-                    <xs:element name="eta" type="xs:string" minOccurs="0" msdata:Ordinal="3" />
+                    <xs:element name="START_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
+                    <xs:element name="END_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                    <xs:element name="STEP_FREQ" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
                   </xs:sequence>
-                  <xs:attribute name="Name" type="xs:string" />
                   <xs:attribute name="Type" type="xs:string" />
                 </xs:complexType>
               </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="SECTIONS">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="SECTION" minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="BCCASE" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="ELEMENTSET" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-                    <xs:element name="MATERIAL" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
+                    <xs:element name="BC" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="Name" type="xs:string" />
+                        <xs:attribute name="Instance" type="xs:string" />
+                      </xs:complexType>
+                    </xs:element>
                   </xs:sequence>
                   <xs:attribute name="Name" type="xs:string" />
                 </xs:complexType>
               </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="NODES">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element ref="NODE" minOccurs="0" maxOccurs="unbounded" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="ELEMENTS">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element ref="ELEMENT" minOccurs="0" maxOccurs="unbounded" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="SETS">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="ELEMENTSET" minOccurs="0" maxOccurs="unbounded">
+              <xs:element name="LOADCASES" minOccurs="0" maxOccurs="unbounded">
                 <xs:complexType>
                   <xs:sequence>
-                    <xs:element name="LIST" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-                  </xs:sequence>
-                  <xs:attribute name="Name" type="xs:string" />
-                </xs:complexType>
-              </xs:element>
-              <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="LOADS">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="LOAD" minOccurs="0" maxOccurs="unbounded">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element name="REFERENCENODESET" minOccurs="0" maxOccurs="unbounded">
-                      <xs:complexType>
-                        <xs:attribute name="Name" type="xs:string" />
-                      </xs:complexType>
-                    </xs:element>
-                    <xs:element name="REFERENCENODE" minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="LOADCASE" minOccurs="0" maxOccurs="unbounded">
                       <xs:complexType>
                         <xs:sequence>
-                          <xs:element name="X" type="xs:string" minOccurs="0" />
-                          <xs:element name="Y" type="xs:string" minOccurs="0" />
-                          <xs:element name="Z" type="xs:string" minOccurs="0" />
-                        </xs:sequence>
-                      </xs:complexType>
-                    </xs:element>
-                    <xs:element name="COUPLINGNODESET" minOccurs="0" maxOccurs="unbounded">
-                      <xs:complexType>
-                        <xs:attribute name="Name" type="xs:string" />
-                      </xs:complexType>
-                    </xs:element>
-                    <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element name="ROTATE" minOccurs="0" maxOccurs="unbounded">
-                      <xs:complexType>
-                        <xs:sequence>
-                          <xs:element name="START_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="0" />
-                          <xs:element name="END_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="1" />
-                          <xs:element name="STEP_THETA" type="xs:string" minOccurs="0" msdata:Ordinal="2" />
+                          <xs:element ref="LOAD" minOccurs="0" maxOccurs="unbounded" />
                         </xs:sequence>
                         <xs:attribute name="Type" type="xs:string" />
+                        <xs:attribute name="Name" type="xs:string" />
                       </xs:complexType>
                     </xs:element>
                   </xs:sequence>
-                  <xs:attribute name="Type" type="xs:string" />
                 </xs:complexType>
               </xs:element>
             </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="BC">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="DBC" minOccurs="0" maxOccurs="unbounded">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="REAL" minOccurs="0" maxOccurs="unbounded" />
-                    <xs:element ref="IMAGINARY" minOccurs="0" maxOccurs="unbounded" />
-                  </xs:sequence>
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-        <xs:element name="COUPLE">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="Part" minOccurs="0" maxOccurs="unbounded">
-                <xs:complexType>
-                  <xs:sequence>
-                    <xs:element ref="NODESET" minOccurs="0" maxOccurs="unbounded" />
-                  </xs:sequence>
-                  <xs:attribute name="Name" type="xs:string" />
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-            <xs:attribute name="Type" type="xs:string" />
           </xs:complexType>
         </xs:element>
       </xs:choice>

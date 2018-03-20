@@ -140,14 +140,14 @@ void SignalDataVisualizer::add2dPlotToChart(int _nodeLabel, STACCATO_VectorField
 	xValues.clear();
 	yValues.clear();
 
-	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end(); it++) {
-		if (myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsAnalysisType() == STACCATO_Analysis_Static)
+	for (int it = 0; it < myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX).size(); it++) {
+		if (myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].type == STACCATO_Analysis_Static)
 			xValues.push_back(0);
 		else
-			xValues.push_back(std::stoi(it->second));
+			xValues.push_back(std::stoi(myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX)[it]));
 	}
 	for (int i = 0; i < xValues.size(); i++) {
-		yValues.push_back(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
+		yValues.push_back(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(_type, i)[_nodeLabel]);
 	}
 	// Data Series
 	mySeries2D = new QLineSeries();
@@ -195,7 +195,7 @@ void SignalDataVisualizer::add2dPlotToChart(int _nodeLabel, STACCATO_VectorField
 	myAxisLogX->setMinorTickCount(-1);
 
 	// Chart Axes
-	if (myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsAnalysisType() == STACCATO_Analysis_Static)
+	if (myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].type == STACCATO_Analysis_Static)
 	{
 		myAxisX->setTitleText("Static");
 		myAxisLogX->setTitleText("Static, Log Scale");
@@ -748,16 +748,16 @@ void SignalDataVisualizer::updateList() {
 		int nodeIndex = myHMesh->convertNodeLabelToNodeIndex(std::stoi(myNodePickText->text().toStdString()));
 		
 		std::cout << "\n-----Selected Node Displacement-----\n";
-		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[0]<< "Hz ----\n";
-		std::cout << std::showpos << "\tReal x: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tReal y: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tReal z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Re, 0)[nodeIndex] << std::endl;
-		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "---- Node " << myNodePickText->text().toStdString() << " @ FREQ "<< myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX)[0] << "Hz ----\n";
+		std::cout << std::showpos << "\tReal x: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_x_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tReal y: " << myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_y_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tReal z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_z_Re, 0)[nodeIndex] << std::endl;
+		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_Magnitude_Re, 0)[nodeIndex] << std::endl;
 		std::cout << "------------------------------------\n";
-		std::cout << "\tImag x: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_x_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tImag y: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_y_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tImag z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_z_Im, 0)[nodeIndex] << std::endl;
-		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag x: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_x_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag y: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_y_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tImag z: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_z_Im, 0)[nodeIndex] << std::endl;
+		std::cout << "\tMagni.: " <<myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultScalarFieldAtNodes(STACCATO_Magnitude_Im, 0)[nodeIndex] << std::endl;
 		std::cout << std::noshowpos << "------------------------------------\n";
 	}
 	else if (myElementPickRadio->isChecked()) {
@@ -948,4 +948,8 @@ void SignalDataVisualizer::myResetChart() {
 void SignalDataVisualizer::updateSnap() {
 	if(!mySnapOnHoverBox->isChecked())
 		mySnapSeries2scatter->clear();
+}
+
+void SignalDataVisualizer::connectVisualizerSetting(VisualizerSetting* _setting) {
+	myVisualizerSetting = _setting;
 }

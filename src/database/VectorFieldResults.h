@@ -37,7 +37,7 @@ public:
 	* \param[in] _analysisType STACCATO_Analysis_type
 	* \author Harikrishnan Sreekumar
 	***********/
-	VectorFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType);
+	VectorFieldResults();
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Harikrishnan Sreekumar
@@ -62,10 +62,23 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	std::vector<double>&  getResultScalarFieldAtNodes(STACCATO_VectorField_components _component, int index);
+	/***********************************************************************************************
+	* \brief Get scaled result from database
+	* \param[in] _type
+	* \param[out] reference to std vector
+	* \author Stefan Sicklinger
+	***********/
+	const std::vector<double>&  getResultScaledScalarFieldAtNodes(STACCATO_VectorField_components _component, int index, double scale);
 private:
 	// Component Enum to Results map
 	std::map<STACCATO_VectorField_components, std::vector<std::vector<double>>> myFieldMap;
+
+	std::vector<std::vector<std::vector<double>>> myMasterVector;
+
+
+	std::map<STACCATO_VectorField_components, int> componentIndexMap;
 public:
 	// Label to Component Enum Map
 	std::map< std::string, STACCATO_VectorField_components> myResultLabelMap;
+	std::vector<double> result;
 };

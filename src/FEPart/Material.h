@@ -44,7 +44,7 @@ public:
 	* \brief Constructor
 	* \author Stefan Sicklinger
 	***********/
-	Material(std::string _materialName);
+	Material(std::string _materialName, int _partId);
 	/***********************************************************************************************
 	 * \brief Destructor
 	 *

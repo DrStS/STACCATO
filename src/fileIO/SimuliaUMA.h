@@ -40,7 +40,7 @@ public:
 	* \param[in] _filePath string which holds the path to the sim file
 	* \author Harikrishnan Sreekumar
 	***********/
-	SimuliaUMA(std::string _fileName, HMesh& _hMesh);
+	SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId);
 	/***********************************************************************************************
 	* \brief Destructor
 	*

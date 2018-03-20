@@ -20,8 +20,9 @@
 #include <VectorFieldResults.h>
 #include <iostream>
 
-VectorFieldResults::VectorFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType) : Results(_resultType, _analysisType) {
-	buildLabelMap();
+#include <MathLibrary.h>
+
+VectorFieldResults::VectorFieldResults() : Results() {
 }
 
 VectorFieldResults::~VectorFieldResults()
@@ -49,26 +50,19 @@ void VectorFieldResults::buildLabelMap() {
 	default:
 		std::cerr << "Invalid Vector Field!\n";
 	}
-
-	myResultCaseLabelMap.clear();
-	switch (myResultCase)
-	{
-	case STACCATO_Case_None:
-		myResultCaseLabelMap["None"] = myResultCase;
-		break;
-	case STACCATO_Case_Load:
-		myCaseUnit = " deg";
-		myResultCaseLabelMap["Load Case"] = myResultCase;
-		break;
-	default:
-		std::cerr << "Invalid Result Case Type!\n";
-	}
 }
 
 void VectorFieldResults::addResultScalarFieldAtNodes(STACCATO_VectorField_components _component, std::vector<double> _valueVec) {
 	myFieldMap[_component].push_back(_valueVec);
 }
 
-std::vector<double>&  VectorFieldResults::getResultScalarFieldAtNodes(STACCATO_VectorField_components _component, int index) {
+std::vector<double>& VectorFieldResults::getResultScalarFieldAtNodes(STACCATO_VectorField_components _component, int index) {
 	return myFieldMap[_component][index];
+}
+
+const std::vector<double>& VectorFieldResults::getResultScaledScalarFieldAtNodes(STACCATO_VectorField_components _component, int index, double _scale) {
+	result.clear();
+	result = myFieldMap[_component][index];
+	MathLibrary::computeDenseVectorScalarMultiplication(&result[0], _scale, result.size());
+	return result;
 }

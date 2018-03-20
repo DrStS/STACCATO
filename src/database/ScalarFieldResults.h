@@ -37,7 +37,7 @@ public:
 	* \param[in] _analysisType STACCATO_Analysis_type
 	* \author Harikrishnan Sreekumar
 	***********/
-	ScalarFieldResults(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType);
+	ScalarFieldResults();
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Harikrishnan Sreekumar

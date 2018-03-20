@@ -24,5 +24,6 @@
 				<file>Qt/resources/stop.ico</file>
 				<file>Qt/resources/delete.ico</file>
 				<file>Qt/resources/xmlFile.ico</file>
+				<file>Qt/resources/setting.ico</file>
     </qresource>
 </RCC>

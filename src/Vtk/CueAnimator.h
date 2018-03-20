@@ -62,8 +62,8 @@ public:
 	void Tick(vtkAnimationCue::AnimationCueInfo *info,
 		vtkRenderer *ren)
 	{
-		double refreshRate = (static_cast<double>(info->EndTime - info->StartTime)) / (static_cast<double>(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size() - 1));
-		if (static_cast<double>(info->AnimationTime) >= refreshRate*frameIndex && frameIndex < myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size() - 1) {
+		double refreshRate = (static_cast<double>(info->EndTime - info->StartTime)) / (static_cast<double>(myVtkAnimator->myFrameID.size() - 1));
+		if (static_cast<double>(info->AnimationTime) >= refreshRate*frameIndex && frameIndex < myVtkAnimator->myFrameID.size() - 1) {
 			myVtkAnimator->plotVectorFieldAtIndex(frameIndex);
 			frameIndex++;
 		}
@@ -74,7 +74,7 @@ public:
 	void EndCue(vtkAnimationCue::AnimationCueInfo *vtkNotUsed(info),
 		vtkRenderer *ren)
 	{
-		myVtkAnimator->plotVectorFieldAtIndex(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size() - 1);
+		myVtkAnimator->plotVectorFieldAtIndex(myVtkAnimator->myFrameID.size()-1);
 		frameIndex = 0;
 		(void)ren;
 		// don't remove the actor for the regression image.

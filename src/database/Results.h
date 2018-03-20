@@ -40,36 +40,24 @@ public:
 	* \param[in] _analysisType STACCATO_Analysis_type
 	* \author Harikrishnan Sreekumar
 	***********/
-	Results(STACCATO_Results_type _resultType, STACCATO_Analysis_type _analysisType);
+	Results();
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Harikrishnan Sreekumar
 	***********/
 	~Results();
 	/***********************************************************************************************
-	* \brief Set Type of Analysis
-	* \param[in] _analysisType
-	* \author Harikrishnan Sreekumar
-	***********/
-	void setResultsAnalysisType(STACCATO_Analysis_type _analysisType);
-	/***********************************************************************************************
-	* \brief Get Type of Analysis
+	* \brief Get Type of LoadCase
 	* \param[out] myAnalsisType
 	* \author Harikrishnan Sreekumar
 	***********/
-	STACCATO_Results::STACCATO_Analysis_type getResultsAnalysisType() { return myAnalsisType; }
+	STACCATO_Results::STACCATO_ResultsCase_type getResultsLoadCaseType() { return myResultCase; }
 	/***********************************************************************************************
-	* \brief Set Type of Result
-	* \param[in] _resultType
+	* \brief Set Type of Results
+	* \param[in] _type
 	* \author Harikrishnan Sreekumar
 	***********/
-	void setResultsType(STACCATO_Results_type _resultType);
-	/***********************************************************************************************
-	* \brief Set Type of Result Case
-	* \param[in] _resultCase
-	* \author Harikrishnan Sreekumar
-	***********/
-	void setResultsCase(STACCATO_ResultsCase_type _resultCase);
+	void setResultsType(STACCATO_Results_type _type);
 	/***********************************************************************************************
 	* \brief Set Type of Evaluation
 	* \param[in] _evaluationType Nodal or elemental
@@ -81,28 +69,6 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	virtual void buildLabelMap() = 0;
-	/***********************************************************************************************
-	* \brief Add a result time description
-	* \param[in] _resultsTimeDescription
-	* \author Stefan Sicklinger
-	***********/
-	void addResultsTimeDescription(std::string _resultsTimeDescription);
-	/***********************************************************************************************
-	* \brief Get results for all time description
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::map<int, std::string>& getResultsTimeDescription();
-	/***********************************************************************************************
-	* \brief Add a result case description
-	* \param[in] _resultsTimeDescription
-	* \author Stefan Sicklinger
-	***********/
-	void addResultsCaseDescription(std::string _resultsCaseDescription);
-	/***********************************************************************************************
-	* \brief Get results for all case description
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::map<int, std::string>& getResultsCaseDescription();
 protected:
 	/// Analysis Type
 	STACCATO_Analysis_type myAnalsisType;
@@ -112,19 +78,7 @@ protected:
 	STACCATO_ResultsCase_type myResultCase;
 	/// Result Evaluation Type
 	STACCATO_ResultsEvaluation_type myResultEvaluationType;
-
-	/// result vector description in time domain 
-	std::map<int, std::string> resultsTimeDescription;
-	/// result vector case description
-	std::map<int, std::string> resultsCaseDescription;
 public:
 	/// Result Label
 	std::string myLabel;
-	/// Time Unit
-	std::string myTimeUnit;
-	/// Case Unit
-	std::string myCaseUnit;
-
-	/// Result Case Label to Enum Map
-	std::map<std::string, STACCATO_ResultsCase_type> myResultCaseLabelMap;
 };

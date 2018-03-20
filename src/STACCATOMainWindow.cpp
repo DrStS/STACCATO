@@ -27,7 +27,6 @@
 #include "AuxiliaryParameters.h"
 #include "Message.h"
 #include "HMeshToMeshVS_DataSource.h"
-#include "FeAnalysis.h"
 #include "Timer.h"
 #include "MemWatcher.h"
 #include "qnemainwindow.h"
@@ -202,7 +201,7 @@ void STACCATOMainWindow::createActions(void)
 	QStandardItem* item = model->item(0);
 	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
 	myResultCaseSelector->setStatusTip(tr("Select Case Type"));
-	connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
+	//connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
 	myResultCaseSelector->setEnabled(true);
 
 	myAnimatePrevFrameButton = new QPushButton(tr("<"), this);
@@ -393,12 +392,6 @@ void STACCATOMainWindow::createActions(void)
 	mySubFrameAnimateAction->setChecked(false);
 	connect(mySubFrameAnimateAction, SIGNAL(triggered()), this, SLOT(mySubFrameAnimate()));
 
-	// Animate Actions
-	myAnimationOptionsDockAction = new QAction(tr("Options"), this);
-	myAnimationOptionsDockAction->setStatusTip(tr("Animation Options"));
-	myAnimationOptionsDockAction->setCheckable(false);
-	connect(myAnimationOptionsDockAction, SIGNAL(triggered()), this, SLOT(myAnimationOptionsTriggered()));
-
 	// Layout Actions
 	myResetLayoutAction = new QAction(tr("Reset Layout"), this);
 	myResetLayoutAction->setStatusTip(tr("Reset Layout"));
@@ -435,6 +428,14 @@ void STACCATOMainWindow::createActions(void)
 	myAnimationButton->setChecked(false);
 	connect(myAnimationButton, SIGNAL(triggered()), this, SLOT(myGenerateAnimationFramesProc()));
 	myAnimationButton->setEnabled(false);
+
+	myAnimationOptions = new QAction(tr("Options"),this);
+	myAnimationOptions->setIcon(QIcon(":/Qt/resources/setting.ico"));
+	myAnimationOptions->setStatusTip(tr("Open Animation Options"));
+	myAnimationOptions->setCheckable(false);
+	myAnimationOptions->setChecked(false);
+	connect(myAnimationOptions, SIGNAL(triggered()), this, SLOT(myAnimationOptionsTriggered()));
+	//myAnimationOptions->setEnabled(false);
 
 	myAnimationDurationLabel = new QLabel(tr("Duration (sec):"), this);
 
@@ -479,15 +480,15 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
 
 	myResultCaseSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
-	for (std::map<std::string, STACCATO_ResultsCase_type>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultCaseLabelMap.end(); ++it) {
+	/*for (std::map<std::string, STACCATO_ResultsCase_type>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myResultCaseLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myResultCaseLabelMap.end(); ++it) {
 		myResultCaseSelector->addItem(QString::fromStdString(it->first));
-	}
+	}*/
 	myResultCaseSelector->setCurrentIndex(1);
 	myResultCaseSelector->setFixedWidth(80);
 	connect(myResultCaseSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
 
 	myComponentSelector->disconnect();		// Disconnect the ComboBox first to avoid error during dynamic updating
-	for (std::map<std::string, STACCATO_VectorField_components>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap.end(); ++it) {
+	for (std::map<std::string, STACCATO_VectorField_components>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myResultLabelMap.begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myResultLabelMap.end(); ++it) {
 		myComponentSelector->addItem(QString::fromStdString(it->first));
 	}
 	myComponentSelector->setCurrentIndex(1);
@@ -503,34 +504,48 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 	// Fill Animation Options
 	// - Analysis
 	myAnalysisSelector->disconnect();
-	for (int i = 0; i < myHMesh->myOutputDatabase->getVectorFieldAnalysisDectription().size(); i++)	{
-		myAnalysisSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldAnalysisDectription()[i]));
+	for (int i = 0; i < myHMesh->myOutputDatabase->getAnalysisDescription().size(); i++)	{
+		myAnalysisSelector->addItem(QString::fromStdString(myHMesh->myOutputDatabase->getAnalysisDescription()[i]));
 	}
 	myAnalysisSelector->setCurrentIndex(1);
+	connect(myAnalysisSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myAnalysisTreeUpdate()));
+
+	myAnalysisTreeUpdate();
+
+	/*QTreeWidgetItem* AnalysisRoot;
+	for (int i = 0; i < myHMesh->myOutputDatabase->getAnalysisDescription().size(); i++) {
+		AnalysisRoot = addRootToTree(myAnimationAnalysisTree, QString::fromStdString(myHMesh->myOutputDatabase->getAnalysisDescription()[i]), false);
+		for (int it = 0; it < myHMesh->myOutputDatabase->getTimeDescription(i).size(); it++)
+		{
+			int index = myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[i].timeSteps[it].startIndex;
+			addChildToTree(AnalysisRoot, QString::fromStdString(std::to_string(index)), QString::fromStdString(myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX)[it] + myHMesh->myOutputDatabase->getUnit(i, it)) , false);
+		}
+	}*/
+
 
 	// Setting Iterators
-	myFreqIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin();
-	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin();
+	/*myFreqIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription().begin();
+	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().begin();
 
 	std::cout << "Frequency Description\n";
-	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end(); ++it) {
+	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription().end(); ++it) {
 		printf(" - @ Index %02i Description %s\n", it->first, it->second);
 	}
 
 	std::cout << "Case Description\n";
-	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().end(); ++it) {
+	for (std::map<int, std::string>::iterator it = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().begin(); it != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().end(); ++it) {
 		printf(" - @ Index %02i Description %s\n", it->first, it->second);
-	}
+	}*/
 }
 
 void STACCATOMainWindow::myViewPropertyUpdate(void) {
 	myAnimationResetProc();
 
-	myTimeStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription()[myFreqIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myTimeUnit));		// Update Slider
-	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myCaseUnit));		// Update Slider
+	//myTimeStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription()[myFreqIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myTimeUnit));		// Update Slider
+	//myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription()[myCaseIndex->first] + myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myCaseUnit));		// Update Slider
 																																																			// Change in Properties
-	myVisualizerSetting->commitCurrentFrame(myFreqIndex->first + myCaseIndex->first);
-	myVisualizerSetting->commitVectorFieldComponent(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].myResultLabelMap[myComponentSelector->currentText().toStdString()]);	// Result Component
+	//myVisualizerSetting->commitCurrentFrame(myFreqIndex->first + myCaseIndex->first);
+	myVisualizerSetting->commitVectorFieldComponent(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].myResultLabelMap[myComponentSelector->currentText().toStdString()]);	// Result Component
 	myVisualizerSetting->commitViewSetting(myVisualizerSetting->myViewModeLabelMap[myViewModeSelector->currentText().toStdString()]);						// View Mode
 	myVisualizerSetting->setScalarbarTitle(myComponentSelector->currentText().toStdString());																// Scalarbar Title
 	myVisualizerSetting->commitScalarBar(myScalarBarVisibility->isChecked());																				// Scalarbar Visibility
@@ -541,31 +556,31 @@ void STACCATOMainWindow::myViewPropertyUpdate(void) {
 
 void STACCATOMainWindow::myTimeStepLessProc(void) {
 	isSubFrame = false;
-	if (myFreqIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().begin())
-		myFreqIndex--;
+	/*if (myFreqIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription().begin())
+		myFreqIndex--;*/
 	myViewPropertyUpdate();
 }
 
 void STACCATOMainWindow::myTimeStepAddProc(void) {
 	isSubFrame = false;
-	if (myFreqIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsTimeDescription().end())
-		myFreqIndex++;
+	/*if (myFreqIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsTimeDescription().end())
+		myFreqIndex++;*/
 	myViewPropertyUpdate();
 }
 
 
 void STACCATOMainWindow::myCaseStepLessProc(void) {
 	isSubFrame = true;
-	if (myCaseIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().begin())
-		--myCaseIndex;
+	/*if (myCaseIndex != myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().begin())
+		--myCaseIndex;*/
 	myViewPropertyUpdate();
 }
 
 void STACCATOMainWindow::myCaseStepAddProc(void) {
 	isSubFrame = true;
-	if (myCaseIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().end()) {
+	/*if (myCaseIndex != --myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().end()) {
 		++myCaseIndex;
-	}
+	}*/
 	myViewPropertyUpdate();
 }
 
@@ -590,7 +605,7 @@ void STACCATOMainWindow::createMenus(void)
 	myImportMenu->addAction(myUMAAction);
 
 	myAnimateMenu = menuBar()->addMenu(tr("Animate"));
-	myAnimateMenu->addAction(myAnimationOptionsDockAction);
+	myAnimateMenu->addAction(myAnimationOptions);
 
 	myLayoutMenu = menuBar()->addMenu(tr("Layout"));
 	myLayoutMenu->addAction(myResetLayoutAction);
@@ -663,6 +678,7 @@ void STACCATOMainWindow::createToolBars(void)
 
 	mySubFrameAnimatorToolBar = addToolBar(tr("Animate"));
 	mySubFrameAnimatorToolBar->addAction(myAnimationButton);
+	mySubFrameAnimatorToolBar->addAction(myAnimationOptions);
 	mySubFrameAnimatorToolBar->addSeparator();
 	mySubFrameAnimatorToolBar->addWidget(myAnimationDurationLabel);
 	mySubFrameAnimatorToolBar->addWidget(myAnimationDuration);
@@ -720,31 +736,42 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 	QStandardItem* item = model->item(0);
 	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
 	myAnalysisSelector->setStatusTip(tr("Select Analysis"));
-	//connect(myAnalysisSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
 	myAnalysisSelector->setEnabled(true);
 
+	myAnimationAnalysisTreeLabel = new QLabel(tr("Select Analysis Tree:"));
+
 	myAnimationAnalysisTree = new QTreeWidget;
-	myAnimationAnalysisTree->setColumnCount(3);
-	myAnimationAnalysisTree->header()->close();
+	myAnimationAnalysisTree->setColumnCount(2);
+	myAnimationAnalysisTree->setColumnWidth(0, 250);
 	myAnimationAnalysisTree->setContextMenuPolicy(Qt::CustomContextMenu);
 	myAnimationAnalysisTree->setMinimumHeight(100);
+	myAnimationAnalysisTree->setHeaderLabels(QStringList() << "Frame" << "Description");
+	connect(myAnimationAnalysisTree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(myAnimationOptionAnalysisItemSelected(QTreeWidgetItem *)));
+
+	myAnimationCaseTreeLabel = new QLabel(tr("Case Tree (of Selected Analysis):"));
+
+	myAnimationCaseTree = new QTreeWidget;
+	myAnimationCaseTree->setColumnCount(2);
+	myAnimationCaseTree->setColumnWidth(0, 250);
+	myAnimationCaseTree->setContextMenuPolicy(Qt::CustomContextMenu);
+	myAnimationCaseTree->setMinimumHeight(100);
+	myAnimationCaseTree->setHeaderLabels(QStringList() << "Frame" << "Description");
+	connect(myAnimationCaseTree, SIGNAL(itemClicked(QTreeWidgetItem *, int)), this, SLOT(myAnimationOptionCaseItemSelected(QTreeWidgetItem *)));
 
 	myAnimationLabel = new QLabel(tr("Animate:"), this);
 
-	myFrequencyAnimationRadio = new QRadioButton(tr("&Frequency"));
+	myFrequencyAnimationRadio = new QRadioButton(tr("&Time Steps"));
 	myFrequencyAnimationRadio->setChecked(true);
-	//connect(myFrequencyAnimationRadio, SIGNAL(clicked()), this, SLOT(updateAnalysisTree()));
 	myHarmonicAnimationRadio = new QRadioButton(tr("&Harmonic"));
 	myCaseAnimationRadio = new QRadioButton(tr("&Case(s): "));
 
-	myResultsCaseSelector_dummy = new QComboBox();
-	myResultsCaseSelector_dummy->addItem("Case..");
-	model = qobject_cast<QStandardItemModel*>(myResultsCaseSelector_dummy->model());
+	myAnimationOptionResultsCaseSelector = new QComboBox();
+	myAnimationOptionResultsCaseSelector->addItem("Case..");
+	model = qobject_cast<QStandardItemModel*>(myAnimationOptionResultsCaseSelector->model());
 	item = model->item(0);
 	item->setFlags(item->flags() & ~Qt::ItemIsEnabled);
-	myResultsCaseSelector_dummy->setStatusTip(tr("Select Case Type"));
-	//connect(myResultsCaseSelector_dummy, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myResultCaseChanged()));
-	myResultsCaseSelector_dummy->setEnabled(true);
+	myAnimationOptionResultsCaseSelector->setStatusTip(tr("Select Case Type"));
+	myAnimationOptionResultsCaseSelector->setEnabled(true);
 
 	myAnimationButtonGroup = new QButtonGroup(this);
 	myAnimationButtonGroup->addButton(myFrequencyAnimationRadio);
@@ -767,12 +794,15 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 	layout->addWidget(myAnimationLabel, 2, 0);
 	layout->addWidget(myFrequencyAnimationRadio, 2, 1);
 	layout->addWidget(myCaseAnimationRadio, 3, 1);
-	layout->addWidget(myResultsCaseSelector_dummy, 3, 2, 1, -1);
+	layout->addWidget(myAnimationOptionResultsCaseSelector, 3, 2, 1, -1);
 	layout->addWidget(myHarmonicAnimationRadio, 4, 1);
-	layout->addWidget(myAnimationAnalysisTree, 5, 0, 1, -1);
-	layout->addWidget(myAnimationOptionPreview, 6, 0);
-	layout->addWidget(myAnimationOptionApplyButton, 6, 1);
-	layout->addWidget(myAnimationSetDefaultButton, 6, 2);
+	layout->addWidget(myAnimationAnalysisTreeLabel, 5, 0);
+	layout->addWidget(myAnimationAnalysisTree, 6, 0, 1, -1);
+	layout->addWidget(myAnimationCaseTreeLabel, 7, 0);
+	layout->addWidget(myAnimationCaseTree, 8, 0, 1, -1);
+	layout->addWidget(myAnimationOptionPreview, 9, 0);
+	layout->addWidget(myAnimationOptionApplyButton, 9, 1);
+	layout->addWidget(myAnimationSetDefaultButton, 9, 2);
 
 	QWidget* temp = new QWidget(this);
 	temp->setLayout(layout);
@@ -782,6 +812,7 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 	addDockWidget(Qt::LeftDockWidgetArea, myAnimationOptionsDock);
 	myAnimationOptionsDock->setFloating(true);
 	myAnimationOptionsDock->hide();
+	myAnimationOptionsDock->setMinimumWidth(500);
 	//myAnimationOptionsDock->setFixedHeight(myAnimationOptionsDock->rect().height());
 
 	myAnimationOptionsDock->move(QApplication::desktop()->screen()->rect().center() - myAnimationOptionsDock->rect().center());
@@ -816,28 +847,37 @@ void STACCATOMainWindow::importXMLFile(void) {
 		// Intialize XML Parsing
 		MetaDatabase::init(fileName.toStdString());
 
-		int numParts = MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size();
-		std::cout << "There are " << MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().size() << " models.\n";
+		int numParts = MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART().size();
+		std::cout << "There are " << numParts << " models.\n";
 
 		anaysisTimer01.start();
 		anaysisTimer03.start();
 		std::vector<Reader*> allReader(numParts);
 		int i = 0;
-		for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
-			iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
-			++iFileImport, i++) {
-			std::string filePath = "C:/software/repos/STACCATO/model/";
-			filePath += std::string(iFileImport->FILE()->data());
-			if (std::string(iFileImport->Type()->data()) == "AbqODB") {
-				allReader[i] = new SimuliaODB(filePath, *myHMesh);
+		STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+		for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
+		{
+			if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE")
+			{
+				for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
+				{
+					std::string filePath = "C:/software/repos/STACCATO/model/";
+					filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
+					if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
+						allReader[i] = new SimuliaODB(filePath, *myHMesh, iPart);
+					}
+					else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
+						allReader[i] = new SimuliaUMA(filePath, *myHMesh, iPart);
+					}
+					else {
+						std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
+					}
+				}
 			}
-			else if (std::string(iFileImport->Type()->data()) == "AbqSIM") {
-				allReader[i] = new SimuliaUMA(filePath, *myHMesh);
-			}
-			else {
-				std::cerr << ">> XML Error: Unidentified FileImport type " << iFileImport->Type()->data() << std::endl;
-			}
+			else
+				std::cerr << ">> XML Error: Unidentified Part Type: " << iterParts->PART()[iPart].TYPE()->data() << std::endl;
 		}
+
 		anaysisTimer01.stop();
 		debugOut << "Duration for reading all file imports: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -847,10 +887,13 @@ void STACCATOMainWindow::importXMLFile(void) {
 		anaysisTimer03.stop();
 		debugOut << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		myAnalysis.push_back(mFeAnalysis);
 
 		std::cout << ">> FeAnalysis Finished."<< std::endl;
-		fillFEResultInGUI();
 
+		// Fill GUI
+		fillFEResultInGUI();
+		myVisualizerSetting->setCurrentAnalysis(myHMesh->myOutputDatabase->myAnalyses[0].name);				// Current Analysis is set as the first by default
 		// Enable Tools
 		myScalarBarVisibility->setEnabled(true);
 		myWarpVectorVisibility->setEnabled(true);
@@ -863,9 +906,10 @@ void STACCATOMainWindow::importXMLFile(void) {
 		debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(STACCATO_x_Re, myFreqIndex->first);
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFreqIndex->first);
+		//myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(STACCATO_x_Re, 0);
+		//myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(0);
 
+		myVisualizerSetting->listProperties();
 		myViewPropertyUpdate();
 	}
 }
@@ -1318,6 +1362,7 @@ void STACCATOMainWindow::mySignalDataVisualizerInterface() {
 	static bool mySignalDataVisualizerActive = false;
 	if (!mySignalDataVisualizerActive) {
 		mySignalDataVisualizer = new SignalDataVisualizer();
+		myVisualizerSetting->setCommuniationToSignalDataVisualizer(*mySignalDataVisualizer);
 		mySignalDataVisualizer->setHMesh(*myHMesh);
 		mySignalDataVisualizer->attachSubject(myFieldDataVisualizer);
 		mySignalDataVisualizer->initiate();
@@ -1372,7 +1417,7 @@ void STACCATOMainWindow::myUMAHMesh() {
 
 	// Check for Imports
 	bool flagSIM = false;
-	for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
+	/*for (STACCATO_XML::FILEIMPORT_const_iterator iFileImport(MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().begin());
 		iFileImport != MetaDatabase::getInstance()->xmlHandle->FILEIMPORT().end();
 		++iFileImport)
 	{
@@ -1389,7 +1434,7 @@ void STACCATOMainWindow::myUMAHMesh() {
 	}
 	else {
 		std::cerr << "FILEIMPORT Error: AbqSIM not found in XML.\n";
-	}
+	}*/
 }
 
 void STACCATOMainWindow::myReferenceNodeTriggered() {
@@ -1408,17 +1453,53 @@ void STACCATOMainWindow::mySubFrameAnimate() {
 
 void STACCATOMainWindow::myUpdateAnimationSlider(int _currentIndex) {
 	isSubFrame = true;
-	myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().find(_currentIndex - 1);
-	myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription()[myCaseIndex->first]));		// Update Slider
-	myFieldDataVisualizer->plotVectorFieldAtIndex(myCaseIndex->first);
+	//myCaseIndex = myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription().find(_currentIndex - 1);
+	//myCaseStepText->setText(QString::fromStdString(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].getResultsSubCaseDescription()[myCaseIndex->first]));		// Update Slider
+	myFieldDataVisualizer->plotVectorFieldAtIndex(_currentIndex);
 }
 
 void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
+	myAnimationOptionsDock->hide();
+	myAnimationResetProc();
+
 	anaysisTimer01.start();
 	std::cout << ">> Animation Data ... " << std::endl;
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-	myVisualizerSetting->generateAnimation();
+	int sliderSteps = 0;
+
+	std::vector<int> animationIndices;
+	if (myFrequencyAnimationRadio->isChecked())	{
+		std::cout << ">> Frequency Step Animation running...\n";
+		// Generate Index
+		for (int it = 0; it < myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX).size(); it++)		{
+			animationIndices.push_back(myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[it].startIndex);
+		}
+		sliderSteps = animationIndices.size() - 1;
+		myVisualizerSetting->generateSubCaseAnimation(animationIndices);
+	}
+	else if (myHarmonicAnimationRadio->isChecked()) {
+		std::cout << ">> Harmonic Animation running...\n";
+		int numberOfFrames = 20;
+		// Generate Index
+		for (int it = 0; it < numberOfFrames; it++) {
+			animationIndices.push_back(it);
+		}
+		sliderSteps = animationIndices.size() - 1;
+		myVisualizerSetting->generateHarmonicAnimation(animationIndices);
+	}
+	else if(myCaseAnimationRadio->isChecked()) {
+		std::cout << ">> Sub Case Animation running...\n";
+		// Find Current Case Index
+		int caseIndex = myHMesh->myOutputDatabase->findLoadCase(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX, myAnimationOptionResultsCaseSelector->currentText().toStdString());
+		// Generate Index
+		OutputDatabase::LoadCase loadCase = myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[caseIndex];
+		for (int iSubCase = 0; iSubCase < loadCase.subCaseDescription.size(); iSubCase++) {
+			animationIndices.push_back(loadCase.startIndex + iSubCase);
+		}
+		sliderSteps = animationIndices.size() -1;
+		myVisualizerSetting->generateSubCaseAnimation(animationIndices);
+	}
 
 	myCaseStepText->setEnabled(true);
 	myHorizontalSlider->setEnabled(true);
@@ -1428,11 +1509,15 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 	myResetFrameAnimationButton->setEnabled(true);
 
 	myHorizontalSlider->setFocusPolicy(Qt::StrongFocus);
-	myHorizontalSlider->setTickPosition(QSlider::TicksBothSides);
-	myHorizontalSlider->setTickInterval(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size() - 1);
+	if (sliderSteps > 0)	{
+		myHorizontalSlider->setTickPosition(QSlider::TicksBothSides);
+	}
+	else
+		myHorizontalSlider->setTickPosition(QSlider::TicksLeft);
+	myHorizontalSlider->setTickInterval(sliderSteps);
 	myHorizontalSlider->setSingleStep(1);
-	myHorizontalSlider->setMinimum(1);
-	myHorizontalSlider->setMaximum(myHMesh->myOutputDatabase->getVectorFieldFromDatabase()[0].getResultsCaseDescription().size());
+	myHorizontalSlider->setMinimum(0);
+	myHorizontalSlider->setMaximum(animationIndices.size() -1);
 	myHorizontalSlider->connect(myHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(myUpdateAnimationSlider(int)));
 
 	anaysisTimer01.stop();
@@ -1481,16 +1566,106 @@ QTreeWidgetItem* STACCATOMainWindow::addRootToTree(QTreeWidget* _tree, QString _
 		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
 		item->setCheckState(0, Qt::Unchecked);
 	}
+	item->setExpanded(true);
 	_tree->addTopLevelItem(item);
 	return item;
 }
 
-void STACCATOMainWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name, bool _checkable) {
+void STACCATOMainWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name1, QString _name2, bool _checkable) {
 	QTreeWidgetItem* item = new QTreeWidgetItem();
-	item->setText(0, _name);
+	item->setText(0, _name1);
+	item->setText(1, _name2);
 	if (_checkable) {
 		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
 		item->setCheckState(0, Qt::Unchecked);
 	}
+	item->setExpanded(true);
 	_parent->addChild(item);
+}
+
+void STACCATOMainWindow::myAnalysisTreeUpdate() {
+	// Clear All Trees
+	myAnimationAnalysisTree->clear();
+	myAnimationCaseTree->clear();
+
+	// Fill Animation Tree
+	myVisualizerSetting->setCurrentAnalysis(myAnalysisSelector->currentText().toStdString());
+	QTreeWidgetItem* AnalysisRoot;
+	AnalysisRoot = addRootToTree(myAnimationAnalysisTree, QString::fromStdString(myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].name), false);
+	for (int it = 0; it < myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX).size(); it++)
+	{
+		int index = myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[it].startIndex;
+		addChildToTree(AnalysisRoot, QString::fromStdString(std::to_string(index)), QString::fromStdString(myHMesh->myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX)[it] + myHMesh->myOutputDatabase->getUnit(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, it)), false);
+	}
+
+	// Fill LoadCase Tree & LoadCase Selector
+	myAnimationOptionResultsCaseSelector->disconnect();
+	for (int iCase = 0; iCase < myHMesh->myOutputDatabase->getNumberOfLoadCases(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX); iCase++)
+	{
+		// Tree
+		OutputDatabase::LoadCase loadCase = myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[iCase];
+		QTreeWidgetItem* CaseRoot;
+		CaseRoot = addRootToTree(myAnimationCaseTree, QString::fromStdString(loadCase.prefixName), false);
+		for (int iSubCase = 0; iSubCase < loadCase.subCaseDescription.size(); iSubCase++) {
+			addChildToTree(CaseRoot, QString::fromStdString(std::to_string(loadCase.startIndex + iSubCase)), QString::fromStdString(std::to_string(static_cast<int>(loadCase.subCaseDescription[iSubCase])) + loadCase.unit), false);
+		}
+
+		// Selector
+		myAnimationOptionResultsCaseSelector->addItem(QString::fromStdString(loadCase.prefixName));
+	}
+	myAnimationOptionResultsCaseSelector->setCurrentIndex(1);
+}
+
+void STACCATOMainWindow::myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item) {
+	// Clear Case Tree
+	myAnimationCaseTree->clear();
+
+	// Find Index
+	int index;
+	if (_item->parent()) {
+		index = std::stoi(_item->text(0).toStdString());
+	}
+	else {
+		index = myHMesh->myOutputDatabase->myAnalyses[myHMesh->myOutputDatabase->findAnalysis(_item->text(0).toStdString())].timeSteps[0].startIndex;
+	}
+
+	// Preview
+	if (myAnimationOptionPreview->isChecked()) {
+		myVisualizerSetting->commitTimeStepIndex(index);
+		std::cout << ">> Frequency Changed for Case Frame: " << index << std::endl;
+
+		myViewPropertyUpdate();
+		myVisualizerSetting->listProperties();
+	}
+
+	// Rebuild Case Tree
+	for (int iCase = 0; iCase < myHMesh->myOutputDatabase->getNumberOfLoadCases(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, index); iCase++)
+	{
+		OutputDatabase::LoadCase loadCase = myHMesh->myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[index].caseList[iCase];
+		QTreeWidgetItem* CaseRoot;
+		CaseRoot = addRootToTree(myAnimationCaseTree, QString::fromStdString(loadCase.prefixName), false);
+		for (int iSubCase = 0; iSubCase < loadCase.subCaseDescription.size(); iSubCase++) {
+			addChildToTree(CaseRoot, QString::fromStdString(std::to_string(loadCase.startIndex + iSubCase)), QString::fromStdString(std::to_string(static_cast<int>(loadCase.subCaseDescription[iSubCase])) + loadCase.unit), false);
+		}
+	}
+}
+
+void STACCATOMainWindow::myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item) {
+	int index;
+
+	if (myAnimationOptionPreview->isChecked()) {
+		if (_item->parent()) {
+			index = std::stoi(_item->text(0).toStdString());
+			myVisualizerSetting->commitLoadCaseIndex(myHMesh->myOutputDatabase->findLoadCase(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX, _item->parent()->text(0).toStdString()));
+			myVisualizerSetting->commitSubLoadCaseIndex(index);
+		}
+		else {
+			index = myHMesh->myOutputDatabase->getVectorFieldIndex(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX, myHMesh->myOutputDatabase->findLoadCase(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX, _item->text(0).toStdString()));
+			myVisualizerSetting->commitLoadCaseIndex(index);
+		}
+		
+		std::cout << ">> Case Changed for Frequency Frame: " << index << std::endl;
+		myVisualizerSetting->listProperties();
+		myViewPropertyUpdate();
+	}
 }

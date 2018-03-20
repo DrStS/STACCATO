@@ -29,6 +29,7 @@
 #include <DiscreteVisualizer.h>
 #include "FieldDataVisualizer.h"
 #include "VisualizerSettingObserver.h"
+#include "VisualizerSetting.h"
 
 // QT5
 #include <QMainWindow>
@@ -103,6 +104,8 @@ public:
 	***********/
 	void update(void);
 
+	void connectVisualizerSetting(VisualizerSetting* _setting);
+
 protected:
 	/***********************************************************************************************
 	* \brief Create all Actions of Qt
@@ -145,6 +148,10 @@ private slots:
 public:
 	void setSelection(std::vector<int>);
 	QPushButton* myPickerButton;
+
+	///Display Properties
+	VisualizerSetting *myVisualizerSetting;
+
 private:
 	/// File action.
 	QAction* myExitAction;

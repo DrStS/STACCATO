@@ -23,34 +23,43 @@
 * \date 9/16/2016
 **************************************************************************************************/
 #pragma once
-
+//std
+#include <future>
+#include <thread>
+//STACCATO
+#include "STACCATO_Enum.h"
 // QT5
 #include <QMainWindow>
-#include <QLabel>
-#include <QPushButton>
-#include <QLineEdit>
-#include <QComboBox>
 // OCC
-//#include <AIS_InteractiveContext.hxx>
-/// Visualizer
-#include "SignalDataVisualizer.h"
-#include "VisualizerSetting.h"
-
-//Enums
-#include "STACCATO_Enum.h"
 
 // forward declaration
 class OccViewer;
+
 class VtkViewer;
 class UMA_AccessSparse;
+class STACCATOComputeEngine;
+class OutputDatabase;
+class SignalDataVisualizer;
+class VisualizerSetting;
+class FieldDataVisualizer;
+class QRadioButton;
+class QLabel;
+class QTreeWidgetItem;
+class QTreeWidget;
+class QPushButton;
+class QComboBox;
+class QLineEdit;
 class QTextEdit;
 class QCheckBox;
 class QGroupBox;
 class QSpinBox;
 class QFormLayout;
 class QSlider;
-class STACCATOComputeEngine;
-class OutputDatabase;
+class QButtonGroup;
+
+using namespace STACCATO_Visualizer;
+using namespace STACCATO_Results;
+
 namespace Ui {
 	class STACCATOMainWindow;
 }
@@ -88,7 +97,7 @@ protected:
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
 	void addChildToTree(QTreeWidgetItem*, QString , QString , bool);
 
-	private slots:
+private slots:
 	void about(void);
 	void importFile(void);
 	void drawCantilever(void);
@@ -292,10 +301,12 @@ private:
 
 	int myFreqIndex;
 	int myCaseIndex;
+	bool isSubFrame;
 
 	OutputDatabase* myOutputDatabase;
 	STACCATOComputeEngine * myComputeEngine;
-public:
-	int globalFrame;
-	bool isSubFrame;
+
+	//Parallel Execution 
+	std::future<void> myFuture;
+
 };

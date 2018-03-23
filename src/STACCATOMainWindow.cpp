@@ -20,7 +20,7 @@
 #include "STACCATOMainWindow.h"
 #include "STACCATOComputeEngine.h"
 #include "ui_STACCATOMainWindow.h"
-#include "OccViewer.h"
+
 #include "VtkViewer.h"
 #include "AuxiliaryParameters.h"
 #include "Message.h"
@@ -29,11 +29,14 @@
 #include "FieldDataVisualizer.h"
 #include "OutputDatabase.h"
 #include "VectorFieldResults.h"
+#include "VisualizerSetting.h"
+#include "SignalDataVisualizer.h"
+
 #include "HMeshToMeshVS_DataSource.h"
 #include "STLVRML_DataSource.h"
 #include "OcctQtProcessIndicator.h"
 #include "qnemainwindow.h"
-
+#include "OccViewer.h"
 //Q5
 #include <QToolBar>
 #include <QTreeView>
@@ -51,6 +54,8 @@
 #include <QFormLayout>
 #include <QSpinBox>
 #include <QtCharts/QLineSeries>
+#include <QRadioButton>
+#include <QTreeWidget>
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -812,10 +817,10 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 }
 
 void STACCATOMainWindow::about() {
-	myOccViewer->showGrid(Standard_True);
-	myOccViewer->viewTop();
-	myOccViewer->fitAll();
-	myOccViewer->viewGrid();
+	//myOccViewer->showGrid(Standard_True);
+	//myOccViewer->viewTop();
+	//myOccViewer->fitAll();
+	//myOccViewer->viewGrid();
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
 			"<p>Copyright &copy; 2017 "
@@ -922,7 +927,7 @@ void STACCATOMainWindow::readSTEP(QString fileName) {
 	}
 	for (Standard_Integer i = 1; i <= nbs; i++) {
 		Handle(AIS_Shape) aisShape = new AIS_Shape(aReader.Shape(i));
-		myOccViewer->getContext()->Display(aisShape);
+		//myOccViewer->getContext()->Display(aisShape);
 	}
 
 }
@@ -936,7 +941,7 @@ void STACCATOMainWindow::readIGES(QString fileName) {
 	if (status != IFSelect_RetDone) return;
 	Reader.TransferRoots();
 	Handle(AIS_Shape) aisShape = new AIS_Shape(Reader.OneShape());
-	myOccViewer->getContext()->Display(aisShape);
+	//myOccViewer->getContext()->Display(aisShape);
 
 }
 

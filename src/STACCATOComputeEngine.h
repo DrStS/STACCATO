@@ -23,22 +23,52 @@
 * \date 3/14/2018
 **************************************************************************************************/
 #pragma once
+#include <string>
 
 /********//**
 * \brief Class ComputeEngine the core of STACCATO
 ***********/
+class HMesh;
+class OutputDatabase;
 class STACCATOComputeEngine {
 
 public:
 	/***********************************************************************************************
 	* \brief Constructor
+	* \param[in] file name of xml file to call singelton constructor of metadatabase
 	* \author Stefan Sicklinger
 	***********/
-	STACCATOComputeEngine();
+	STACCATOComputeEngine(std::string _xmlFileName);
 	/***********************************************************************************************
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
 	~STACCATOComputeEngine();
-
+	/***********************************************************************************************
+	* \brief prepare compute engine
+	* \author Stefan Sicklinger
+	***********/
+	void prepare(void);
+	/***********************************************************************************************
+	* \brief compute engine
+	* \author Stefan Sicklinger
+	***********/
+	void compute(void);
+	/***********************************************************************************************
+	* \brief clean compute engine free memory
+	* \author Stefan Sicklinger
+	***********/
+	void clean(void);
+	/***********************************************************************************************
+	* \brief get HMesh handle
+	* \author Stefan Sicklinger
+	***********/
+	HMesh & getHMesh() { return *myHMesh; }
+	/***********************************************************************************************
+	* \brief get OutputDatabase handle
+	* \author Stefan Sicklinger
+	***********/
+	OutputDatabase & getOutputDatabase(void);
+private:
+	 HMesh *myHMesh;
 };

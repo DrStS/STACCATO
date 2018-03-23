@@ -17,10 +17,10 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <VectorFieldResults.h>
 #include <iostream>
 
-#include <MathLibrary.h>
+#include "VectorFieldResults.h"
+#include "MathLibrary.h"
 
 VectorFieldResults::VectorFieldResults() : Results() {
 }

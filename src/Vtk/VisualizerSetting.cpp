@@ -17,10 +17,9 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <VisualizerSetting.h>
-#include <Timer.h>
-
-#include <SignalDataVisualizer.h>
+#include "VisualizerSetting.h"
+#include "SignalDataVisualizer.h"
+#include "OutputDatabase.h"
 
 VisualizerSetting::VisualizerSetting()
 {

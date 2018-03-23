@@ -18,13 +18,86 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include "STACCATOComputeEngine.h"
+#include "HMesh.h"
+#include "HMeshToVtkUnstructuredGrid.h"
+#include "Reader.h"
+#include "Timer.h"
+#include "MemWatcher.h"
+#include "SimuliaODB.h"
+#include "SimuliaUMA.h"
+#include "FeAnalysis.h"
+#include "HMesh.h"
+#include "MetaDatabase.h"
 
-
-STACCATOComputeEngine::STACCATOComputeEngine(){
-
+STACCATOComputeEngine::STACCATOComputeEngine(std::string _xmlFileName){
+	// Intialize XML metadatabase singelton 
+	MetaDatabase::init(_xmlFileName);
+	// Works for one instance only
+	myHMesh = new HMesh("default");
 }
 
 
 STACCATOComputeEngine::~STACCATOComputeEngine(){
+}
+
+void STACCATOComputeEngine::prepare(void) {
+
+
+	int numParts = MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART().size();
+	std::cout << "There are " << numParts << " models.\n";
+
+	anaysisTimer01.start();
+	anaysisTimer03.start();
+	std::vector<Reader*> allReader(numParts);//not correct
+	int i = 0;
+	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
+	{
+		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE")
+		{
+			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
+			{
+				std::string filePath = "C:/software/repos/STACCATO/model/";
+				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
+				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
+					allReader[i] = new SimuliaODB(filePath, *myHMesh, iPart);
+				}
+				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
+					allReader[i] = new SimuliaUMA(filePath, *myHMesh, iPart);
+				}
+				else {
+					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
+				}
+			}
+		}
+		else
+			std::cerr << ">> XML Error: Unidentified Part Type: " << iterParts->PART()[iPart].TYPE()->data() << std::endl;
+	}
+
+	anaysisTimer01.stop();
+	std::cout << "Duration for reading all file imports: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+}
+
+void STACCATOComputeEngine::compute(void) {
+
+	//Run FE Analysis
+	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
+	anaysisTimer03.stop();
+	std::cout << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+
+	std::cout << ">> FeAnalysis Finished." << std::endl;
+
+}
+
+OutputDatabase& STACCATOComputeEngine::getOutputDatabase(void) {
+
+	return *(myHMesh->myOutputDatabase); 
+}
+
+void STACCATOComputeEngine::clean(void) {
 
 }

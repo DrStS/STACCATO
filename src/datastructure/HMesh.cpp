@@ -21,6 +21,7 @@
 #include <numeric>
 #include "HMesh.h"
 #include "Message.h"
+#include "OutputDatabase.h"
 
 HMesh::HMesh(std::string _name) : name(_name) {
 	hasParts = false;

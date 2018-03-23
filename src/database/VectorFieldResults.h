@@ -27,7 +27,6 @@
 #include <Results.h>
 
 using namespace STACCATO_Results;
-
 class VectorFieldResults : public Results
 {
 public:

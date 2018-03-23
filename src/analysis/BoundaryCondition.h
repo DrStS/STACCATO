@@ -27,14 +27,12 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 #include <assert.h>
 #include "MathLibrary.h"
-#include <HMesh.h>
-
-#include <iostream>
-#include "Timer.h"
-
-#include <MetaDatabase.h>
+#include "HMesh.h"
+#include "MetaDatabase.h"
+#include "STACCATO_Enum.h"
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -344,5 +342,5 @@ private:
 	/// Computing Force Vector
 	std::vector<T> RForces;
 public:
-	STACCATO_ResultsCase_type myCaseType;
+	STACCATO_Results::STACCATO_ResultsCase_type myCaseType;
 };

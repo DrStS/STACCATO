@@ -24,9 +24,6 @@
 **************************************************************************************************/
 #pragma once
 
-#include "HMeshToVtkUnstructuredGrid.h"
-#include "FeAnalysis.h"
-
 // QT5
 #include <QMainWindow>
 #include <QLabel>
@@ -34,9 +31,7 @@
 #include <QLineEdit>
 #include <QComboBox>
 // OCC
-#include <AIS_InteractiveContext.hxx>
-// SimuliaOBD
-#include "SimuliaODB.h"
+//#include <AIS_InteractiveContext.hxx>
 /// Visualizer
 #include "SignalDataVisualizer.h"
 #include "VisualizerSetting.h"
@@ -54,7 +49,8 @@ class QGroupBox;
 class QSpinBox;
 class QFormLayout;
 class QSlider;
-
+class STACCATOComputeEngine;
+class OutputDatabase;
 namespace Ui {
 	class STACCATOMainWindow;
 }
@@ -132,13 +128,8 @@ private:
 	std::vector<std::string> allDispVectorComponents;
 	std::vector<std::string> allViewModes;
 
-	HMeshToVtkUnstructuredGrid* myHMeshToVtkUnstructuredGrid;
-
 	Ui::STACCATOMainWindow *myGui;
 	
-	// Analysis
-	std::vector<FeAnalysis*> myAnalysis;
-
 	/// File action.
 	QAction* myExitAction;
 	QAction* myReadFileAction;
@@ -302,10 +293,8 @@ private:
 	int myFreqIndex;
 	int myCaseIndex;
 
-private:
-	/// HMesh object 
-	HMesh *myHMesh;
-
+	OutputDatabase* myOutputDatabase;
+	STACCATOComputeEngine * myComputeEngine;
 public:
 	int globalFrame;
 	bool isSubFrame;

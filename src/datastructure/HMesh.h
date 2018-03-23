@@ -29,8 +29,7 @@
 #include <map>
 #include "STACCATO_Enum.h"
 
-#include "OutputDatabase.h"
-
+class OutputDatabase;
 class Message;
 /********//**
  * \brief Class HMesh has all data w.r.t. a finite element mesh
@@ -203,66 +202,6 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void buildDoFGraph(void);
-private:
-	/// mesh name
-	std::string name;
-    /// coordinates of all nodes
-    std::vector<double> nodeCoords;
-	/// coordinates of all nodes sorted for parallel mem access element index 0..ne
-	std::vector<double> nodeCoordsSortElementIndices;
-	/// DoF list sorted  element index 0..ne
-	std::vector<int> elementDoFList;
-	/// DoF list sorted  element index 0..ne with entries -1 for homogeneous Dirichlet DoF; -2 for non-homogeneous Dirichlet
-	std::vector<int> elementDoFListRestricted;
-	/// vector holding affected DOFs for Dirichlet
-	std::vector<int> restrictedHomogeneousDoFList;
-    /// labels of all nodes
-	std::vector<int> nodeLabels;
-    /// number of nodes of each element
-	std::vector<int> numNodesPerElem; 
-	/// number of DoFs of each element
-	std::vector<int> numDoFsPerElem;
-	/// type of DoFs of each element
-	//std::vector<int> typeDoFsPerEle;
-	/// number of DoFs of each node
-	std::vector<int> numDoFsPerNode;
-    /// nodes connectivity inside all elements using node labels
-	std::vector<int> elementsTopology;
-    /// labels of all elements
-	std::vector<int> elementLabels;
-	/// store element type by index
-	std::vector<STACCATO_Element_type> elementTyps;
-	/// map node label to node index
-	std::map<int, int> nodeLabelToNodeIndexMap;
-	/// map element label to element index
-	std::map<int, int> elementLabelToElementIndexMap;
-	/// relation of node index to element indexes: 1 to nn
-	std::vector<std::vector<int>> nodeIndexToElementIndices;
-	/// relation of element index to node indexes: 1 to ne
-	std::vector<std::vector<int>> elementIndexToNodesIndices;
-	/// total number of DoF without internal DoFs and BCs
-	int totalNumOfDoFsRaw;
-	/// domain dimension 1D, 2D or 3D
-	int domainDimension;
-	/// relation of node index to DoF indexes: 1 to nd
-	std::vector<std::vector<int>> nodeIndexToDoFIndices;
-    /// unit test class
-    friend class TestFEMesh;
-private:
-	/// Avoid copy of a HMesh object copy constructor 
-	HMesh(const HMesh&);
-	/// Avoid copy of a HMesh object assignment operator
-	HMesh& operator=(const HMesh&);
-
-
-	/* -- Class Members and Functions for DBC -- */
-private:
-	/// Map holding NodeSets
-	std::map<std::string, std::vector<int>> nodeSetsMap;
-	/// Map holding ElementSets
-	std::map<std::string, std::vector<int>> elemSetsMap;
-
-public:
 	/***********************************************************************************************
 	* \brief Add a Node Set
 	* \param[in] _name
@@ -310,12 +249,61 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<int> convertElementSetNameToLabels(std::string _elemSetName);
-
-	/* -- Class Member for supporting UMA -- */
-public:
 	bool hasParts;
 	bool isSIM;
 	std::vector<int> referenceNodeLabel;
-
+private:
+	/// mesh name
+	std::string name;
+    /// coordinates of all nodes
+    std::vector<double> nodeCoords;
+	/// coordinates of all nodes sorted for parallel mem access element index 0..ne
+	std::vector<double> nodeCoordsSortElementIndices;
+	/// DoF list sorted  element index 0..ne
+	std::vector<int> elementDoFList;
+	/// DoF list sorted  element index 0..ne with entries -1 for homogeneous Dirichlet DoF; -2 for non-homogeneous Dirichlet
+	std::vector<int> elementDoFListRestricted;
+	/// vector holding affected DOFs for Dirichlet
+	std::vector<int> restrictedHomogeneousDoFList;
+    /// labels of all nodes
+	std::vector<int> nodeLabels;
+    /// number of nodes of each element
+	std::vector<int> numNodesPerElem; 
+	/// number of DoFs of each element
+	std::vector<int> numDoFsPerElem;
+	/// type of DoFs of each element
+	//std::vector<int> typeDoFsPerEle;
+	/// number of DoFs of each node
+	std::vector<int> numDoFsPerNode;
+    /// nodes connectivity inside all elements using node labels
+	std::vector<int> elementsTopology;
+    /// labels of all elements
+	std::vector<int> elementLabels;
+	/// store element type by index
+	std::vector<STACCATO_Element_type> elementTyps;
+	/// map node label to node index
+	std::map<int, int> nodeLabelToNodeIndexMap;
+	/// map element label to element index
+	std::map<int, int> elementLabelToElementIndexMap;
+	/// relation of node index to element indexes: 1 to nn
+	std::vector<std::vector<int>> nodeIndexToElementIndices;
+	/// relation of element index to node indexes: 1 to ne
+	std::vector<std::vector<int>> elementIndexToNodesIndices;
+	/// total number of DoF without internal DoFs and BCs
+	int totalNumOfDoFsRaw;
+	/// domain dimension 1D, 2D or 3D
+	int domainDimension;
+	/// relation of node index to DoF indexes: 1 to nd
+	std::vector<std::vector<int>> nodeIndexToDoFIndices;
+	/// Avoid copy of a HMesh object copy constructor 
+	HMesh(const HMesh&);
+	/// Avoid copy of a HMesh object assignment operator
+	HMesh& operator=(const HMesh&);
+	/// Map holding NodeSets
+	std::map<std::string, std::vector<int>> nodeSetsMap;
+	/// Map holding ElementSets
+	std::map<std::string, std::vector<int>> elemSetsMap;
+public:
 	OutputDatabase* myOutputDatabase;
+
 };

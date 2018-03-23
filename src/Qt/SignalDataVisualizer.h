@@ -24,12 +24,12 @@
 **************************************************************************************************/
 #pragma once
 
-#include "HMeshToVtkUnstructuredGrid.h"
-#include <STACCATO_Enum.h>
-#include <DiscreteVisualizer.h>
-#include "FieldDataVisualizer.h"
+
+#include "STACCATO_Enum.h"
+#include "DiscreteVisualizer.h"
 #include "VisualizerSettingObserver.h"
-#include "VisualizerSetting.h"
+#include "ChartView.h"
+
 
 // QT5
 #include <QMainWindow>
@@ -45,12 +45,7 @@
 
 QT_CHARTS_USE_NAMESPACE
 
-// OCC
-#include <AIS_InteractiveContext.hxx>
-// SimuliaOBD
-#include "SimuliaODB.h"
-// Chart
-#include "chartview.h"
+
 
 // forward declaration
 class ChartViewToolTip;
@@ -65,8 +60,11 @@ class QRadioButton;
 class QTreeWidgetItem;
 class QPointF;
 class QGestureEvent;
-
 class HMesh;
+class VisualizerSetting;
+class FieldDataVisualizer;
+
+using namespace STACCATO_Results;
 
 namespace Ui {
 	class SignalDataVisualizer;

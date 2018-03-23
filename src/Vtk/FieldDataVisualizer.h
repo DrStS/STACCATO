@@ -24,16 +24,17 @@
 **************************************************************************************************/
 #pragma once
 
-#include <STACCATO_Enum.h>
+#include "STACCATO_Enum.h"
+
+#include "DiscreteVisualizer.h"
+#include "HMeshToVtkUnstructuredGrid.h"
+#include "VisualizerSettingSubject.h"
 #include "HMesh.h"
 //VTK
+#include <vtkAnimationScene.h>
 #include <QVTKOpenGLWidget.h>
 #include <vtkSmartPointer.h>
 
-#include <vtkAnimationScene.h>
-#include <DiscreteVisualizer.h>
-#include <HMeshToVtkUnstructuredGrid.h>
-#include "VisualizerSettingSubject.h"
 
 class QVTKOpenGLWidget;
 class vtkOrientationMarkerWidget;
@@ -50,6 +51,8 @@ class vtkPolyDataMapper;
 class VtkAnimator;
 class VtkViewer;
 class VisualizerSetting;
+
+using namespace STACCATO_Results;
 
 class FieldDataVisualizer : public QVTKOpenGLWidget, public DiscreteVisualizer, public VisualizerSettingSubject
 {

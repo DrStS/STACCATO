@@ -32,7 +32,7 @@
 
 //QT5
 #include <QTextEdit>
-
+#undef ERROR
 // forward declaration
 class QTextEdit;
 

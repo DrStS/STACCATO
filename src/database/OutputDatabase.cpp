@@ -17,7 +17,9 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <OutputDatabase.h>
+#include "OutputDatabase.h"
+#include "ScalarFieldResults.h"
+#include "VectorFieldResults.h"
 #include <iostream>
 
 OutputDatabase::OutputDatabase() {

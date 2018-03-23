@@ -17,12 +17,13 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include <FieldDataVisualizer.h>
-
-#include "Timer.h"
-#include "MemWatcher.h"
-
+#include "FieldDataVisualizer.h"
+#include "OutputDatabase.h"
 #include "HMesh.h"
+#include "VtkAnimator.h"
+#include "VtkViewer.h"
+#include "VisualizerSetting.h"
+#include "VectorFieldResults.h"
 
 //VTK
 #include <vtkCamera.h>
@@ -58,10 +59,6 @@
 //QT5
 #include <QInputEvent>
 
-#include "VtkAnimator.h"
-#include "VtkViewer.h"
-
-#include "VisualizerSetting.h"
 
 FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(parent){
 	vtkNew<vtkGenericOpenGLRenderWindow> window;

@@ -29,8 +29,9 @@
 #include <map>
 #include "STACCATO_Enum.h"
 
-#include "VectorFieldResults.h"
-#include "ScalarFieldResults.h"
+class VectorFieldResults;
+class ScalarFieldResults;
+using namespace STACCATO_Results;
 
 class OutputDatabase {
 public:
@@ -201,10 +202,15 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	int getStartIndexForNewAnalysis();
-
+	private:
+		/// Avoid copy of a OutputDatabase object copy constructor 
+		OutputDatabase(const OutputDatabase&);
+		/// Avoid copy of a OutputDatabase object assignment operator
+		OutputDatabase& operator=(const OutputDatabase&);
 private:
 	std::vector<ScalarFieldResults> myScalarFieldResults;
 	std::vector<VectorFieldResults> myVectorFieldResults;
+
 public:
 	std::vector<Analysis> myAnalyses;
 };

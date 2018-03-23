@@ -18,7 +18,14 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 #include "SignalDataVisualizer.h"
-
+#include "FieldDataVisualizer.h"
+#include "HMeshToVtkUnstructuredGrid.h"
+#include "ChartViewToolTip.h"
+#include "HMesh.h"
+#include "ChartView.h"
+#include "OutputDatabase.h"
+#include "VisualizerSetting.h"
+#include "VectorFieldResults.h"
 //QT5
 #include <QToolBar>
 #include <QTreeView>
@@ -50,10 +57,6 @@
 #include <QGesture>
 
 QT_CHARTS_USE_NAMESPACE
-
-#include "ChartViewToolTip.h"
-#include "HMesh.h"
-#include "chartview.h"
 
 SignalDataVisualizer::SignalDataVisualizer()
 {

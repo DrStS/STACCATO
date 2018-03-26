@@ -36,10 +36,8 @@ using namespace STACCATO_Results;
 class OutputDatabase {
 public:
 	struct LoadCase {
-		std::string prefixName;										// XML Prefix Name
-		std::vector<std::vector<std::string>> loadNameToPart;		// XML Info of Which LoadName of Which Part
+		std::string name;										// XML Prefix Name
 		STACCATO_ResultsCase_type type;								// Type of LoadCase - To indicate for Subcase
-		std::vector<double> subCaseDescription;						// SubCase Values (now angles) of SubCases
 		std::string unit;											// SubCase Unit
 		int startIndex;												// StartIndex Within the AnalysisVectorIndex
 	};
@@ -147,12 +145,6 @@ public:
 	***********/
 	int getNumberOfLoadCases(int _analysisIndex, int _timeStepIndex);
 	/***********************************************************************************************
-	* \brief Get Number of Sub-LoadCases
-	* \param[out] size
-	* \author Harikrishnan Sreekumar
-	***********/
-	int getNumberOfSubLoadCases(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
-	/***********************************************************************************************
 	* \brief Get Analysis Description
 	* \param[out] description vector
 	* \author Harikrishnan Sreekumar
@@ -164,12 +156,6 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<std::string> getTimeDescription(int _analysisIndex);
-	/***********************************************************************************************
-	* \brief Get Sub-Case Description
-	* \param[out] description vector
-	* \author Harikrishnan Sreekumar
-	***********/
-	std::vector<double> getSubCaseDescription(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex);
 	/***********************************************************************************************
 	* \brief Get Unit for Time Step
 	* \param[int] analysis type

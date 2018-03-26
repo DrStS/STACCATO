@@ -33,28 +33,6 @@ void OutputDatabase::addNewAnalysisVectorField(	Analysis _analysis, VectorFieldR
 
 	myVectorFieldResults.push_back(*_vectorField);
 
-	/*struct Analysis analysis;
-	analysis.name = _analysisName;
-	analysis.type = _analysisType;
-	for (int i = 0; i < _timeStepDescription.size(); i++)
-	{
-		struct TimeStep timeStep;
-		timeStep.timeDescription = _timeStepDescription[i];
-
-		for (int j = 0; j < _subCaseDescription.size(); j++)
-		{
-			struct LoadCase loadCase;
-			loadCase.prefixName = "";
-			loadCase.type = _vectorField->getResultsLoadCaseType();
-			loadCase.subCaseDescription = _vectorField->getResultsSubCaseDescription();
-			loadCase.startIndex = 0;
-
-			timeStep.caseList.push_back(loadCase);
-		}
-		timeStep.startIndex = 0;
-		analysis.timeSteps.push_back(timeStep);
-	}
-	analysis.startIndex = 0;*/
 	myAnalyses.push_back(_analysis);
 
 	std::cout << ">> OutputDatabase is allocated for an expected Vector Field Result.\n";
@@ -99,7 +77,7 @@ int OutputDatabase::findTimeStep(int _analysisIndex, std::string _timeStepDescri
 
 int OutputDatabase::findLoadCase(int _analysisIndex, int _timeStepIndex, std::string _loadCasePrefixName) {
 	for (int k = 0; k < myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList.size(); k++) {
-		if (myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList[k].prefixName == _loadCasePrefixName) {
+		if (myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList[k].name == _loadCasePrefixName) {
 			return k;
 		}
 	}
@@ -130,10 +108,6 @@ int OutputDatabase::getNumberOfLoadCases(int _analysisIndex, int _timeStepIndex)
 	return myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList.size();
 }
 
-int OutputDatabase::getNumberOfSubLoadCases(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex) {
-	return myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList[_loadCaseIndex].subCaseDescription.size();
-}
-
 std::vector<std::string> OutputDatabase::getAnalysisDescription() {
 	std::vector<std::string> analysisdescription;
 	for (int i = 0; i < myAnalyses.size(); i++) {
@@ -149,10 +123,6 @@ std::vector<std::string> OutputDatabase::getTimeDescription(int _analysisIndex) 
 		timeDescription.push_back(myAnalyses[_analysisIndex].timeSteps[i].timeDescription);
 	}
 	return timeDescription;
-}
-
-std::vector<double> OutputDatabase::getSubCaseDescription(int _analysisIndex, int _timeStepIndex, int _loadCaseIndex) {
-	return myAnalyses[_analysisIndex].timeSteps[_timeStepIndex].caseList[_loadCaseIndex].subCaseDescription;
 }
 
 std::string OutputDatabase::getSyntaxForTime(STACCATO_Analysis_type _analysisType) {

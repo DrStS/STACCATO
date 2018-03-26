@@ -179,6 +179,9 @@ public:
 	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
 		myCaseType = STACCATO_Case_None;
 		bool flagLabel = true;
+		int flagIndex = _rhs.size();
+		_rhs.resize(_rhs.size() + myHMesh->getTotalNumOfDoFsRaw());
+
 		std::cout << ">> Looking for Concentrated Coupling ...\n";
 		for (int m = 0; m < _nodeList.size(); m++) {
 			int numDoFsPerNode = myHMesh->getNumDoFsPerNode(myHMesh->convertNodeLabelToNodeIndex(_nodeList[m]));
@@ -187,7 +190,7 @@ public:
 					flagLabel = false;
 					int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(_nodeList[m])][l];
 
-					storeConcentratedLoadRHS(std::is_floating_point<T>{}, dofIndex, _loadVector[l], _rhs);
+					storeConcentratedLoadRHS(std::is_floating_point<T>{}, flagIndex + dofIndex, _loadVector[l], _rhs);
 				}
 			}
 		}
@@ -206,6 +209,7 @@ public:
 		std::cout << ">> Looking for Rotating Distributed Coupling ...\n";
 
 		// Resize RHS vector
+		int flagIndex = _rhs.size();
 		_rhs.resize(_rhs.size() + getBCCaseDescription().size()*myHMesh->getTotalNumOfDoFsRaw());
 
 		int i = 0;
@@ -242,7 +246,7 @@ public:
 						flagLabel = true;
 						int dofIndex = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(_couplingNodes[j])][l];
 
-						storeConcentratedLoadRHS(std::is_floating_point<T>{}, i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex, RForces[j * 3 + l], _rhs);
+						storeConcentratedLoadRHS(std::is_floating_point<T>{}, flagIndex + i*myHMesh->getTotalNumOfDoFsRaw() + dofIndex, RForces[j * 3 + l], _rhs);
 					}
 				}
 			}

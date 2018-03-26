@@ -125,9 +125,7 @@ STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), m
 	setWindowTitle("STACCATO" + QString::fromStdString(STACCATO::AuxiliaryParameters::gitTAG));
 	//myOccViewer = new OccViewer(this);
 
-
 	myFieldDataVisualizer = new FieldDataVisualizer(this);
-
 
 	myVisualizerSetting = new VisualizerSetting();
 	myVisualizerSetting->setCommuniationToFieldDataVisualizer(*myFieldDataVisualizer);

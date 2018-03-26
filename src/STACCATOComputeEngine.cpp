@@ -101,3 +101,5 @@ OutputDatabase& STACCATOComputeEngine::getOutputDatabase(void) {
 void STACCATOComputeEngine::clean(void) {
 
 }
+
+

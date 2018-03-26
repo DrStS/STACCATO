@@ -131,6 +131,7 @@ private slots:
 	void myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item);
 	void myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item);
 	void myAnalysisTreeUpdate(void);
+	//void notifyAnalysisCompleteSuccessfully(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;

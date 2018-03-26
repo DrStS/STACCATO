@@ -355,7 +355,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 										OutputDatabase::LoadCase loadCaseData;
 										loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data());
-										std::cout << "StartIndex: " << frameTrack << std::endl;
 										loadCaseData.startIndex = frameTrack;
 
 										std::string loadCaseTypePart = iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data();
@@ -428,7 +427,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 													loadCaseData.type = neumannBoundaryConditionReal.myCaseType;
 													loadCaseData.unit = myHMesh->myOutputDatabase->getSyntaxForSubLoadCase(loadCaseData.type);
 													loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data()) + "_" + std::to_string(static_cast<int>(neumannBoundaryConditionReal.getBCCaseDescription()[it])) + loadCaseData.unit;
-													std::cout << "StartIndex: " << frameTrack << std::endl;
 													loadCaseData.startIndex = frameTrack;
 													timeStep.caseList.push_back(loadCaseData);
 
@@ -452,7 +450,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 													loadCaseData.type = neumannBoundaryConditionComplex.myCaseType;
 													loadCaseData.unit = myHMesh->myOutputDatabase->getSyntaxForSubLoadCase(loadCaseData.type);
 													loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data()) + "_" + std::to_string(static_cast<int>(neumannBoundaryConditionComplex.getBCCaseDescription()[it])) + loadCaseData.unit;
-													std::cout << "StartIndex: " << frameTrack << std::endl;
 													loadCaseData.startIndex = frameTrack;
 													timeStep.caseList.push_back(loadCaseData);
 

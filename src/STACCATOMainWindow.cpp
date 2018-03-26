@@ -25,7 +25,6 @@
 #include "Message.h"
 #include "Timer.h"
 #include "MemWatcher.h"
-#include "FieldDataVisualizer.h"
 #include "OutputDatabase.h"
 #include "VectorFieldResults.h"
 #include "VisualizerSetting.h"
@@ -54,66 +53,14 @@
 #include <QFormLayout>
 #include <QSpinBox>
 #include <QtCharts/QLineSeries>
+#include <QRadioButton>
 
 QT_CHARTS_USE_NAMESPACE
 
-//OCC 7
-#include <StlMesh_Mesh.hxx> 
-#include <MeshVS_Mesh.hxx>
-#include <MeshVS_MeshPrsBuilder.hxx>
-#include <MeshVS_Drawer.hxx>
-#include <RWStl.hxx>
-#include <MeshVS_DrawerAttribute.hxx>
-#include <Graphic3d_MaterialAspect.hxx>
-#include <OSD_Path.hxx>
-#include <Geom_CartesianPoint.hxx>
-#include <AIS_Line.hxx>
-#include <AIS_Point.hxx>
-#include <TopoDS_Vertex.hxx>
-#include <BRepBuilderAPI_MakeVertex.hxx>
-#include <Prs3d_PointAspect.hxx>
-#include <GC_MakeSegment.hxx>
-#include <BRepBuilderAPI_MakeEdge.hxx>
-#include <TopoDS_Edge.hxx>
-#include <AIS_InteractiveContext.hxx>
-#include <BRep_Tool.hxx>
-#include <TopoDS.hxx>
-#include <Geom2d_CartesianPoint.hxx>
-#include <ElCLib.hxx>
-#include <MeshVS_SelectionModeFlags.hxx>
-#include <TColStd_HPackedMapOfInteger.hxx>
-#include <Select3D_SensitiveTriangle.hxx>
-#include <MeshVS_MeshEntityOwner.hxx>
-#include <Select3D_SensitiveTriangulation.hxx>
-#include <Select3D_SensitiveFace.hxx>
-#include <MeshVS_CommonSensitiveEntity.hxx>
-#include <MeshVS_Buffer.hxx>
-#include <STEPControl_Reader.hxx>
-#include <STEPConstruct.hxx>
-#include <IGESControl_Reader.hxx>
-#include <Geom_Plane.hxx>
-#include <AIS_Plane.hxx>
-#include <Prs3d_PlaneAspect.hxx>
-#include <BRepPrimAPI_MakeBox.hxx>
-#include <MeshVS_NodalColorPrsBuilder.hxx>
-#include <AIS_ColorScale.hxx>
-#include <IVtkOCC_Shape.hxx>
-#include <IVtkTools_ShapeDataSource.hxx>
-
-//VTK
-#include <vtkDataSetMapper.h>
-#include <vtkFloatArray.h>
-#include <vtkPointData.h>
-#include <vtkScalarBarActor.h>
-#include <vtkLookupTable.h>
-#include <vtkRenderWindow.h>
-#include <vtkRenderer.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkWarpVector.h>
-#include <vtkProperty.h>
-#include <vtkPolyDataMapper.h>
-#include <vtkExtractEdges.h>
-#include <vtkXMLUnstructuredGridWriter.h>
+/// Visualizer
+#include "SignalDataVisualizer.h"
+#include "VisualizerSetting.h"
+#include "FieldDataVisualizer.h"
 
 
 STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), myGui(new Ui::STACCATOMainWindow)
@@ -865,7 +812,7 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 			animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[it].startIndex);
 		}
 		sliderSteps = animationIndices.size() - 1;
-		myVisualizerSetting->generateSubCaseAnimation(animationIndices);
+		myVisualizerSetting->generateCaseAnimation(animationIndices);
 	}
 	else if (myHarmonicAnimationRadio->isChecked()) {
 		std::cout << ">> Harmonic Animation running...\n";
@@ -888,7 +835,7 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 			animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex);
 		}
 		sliderSteps = animationIndices.size() - 1;
-		myVisualizerSetting->generateSubCaseAnimation(animationIndices);
+		myVisualizerSetting->generateCaseAnimation(animationIndices);
 	}
 
 	myHorizontalSlider->setEnabled(true);
@@ -970,7 +917,6 @@ void STACCATOMainWindow::addChildToTree(QTreeWidgetItem* _parent, QString _name1
 }
 
 void STACCATOMainWindow::myAnalysisTreeUpdate() {
-	std::cout << ">> Filling ...";
 	// Clear All Trees
 	myAnimationAnalysisTree->clear();
 	myAnimationCaseTree->clear();
@@ -994,7 +940,6 @@ void STACCATOMainWindow::myAnalysisTreeUpdate() {
 		OutputDatabase::LoadCase loadCase = myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[iCase];
 		addChildToTree(CaseRoot, QString::fromStdString(std::to_string(iCase)), QString::fromStdString(loadCase.name), false);
 	}
-	std::cout << " Finished.\n";
 }
 
 void STACCATOMainWindow::myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item) {

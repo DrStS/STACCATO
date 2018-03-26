@@ -19,7 +19,6 @@
 */
 #include "SignalDataVisualizer.h"
 #include "FieldDataVisualizer.h"
-#include "HMeshToVtkUnstructuredGrid.h"
 #include "ChartViewToolTip.h"
 #include "HMesh.h"
 #include "ChartView.h"
@@ -27,16 +26,12 @@
 #include "VisualizerSetting.h"
 #include "VectorFieldResults.h"
 //QT5
-#include <QToolBar>
 #include <QTreeView>
-#include <QMessageBox>
 #include <QDockWidget>
 #include <QtWidgets>
 #include <QLabel>
-#include <QDesktopWidget>
 #include <QPushButton>
 #include <QLineEdit>
-#include <QStringList>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QGroupBox>

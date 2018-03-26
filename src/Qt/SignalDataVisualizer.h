@@ -30,7 +30,6 @@
 #include "VisualizerSettingObserver.h"
 #include "ChartView.h"
 
-
 // QT5
 #include <QMainWindow>
 #include <QLabel>
@@ -44,8 +43,6 @@
 #include <QLogValueAxis>
 
 QT_CHARTS_USE_NAMESPACE
-
-
 
 // forward declaration
 class ChartViewToolTip;

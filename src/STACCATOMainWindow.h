@@ -23,42 +23,35 @@
 * \date 9/16/2016
 **************************************************************************************************/
 #pragma once
-//std
-#include <future>
-#include <thread>
-//STACCATO
-#include "STACCATO_Enum.h"
+
 // QT5
 #include <QMainWindow>
-// OCC
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QComboBox>
+
+//Enums
+#include "STACCATO_Enum.h"
 
 // forward declaration
 class OccViewer;
-
 class VtkViewer;
 class UMA_AccessSparse;
-class STACCATOComputeEngine;
-class OutputDatabase;
-class SignalDataVisualizer;
-class VisualizerSetting;
-class FieldDataVisualizer;
-class QRadioButton;
-class QLabel;
-class QTreeWidgetItem;
-class QTreeWidget;
-class QPushButton;
-class QComboBox;
-class QLineEdit;
 class QTextEdit;
 class QCheckBox;
 class QGroupBox;
 class QSpinBox;
 class QFormLayout;
 class QSlider;
-class QButtonGroup;
-
-using namespace STACCATO_Visualizer;
-using namespace STACCATO_Results;
+class STACCATOComputeEngine;
+class OutputDatabase;
+class VisualizerSetting;
+class SignalDataVisualizer;
+class FieldDataVisualizer;
+class QTreeWidget;
+class QTreeWidgetItem;
+class QRadioButton;
 
 namespace Ui {
 	class STACCATOMainWindow;
@@ -94,7 +87,7 @@ protected:
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
 	void addChildToTree(QTreeWidgetItem*, QString , QString , bool);
 
-private slots:
+	private slots:
 	void about(void);
 	void openDataFlowWindow(void);
 	void myTimeStepLessProc(void);
@@ -282,8 +275,4 @@ private:
 
 	OutputDatabase* myOutputDatabase;
 	STACCATOComputeEngine * myComputeEngine;
-
-	//Parallel Execution 
-	std::future<void> myFuture;
-
 };

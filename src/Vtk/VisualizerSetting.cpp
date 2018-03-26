@@ -109,7 +109,7 @@ void VisualizerSetting::setScalarbarTitle(std::string _title) {
 	strcpy(PROPERTY_SCALARBAR_TITLE, _title.c_str());
 }
 
-void VisualizerSetting::generateSubCaseAnimation(std::vector<int> &_frameIndices) {
+void VisualizerSetting::generateCaseAnimation(std::vector<int> &_frameIndices) {
 
 	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE, _frameIndices);
 	myFieldDataVisualizer->plotVectorFieldAtIndex(0);

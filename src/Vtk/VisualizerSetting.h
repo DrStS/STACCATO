@@ -106,7 +106,7 @@ public:
 	* \brief Generate Frames for Animation
 	* \author Harikrishnan Sreekumar
 	***********/
-	void generateSubCaseAnimation(std::vector<int> &_frameIndices);
+	void generateCaseAnimation(std::vector<int> &_frameIndices);
 	/***********************************************************************************************
 	* \brief Generate Frames for Harmonic Animation
 	* \author Harikrishnan Sreekumar

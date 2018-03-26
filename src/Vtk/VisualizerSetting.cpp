@@ -144,11 +144,10 @@ void VisualizerSetting::setResultAvailable(bool _available) {
 
 void VisualizerSetting::setCurrentAnalysis(std::string _analysisName) {
 	PROPERTY_CURRENT_ANALYSIS_INDEX = myFieldDataVisualizer->getHMesh()->myOutputDatabase->findAnalysis(_analysisName);
+	PROPERTY_CURRENT_TIMESTEP_INDEX = 0;
+	PROPERTY_CURRENT_LOADCASE_INDEX = 0;
 
-	updateCurrentTimeStepIndex(PROPERTY_CURRENT_ANALYSIS_INDEX);
-	updateCurrentLoadCaseIndex(PROPERTY_CURRENT_TIMESTEP_INDEX);
-
-	commitCurrentFrame(PROPERTY_CURRENT_ANALYSIS_INDEX);						// Commit the frame as analysis
+	commitCurrentFrame(myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[PROPERTY_CURRENT_ANALYSIS_INDEX].startIndex);						// Commit the frame as analysis
 }
 
 void VisualizerSetting::updateCurrentTimeStepIndex(int _analysisIndex) {
@@ -157,28 +156,19 @@ void VisualizerSetting::updateCurrentTimeStepIndex(int _analysisIndex) {
 
 void VisualizerSetting::updateCurrentLoadCaseIndex(int _timeStepIndex) {
 	PROPERTY_CURRENT_LOADCASE_INDEX = myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[_timeStepIndex].startIndex;
-	PROPERTY_CURRENT_SUBLOADCASE_INDEX = PROPERTY_CURRENT_LOADCASE_INDEX;		// Start Index of LoadCase
 }
 
 void VisualizerSetting::commitTimeStepIndex(int _timeStepIndex) {
 	PROPERTY_CURRENT_TIMESTEP_INDEX = _timeStepIndex;
+	PROPERTY_CURRENT_LOADCASE_INDEX = 0;
 
-	updateCurrentLoadCaseIndex(_timeStepIndex);
-
-	commitCurrentFrame(PROPERTY_CURRENT_TIMESTEP_INDEX);						// Commit the frame as timestep
+	commitCurrentFrame(myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[PROPERTY_CURRENT_TIMESTEP_INDEX].startIndex);						// Commit the frame as timestep
 }
 
 void VisualizerSetting::commitLoadCaseIndex(int _loadCaseIndex) {
 	PROPERTY_CURRENT_LOADCASE_INDEX = _loadCaseIndex;
-	PROPERTY_CURRENT_SUBLOADCASE_INDEX = PROPERTY_CURRENT_LOADCASE_INDEX;		// Start Index of LoadCase
 
-	commitCurrentFrame(PROPERTY_CURRENT_LOADCASE_INDEX);						// Commit the frame as loadCase
-}
-
-void VisualizerSetting::commitSubLoadCaseIndex(int _subLoadcaseIndex) {
-	PROPERTY_CURRENT_SUBLOADCASE_INDEX = _subLoadcaseIndex;
-
-	commitCurrentFrame(PROPERTY_CURRENT_SUBLOADCASE_INDEX);						// Commit the frame as sub-loadCase
+	commitCurrentFrame(myFieldDataVisualizer->getHMesh()->myOutputDatabase->myAnalyses[PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[PROPERTY_CURRENT_LOADCASE_INDEX].startIndex);						// Commit the frame as loadCase
 }
 
 void VisualizerSetting::listProperties() {
@@ -186,6 +176,23 @@ void VisualizerSetting::listProperties() {
 	std::cout << "PROPERTY_CURRENT_ANALYSIS_INDEX: " << PROPERTY_CURRENT_ANALYSIS_INDEX << std::endl;
 	std::cout << "PROPERTY_CURRENT_TIMESTEP_INDEX: " << PROPERTY_CURRENT_TIMESTEP_INDEX << std::endl;
 	std::cout << "PROPERTY_CURRENT_LOADCASE_INDEX: " << PROPERTY_CURRENT_LOADCASE_INDEX << std::endl;
-	std::cout << "PROPERTY_CURRENT_SUBLOADCASE_INDEX: " << PROPERTY_CURRENT_SUBLOADCASE_INDEX << std::endl;
 	std::cout << "=======================================" << std::endl;
+}
+
+void VisualizerSetting::commitToNextTimeStep() {
+	if (PROPERTY_CURRENT_TIMESTEP_INDEX + 1 < myFieldDataVisualizer->getHMesh()->myOutputDatabase->getNumberOfTimeSteps(PROPERTY_CURRENT_ANALYSIS_INDEX)) {
+		commitTimeStepIndex(PROPERTY_CURRENT_TIMESTEP_INDEX+1);
+		std::cout << ">> Commited to Next Time Step.\n";
+	}
+	else
+		std::cout << ">> Cannot Commit Further.\n";
+}
+
+void VisualizerSetting::commitToPerviousTimeStep() {
+	if (PROPERTY_CURRENT_TIMESTEP_INDEX > 0) {
+		commitTimeStepIndex(PROPERTY_CURRENT_TIMESTEP_INDEX-1);
+		std::cout << ">> Commited to Pervious Time Step.\n";
+	}
+	else
+		std::cout << ">> Cannot Commit Further.\n";
 }

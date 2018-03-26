@@ -160,15 +160,20 @@ public:
 	***********/
 	void commitLoadCaseIndex(int _loadCaseIndex);
 	/***********************************************************************************************
-	* \brief Set Sub-LoadCase for Visualization
-	* \author Harikrishnan Sreekumar
-	***********/
-	void commitSubLoadCaseIndex(int _subLoadCaseIndex);
-	/***********************************************************************************************
 	* \brief List Properties
 	* \author Harikrishnan Sreekumar
 	***********/
 	void listProperties();
+	/***********************************************************************************************
+	* \brief Update to next time step of the set analysis
+	* \author Harikrishnan Sreekumar
+	***********/
+	void commitToNextTimeStep();
+	/***********************************************************************************************
+	* \brief Update to pervious time step of the set analysis
+	* \author Harikrishnan Sreekumar
+	***********/
+	void commitToPerviousTimeStep();
 
 private:
 	// FieldDataVisualizer
@@ -205,6 +210,4 @@ public:
 	int PROPERTY_CURRENT_TIMESTEP_INDEX;
 	// Current Load Case
 	int PROPERTY_CURRENT_LOADCASE_INDEX;
-	// Current SubLoad Case
-	int PROPERTY_CURRENT_SUBLOADCASE_INDEX;
 };

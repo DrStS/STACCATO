@@ -36,7 +36,6 @@
 class OccViewer;
 
 class VtkViewer;
-class UMA_AccessSparse;
 class STACCATOComputeEngine;
 class OutputDatabase;
 class SignalDataVisualizer;
@@ -89,9 +88,6 @@ protected:
 	void createMenus(void);
 	void createToolBars(void);
 	void createDockWindows(void);
-	void readSTEP(QString);
-	void readIGES(QString);
-	void readSTL(QString);
 	void fillFEResultInGUI();
 	void createAnimationOptionsDock(void);
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
@@ -99,11 +95,7 @@ protected:
 
 private slots:
 	void about(void);
-	void importFile(void);
-	void drawCantilever(void);
-	void handleSelectionChanged(void);
 	void openDataFlowWindow(void);
-	void animateObject(void);
 	void myTimeStepLessProc(void);
 	void myTimeStepAddProc(void);
 	void myViewPropertyUpdate(void);
@@ -113,24 +105,22 @@ private slots:
 	void mySignalDataVisualizerInterface(void);
 	void myViewModeTriggered(void);
 	void myUMATriggered(void);
-	void myUMAImport(void);
-	void myUMAHMesh(void);
 	void importXMLFile(void);
 	void myViewPropertyDockTriggered(void);
-	void myReferenceNodeTriggered(void);
 	void mySubFrameAnimate(void);
-	void myCaseStepLessProc(void);
-	void myCaseStepAddProc(void);
 	void myGenerateAnimationFramesProc(void);
 	void myAnimationResetProc(void);
 	void myUpdateAnimationSlider(int);
 	void myAnimationScenePlayProc(void);
 	void myAnimationSceneStopProc(void);
-	void myResultCaseChanged(void);
 	void myAnimationOptionsTriggered(void);
 	void myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item);
 	void myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item);
-	void myAnalysisTreeUpdate(void);
+	void myAnalysisTreeUpdate(void);	
+	void myCaseTreeSelectAll(void);
+	void myCaseTreeDeselectAll(void);
+	void mySetDefaultProc(void);
+	void myAnalysisChangeProc(void);
 	//void notifyAnalysisCompleteSuccessfully(void);
 
 private:
@@ -142,15 +132,12 @@ private:
 	
 	/// File action.
 	QAction* myExitAction;
-	QAction* myReadFileAction;
 	QAction* myImportXMLFileAction;
 	/// Buttons
 	QPushButton* myTimeStepLessAction;
 	QPushButton* myTimeStepAddAction;
 	/// Create action.
-	QAction* myDrawCantileverAction;
 	QAction* myDataFlowAction;
-	QAction* myAnimationAction;
 	/// View action
 	QAction* myPanAction;
 	QAction* myZoomAction;
@@ -195,10 +182,6 @@ private:
 	QComboBox* myComponentSelector;
 	QComboBox* myViewModeSelector;
 	QComboBox* myAnimationSolutionSelector;
-	QComboBox* myResultCaseSelector;
-
-	/// wrapped the widget for occ.
-	OccViewer* myOccViewer;
 
 	FieldDataVisualizer* myFieldDataVisualizer;
 	SignalDataVisualizer* mySignalDataVisualizer;
@@ -212,7 +195,6 @@ private:
 	QSpinBox* myScalingFactor;
 
 	/// Labels
-	QLabel* myTimeStepLabel;
 	QLabel* myScalingFactorLabel;
 	QLabel* myAnimateSolutionTypeLabel;
 
@@ -265,10 +247,7 @@ private:
 	QAction* myCreateFrameAnimationButton;
 	QAction* myResetFrameAnimationButton;
 	QAction* myAnimatePlayButton;
-	QPushButton* myAnimateNextFrameButton;
-	QPushButton* myAnimatePrevFrameButton;
 	QAction* myAnimateStopButton;
-	QLineEdit* myCaseStepText;
 	QLineEdit* myAnimationDuration;
 	QAction* myAnimateRepeatButton;
 	QSlider *myHorizontalSlider;
@@ -290,19 +269,16 @@ private:
 	QButtonGroup* myAnimationButtonGroup;
 	///ComboBox
 	QComboBox* myAnalysisSelector;
-	QComboBox* myAnimationOptionResultsCaseSelector;
 	///Tree
 	QTreeWidget* myAnimationAnalysisTree;
 	QTreeWidget* myAnimationCaseTree;
 	///PushButtons
+	QPushButton* myAnimationCaseTreeSelectAllButton;
+	QPushButton* myAnimationCaseTreeDeselectAllButton;
 	QPushButton* myAnimationOptionApplyButton;
 	QPushButton* myAnimationSetDefaultButton;
 	///CheckBox
 	QCheckBox* myAnimationOptionPreview;
-
-	int myFreqIndex;
-	int myCaseIndex;
-	bool isSubFrame;
 
 	OutputDatabase* myOutputDatabase;
 	STACCATOComputeEngine * myComputeEngine;

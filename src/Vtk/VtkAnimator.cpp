@@ -57,12 +57,8 @@
 
 #include <qprogressdialog.h>
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 VtkAnimator::VtkAnimator(FieldDataVisualizer& _fieldDataVisualizer) : myFieldDataVisualizer(&_fieldDataVisualizer)
 {
-
 	// Create an Animation Field
 	myAnimationCue = vtkSmartPointer<vtkAnimationCue>::New();
 	myCueAnimator = new CueAnimator(*myFieldDataVisualizer->myHMeshToVtkUnstructuredGrid, *myFieldDataVisualizer->getHMesh(), *this);
@@ -74,7 +70,7 @@ VtkAnimator ::~VtkAnimator()
 {
 }
 
-void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID) {
+void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID, bool _isHarmonic) {
 	myFrameID = _frameID;
 
 	int sizeOfArray = myFrameID.size();
@@ -109,9 +105,15 @@ void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type, s
 	for (int i = 0; i <  sizeOfArray; i++)
 	{
 		animationProgessDialog.setValue(i);
+		int frame = myFrameID[i];
 
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(_type, myFrameID[i]);
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFrameID[i]);
+		if (_isHarmonic) {
+			myFieldDataVisualizer->setHarmonicScaleAtStep(_type, i, sizeOfArray);
+			frame = myFieldDataVisualizer->myVisualizerSetting->PROPERTY_FRAMEID;
+		}
+
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScalar(_type, frame);
+		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(frame);
 
 		// Assign Properties
 		myFieldDataVisualizer->setActiveMapper(myArrayMapper[i]);
@@ -128,64 +130,8 @@ void VtkAnimator::bufferAnimationFrames(STACCATO_VectorField_components _type, s
 			break;
 	}
 	animationProgessDialog.setValue(sizeOfArray);
-}
-
-void VtkAnimator::bufferHarmonicAnimationFrames(STACCATO_VectorField_components _type, std::vector<int>& _frameID) {
-	myFrameID = _frameID;
-
-	int sizeOfArray = _frameID.size();
-	myArrayActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
-	myArrayMapper = new vtkSmartPointer<vtkDataSetMapper>[sizeOfArray];
-	warpFilterArray = new vtkSmartPointer<vtkWarpVector>[sizeOfArray];
-	hueLutArray = new vtkSmartPointer<vtkLookupTable>[sizeOfArray];
-	myArrayEdgeActor = new vtkSmartPointer<vtkActor>[sizeOfArray];
-
-	// Array Initialization
-	for (int i = 0; i < sizeOfArray; i++) {
-		myArrayActor[i] = vtkSmartPointer<vtkActor>::New();
-		myArrayMapper[i] = vtkSmartPointer<vtkDataSetMapper>::New();
-		warpFilterArray[i] = vtkSmartPointer<vtkWarpVector>::New();
-		hueLutArray[i] = vtkSmartPointer<vtkLookupTable>::New();
-		myArrayEdgeActor[i] = vtkSmartPointer<vtkActor>::New();
-	}
-
-	std::cout << ">> Generating " << sizeOfArray << " frames and Buffering...\n";
-
-	QProgressDialog animationProgessDialog("Generating Animation...", "Cancel", 0, sizeOfArray);
-	animationProgessDialog.setWindowModality(Qt::WindowModal);
-
-	clearAnimationScene();
-
-	for (int i = 0; i < sizeOfArray; i++)
-	{
-		animationProgessDialog.setValue(i);
-
-		if(_type == STACCATO_x_Re || _type == STACCATO_y_Re || _type == STACCATO_z_Re || _type == STACCATO_Magnitude_Re)  // Real Part
-			myFieldDataVisualizer->myHarmonicScale = cos(i * 2 * M_PI / (sizeOfArray - 1));
-		else if(_type == STACCATO_x_Im || _type == STACCATO_y_Im || _type == STACCATO_z_Im || _type == STACCATO_Magnitude_Im)
-			myFieldDataVisualizer->myHarmonicScale = sin(i * 2 * M_PI / (sizeOfArray - 1));
-		std::cout << ">> Scaling Factor: " << myFieldDataVisualizer->myHarmonicScale<< std::endl;
-
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetScaledScalar(_type, myFieldDataVisualizer->myVisualizerSetting->PROPERTY_FRAMEID);
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridSetVector(myFieldDataVisualizer->myVisualizerSetting->PROPERTY_FRAMEID);
-
-		// Assign Properties
-		myFieldDataVisualizer->setActiveMapper(myArrayMapper[i]);
-		myFieldDataVisualizer->setActiveActor(myArrayActor[i]);
-
-		myFieldDataVisualizer->setActiveWarpFilter(warpFilterArray[i]);
-		myFieldDataVisualizer->warpFilter = warpFilterArray[i];
-		myFieldDataVisualizer->setActiveHueLut(hueLutArray[i]);
-		myFieldDataVisualizer->setActiveEdgeActor(myArrayEdgeActor[i]);
-
-		// Buffer
-		plotVectorFieldAtIndex(i);
-
-		if (animationProgessDialog.wasCanceled())
-			break;
-	}
-	animationProgessDialog.setValue(sizeOfArray);
-	myFieldDataVisualizer->myHarmonicScale = 1;
+	if (_isHarmonic)
+		myFieldDataVisualizer->myHarmonicScale = 1;
 }
 
 void VtkAnimator::plotVectorFieldAtIndex(int _index) {

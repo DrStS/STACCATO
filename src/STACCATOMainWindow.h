@@ -23,12 +23,13 @@
 * \date 9/16/2016
 **************************************************************************************************/
 #pragma once
-
+//std
+#include <future>
+#include <thread>
+//STACCATO
+#include "STACCATO_Enum.h"
 // QT5
 #include <QMainWindow>
-
-//Enums
-#include "STACCATO_Enum.h"
 
 // forward declaration
 class VtkViewer;
@@ -39,12 +40,8 @@ class VisualizerSetting;
 class FieldDataVisualizer;
 class STACCATOComputeEngine;
 class OutputDatabase;
-class VisualizerSetting;
-class SignalDataVisualizer;
-class FieldDataVisualizer;
 class QTreeWidget;
 class QTreeWidgetItem;
-class QRadioButton;
 class QRadioButton;
 class QLabel;
 class QTreeWidgetItem;
@@ -283,4 +280,7 @@ private:
 
 	OutputDatabase* myOutputDatabase;
 	STACCATOComputeEngine * myComputeEngine;
+
+	//Parallel Execution 
+	std::future<void> myFuture;
 };

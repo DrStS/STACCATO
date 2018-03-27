@@ -48,8 +48,7 @@ void STACCATOComputeEngine::prepare(void) {
 
 	anaysisTimer01.start();
 	anaysisTimer03.start();
-	std::vector<Reader*> allReader(numParts);//not correct
-	int i = 0;
+
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
@@ -60,10 +59,10 @@ void STACCATOComputeEngine::prepare(void) {
 				std::string filePath = "C:/software/repos/STACCATO/model/";
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
-					allReader[i] = new SimuliaODB(filePath, *myHMesh, iPart);
+					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
-					allReader[i] = new SimuliaUMA(filePath, *myHMesh, iPart);
+					Reader* fileReader = new SimuliaUMA(filePath, *myHMesh, iPart);
 				}
 				else {
 					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;

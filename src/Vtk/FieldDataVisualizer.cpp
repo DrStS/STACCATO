@@ -59,6 +59,8 @@
 //QT5
 #include <QInputEvent>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(parent){
 	vtkNew<vtkGenericOpenGLRenderWindow> window;
@@ -318,23 +320,13 @@ std::vector<int> FieldDataVisualizer::getSelection(STACCATO_Picker_type _type) {
 		return mySelectedElements;
 }
 
-void FieldDataVisualizer::animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices) {
+void FieldDataVisualizer::animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices, bool _isHarmonic) {
 	static bool myVtkAnimatorActive = false;
 	if (!myVtkAnimatorActive) {
 		myVtkAnimator = new VtkAnimator(*this);
 		myVtkAnimatorActive = true;
 	}
-	myVtkAnimator->bufferAnimationFrames(_type, _animationIndices);
-	isAnimationSceneInstantiated = false;
-}
-
-void FieldDataVisualizer::animateHarmonics(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices) {
-	static bool myVtkAnimatorActive = false;
-	if (!myVtkAnimatorActive) {
-		myVtkAnimator = new VtkAnimator(*this);
-		myVtkAnimatorActive = true;
-	}
-	myVtkAnimator->bufferHarmonicAnimationFrames(_type, _animationIndices);
+	myVtkAnimator->bufferAnimationFrames(_type, _animationIndices, _isHarmonic);
 	isAnimationSceneInstantiated = false;
 }
 
@@ -448,4 +440,12 @@ void FieldDataVisualizer::setNewMapper(vtkSmartPointer<vtkDataSetMapper>& _newMa
 
 void FieldDataVisualizer::connectVisualizerSetting(VisualizerSetting* _setting) {
 	myVisualizerSetting = _setting;
+}
+
+void FieldDataVisualizer::setHarmonicScaleAtStep(STACCATO_VectorField_components _type, int _step, int _totalSteps) {
+	if (_type == STACCATO_x_Re || _type == STACCATO_y_Re || _type == STACCATO_z_Re || _type == STACCATO_Magnitude_Re)		// Real Part
+		myHarmonicScale = cos(_step * 2 * M_PI / (_totalSteps - 1));
+	else if (_type == STACCATO_x_Im || _type == STACCATO_y_Im || _type == STACCATO_z_Im || _type == STACCATO_Magnitude_Im)	// Imaginary Part
+		myHarmonicScale = sin(_step * 2 * M_PI / (_totalSteps - 1));
+	std::cout << ">> Scaling Factor: " << myHarmonicScale << std::endl;
 }

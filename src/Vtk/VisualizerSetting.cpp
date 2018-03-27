@@ -111,13 +111,13 @@ void VisualizerSetting::setScalarbarTitle(std::string _title) {
 
 void VisualizerSetting::generateCaseAnimation(std::vector<int> &_frameIndices) {
 
-	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE, _frameIndices);
+	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE, _frameIndices, false);
 	myFieldDataVisualizer->plotVectorFieldAtIndex(0);
 }
 
 void VisualizerSetting::generateHarmonicAnimation(std::vector<int> &_frameIndices) {
 
-	myFieldDataVisualizer->animateHarmonics(PROPERTY_FIELD_TYPE, _frameIndices);
+	myFieldDataVisualizer->animate(PROPERTY_FIELD_TYPE, _frameIndices, true);
 	myFieldDataVisualizer->plotVectorFieldAtIndex(0);
 }
 

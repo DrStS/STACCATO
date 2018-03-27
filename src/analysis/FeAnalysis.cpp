@@ -138,11 +138,29 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		iAnalysis != MetaDatabase::getInstance()->xmlHandle->ANALYSIS().end();
 		++iAnalysis)
 	{
+		std::cout << "==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+		// --- Testing: Code to Find number of RHS upfront --------------------------------------------------------------
+		std::cout << "- Upfornt Size Calculation -" << std::endl;
+		int numRHS_test = 0;
+		for (int i = 0; i < iAnalysis->LOADCASES().begin()->LOADCASE().size(); i++) {
+			if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[i].Type()->c_str()) == "ConcentratedLoadCase")
+				numRHS_test++;
+			else if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[i].Type()->c_str()) == "RotateGenerate") {
+				int rotateRHS = (std::atof(iAnalysis->LOADCASES().begin()->LOADCASE()[i].END_THETA()->c_str()) - std::atof(iAnalysis->LOADCASES().begin()->LOADCASE()[i].START_THETA()->c_str())) / std::atof(iAnalysis->LOADCASES().begin()->LOADCASE()[i].STEP_THETA()->c_str()) + 1;
+				numRHS_test += rotateRHS;
+			}
+		}
+		std::cout << "Total Number of RHS    : " << numRHS_test << std::endl;
+		std::cout << "Size of Loading Vector : " << numRHS_test * myHMesh->getTotalNumOfDoFsRaw() << std::endl;
+		std::cout << "Size of Solution Vector: " << numRHS_test * myHMesh->getTotalNumOfDoFsRaw() << std::endl;
+		std::cout << "=============================================\n\n";
+
+		// --------------------------------------------------------------------------------------------------------------
+
 		OutputDatabase::Analysis analysisData;
 		int frameTrack = 0;
 
 		std::string analysisType = iAnalysis->TYPE()->data();
-		std::cout << "==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
 		if (analysisType != "STATIC") {
 			// Routine to accomodate Step Distribution
 			double start_freq = std::atof(iAnalysis->FREQUENCY().begin()->START_FREQ()->c_str());
@@ -607,7 +625,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_y_Im, resultUyIm);
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_z_Im, resultUzIm);
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_Magnitude_Im, resultMagIm);
+				
+				std::cout << " > " << k;
 			}
+			std::cout << std::endl;
 			if (analysisType == "STATIC") {
 				timeStep.timeDescription = "STATIC";
 			}

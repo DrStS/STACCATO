@@ -171,9 +171,16 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void setNewMapper(vtkSmartPointer<vtkDataSetMapper>& _newMapper);
-
+	/***********************************************************************************************
+	* \brief Set Harmonic Scale
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setHarmonicScaleAtStep(STACCATO_VectorField_components _type, int _step, int _totalSteps);
+	/***********************************************************************************************
+	* \brief Set Settings of FieldDataVisualizer
+	* \author Harikrishnan Sreekumar
+	***********/
 	void connectVisualizerSetting(VisualizerSetting* _setting);
-
 protected:
 	/***********************************************************************************************
 	* \brief Custom mouse press event
@@ -224,8 +231,7 @@ public slots:
 	void setPickerModeNone() { setPickerMode(STACCATO_Picker_None); }
 	void setPickerModeNode() { setPickerMode(STACCATO_Picker_Node); }
 	void setPickerModeElement() { setPickerMode(STACCATO_Picker_Element); }
-	void animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices);
-	void animateHarmonics(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices);
+	void animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices, bool _isHarmonic);
 	void plotVectorFieldAtIndex(int _index);
 	void myAnimationScenePlayProc(int _duration, int _loops);
 	void myAnimationSceneStopProc();

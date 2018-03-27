@@ -36,7 +36,7 @@ using namespace STACCATO_Results;
 class OutputDatabase {
 public:
 	struct LoadCase {
-		std::string name;										// XML Prefix Name
+		std::string name;											// XML Prefix Name
 		STACCATO_ResultsCase_type type;								// Type of LoadCase - To indicate for Subcase
 		std::string unit;											// SubCase Unit
 		int startIndex;												// StartIndex Within the AnalysisVectorIndex

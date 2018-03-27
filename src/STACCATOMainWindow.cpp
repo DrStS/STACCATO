@@ -558,7 +558,7 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 	myAnimationButtonGroup->addButton(myCaseAnimationRadio);
 
 	myAnimationOptionPreview = new QCheckBox(tr("Preview"), this);
-	myAnimationOptionPreview->setChecked(false);
+	myAnimationOptionPreview->setChecked(true);
 
 	myAnimationOptionApplyButton = new QPushButton(tr("Apply"));
 	connect(myAnimationOptionApplyButton, SIGNAL(clicked()), this, SLOT(myGenerateAnimationFramesProc()));

@@ -285,16 +285,35 @@ public:
 			return 1;
 		}
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Performs Real Calculation: _target[_targetIndex] += _source
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] target index
+	* \param[in] source variable
+	* \param[in] target vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	void storeConcentratedLoadRHS(std::true_type, int _targetIndex, T _source, std::vector<T> &_target) {
 		_target[_targetIndex] += _source;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Performs Complex Calculation: _target[_targetIndex] += _source
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] target index
+	* \param[in] source variable
+	* \param[in] target vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	void storeConcentratedLoadRHS(std::false_type, int _targetIndex, T _source, std::vector<T> &_target) {
 		_target[_targetIndex].real += _source.real;
 		_target[_targetIndex].imag += _source.imag;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Returns real part of a real vector
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	double* getRealPartOfVector(std::true_type, std::vector<T> &_vector) {
 		double* realVector = new double[_vector.size()];
 		for (int i = 0; i < _vector.size(); i++) {
@@ -302,7 +321,12 @@ public:
 		}
 		return realVector;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Returns real part of a complex vector
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	double* getRealPartOfVector(std::false_type, std::vector<T> &_vector) {
 		double* realVector = new double[_vector.size()];
 		for (int i = 0; i < _vector.size(); i++)		{
@@ -310,7 +334,12 @@ public:
 		}
 		return realVector;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Returns imaginary part of a real vector
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	double* getImagPartOfVector(std::true_type, std::vector<T> &_vector) {
 		double* imagVector = new double[_vector.size()];
 		for (int i = 0; i < _vector.size(); i++) {
@@ -319,7 +348,12 @@ public:
 		}
 		return imagVector;			
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Returns imaginary part of a complex vector
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] vector
+	* \author Harikrishnan Sreekumar
+	***********/
 	double* getImagPartOfVector(std::false_type, std::vector<T> &_vector) {
 		double* imagVector = new double[_vector.size()];
 		for (int i = 0; i < _vector.size(); i++) {
@@ -327,17 +361,29 @@ public:
 		}
 		return imagVector;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Performs Real Calculation: scalar = scalar + real
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] source variable
+	* \param[in] target real-double variable
+	* \param[in] target imag-double variable
+	* \author Harikrishnan Sreekumar
+	***********/
 	void assignScalarWithTemplate(std::true_type, T& _scalar, double _real, double _imag) {
 		_scalar += _real;
 	}
-
+	/***********************************************************************************************
+	* \brief Tag Dispatching. Performs Complex Calculation: scalar = scalar + real + i*imag
+	* \param[in] type_trail - true_type for Real and false_type for Complex
+	* \param[in] source variable
+	* \param[in] target real-double variable
+	* \param[in] target imag-double variable
+	* \author Harikrishnan Sreekumar
+	***********/
 	void assignScalarWithTemplate(std::false_type, T& _scalar, double _real, double _imag) {
 		_scalar.real += _real;
 		_scalar.imag += _imag;
 	}
-
-
 private:
 	/// HMesh object 
 	HMesh *myHMesh;

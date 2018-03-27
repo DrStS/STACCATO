@@ -20,12 +20,20 @@
 #include "STACCATOMainWindow.h"
 #include "STACCATOComputeEngine.h"
 #include "ui_STACCATOMainWindow.h"
+#include "VtkViewer.h"
 #include "AuxiliaryParameters.h"
 #include "Message.h"
 #include "Timer.h"
 #include "MemWatcher.h"
 #include "OutputDatabase.h"
 #include "VectorFieldResults.h"
+#include "VisualizerSetting.h"
+#include "SignalDataVisualizer.h"
+#include "FieldDataVisualizer.h"
+
+#include "HMeshToMeshVS_DataSource.h"
+#include "STLVRML_DataSource.h"
+#include "OcctQtProcessIndicator.h"
 #include "qnemainwindow.h"
 
 //Q5

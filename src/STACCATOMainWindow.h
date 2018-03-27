@@ -26,24 +26,17 @@
 
 // QT5
 #include <QMainWindow>
-#include <QLabel>
-#include <QPushButton>
-#include <QLineEdit>
-#include <QComboBox>
 
 //Enums
 #include "STACCATO_Enum.h"
 
 // forward declaration
-class OccViewer;
 class VtkViewer;
-class UMA_AccessSparse;
-class QTextEdit;
-class QCheckBox;
-class QGroupBox;
-class QSpinBox;
-class QFormLayout;
-class QSlider;
+class STACCATOComputeEngine;
+class OutputDatabase;
+class SignalDataVisualizer;
+class VisualizerSetting;
+class FieldDataVisualizer;
 class STACCATOComputeEngine;
 class OutputDatabase;
 class VisualizerSetting;
@@ -52,6 +45,20 @@ class FieldDataVisualizer;
 class QTreeWidget;
 class QTreeWidgetItem;
 class QRadioButton;
+class QRadioButton;
+class QLabel;
+class QTreeWidgetItem;
+class QTreeWidget;
+class QPushButton;
+class QComboBox;
+class QLineEdit;
+class QTextEdit;
+class QCheckBox;
+class QGroupBox;
+class QSpinBox;
+class QFormLayout;
+class QSlider;
+class QButtonGroup;
 
 namespace Ui {
 	class STACCATOMainWindow;
@@ -110,11 +117,12 @@ protected:
 	void myAnimationOptionsTriggered(void);
 	void myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item);
 	void myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item);
-	void myAnalysisTreeUpdate(void);
+	void myAnalysisTreeUpdate(void);	
 	void myCaseTreeSelectAll(void);
 	void myCaseTreeDeselectAll(void);
 	void mySetDefaultProc(void);
 	void myAnalysisChangeProc(void);
+	//void notifyAnalysisCompleteSuccessfully(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;

@@ -803,6 +803,7 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 		}
 		sliderSteps = animationIndices.size() - 1;
 		myVisualizerSetting->generateCaseAnimation(animationIndices);
+		myEnableAnimationWidgets();
 	}
 	else if (myHarmonicAnimationRadio->isChecked()) {
 		std::cout << ">> Harmonic Animation running...\n";
@@ -813,9 +814,10 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 		}
 		sliderSteps = animationIndices.size() - 1;
 		myVisualizerSetting->generateHarmonicAnimation(animationIndices);
+		myEnableAnimationWidgets();
 	}
 	else if (myCaseAnimationRadio->isChecked()) {
-		std::cout << ">> Sub Case Animation running...\n";
+		std::cout << ">> Load Case Animation running...\n";
 		std::cout << ">> Selected Number of Frames: " << myAnimationCaseTree->selectedItems().size() << std::endl;
 		// Generate Index
 		if (myAnimationCaseTree->selectedItems().size() != 0) {
@@ -826,16 +828,11 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 				animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex);
 			}
 			sliderSteps = animationIndices.size() - 1;
-			if(animationIndices.size() > 0)
-				myVisualizerSetting->generateCaseAnimation(animationIndices);
+
+			myVisualizerSetting->generateCaseAnimation(animationIndices);
+			myEnableAnimationWidgets();
 		}
 	}
-
-	myHorizontalSlider->setEnabled(true);
-	myAnimatePlayButton->setEnabled(true);
-	myAnimateStopButton->setEnabled(true);
-	myAnimateRepeatButton->setEnabled(true);
-	myResetFrameAnimationButton->setEnabled(true);
 
 	myHorizontalSlider->setFocusPolicy(Qt::StrongFocus);
 	if (sliderSteps > 0)
@@ -854,6 +851,14 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
+void STACCATOMainWindow::myEnableAnimationWidgets() {
+	myHorizontalSlider->setEnabled(true);
+	myAnimatePlayButton->setEnabled(true);
+	myAnimateStopButton->setEnabled(true);
+	myAnimateRepeatButton->setEnabled(true);
+	myResetFrameAnimationButton->setEnabled(true);
+}
+
 void STACCATOMainWindow::myAnimationResetProc() {
 	myHorizontalSlider->setEnabled(false);
 	myAnimatePlayButton->setEnabled(false);
@@ -866,6 +871,9 @@ void STACCATOMainWindow::myAnimationResetProc() {
 }
 
 void STACCATOMainWindow::myAnimationScenePlayProc() {
+	myRotateModeButton->setChecked(true);
+	myViewModeTriggered();
+
 	myAnimatePlayButton->setEnabled(false);
 
 	int duration = std::stoi(myAnimationDuration->text().toStdString());

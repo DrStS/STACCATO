@@ -133,9 +133,7 @@ void VisualizerSetting::visualizeAnimationFrames(int _duration, int _repeat) {
 	PROPERTY_ANIMATION_DURATION = _duration;
 	PROPERTY_ANIMATION_REPEAT = _repeat;
 
-	myFieldDataVisualizer->setViewMode(true);
 	playAnimation();
-	myFieldDataVisualizer->setViewMode(false);
 }
 
 void VisualizerSetting::setResultAvailable(bool _available) {

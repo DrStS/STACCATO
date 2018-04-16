@@ -297,7 +297,6 @@ namespace MathLibrary {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
 				else if (std::is_same<T, double>::value) pardiso_mtype = 11;		// real and unsymmetric matrix
 			}
-			std::cout << "Setting mtype " << pardiso_mtype << " and rhs " << nRHS << std::endl;
 
 			// set pardiso default parameters
 			for (int i = 0; i < 64; i++) {
@@ -337,7 +336,7 @@ namespace MathLibrary {
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 				&pardiso_error);
-			std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
+
 			if (pardiso_error != 0) {
 				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;

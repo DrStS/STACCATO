@@ -343,7 +343,8 @@ void FieldDataVisualizer::myAnimationScenePlayProc(int _duration, int _loops) {
 		myVtkAnimator->instantiateAnimationScene(_duration, _loops);
 		isAnimationSceneInstantiated = true;
 	}
-	myVtkAnimator->playAnimationScene(_duration, _loops);
+	if (myVtkAnimator->myFrameID.size() > 0)
+		myVtkAnimator->playAnimationScene(_duration, _loops);
 }
 
 void FieldDataVisualizer::myAnimationSceneStopProc(){

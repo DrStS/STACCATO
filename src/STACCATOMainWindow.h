@@ -108,6 +108,7 @@ protected:
 	void mySubFrameAnimate(void);
 	void myGenerateAnimationFramesProc(void);
 	void myAnimationResetProc(void);
+	void myEnableAnimationWidgets(void);
 	void myUpdateAnimationSlider(int);
 	void myAnimationScenePlayProc(void);
 	void myAnimationSceneStopProc(void);

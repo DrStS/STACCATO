@@ -119,6 +119,7 @@ protected:
 	void updateLegends(void);
 	void updateAxesConnections(void);
 private slots:
+	void about(void);
 	void updateList(void);
 	void updateOutputTree(void);
 	void tooltip(QPointF _point, bool _state);

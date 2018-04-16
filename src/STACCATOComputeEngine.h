@@ -68,7 +68,7 @@ public:
 	* \brief get OutputDatabase handle
 	* \author Stefan Sicklinger
 	***********/
-	OutputDatabase & getOutputDatabase(void);
+	OutputDatabase * getOutputDatabase(void);
 private:
 	 HMesh *myHMesh;
 };

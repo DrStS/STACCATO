@@ -1,5 +1,5 @@
 /*  Copyright &copy; 2016, Stefan Sicklinger, Munich
-*  
+*
 *  All rights reserved.
 *
 *  This file is part of STACCATO.
@@ -18,20 +18,20 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file STACCATOMainWindow.h
-* This file holds the class of StartWindow.
-* \date 9/16/2016
-**************************************************************************************************/
+																								 * \file STACCATOMainWindow.h
+																								 * This file holds the class of StartWindow.
+																								 * \date 9/16/2016
+																								 **************************************************************************************************/
 #pragma once
-//std
+																								 //std
 #include <future>
 #include <thread>
-//STACCATO
+																								 //STACCATO
 #include "STACCATO_Enum.h"
-// QT5
+																								 // QT5
 #include <QMainWindow>
 
-// forward declaration
+																								 // forward declaration
 class VtkViewer;
 class STACCATOComputeEngine;
 class OutputDatabase;
@@ -61,8 +61,8 @@ namespace Ui {
 	class STACCATOMainWindow;
 }
 /********//**
-* \brief Class STACCATOMainWindow the core of the GUI
-***********/
+		  * \brief Class STACCATOMainWindow the core of the GUI
+		  ***********/
 class STACCATOMainWindow : public QMainWindow {
 	Q_OBJECT
 
@@ -76,7 +76,7 @@ public:
 	* \brief Destructor
 	* \author Stefan Sicklinger
 	***********/
-	~STACCATOMainWindow(); 
+	~STACCATOMainWindow();
 protected:
 	/***********************************************************************************************
 	* \brief Creat all Actions of Qt
@@ -89,7 +89,7 @@ protected:
 	void fillFEResultInGUI();
 	void createAnimationOptionsDock(void);
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
-	void addChildToTree(QTreeWidgetItem*, QString , QString , bool);
+	void addChildToTree(QTreeWidgetItem*, QString, QString, bool);
 
 	private slots:
 	void about(void);
@@ -114,12 +114,12 @@ protected:
 	void myAnimationOptionsTriggered(void);
 	void myAnimationOptionAnalysisItemSelected(QTreeWidgetItem* _item);
 	void myAnimationOptionCaseItemSelected(QTreeWidgetItem* _item);
-	void myAnalysisTreeUpdate(void);	
+	void myAnalysisTreeUpdate(void);
 	void myCaseTreeSelectAll(void);
 	void myCaseTreeDeselectAll(void);
 	void mySetDefaultProc(void);
 	void myAnalysisChangeProc(void);
-	//void notifyAnalysisCompleteSuccessfully(void);
+	void notifyAnalysisCompleteSuccessfully(void);
 
 private:
 	std::vector<std::string> allDispSolutionTypes;
@@ -127,7 +127,7 @@ private:
 	std::vector<std::string> allViewModes;
 
 	Ui::STACCATOMainWindow *myGui;
-	
+
 	/// File action.
 	QAction* myExitAction;
 	QAction* myImportXMLFileAction;

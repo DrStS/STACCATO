@@ -25,6 +25,7 @@
 #include "MemWatcher.h"
 #include "SimuliaODB.h"
 #include "SimuliaUMA.h"
+
 #include "FeAnalysis.h"
 #include "HMesh.h"
 #include "MetaDatabase.h"
@@ -92,9 +93,9 @@ void STACCATOComputeEngine::compute(void) {
 
 }
 
-OutputDatabase& STACCATOComputeEngine::getOutputDatabase(void) {
+OutputDatabase* STACCATOComputeEngine::getOutputDatabase(void) {
 
-	return *(myHMesh->myOutputDatabase); 
+	return (myHMesh->myOutputDatabase); 
 }
 
 void STACCATOComputeEngine::clean(void) {

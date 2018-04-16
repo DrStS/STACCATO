@@ -2,7 +2,7 @@
 	<PARTS>
 		<PART TYPE="FE" Name="FCoupleFelgeDynamicODB">
 			<FILEIMPORT Type="AbqODB">
-				<FILE>FelgeStaticDistributing.odb</FILE>
+				<FILE>BenchmarkPerformance.odb</FILE>
 				<IMPORT Type="Nodes">
 					<LIST>ALL</LIST>
 				</IMPORT>
@@ -76,22 +76,25 @@
 		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
 		<FREQUENCY Type="STEP">
 			<START_FREQ>250</START_FREQ>
-			<END_FREQ>250</END_FREQ>
-			<STEP_FREQ>750</STEP_FREQ>
+			<END_FREQ>1000</END_FREQ>
+			<STEP_FREQ>250</STEP_FREQ>
 		</FREQUENCY>
 		<BCCASE Name="ALL-BCs">
 			<BC Name = "DisplacementBC-1" Instance="FCoupleFelgeDynamicODB"/>
 		</BCCASE>
 		<LOADCASES>
-			 <!--<LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-2">
+			<!-- <LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-1">
 				<LOAD Name = "LOAD-2" Instance="FCoupleFelgeDynamicODB"/>
-			</LOADCASE> -->
+			</LOADCASE> 
+			<LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-2">
+				<LOAD Name = "LOAD-2" Instance="FCoupleFelgeDynamicODB"/>
+			</LOADCASE>-->
 			<LOADCASE Type="RotateGenerate" NamePrefix="LG-1">
 				<LOAD Name = "LOAD-1" Instance="FCoupleFelgeDynamicODB"/>
 				<START_THETA>0</START_THETA>
 				<END_THETA>360</END_THETA>
 				<STEP_THETA>20</STEP_THETA>
-			</LOADCASE>
+			</LOADCASE> 
 		</LOADCASES>
 	</ANALYSIS>
 

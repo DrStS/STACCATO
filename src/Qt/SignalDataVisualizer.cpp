@@ -119,7 +119,14 @@ void SignalDataVisualizer::createActions(void)
 	myAboutAction = new QAction(tr("About"), this);
 	myAboutAction->setStatusTip(tr("About the application"));
 	myAboutAction->setIcon(QIcon(":/Qt/resources/about.png"));
-	//connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
+	connect(myAboutAction, SIGNAL(triggered()), this, SLOT(about()));
+}
+
+void SignalDataVisualizer::about() {
+	QMessageBox::about(this, tr("About STACCATO - Visualizer"),
+		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
+			"<p>Copyright &copy; 2017 "
+			"<p>STACCATO Visualizer is using Qt and QCharts."));
 }
 
 void SignalDataVisualizer::createChart() {
@@ -732,6 +739,7 @@ void SignalDataVisualizer::setSelection(std::vector<int> _selected){
 }
 
 void SignalDataVisualizer::updateList() {
+	myPickTree->clear();
 	if (myNodePickRadio->isChecked()) {
 		QTreeWidgetItem* R1;
 		R1 = addRootToTree(myPickTree, "Node " + myNodePickText->text(), false);
@@ -882,6 +890,8 @@ void SignalDataVisualizer::resetChart() {
 	}
 	myHistoryRoot->takeChildren();
 	myClearPointSelection();
+	myPickTree->clear();
+	myNodePickText->setText("");
 }
 
 void SignalDataVisualizer::saveChart() {

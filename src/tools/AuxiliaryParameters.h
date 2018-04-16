@@ -54,6 +54,7 @@ namespace STACCATO {
  ***********/
 class AuxiliaryParameters {
 public:
+
     /// How many threads are used for linear solver part
     static const int solverMKLThreads;
 

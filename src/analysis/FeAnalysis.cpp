@@ -27,7 +27,9 @@
 #include "FeElement.h"
 #include "FePlainStress4NodeElement.h"
 #include "FeTetrahedron10NodeElement.h"
+
 #include "FeUmaElement.h"
+
 #include "Material.h"
 
 #include "MathLibrary.h"
@@ -66,6 +68,12 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	}
 	std::cout << "\n=============================================\n\n";
 	// --------------------------------------------------------------------------------------------------------------
+
+	int len = 198;
+	char buf[198];
+	mkl_get_version_string(buf, len);
+	printf("%s\n", buf);
+	printf("\n");
 
 	// Build DataStructure
 	myHMesh->buildDataStructure();
@@ -114,7 +122,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
 					}
 					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
+#ifdef ENABLE_SIMULIA
 						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
+#endif
 					}
 					int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
 					double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
@@ -153,7 +163,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		std::cout << "Total Number of RHS    : " << numRHS_test << std::endl;
 		std::cout << "Size of Loading Vector : " << numRHS_test * myHMesh->getTotalNumOfDoFsRaw() << std::endl;
 		std::cout << "Size of Solution Vector: " << numRHS_test * myHMesh->getTotalNumOfDoFsRaw() << std::endl;
-		std::cout << "=============================================\n\n";
+		std::cout << "=================================================\n\n";
 
 		// --------------------------------------------------------------------------------------------------------------
 
@@ -324,6 +334,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						}
 					}
 			}
+
 			std::cout << " Finished." << std::endl;
 			std::cout << ">> Building RHS Matrix for Neumann...\n";
 			//Add cload rhs contribution 
@@ -516,6 +527,15 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer01.stop();
 			infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+			std::cout << ">> Printing Stiffness ...";
+			//(*AReal).print();											// Print
+			std::cout << " Finished." << std::endl;
+
+			std::cout << ">> Printing RHS ...";
+			//(*AReal).print(bReal, "RHS.dat");							// Print
+			std::cout << " Finished." << std::endl;
+
 			anaysisTimer01.start();
 			anaysisTimer02.start();
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
@@ -567,6 +587,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
+			std::cout << ">> Printing Solution ...";
+			//(*AReal).print(solReal, "Solution_ST.dat");							// Print
+			std::cout << " Finished." << std::endl;
+
 			anaysisTimer01.start();
 			std::cout << ">> Storing for " << size << " RHSs.\n";
 			for (int k = 0; k < size; k++) {
@@ -615,6 +639,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 
 				}
+
 				// Store results to database
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Re, resultUxRe);
 				displacementVector->addResultScalarFieldAtNodes(STACCATO_y_Re, resultUyRe);

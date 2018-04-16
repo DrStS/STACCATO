@@ -104,6 +104,9 @@ FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(pare
 
 	myRotateMode = true;
 	myHarmonicScale = 1;
+
+
+	myVtkAnimatorActive = false;
 }
 
 void FieldDataVisualizer::myHMeshToVtkUnstructuredGridInitializer(){
@@ -321,7 +324,6 @@ std::vector<int> FieldDataVisualizer::getSelection(STACCATO_Picker_type _type) {
 }
 
 void FieldDataVisualizer::animate(STACCATO_VectorField_components _type, std::vector<int>& _animationIndices, bool _isHarmonic) {
-	static bool myVtkAnimatorActive = false;
 	if (!myVtkAnimatorActive) {
 		myVtkAnimator = new VtkAnimator(*this);
 		myVtkAnimatorActive = true;
@@ -345,7 +347,7 @@ void FieldDataVisualizer::myAnimationScenePlayProc(int _duration, int _loops) {
 }
 
 void FieldDataVisualizer::myAnimationSceneStopProc(){
-	if(myVtkAnimator)
+	if (myVtkAnimatorActive)
 		myVtkAnimator->stopAnimationScene();
 }
 

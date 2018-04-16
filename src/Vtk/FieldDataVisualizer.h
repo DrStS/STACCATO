@@ -219,6 +219,7 @@ public:
 	bool myRotateMode;
 	bool myPickMode;
 	bool isAnimationSceneInstantiated;
+	bool myVtkAnimatorActive;
 
 	std::vector<int> mySelectedNodes;
 	std::vector<int> mySelectedElements;

@@ -20,7 +20,6 @@
 #include "STACCATOMainWindow.h"
 #include "STACCATOComputeEngine.h"
 #include "ui_STACCATOMainWindow.h"
-#include "VtkViewer.h"
 #include "AuxiliaryParameters.h"
 #include "Message.h"
 #include "Timer.h"
@@ -31,9 +30,6 @@
 #include "SignalDataVisualizer.h"
 #include "FieldDataVisualizer.h"
 
-#include "HMeshToMeshVS_DataSource.h"
-#include "STLVRML_DataSource.h"
-#include "OcctQtProcessIndicator.h"
 #include "qnemainwindow.h"
 
 //Q5
@@ -55,12 +51,9 @@
 #include <QtCharts/QLineSeries>
 #include <QRadioButton>
 
-QT_CHARTS_USE_NAMESPACE
+#include <map>
 
-/// Visualizer
-#include "SignalDataVisualizer.h"
-#include "VisualizerSetting.h"
-#include "FieldDataVisualizer.h"
+QT_CHARTS_USE_NAMESPACE
 
 
 STACCATOMainWindow::STACCATOMainWindow(QWidget *parent) : QMainWindow(parent), myGui(new Ui::STACCATOMainWindow)
@@ -111,11 +104,13 @@ void STACCATOMainWindow::createActions(void)
 	myTimeStepLessAction = new QPushButton(tr("<"), this);
 	myTimeStepLessAction->setFixedWidth(40);
 	myTimeStepLessAction->setStatusTip(tr("Previous Frequency"));
+	myTimeStepLessAction->setEnabled(false);
 	connect(myTimeStepLessAction, SIGNAL(clicked()), this, SLOT(myTimeStepLessProc()));
 
 	myTimeStepAddAction = new QPushButton(tr(">"), this);
 	myTimeStepAddAction->setFixedWidth(40);
 	myTimeStepAddAction->setStatusTip(tr("Next Frequency"));
+	myTimeStepAddAction->setEnabled(false);
 	connect(myTimeStepAddAction, SIGNAL(clicked()), this, SLOT(myTimeStepAddProc()));
 
 	myTimeStepText = new QLineEdit(this);
@@ -297,7 +292,7 @@ void STACCATOMainWindow::createActions(void)
 	connect(myAnimationButton, SIGNAL(triggered()), this, SLOT(myAnimationOptionsTriggered()));
 	myAnimationButton->setEnabled(false);
 
-	myAnimationOptions = new QAction(tr("Options"),this);
+	myAnimationOptions = new QAction(tr("Options"), this);
 	myAnimationOptions->setIcon(QIcon(":/Qt/resources/setting.ico"));
 	myAnimationOptions->setStatusTip(tr("Open Animation Options"));
 	myAnimationOptions->setCheckable(false);
@@ -342,8 +337,19 @@ void STACCATOMainWindow::createActions(void)
 void STACCATOMainWindow::fillFEResultInGUI() {
 	myVisualizerSetting->setResultAvailable(true);
 
-	mySolutionSelector->disconnect();		
-	for (int i = 0; i < myOutputDatabase->getVectorFieldFromDatabase().size(); i++) 		
+	// Fill Animation Options
+	// - Analysis
+	myAnalysisSelector->disconnect();
+	for (int i = 0; i < myOutputDatabase->getAnalysisDescription().size(); i++) {
+		myAnalysisSelector->addItem(QString::fromStdString(myOutputDatabase->getAnalysisDescription()[i]));
+	}
+	myAnalysisSelector->setCurrentIndex(1);
+	connect(myAnalysisSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myAnalysisChangeProc()));
+
+	myAnalysisTreeUpdate();
+
+	mySolutionSelector->disconnect();
+	for (int i = 0; i < myOutputDatabase->getVectorFieldFromDatabase().size(); i++)
 		mySolutionSelector->addItem(QString::fromStdString(myOutputDatabase->getVectorFieldFromDatabase()[i].myLabel));
 	mySolutionSelector->setCurrentIndex(1);
 	connect(mySolutionSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
@@ -355,23 +361,12 @@ void STACCATOMainWindow::fillFEResultInGUI() {
 	myComponentSelector->setCurrentIndex(1);
 	connect(myComponentSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
 
-	myViewModeSelector->disconnect();	
+	myViewModeSelector->disconnect();
 	for (std::map<std::string, STACCATO_FieldProperty_type>::iterator it = myVisualizerSetting->myViewModeLabelMap.begin(); it != myVisualizerSetting->myViewModeLabelMap.end(); ++it)
 		myViewModeSelector->addItem(QString::fromStdString(it->first));
 	myViewModeSelector->setFixedWidth(120);
 	myViewModeSelector->setCurrentIndex(1);
 	connect(myViewModeSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myViewPropertyUpdate()));
-
-	// Fill Animation Options
-	// - Analysis
-	myAnalysisSelector->disconnect();
-	for (int i = 0; i < myOutputDatabase->getAnalysisDescription().size(); i++)	{
-		myAnalysisSelector->addItem(QString::fromStdString(myOutputDatabase->getAnalysisDescription()[i]));
-	}
-	myAnalysisSelector->setCurrentIndex(1);
-	connect(myAnalysisSelector, SIGNAL(currentTextChanged(const QString&)), this, SLOT(myAnalysisChangeProc()));
-
-	myAnalysisTreeUpdate();
 }
 
 void STACCATOMainWindow::myViewPropertyUpdate(void) {
@@ -609,7 +604,7 @@ void STACCATOMainWindow::createAnimationOptionsDock() {
 void STACCATOMainWindow::about() {
 	QMessageBox::about(this, tr("About STACCATO"),
 		tr("<h2>STACCATO: STefAn's Computational vibroaCoustics Analysis TOol</h2>"
-			"<p>Copyright &copy; 2017 "
+			"<p>Copyright &copy; 2018 "
 			"<p>STACCATO is using Qt and OpenCASCADE."));
 }
 
@@ -633,16 +628,10 @@ void STACCATOMainWindow::importXMLFile(void) {
 		myComputeEngine->compute();
 		myComputeEngine->clean();
 
-		myOutputDatabase = &(myComputeEngine->getOutputDatabase());
+		myOutputDatabase = (myComputeEngine->getOutputDatabase());
 		myFieldDataVisualizer->setHMesh(myComputeEngine->getHMesh());
 
-		// Fill GUI
-		fillFEResultInGUI();
-		// Enable Tools
-		myScalarBarVisibility->setEnabled(true);
-		myWarpVectorVisibility->setEnabled(true);
-		mySignalDataVisualizerVisiblility->setEnabled(true);
-		myAnimationButton->setEnabled(true);
+		notifyAnalysisCompleteSuccessfully();
 
 		anaysisTimer01.start();
 		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridInitializer();
@@ -731,6 +720,7 @@ void STACCATOMainWindow::myAutoScalingState() {
 }
 
 void STACCATOMainWindow::myScalingFactorState() {
+	myScalingFactor->clearFocus();
 	myVisualizerSetting->commitScalingFactor(QString(myScalingFactor->text()).toDouble());
 	myViewPropertyUpdate();
 }
@@ -805,10 +795,10 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 	int sliderSteps = 0;
 
 	std::vector<int> animationIndices;
-	if (myFrequencyAnimationRadio->isChecked())	{
+	if (myFrequencyAnimationRadio->isChecked()) {
 		std::cout << ">> Frequency Step Animation running...\n";
 		// Generate Index
-		for (int it = 0; it < myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX).size(); it++)		{
+		for (int it = 0; it < myOutputDatabase->getTimeDescription(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX).size(); it++) {
 			animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[it].startIndex);
 		}
 		sliderSteps = animationIndices.size() - 1;
@@ -824,18 +814,21 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 		sliderSteps = animationIndices.size() - 1;
 		myVisualizerSetting->generateHarmonicAnimation(animationIndices);
 	}
-	else if(myCaseAnimationRadio->isChecked()) {
+	else if (myCaseAnimationRadio->isChecked()) {
 		std::cout << ">> Sub Case Animation running...\n";
 		std::cout << ">> Selected Number of Frames: " << myAnimationCaseTree->selectedItems().size() << std::endl;
 		// Generate Index
-		for (int it = 0; it < myAnimationCaseTree->selectedItems().size(); it++)	{
-			int itemIndex = std::stoi(myAnimationCaseTree->selectedItems()[it]->text(0).toStdString());
-			std::cout << ">> Selected: " << it << " = "<< itemIndex << "Frame: "<< myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex << std::endl;
-			
-			animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex);
+		if (myAnimationCaseTree->selectedItems().size() != 0) {
+			for (int it = 0; it < myAnimationCaseTree->selectedItems().size(); it++) {
+				int itemIndex = std::stoi(myAnimationCaseTree->selectedItems()[it]->text(0).toStdString());
+				std::cout << ">> Selected: " << it << " = " << itemIndex << "Frame: " << myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex << std::endl;
+
+				animationIndices.push_back(myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[itemIndex].startIndex);
+			}
+			sliderSteps = animationIndices.size() - 1;
+			if(animationIndices.size() > 0)
+				myVisualizerSetting->generateCaseAnimation(animationIndices);
 		}
-		sliderSteps = animationIndices.size() - 1;
-		myVisualizerSetting->generateCaseAnimation(animationIndices);
 	}
 
 	myHorizontalSlider->setEnabled(true);
@@ -852,7 +845,7 @@ void STACCATOMainWindow::myGenerateAnimationFramesProc(void) {
 	myHorizontalSlider->setTickInterval(sliderSteps);
 	myHorizontalSlider->setSingleStep(1);
 	myHorizontalSlider->setMinimum(0);
-	myHorizontalSlider->setMaximum(animationIndices.size() -1);
+	myHorizontalSlider->setMaximum(animationIndices.size() - 1);
 	myHorizontalSlider->setValue(0);
 	connect(myHorizontalSlider, SIGNAL(valueChanged(int)), this, SLOT(myUpdateAnimationSlider(int)));
 
@@ -879,7 +872,7 @@ void STACCATOMainWindow::myAnimationScenePlayProc() {
 	int repeat = (myAnimateRepeatButton->isChecked()) ? 1 : 0;
 
 	myVisualizerSetting->visualizeAnimationFrames(duration, repeat);
-	
+
 	myAnimatePlayButton->setEnabled(true);
 }
 
@@ -935,7 +928,7 @@ void STACCATOMainWindow::myAnalysisTreeUpdate() {
 	// Fill LoadCase Tree & LoadCase Selector
 	QTreeWidgetItem* CaseRoot;
 	CaseRoot = addRootToTree(myAnimationCaseTree, QString::fromStdString("Load Cases"), false);
-	for (int iCase = 0; iCase < myOutputDatabase->getNumberOfLoadCases(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX); iCase++)	{
+	for (int iCase = 0; iCase < myOutputDatabase->getNumberOfLoadCases(myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX, myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX); iCase++) {
 		// Tree
 		OutputDatabase::LoadCase loadCase = myOutputDatabase->myAnalyses[myVisualizerSetting->PROPERTY_CURRENT_ANALYSIS_INDEX].timeSteps[myVisualizerSetting->PROPERTY_CURRENT_TIMESTEP_INDEX].caseList[iCase];
 		addChildToTree(CaseRoot, QString::fromStdString(std::to_string(iCase)), QString::fromStdString(loadCase.name), false);
@@ -1000,4 +993,17 @@ void STACCATOMainWindow::mySetDefaultProc() {
 void STACCATOMainWindow::myAnalysisChangeProc() {
 	myAnalysisTreeUpdate();
 	myViewPropertyUpdate();
+}
+
+void STACCATOMainWindow::notifyAnalysisCompleteSuccessfully() {
+	// Fill GUI
+	fillFEResultInGUI();
+
+	// Enable Tools
+	myTimeStepLessAction->setEnabled(true);
+	myTimeStepAddAction->setEnabled(true);
+	myScalarBarVisibility->setEnabled(true);
+	myWarpVectorVisibility->setEnabled(true);
+	mySignalDataVisualizerVisiblility->setEnabled(true);
+	myAnimationButton->setEnabled(true);
 }

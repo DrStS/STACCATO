@@ -291,45 +291,66 @@ namespace MathLibrary {
 			this->determineCSR();
 			if (isSymmetric) {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
-				else if (std::is_same<T, double>::value) pardiso_mtype = -2;		// real and symmetric indefinite
+				else if (std::is_same<T, double>::value) pardiso_mtype = 2;		// real and symmetric indefinite
 			}
 			else {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
 				else if (std::is_same<T, double>::value) pardiso_mtype = 11;		// real and unsymmetric matrix
 			}
+			std::cout << "Setting mtype " << pardiso_mtype << " and rhs " << nRHS << std::endl;
 
 			// set pardiso default parameters
+			for (int i = 0; i < 64; i++) {
+				pardiso_iparm[i] = 0;
+			}
+
+			pardiso_iparm[0] = 1;	// No solver defaults
+			pardiso_iparm[1] = 3;	// Fill-in reordering from METIS 
+			pardiso_iparm[7] = 2;	// Max numbers of iterative refinement steps
+			pardiso_iparm[9] = 13;	// Perturb the pivot elements with 1E-13
+			pardiso_iparm[10] = 0;	// Use nonsymmetric permutation and scaling MPS
+			pardiso_iparm[11] = 0;	// Solve with transposed or conjugate transposed matrix A
+			pardiso_iparm[12] = 0;	// Maximum weighted matching algorithm is switched-on
+			pardiso_iparm[17] = -1;	// Output: Number of nonzeros in the factor LU
+			pardiso_iparm[18] = -1; // Output: Report Mflops
+			pardiso_iparm[19] = 0;	// Output: Number of CG iterations
+			pardiso_iparm[23] = 10;	// 2-level factorization
+			pardiso_iparm[26] = 0;	// Matrix checker
+			pardiso_iparm[34] = 1;	// Zero based indexing
+			pardiso_iparm[36] = -90;// vbsr format
+
+			pardiso_maxfct = 11;	// max number of factorizations
+			pardiso_mnum = 1;		// which factorization to use
+			pardiso_msglvl = 1;		// do NOT print statistical information
+			pardiso_neq = m;		// number of rows of 
+			pardiso_error = 1;		// Initialize error flag 
+									// pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
+			pardiso_nrhs = nRHS;	// number of right hand side
+			pardiso_phase = 12;	// analysis and factorization
+								// pardiso_iparm[36] = -90;
+
 			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 
-			pardiso_iparm[1] = 2; //The parallel (OpenMP) version of the nested dissection algorithm
-			pardiso_iparm[18] = -1; //Report Mflops 
-			pardiso_maxfct = 1; // max number of factorizations
-			pardiso_mnum = 1; // which factorization to use
-			pardiso_msglvl = 1; // do NOT print statistical information
-			pardiso_neq = m; // number of rows of 
-			pardiso_error = 0; //Initialize error flag 
-							   //pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
-			pardiso_nrhs = nRHS; // number of right hand side
-			pardiso_phase = 12; // analysis and factorization
-								//pardiso_iparm[36] = -90;
-			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads);
+			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 				&pardiso_error);
+			std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
 			if (pardiso_error != 0) {
-				errorOut << "Error pardiso factorization failed with error code: " << pardiso_error
+				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
 			}
-			infoOut << "Reordering and factorization completed" << std::endl;
-			infoOut << "Info: Number of equation = " << pardiso_neq << std::endl;
-			infoOut << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
-			infoOut << "Info: Number of factorization FLOPS = " << pardiso_iparm[18] * 1000000.0 << std::endl;
-			infoOut << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14] + pardiso_iparm[15] + pardiso_iparm[16]) / 1000 << std::endl;
-			infoOut << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
-			infoOut << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
+			std::cout << "Reordering and factorization completed" << std::endl;
+			std::cout << "Info: Number of equation = " << pardiso_neq << std::endl;
+			std::cout << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
+			std::cout << "Info: Number of factorization FLOPS = " << pardiso_iparm[18] * 1000000.0 << std::endl;
+			std::cout << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14] + pardiso_iparm[15] + pardiso_iparm[16]) / 1000 << std::endl;
+			std::cout << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
+			std::cout << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
+			std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
 #endif
 		}
 		/***********************************************************************************************

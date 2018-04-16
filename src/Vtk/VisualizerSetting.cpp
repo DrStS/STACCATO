@@ -106,7 +106,7 @@ void VisualizerSetting::commitCurrentFrame(int _frameID) {
 
 void VisualizerSetting::setScalarbarTitle(std::string _title) {
 	PROPERTY_SCALARBAR_TITLE = new char[_title.size() + 1];
-	strcpy(PROPERTY_SCALARBAR_TITLE, _title.c_str());
+	strcpy_s(PROPERTY_SCALARBAR_TITLE, sizeof PROPERTY_SCALARBAR_TITLE, _title.c_str());
 }
 
 void VisualizerSetting::generateCaseAnimation(std::vector<int> &_frameIndices) {

@@ -24,11 +24,13 @@
 #include "HMesh.h"
 
 //UMA
+#ifdef ENABLE_SIMULIA
 #include <ads_CoreFESystemC.h>
 #include <ads_CoreMeshC.h>
 #include <uma_System.h>
 #include <uma_SparseMatrix.h>
 #include <uma_ArrayInt.h>
+#endif
 
 //XML
 #include "MetaDatabase.h"
@@ -49,6 +51,7 @@ SimuliaUMA::~SimuliaUMA() {
 }
 
 void SimuliaUMA::openFile() {
+#ifdef ENABLE_SIMULIA
 	std::vector<std::string> mapTypeName;
 	mapTypeName.push_back("DOFS");
 	mapTypeName.push_back("NODES");
@@ -142,6 +145,7 @@ void SimuliaUMA::openFile() {
 		printf(" %3i:%3i-%1i", col, nodes[col], ldofs[col]);
 	}
 	printf("\n");
+#endif
 }
 
 

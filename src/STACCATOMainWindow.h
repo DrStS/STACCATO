@@ -17,21 +17,21 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-/***********************************************************************************************//**
-																								 * \file STACCATOMainWindow.h
-																								 * This file holds the class of StartWindow.
-																								 * \date 9/16/2016
-																								 **************************************************************************************************/
+/*************************************************************************************************
+* \file STACCATOMainWindow.h
+* This file holds the class of StartWindow.
+* \date 9/16/2016
+**************************************************************************************************/
 #pragma once
-																								 //std
+//std
 #include <future>
 #include <thread>
-																								 //STACCATO
+//STACCATO
 #include "STACCATO_Enum.h"
-																								 // QT5
+// QT5
 #include <QMainWindow>
 
-																								 // forward declaration
+// forward declaration
 class VtkViewer;
 class STACCATOComputeEngine;
 class OutputDatabase;
@@ -90,6 +90,7 @@ protected:
 	void createAnimationOptionsDock(void);
 	QTreeWidgetItem* addRootToTree(QTreeWidget*, QString, bool);
 	void addChildToTree(QTreeWidgetItem*, QString, QString, bool);
+	virtual void closeEvent(QCloseEvent * _event);
 
 	private slots:
 	void about(void);

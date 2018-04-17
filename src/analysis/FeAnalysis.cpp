@@ -90,12 +90,12 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 	anaysisTimer01.start();
 
-	// Build XML NodeSets and ElementSets
-	MetaDatabase::getInstance()->buildXML(*myHMesh);
-
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 	std::vector<FeElement*> allElements(numElements);
+
+	// Build XML NodeSets and ElementSets
+	MetaDatabase::getInstance()->buildXML(*myHMesh);
 
 	std::cout << ">> Num Nodes   : " << numNodes << "\n>> Num Elements: " << numElements << std::endl;
 
@@ -602,7 +602,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						int dofIndex = k*totalDoF + myHMesh->getNodeIndexToDoFIndices()[j][l];
 						if (l == 0) {
 							if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-								resultUxRe[j] = solReal[l*totalDoF + dofIndex];
+								resultUxRe[j] = solReal[dofIndex];
 							}
 							else if (analysisType == "STEADYSTATE_DYNAMIC") {
 								resultUxRe[j] = solComplex[dofIndex].real;

@@ -72,9 +72,6 @@ private:
 	// Component Enum to Results map
 	std::map<STACCATO_VectorField_components, std::vector<std::vector<double>>> myFieldMap;
 
-	std::vector<std::vector<std::vector<double>>> myMasterVector;
-
-
 	std::map<STACCATO_VectorField_components, int> componentIndexMap;
 public:
 	// Label to Component Enum Map

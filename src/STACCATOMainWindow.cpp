@@ -1015,3 +1015,9 @@ void STACCATOMainWindow::notifyAnalysisCompleteSuccessfully() {
 	mySignalDataVisualizerVisiblility->setEnabled(true);
 	myAnimationButton->setEnabled(true);
 }
+
+void STACCATOMainWindow::closeEvent(QCloseEvent *_event) {
+	std::cout << ">> Closing STACCATO." << std::endl;
+	// Animation process in loop has to be stopped, if running.
+	myAnimationResetProc();
+}

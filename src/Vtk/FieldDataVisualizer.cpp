@@ -102,7 +102,8 @@ FieldDataVisualizer::FieldDataVisualizer(QWidget* parent): QVTKOpenGLWidget(pare
 
 	myVtkViewer = new VtkViewer(*this);
 
-	myRotateMode = true;
+	setPickerModeNone();
+	setViewMode(true);
 	myHarmonicScale = 1;
 
 
@@ -171,131 +172,133 @@ void FieldDataVisualizer::mousePressEvent(QMouseEvent * 	_event) {
 	
 		// The button mappings can be used as a mask. This code prevents conflicts
 		// when more than one button pressed simultaneously.
-		if (_event->button() & Qt::LeftButton && (!myRotateMode || myCurrentPickerType != STACCATO_Picker_None) && myVisualizerSetting->PROPERTY_RESULTS_AVALABLE) {
-			// Some Picker VtkObjects
-			vtkSmartPointer<vtkDataSetMapper> selectedPickMapper = vtkDataSetMapper::New();
+		if (_event->button() & Qt::LeftButton) {
+			if ((!myRotateMode && myCurrentPickerType != STACCATO_Picker_None) && myVisualizerSetting->PROPERTY_RESULTS_AVALABLE) {
+				// Some Picker VtkObjects
+				vtkSmartPointer<vtkDataSetMapper> selectedPickMapper = vtkDataSetMapper::New();
 
-			// Remove selectionPickActor
-			static bool mySelectedActorActive = false;
-			if (mySelectedActorActive) {
-				myRenderer->RemoveActor(selectedPickActor);
-				myRenderer->GetRenderWindow()->Render();
-			}
+				// Remove selectionPickActor
+				static bool mySelectedActorActive = false;
+				if (mySelectedActorActive) {
+					myRenderer->RemoveActor(selectedPickActor);
+					myRenderer->GetRenderWindow()->Render();
+				}
 
-			// Get the location of the click (in window coordinates)
-			int* pos = GetRenderWindow()->GetInteractor()->GetEventPosition();
+				// Get the location of the click (in window coordinates)
+				int* pos = GetRenderWindow()->GetInteractor()->GetEventPosition();
 
-			vtkSmartPointer<vtkPointPicker> pointPicker = vtkSmartPointer<vtkPointPicker>::New();
-			vtkSmartPointer<vtkCellPicker> cellPicker = vtkSmartPointer<vtkCellPicker>::New();
-			pointPicker->SetTolerance(0.05);
-			cellPicker->SetTolerance(1e-6);
+				vtkSmartPointer<vtkPointPicker> pointPicker = vtkSmartPointer<vtkPointPicker>::New();
+				vtkSmartPointer<vtkCellPicker> cellPicker = vtkSmartPointer<vtkCellPicker>::New();
+				pointPicker->SetTolerance(0.05);
+				cellPicker->SetTolerance(1e-6);
 
-			// Dettach Renderer from other actors other than Surface
-			// Remove edgeActor
-			if (myVisualizerSetting->myFieldDataSetting->getEdgeProperty())
-				myRenderer->RemoveActor(myEdgeActor);
-			// Enable Surface Actor
-			myRenderer->AddActor(mySelectedActor);
+				// Dettach Renderer from other actors other than Surface
+				// Remove edgeActor
+				if (myVisualizerSetting->myFieldDataSetting->getEdgeProperty())
+					myRenderer->RemoveActor(myEdgeActor);
+				// Enable Surface Actor
+				myRenderer->AddActor(mySelectedActor);
 
-			// Pick from this location.
-			pointPicker->Pick(pos[0], pos[1], 0, myRenderer);
-			cellPicker->Pick(pos[0], pos[1], 0, myRenderer);
+				// Pick from this location.
+				pointPicker->Pick(pos[0], pos[1], 0, myRenderer);
+				cellPicker->Pick(pos[0], pos[1], 0, myRenderer);
 
-			double* worldPosition = pointPicker->GetPickPosition();
-			std::cout << "Element id is: " << cellPicker->GetCellId() << std::endl;
-			std::cout << "Node id is: " << pointPicker->GetPointId() << std::endl;
+				double* worldPosition = pointPicker->GetPickPosition();
+				std::cout << "Element id is: " << cellPicker->GetCellId() << std::endl;
+				std::cout << "Node id is: " << pointPicker->GetPointId() << std::endl;
 
-			// Store the Pick
-			mySelectedNodes.push_back(pointPicker->GetPointId());
-			mySelectedElements.push_back(cellPicker->GetCellId());
+				// Store the Pick
+				mySelectedNodes.push_back(pointPicker->GetPointId());
+				mySelectedElements.push_back(cellPicker->GetCellId());
 
-			if (myCurrentPickerType!=STACCATO_Picker_None) {
+				if (myCurrentPickerType != STACCATO_Picker_None) {
 
-				if (pointPicker->GetPointId() != -1 && cellPicker->GetCellId() != -1)
-				{
+					if (pointPicker->GetPointId() != -1 && cellPicker->GetCellId() != -1)
+					{
 
-					std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
-						<< " " << worldPosition[2] << endl;
+						std::cout << "Pick position is: " << worldPosition[0] << " " << worldPosition[1]
+							<< " " << worldPosition[2] << endl;
 
-					vtkSmartPointer<vtkIdTypeArray> ids =
-						vtkSmartPointer<vtkIdTypeArray>::New();
-					ids->SetNumberOfComponents(1);
+						vtkSmartPointer<vtkIdTypeArray> ids =
+							vtkSmartPointer<vtkIdTypeArray>::New();
+						ids->SetNumberOfComponents(1);
 
-					if (myCurrentPickerType == STACCATO_Picker_Element) {
-						ids->InsertNextValue(cellPicker->GetCellId());
-						vtkSmartPointer<vtkIdList> ids_points = vtkIdList::New();
-					}
-					else if (myCurrentPickerType == STACCATO_Picker_Node) {
-						ids->InsertNextValue(pointPicker->GetPointId());
-					}
-					vtkSmartPointer<vtkSelectionNode> selectionNode =
-						vtkSmartPointer<vtkSelectionNode>::New();
-					if (myCurrentPickerType == STACCATO_Picker_Element) {
-						selectionNode->SetFieldType(vtkSelectionNode::CELL);
-					}
-					else if (myCurrentPickerType == STACCATO_Picker_Node) {
-						selectionNode->SetFieldType(vtkSelectionNode::POINT);
-					}
-					selectionNode->SetContentType(vtkSelectionNode::INDICES);
-					selectionNode->SetSelectionList(ids);
+						if (myCurrentPickerType == STACCATO_Picker_Element) {
+							ids->InsertNextValue(cellPicker->GetCellId());
+							vtkSmartPointer<vtkIdList> ids_points = vtkIdList::New();
+						}
+						else if (myCurrentPickerType == STACCATO_Picker_Node) {
+							ids->InsertNextValue(pointPicker->GetPointId());
+						}
+						vtkSmartPointer<vtkSelectionNode> selectionNode =
+							vtkSmartPointer<vtkSelectionNode>::New();
+						if (myCurrentPickerType == STACCATO_Picker_Element) {
+							selectionNode->SetFieldType(vtkSelectionNode::CELL);
+						}
+						else if (myCurrentPickerType == STACCATO_Picker_Node) {
+							selectionNode->SetFieldType(vtkSelectionNode::POINT);
+						}
+						selectionNode->SetContentType(vtkSelectionNode::INDICES);
+						selectionNode->SetSelectionList(ids);
 
-					vtkSmartPointer<vtkSelection> selection =
-						vtkSmartPointer<vtkSelection>::New();
-					selection->AddNode(selectionNode);
+						vtkSmartPointer<vtkSelection> selection =
+							vtkSmartPointer<vtkSelection>::New();
+						selection->AddNode(selectionNode);
 
-					vtkSmartPointer<vtkExtractSelection> extractSelection =
-						vtkSmartPointer<vtkExtractSelection>::New();
+						vtkSmartPointer<vtkExtractSelection> extractSelection =
+							vtkSmartPointer<vtkExtractSelection>::New();
 
-					extractSelection->SetInputData(0, myRenderer->GetActors()->GetLastActor()->GetMapper()->GetInput());
-					extractSelection->SetInputData(1, selection);
-					extractSelection->Update();
+						extractSelection->SetInputData(0, myRenderer->GetActors()->GetLastActor()->GetMapper()->GetInput());
+						extractSelection->SetInputData(1, selection);
+						extractSelection->Update();
 
-					// In selection
-					vtkSmartPointer<vtkUnstructuredGrid> selected =
-						vtkSmartPointer<vtkUnstructuredGrid>::New();
-					selected->ShallowCopy(extractSelection->GetOutput());
+						// In selection
+						vtkSmartPointer<vtkUnstructuredGrid> selected =
+							vtkSmartPointer<vtkUnstructuredGrid>::New();
+						selected->ShallowCopy(extractSelection->GetOutput());
 
-					std::cout << "There are " << selected->GetNumberOfPoints()
-						<< " points in the selection." << std::endl;
-					std::cout << "There are " << selected->GetNumberOfCells()
-						<< " cells in the selection." << std::endl;
+						std::cout << "There are " << selected->GetNumberOfPoints()
+							<< " points in the selection." << std::endl;
+						std::cout << "There are " << selected->GetNumberOfCells()
+							<< " cells in the selection." << std::endl;
 
-					selectedPickMapper->SetInputData(selected);
-					selectedPickActor->SetMapper(selectedPickMapper);
-					if (myCurrentPickerType == STACCATO_Picker_Element) {
-						selectedPickActor->GetProperty()->SetColor(1, 0, 0);
-						selectedPickActor->GetProperty()->SetPointSize(8.0);
-						selectedPickActor->GetProperty()->EdgeVisibilityOff();
-						selectedPickActor->GetProperty()->SetEdgeColor(0, 0, 1);
-						selectedPickActor->GetProperty()->SetLineWidth(4.0);
-						selectedPickMapper->ScalarVisibilityOff();
-					}
-					else if (myCurrentPickerType == STACCATO_Picker_Node) {
-						selectedPickActor->GetProperty()->SetColor(0, 0, 1);
-						selectedPickActor->GetProperty()->SetPointSize(10.0);
-						selectedPickMapper->ScalarVisibilityOff();
-					}
-					myRenderer->AddActor(selectedPickActor);
+						selectedPickMapper->SetInputData(selected);
+						selectedPickActor->SetMapper(selectedPickMapper);
+						if (myCurrentPickerType == STACCATO_Picker_Element) {
+							selectedPickActor->GetProperty()->SetColor(1, 0, 0);
+							selectedPickActor->GetProperty()->SetPointSize(8.0);
+							selectedPickActor->GetProperty()->EdgeVisibilityOff();
+							selectedPickActor->GetProperty()->SetEdgeColor(0, 0, 1);
+							selectedPickActor->GetProperty()->SetLineWidth(4.0);
+							selectedPickMapper->ScalarVisibilityOff();
+						}
+						else if (myCurrentPickerType == STACCATO_Picker_Node) {
+							selectedPickActor->GetProperty()->SetColor(0, 0, 1);
+							selectedPickActor->GetProperty()->SetPointSize(10.0);
+							selectedPickMapper->ScalarVisibilityOff();
+						}
+						myRenderer->AddActor(selectedPickActor);
 
-					mySelectedActorActive = true;	
+						mySelectedActorActive = true;
 
-					if (observers.size() != 0) {
-						this->notify();
+						if (observers.size() != 0) {
+							this->notify();
+						}
 					}
 				}
-			}
-			// Attach Model View Properties to Renderer
-			if (myVisualizerSetting->myFieldDataSetting->getSurfaceProperty()) {
-				mySelectedActor->SetMapper(mySelectedMapper);
-				myRenderer->AddActor(mySelectedActor);
-			}
-			else
-				myRenderer->RemoveActor(mySelectedActor);
+				// Attach Model View Properties to Renderer
+				if (myVisualizerSetting->myFieldDataSetting->getSurfaceProperty()) {
+					mySelectedActor->SetMapper(mySelectedMapper);
+					myRenderer->AddActor(mySelectedActor);
+				}
+				else
+					myRenderer->RemoveActor(mySelectedActor);
 
-			if (myVisualizerSetting->myFieldDataSetting->getEdgeProperty())
-				myRenderer->AddActor(myEdgeActor);
-			
-			myRenderer->GetRenderWindow()->Render();
+				if (myVisualizerSetting->myFieldDataSetting->getEdgeProperty())
+					myRenderer->AddActor(myEdgeActor);
+
+				myRenderer->GetRenderWindow()->Render();
+			}			
 		}
 		else if (_event->button() & Qt::RightButton) {
 

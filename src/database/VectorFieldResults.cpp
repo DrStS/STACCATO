@@ -53,7 +53,10 @@ void VectorFieldResults::buildLabelMap() {
 }
 
 void VectorFieldResults::addResultScalarFieldAtNodes(STACCATO_VectorField_components _component, std::vector<double> _valueVec) {
-	myFieldMap[_component].push_back(_valueVec);
+	int next = myFieldMap[_component].size();
+	myFieldMap[_component].resize(next + 1);
+	myFieldMap[_component][next].resize(_valueVec.size());
+	myFieldMap[_component][next] = _valueVec;
 }
 
 std::vector<double>& VectorFieldResults::getResultScalarFieldAtNodes(STACCATO_VectorField_components _component, int index) {

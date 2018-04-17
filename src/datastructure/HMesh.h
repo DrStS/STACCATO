@@ -70,7 +70,7 @@ public:
 	* \param[out] total number of nodes
 	* \author Stefan Sicklinger
 	***********/
-	int getNumNodes(){ return nodeLabels.size(); }
+	int getNumNodes(){ return nodeLabels.size() - referenceNodeLabel.size(); }
 	/***********************************************************************************************
 	* \brief get node labels
 	* \param[out] reference to std vector int

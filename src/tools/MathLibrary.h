@@ -291,7 +291,7 @@ namespace MathLibrary {
 			this->determineCSR();
 			if (isSymmetric) {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
-				else if (std::is_same<T, double>::value) pardiso_mtype = 2;		// real and symmetric indefinite
+				else if (std::is_same<T, double>::value) pardiso_mtype = 2;			// real and symmetric positive definite
 			}
 			else {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
@@ -338,9 +338,26 @@ namespace MathLibrary {
 				&pardiso_error);
 
 			if (pardiso_error != 0) {
+				std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
 				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
+
+				// This is because the stiffness matrix for the SteadyState_DynamicReal may not be SPD
+				/*if (std::is_same<T, double>::value) {
+					std::cout << ">> Retrying to solve with Symmetric Indefinite setting for type double computation..." << std::endl;
+					pardiso_mtype = -2;		// real and symmetric indefinite
+					pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
+						&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
+						&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
+						&pardiso_error);
+				}
+
+				if (pardiso_error != 0) {
+					std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
+						<< std::endl;
+						exit(EXIT_FAILURE);
+				}*/
 			}
 			std::cout << "Reordering and factorization completed" << std::endl;
 			std::cout << "Info: Number of equation = " << pardiso_neq << std::endl;
@@ -696,6 +713,126 @@ namespace MathLibrary {
 			 //////////////////////////////////////////////////////////////
 #endif
 		}
+		/***********************************************************************************************
+		* \brief This function prepares Conjugate Gradient iterative solver
+		* \param[in]  pointer to rhs vector _b
+		* \param[out] pointer to solution vector _x
+		* \author Harikrishnan Sreekumar
+		***********/
+		void initCGIterativeSolver(double* _x, double* _b) {
+#ifdef USE_INTEL_MKL
+			this->determineCSR();
+
+			/*---------------------------------------------------------------------------*/
+			/* Allocate storage for the solver ?par and temporary storage tmp            */
+			/*---------------------------------------------------------------------------*/
+			// maximum number of iterations
+			int numberofMaxIterations = 2500;
+
+			// Allocate Memory
+			uint64_t memoryLength = (m * 4);
+			dcg_memory = new double[memoryLength];
+			double *rhs; // copy of _b
+			rhs = new double[m];
+
+			/*---------------------------------------------------------------------------*/
+			/* Some additional variables to use with the RCI (P)CG solver                */
+			/*---------------------------------------------------------------------------*/
+			char matdes[3];
+			matdes[0] = 'd';
+			matdes[1] = 'l';
+			matdes[2] = 'n';
+
+			/*---------------------------------------------------------------------------*/
+			/* Initialize the solver                                                     */
+			/*---------------------------------------------------------------------------*/
+			dcg_init(&m, _x, _b, &dcg_RCI_request, dcg_ipar, dcg_dpar, dcg_memory);
+			if (dcg_RCI_request != 0)
+				iterativeSolverHandleError();
+			/*---------------------------------------------------------------------------
+			* Save the right-hand side in vector b for future use
+			*---------------------------------------------------------------------------*/
+			int inc = 1;
+			dcopy(&m, _b, &inc, _b, &inc);
+			/*---------------------------------------------------------------------------*/
+			/* Set the desired parameters:                                               */
+			/* INTEGER parameters:                                                        */
+			/* set the maximal number of iterations to 100                               */
+			/* LOGICAL parameters:                                                       */
+			/* run the Preconditioned version of RCI (P)CG with preconditioner C_inverse */
+			/* DOUBLE parameters                                                         */
+			/* -                                                                         */
+			/*---------------------------------------------------------------------------*/
+			dcg_ipar[4] = numberofMaxIterations;
+			dcg_ipar[10] = 1;
+			/*---------------------------------------------------------------------------*/
+			/* Check the correctness and consistency of the newly set parameters         */
+			/*---------------------------------------------------------------------------*/
+			dcg_check(&m, _x, _b, &dcg_RCI_request, dcg_ipar, dcg_dpar, dcg_memory);
+			if (dcg_RCI_request != 0)
+				iterativeSolverHandleError();
+			/*---------------------------------------------------------------------------*/
+			/* Compute the solution by RCI (P)CG solver                                  */
+			/* Reverse Communications starts here                                        */
+			/*---------------------------------------------------------------------------*/
+			while (1) {
+				dcg(&m, _x, _b, &dcg_RCI_request, dcg_ipar, dcg_dpar, dcg_memory);
+				/*---------------------------------------------------------------------------*/
+				/* If rci_request=0, then the solution was found according to the requested  */
+				/* stopping tests. In this case, this means that it was found after 100      */
+				/* iterations.                                                               */
+				/*---------------------------------------------------------------------------*/
+				if (dcg_RCI_request == 0) {
+					iterativeSolverCGFinalize(_x, _b);
+					break;
+				}
+				/*---------------------------------------------------------------------------*/
+				/* If rci_request=1, then compute the vector A*tmp[0]                      */
+				/* and put the result in vector tmp[n]                                     */
+				/*---------------------------------------------------------------------------*/
+				else if (dcg_RCI_request == 1)
+				{
+					char tr = 'u';
+					mkl_dcsrsymv(&tr, &m, &values[0], &((*rowIndex)[0]), &columns[0], dcg_memory, &dcg_memory[m]);
+				}
+				/*---------------------------------------------------------------------------*/
+				/* If rci_request=2, then do the user-defined stopping test: compute the     */
+				/* Euclidean norm of the actual residual using Intel(R) MKL routines and check if     */
+				/* it is less than 1.E-8                                                     */
+				/*---------------------------------------------------------------------------*/
+				else if (dcg_RCI_request == 2)
+				{
+					char tr = 'u';
+					double eone = -1.E0;
+					MKL_INT ione = 1;
+					double* temp;
+					temp = new double[m];
+					mkl_dcsrsymv(&tr, &m, &values[0], &((*rowIndex)[0]), &columns[0], _x, temp);
+					daxpy(&m, &eone, _b, &ione, temp, &ione);
+					double euclidean_norm = dnrm2(&m, temp, &ione);
+					/*---------------------------------------------------------------------------*/
+					/* The solution has been found according to the user-defined stopping test   */
+					/*---------------------------------------------------------------------------*/
+					if (euclidean_norm <= 1.e-8) {
+						iterativeSolverCGFinalize(_x, _b);
+						break;
+					}
+				}
+				/*---------------------------------------------------------------------------*/
+				/* If rci_request=3, then compute apply the preconditioner matrix C_inverse  */
+				/* on vector tmp[2*n] and put the result in vector tmp[3*n]                  */
+				/*---------------------------------------------------------------------------*/
+				else if (dcg_RCI_request == 3)
+				{
+					double one = 1.E0;
+					mkl_dcsrsv(&matdes[2], &m, &one, matdes, &values[0], &columns[0] , &((*rowIndex)[0]), &((*rowIndex)[1]), &dcg_memory[2 * m], &dcg_memory[3 * m]);
+
+				}
+				else
+					iterativeSolverHandleError();
+			}
+#endif
+		}
 
 
 		/***********************************************************************************************
@@ -742,6 +879,111 @@ namespace MathLibrary {
 			}
 			myfile << std::endl;
 			myfile.close();
+		}
+
+		/***********************************************************************************************
+		* \brief This function prints to a DAT file with line vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void print(std::vector<double> &_vector, std::string _name) {
+			size_t ii_couter;
+
+			std::ofstream myfile;
+			myfile.open(_name);
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
+			myfile << std::scientific;
+			for (ii_couter = 0; ii_couter < _vector.size(); ii_couter++)
+			{
+				myfile << ii_couter << "\t" << _vector[ii_couter] << std::endl;
+			}
+			myfile << std::endl;
+			myfile.close();
+		}
+		/***********************************************************************************************
+		* \brief This function print CSR Row and Column Vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void printCSRtoFile(std::string _nameIA, std::string _nameJA) {
+			size_t ii_couter;
+
+			// Print ia
+			std::ofstream myfile;
+			myfile.open(_nameIA);
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
+			myfile << std::scientific;
+			for (ii_couter = 0; ii_couter < n + 1; ii_couter++)
+			{
+				myfile << (*rowIndex)[ii_couter] << std::endl;
+			}
+			myfile << std::endl;
+			myfile.close();
+
+			// Print ja
+			myfile.open(_nameJA);
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
+			myfile << std::scientific;
+			for (ii_couter = 0; ii_couter < columns.size(); ii_couter++)
+			{
+				myfile << columns[ii_couter] << std::endl;
+			}
+			myfile << std::endl;
+			myfile.close();
+		}
+
+		/***********************************************************************************************
+		* \brief This function reads in a DAT file with line vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<double> readDoubleDat(std::string _filename) {
+			std::vector<double> readVector;
+
+			std::ifstream infile;
+			infile.open("C:/software/repos/staccato/" + _filename);
+			infile.precision(std::numeric_limits<double>::digits10 + 1);
+
+			double lines;
+			if (!infile)
+				std::cout << "File Not Found." << std::endl;
+			else {
+				std::cout << ">> Reading ...";
+				int i = 1;
+				while (!infile.eof())
+				{
+					infile >> lines;
+					if (i % 2 == 0)
+						readVector.push_back(lines);
+					i++;
+				}
+				std::cout << " Finished" << readVector.size() << ".\n";
+			}
+			infile.close();
+
+			return readVector;
+		}
+		/***********************************************************************************************
+		* \brief This reads the matrix in full style
+		* \author Harikrishnan Sreekumar
+		***********/
+		void readStiffnessMatrix(MathLibrary::SparseMatrix<double>* _mat, std::string _fileName) {
+			std::ifstream infile;
+			infile.open("C:/software/repos/staccato/" + _fileName);
+			infile.precision(std::numeric_limits<double>::digits10 + 1);
+
+			double rowId, colId, entry;
+			if (!infile)
+				std::cout << "File Not Found." << std::endl;
+			else {
+				std::cout << ">> Reading Stiffness Matrix...";
+				int i = 1;
+				while (!infile.eof())
+				{
+					infile >> rowId >> colId >> entry;
+					(*_mat)(static_cast<int>(rowId), static_cast<int>(colId)) = entry;
+					i++;
+				}
+				std::cout << " Finished" << ".\n";
+			}
+			infile.close();
 		}
 	private:
 		/// pointer to the vector of maps
@@ -794,6 +1036,16 @@ namespace MathLibrary {
 		MKL_INT fgmres_RCI_request;
 		/// determineCSR already called
 		bool alreadyCalled;
+		/// This parameter specifies the integer set of data for the RCI CG computations
+		MKL_INT dcg_ipar[128];
+		/// this parameter is used to specify the double precision set of data for the RCI CG computations
+		double dcg_dpar[128];
+		/// array of size (n*4)for SRHS, and (n*(3+nrhs))for MRHS. This parameter is used to supply the double precision temporary space for the RCI CG computations
+		double *dcg_memory;
+		///INTEGER.Gives information about the result of work of the RCI CG routines.
+		MKL_INT dcg_RCI_request;
+		/// Contains the value of the current iteration number
+		MKL_INT dcg_itercount;
 
 		/***********************************************************************************************
 		* \brief This fills the three vectors of the CSR format (one-based)
@@ -925,7 +1177,25 @@ namespace MathLibrary {
 			}
 			printf("\n Number of iterations: %d\n", currentIterCount);
 		}
-
+		/***********************************************************************************************
+		* \brief This finalizes the CG iterative solver
+		* \param[in]  pointer to rhs vector _rhs
+		* \param[out] pointer to solution vector _x
+		* \author Harikrishnan Sreekumar
+		***********/
+		void iterativeSolverCGFinalize(double* _x, double* _rhs) {
+			dcg_get(&m, _x, _rhs, &dcg_RCI_request, dcg_ipar, dcg_dpar, dcg_memory, &dcg_itercount);
+			printf("================ ITERATIVE CONJUGATE GRADIENT SOLVER =================\n");
+			printf("This example has successfully PASSED through all steps of computation!\n");
+			printf("Number of iterations: %d\n", dcg_itercount);
+			printf("======================================================================\n\n");
+			/*-------------------------------------------------------------------------*/
+			/* Release internal Intel(R) MKL memory that might be used for computations         */
+			/* NOTE: It is important to call the routine below to avoid memory leaks   */
+			/* unless you disable Intel(R) MKL Memory Manager                                   */
+			/*-------------------------------------------------------------------------*/
+			MKL_Free_Buffers();
+		}
 	};
 	/***********************************************************************************************
 	* \brief Gauss points for 2D bilinear elements

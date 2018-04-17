@@ -53,6 +53,12 @@ public:
 	***********/
 	STACCATO_Results::STACCATO_ResultsCase_type getResultsLoadCaseType() { return myResultCase; }
 	/***********************************************************************************************
+	* \brief Set Type of Analysis
+	* \param[in] _type
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setAnalysisType(STACCATO_Analysis_type _type);
+	/***********************************************************************************************
 	* \brief Set Type of Results
 	* \param[in] _type
 	* \author Harikrishnan Sreekumar

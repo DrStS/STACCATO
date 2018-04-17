@@ -28,6 +28,11 @@ Results::~Results() {
 	
 }
 
+void Results::setAnalysisType(STACCATO_Analysis_type _type) {
+	myAnalsisType = _type;
+	buildLabelMap();
+}
+
 void Results::setResultsEvaluationType(STACCATO_ResultsEvaluation_type _evaluationType) {
 	myResultEvaluationType = _evaluationType;
 }

@@ -223,10 +223,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 		STACCATO_Analysis_type currentAnalysisType;
 
-		VectorFieldResults* displacementVector;
-		displacementVector = new VectorFieldResults();
-		displacementVector->setResultsType(STACCATO_Result_Displacement);
-
 		if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 			currentAnalysisType = (analysisType == "STATIC") ? STACCATO_Analysis_Static : STACCATO_Analysis_DynamicReal;
 		}
@@ -237,6 +233,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			std::cerr << "Unsupported Analysis Type! \n-Hint: Check XML Input \n-Exiting STACCATO." << std::endl;
 			exit(EXIT_FAILURE);
 		}
+
+		VectorFieldResults* displacementVector;
+		displacementVector = new VectorFieldResults();
+		displacementVector->setResultsType(STACCATO_Result_Displacement);
+		displacementVector->setAnalysisType(currentAnalysisType);
 
 		anaysisTimer02.start();
 		// Prepare elementDof for Enforcing Dirichlet BC
@@ -468,8 +469,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 												timeStep.caseList.push_back(loadCaseData);
 
 												frameTrack++;
-												sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
 											}
+											sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
 										}
 									}
 								}

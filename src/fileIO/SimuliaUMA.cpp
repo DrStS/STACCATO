@@ -24,7 +24,7 @@
 #include "HMesh.h"
 
 //UMA
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 #include <ads_CoreFESystemC.h>
 #include <ads_CoreMeshC.h>
 #include <uma_System.h>
@@ -51,7 +51,7 @@ SimuliaUMA::~SimuliaUMA() {
 }
 
 void SimuliaUMA::openFile() {
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 	std::vector<std::string> mapTypeName;
 	mapTypeName.push_back("DOFS");
 	mapTypeName.push_back("NODES");

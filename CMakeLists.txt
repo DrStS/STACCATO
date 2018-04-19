@@ -60,6 +60,7 @@ option(USE_VTK                 "Use VTK"  ON )
 option(USE_QT5                 "Use QT5"  ON )
 option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 option(USE_XSD                 "Use XSD with XERCES"  ON )
+option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  ON )
 ######################################################################################
 #2. Macros
 ######################################################################################
@@ -99,6 +100,7 @@ ENDIF()
 # Try to find Opencascade
 IF (${USE_OCCT})
   find_package(OCCT REQUIRED)
+  add_definitions(-DOCCT_ON)
   MESSAGE("OCCT status: ${OCCT_FOUND}")
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
 	add_definitions(-DWNT)
@@ -148,7 +150,7 @@ IF (${USE_QT5})
 ENDIF()
 # Try to find SIMULIA ODB API
 IF (${USE_SIMULIA_ODB})
-  add_definitions(-DENABLE_SIMULIA)
+  add_definitions(-DSIMULIA_API_ON)
   find_package(SIMULIA REQUIRED)
   MESSAGE("SIMULIA status: ${SIMULIA_FOUND}")
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
@@ -170,6 +172,12 @@ IF (${USE_XSD})
     SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   ENDIF()
 ENDIF()
+# 
+IF (${STACCATO_COMMANDLINE})
+  MESSAGE("Build STACCATO commandline only!")
+  add_definitions(-DSTACCATO_COMMANDLINE_ON)
+ENDIF()
+
 #------------------------------------------------------------------------------------#
 # Global compiler flags
 IF (${USE_GCC_COMPILERS_LINUX})

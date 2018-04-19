@@ -59,35 +59,47 @@
  * \date 4/2/2016
  * \version alpha
  **************************************************************************************************/
-
+#ifdef STACCATO_COMMANDLINE_ON
 #include <iostream>
-
+#include <string>
+#include <vector>
+#include "AuxiliaryParameters.h"
+#include "STACCATOComputeEngine.h"
+#endif // STACCATO_COMMANDLINE_ON
+#ifndef STACCATO_COMMANDLINE_ON
 //Qt5
 #include <QApplication>
-//OCC7
 //VTK
 #include <QVTKOpenGLWidget.h>
 //USER
 #include <STACCATOMainWindow.h>
-
-#include <mkl.h>
+#endif // STACCATO_COMMANDLINE_ON
 
 int main(int argc, char **argv) {
+#ifdef STACCATO_COMMANDLINE_ON
+	std::cout << "Hello STACCATO is fired up!" << std::endl;
+	std::cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;
+	std::vector<std::string> allArgs(argv, argv + argc);
+	//for (std::vector<std::string>::iterator it = allArgs.begin(); it != allArgs.end(); ++it) {
+	//	 std::cout << *it << std::endl;
+	//}
+	STACCATOComputeEngine* myComputeEngine = new STACCATOComputeEngine(allArgs[1]);
+	myComputeEngine->prepare();
+	myComputeEngine->compute();
+	myComputeEngine->clean();
 
-    //cout << "Hello STACCATO is fired up!" << endl;
-    //cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << endl;
-
+#endif // STACCATO_COMMANDLINE_ON
+#ifndef STACCATO_COMMANDLINE_ON
 	//TODO
 	// statusBar coordinate
 	// 2D mode
 	// interactive points 2D 
 	// interactive lines 2D
-
-	
 	QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
     QApplication mySTACCATO(argc, argv);
 	STACCATOMainWindow* mySTACCATOMainWindow = new STACCATOMainWindow();
 	mySTACCATOMainWindow->show();
     return mySTACCATO.exec();
+#endif // STACCATO_COMMANDLINE_ON
 }
 

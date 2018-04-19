@@ -69,12 +69,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "\n=============================================\n\n";
 	// --------------------------------------------------------------------------------------------------------------
 
-	int len = 198;
-	char buf[198];
-	mkl_get_version_string(buf, len);
-	printf("%s\n", buf);
-	printf("\n");
-
 	// Build DataStructure
 	myHMesh->buildDataStructure();
 	debugOut << "SimuliaODB || SimuliaUMA::openFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -122,7 +116,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
 					}
 					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
 #endif
 					}
@@ -286,7 +280,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			int sizeofRHS = 0;
 
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true);
+				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true, true);
 			}
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
 				AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);

@@ -28,14 +28,13 @@
 #include <map>
 #include <vector>
 #include <assert.h>
-
 #include "AuxiliaryParameters.h"
+#include "Timer.h"
+
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1
 #include <mkl.h>
 #endif
-
-																								 //Iter tests
 
 
 namespace MathLibrary {
@@ -150,13 +149,15 @@ namespace MathLibrary {
 		* \brief Constructor for symmetric matrices
 		* \param[in] _m is the number of rows & columns
 		* \param[in] _isSymmetric only the upper triangular form is stored
+		* \param[in] _isPositiveDefinite
 		* \author Stefan Sicklinger
 		***********/
-		SparseMatrix(const size_t _m, const bool _isSymmetric) {
+		SparseMatrix(const size_t _m, const bool _isSymmetric, const bool _isPositiveDefinite) {
 			m = _m;
 			n = _m;
 			isSquare = true;
 			isSymmetric = _isSymmetric;
+			isPositiveDefinite = _isPositiveDefinite;
 			alreadyCalled = false;
 			if (!((typeid(T) == typeid(double)) || (typeid(T) == typeid(float)))) {
 				assert(0);
@@ -291,75 +292,74 @@ namespace MathLibrary {
 			this->determineCSR();
 			if (isSymmetric) {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 6;		// complex and symmetric 
-				else if (std::is_same<T, double>::value) pardiso_mtype = 2;			// real and symmetric positive definite
+				else if (std::is_same<T, double>::value) {
+					pardiso_mtype = -2;			// real and symmetric indefinite
+					if (isPositiveDefinite) {
+						pardiso_mtype = 2;  // real symmetric positive definite
+					}
+					
+				}
 			}
 			else {
 				if (std::is_same<T, MKL_Complex16>::value) pardiso_mtype = 13;		// complex and unsymmetric matrix
 				else if (std::is_same<T, double>::value) pardiso_mtype = 11;		// real and unsymmetric matrix
 			}
 
+
+			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 			// set pardiso default parameters
 			for (int i = 0; i < 64; i++) {
 				pardiso_iparm[i] = 0;
 			}
 
-			pardiso_iparm[0] = 1;	// No solver defaults
-			pardiso_iparm[1] = 3;	// Fill-in reordering from METIS 
-			pardiso_iparm[7] = 2;	// Max numbers of iterative refinement steps
-			pardiso_iparm[9] = 13;	// Perturb the pivot elements with 1E-13
-			pardiso_iparm[10] = 0;	// Use nonsymmetric permutation and scaling MPS
-			pardiso_iparm[11] = 0;	// Solve with transposed or conjugate transposed matrix A
-			pardiso_iparm[12] = 0;	// Maximum weighted matching algorithm is switched-on
-			pardiso_iparm[17] = -1;	// Output: Number of nonzeros in the factor LU
-			pardiso_iparm[18] = -1; // Output: Report Mflops
-			pardiso_iparm[19] = 0;	// Output: Number of CG iterations
-			pardiso_iparm[23] = 10;	// 2-level factorization
-			pardiso_iparm[26] = 0;	// Matrix checker
-			pardiso_iparm[34] = 1;	// Zero based indexing
-			pardiso_iparm[36] = -90;// vbsr format
-
-			pardiso_maxfct = 11;	// max number of factorizations
+			pardiso_iparm[0] = 1;    // No solver defaults
+			pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
+			pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
+			pardiso_iparm[23] = 1;   // 2-level factorization
+			pardiso_iparm[36] = -99; // VBSR format
+			pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
+			pardiso_iparm[18] = -1;	 // Output: Report Mflops
+			pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
+		 // pardiso_iparm[27] = 1;   // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
+			pardiso_maxfct = 1;	    // max number of factorizations
 			pardiso_mnum = 1;		// which factorization to use
 			pardiso_msglvl = 1;		// do NOT print statistical information
 			pardiso_neq = m;		// number of rows of 
 			pardiso_error = 1;		// Initialize error flag 
-									// pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = nRHS;	// number of right hand side
-			pardiso_phase = 12;	// analysis and factorization
-								// pardiso_iparm[36] = -90;
 
-			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
+			// Print MKL Version
+			int len = 198;
+			char buf[198];
+			mkl_get_version_string(buf, len);
+			printf("%s\n", buf);
+			printf("\n");
 
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
-
+			std::cout << "Matrixtype for PARDISO: " << pardiso_mtype << std::endl;
+			linearSolverTimer01.start();
+			pardiso_phase = 11;
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 				&pardiso_error);
+			linearSolverTimer01.stop();
+			std::cout << "Reordering completed: "<< linearSolverTimer01.getDurationMilliSec() <<" (milliSec)" << std::endl;
 
+			linearSolverTimer01.start();
+			pardiso_phase = 22;
+			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
+				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
+				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
+				&pardiso_error);
+			linearSolverTimer01.stop();
 			if (pardiso_error != 0) {
 				std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
 				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
-
-				// This is because the stiffness matrix for the SteadyState_DynamicReal may not be SPD
-				/*if (std::is_same<T, double>::value) {
-					std::cout << ">> Retrying to solve with Symmetric Indefinite setting for type double computation..." << std::endl;
-					pardiso_mtype = -2;		// real and symmetric indefinite
-					pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
-						&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
-						&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
-						&pardiso_error);
-				}
-
-				if (pardiso_error != 0) {
-					std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
-						<< std::endl;
-						exit(EXIT_FAILURE);
-				}*/
 			}
-			std::cout << "Reordering and factorization completed" << std::endl;
+			std::cout << "Factorization completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 			std::cout << "Info: Number of equation = " << pardiso_neq << std::endl;
 			std::cout << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
 			std::cout << "Info: Number of factorization FLOPS = " << pardiso_iparm[18] * 1000000.0 << std::endl;
@@ -412,11 +412,11 @@ namespace MathLibrary {
 		***********/
 		void solveDirect(T* _x, T* _b) { //Computes x=A\b
 #ifdef USE_INTEL_MKL
-										 // pardiso forward and backward substitution
+			// pardiso forward and backward substitution
+		 // pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
+			linearSolverTimer01.start();
 			pardiso_phase = 33; // forward and backward substitution
-								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
-
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, _b, _x, &pardiso_error);
@@ -426,7 +426,8 @@ namespace MathLibrary {
 					<< std::endl;
 				exit(EXIT_FAILURE);
 			}
-			infoOut << "Forward and backward substitution completed" << std::endl;
+			linearSolverTimer01.stop();
+			std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 #endif
 		}
 
@@ -885,7 +886,7 @@ namespace MathLibrary {
 		* \brief This function prints to a DAT file with line vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void print(std::vector<double> &_vector, std::string _name) {
+		void writeVectorToFile(std::vector<double> &_vector, std::string _name) {
 			size_t ii_couter;
 
 			std::ofstream myfile;
@@ -992,6 +993,8 @@ namespace MathLibrary {
 		bool isSquare;
 		/// true if a symmetric matrix should be stored
 		bool isSymmetric;
+		/// Matrix is SPD
+		bool isPositiveDefinite;
 		/// number of rows
 		MKL_INT m;
 		/// number of columns

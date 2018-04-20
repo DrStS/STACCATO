@@ -22,7 +22,7 @@
 #include "Message.h"
 #include "MathLibrary.h"
 
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 #include <ads_CoreFESystemC.h>
 #include <ads_CoreMeshC.h>
 #include <uma_System.h>
@@ -48,7 +48,7 @@ void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
 	printf("SIM file: %s\n", simFile);
 
 
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 	uma_System system(simFile);
 
 	std::cout << "\n>> Importing SIM to HMesh ..." << std::endl;

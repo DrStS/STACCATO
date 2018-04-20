@@ -24,7 +24,7 @@
 #include "HMesh.h"
 
 /// SIMULIA includes
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 #include <odb_API.h>
 #include <odb_Coupling.h>
 #include <odb_MPC.h>
@@ -39,7 +39,7 @@
 //#define DEBUG
 
 SimuliaODB::SimuliaODB(std::string _fileName, HMesh& myHMesh, int _partId) : myHMesh(&myHMesh) {
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 	myFileName = _fileName;
 	myPartId = _partId;
 	std::cout << ">> ODB Reader initialized for file " << myFileName << std::endl;
@@ -47,20 +47,20 @@ SimuliaODB::SimuliaODB(std::string _fileName, HMesh& myHMesh, int _partId) : myH
 	openFile();
 	myHMesh.hasParts = true;
 #endif 
-#ifndef ENABLE_SIMULIA
+#ifndef SIMULIA_API_ON
 	std::cout << ">> ODB Reader NOT initialized for file " << myFileName << std::endl;
 #endif 
 }
 
 SimuliaODB::~SimuliaODB() {
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 	odb_finalizeAPI();
 #endif 
 }
 
 void SimuliaODB::openFile() {
 
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 	try {
 #ifdef DEBUG_OUTPUT
 		infoOut << "Open OBD file: " << myFileName << std::endl;

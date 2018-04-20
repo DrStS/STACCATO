@@ -69,12 +69,12 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	}
 	std::cout << "\n=============================================\n\n";
 	// --------------------------------------------------------------------------------------------------------------
-
-	/*- Exporting -------------*/
-	bool exportRHS		= false;
-	bool exportCSR		= false;
+	
+	/* -- Exporting ------------- */
+	bool exportCSR = false;
+	bool exportRHS = false;
 	bool exportSolution = false;
-	/* - -  - - - - - - - - - -*/
+	/* -------------------------- */
 	
 	// Build DataStructure
 	myHMesh->buildDataStructure();
@@ -123,7 +123,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
 					}
 					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef ENABLE_SIMULIA
+#ifdef SIMULIA_API_ON
 						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
 #endif
 					}
@@ -287,7 +287,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			int sizeofRHS = 0;
 
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true);
+				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true, true);
 			}
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
 				AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);

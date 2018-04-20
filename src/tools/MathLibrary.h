@@ -844,7 +844,6 @@ namespace MathLibrary {
 			AuxiliaryFunctions::writeMKLComplexVector(_fileName, values);
 		}
 
-
 	private:
 		/// pointer to the vector of maps
 		mat_t* mat;

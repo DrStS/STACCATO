@@ -65,6 +65,7 @@ void AuxiliaryFunctions::writeMKLComplexVector(std::string _fileName, std::vecto
 	size_t ii_couter;
 	std::ofstream myfile;
 	myfile.open(_fileName);
+	myfile.precision(std::numeric_limits<double>::digits10 + 1);
 	myfile << std::scientific;
 	for (ii_couter = 0; ii_couter < _vector.size(); ii_couter++)
 	{

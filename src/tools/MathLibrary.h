@@ -309,14 +309,14 @@ namespace MathLibrary {
 			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 			// set pardiso default parameters
 			for (int i = 0; i < 64; i++) {
-				pardiso_iparm[i] = 0;
+				//pardiso_iparm[i] = 0;
 			}
 
 			pardiso_iparm[0] = 1;    // No solver defaults
 			pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
 			pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
-			pardiso_iparm[23] = 1;   // 2-level factorization
-			pardiso_iparm[36] = -99; // VBSR format
+			//pardiso_iparm[23] = 1;   // 2-level factorization
+			//pardiso_iparm[36] = -99; // VBSR format
 			pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
 			pardiso_iparm[18] = -1;	 // Output: Report Mflops
 			pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
@@ -338,6 +338,7 @@ namespace MathLibrary {
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 			std::cout << "Matrixtype for PARDISO: " << pardiso_mtype << std::endl;
 			linearSolverTimer01.start();
+			linearSolverTimer02.start();
 			pardiso_phase = 11;
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
 				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
@@ -428,32 +429,8 @@ namespace MathLibrary {
 			}
 			linearSolverTimer01.stop();
 			std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
-#endif
-		}
-
-		/***********************************************************************************************
-		* \brief This function performs the prepare of "multiple" solutions
-		* \param[out] pointer to solution vector _x
-		* \param[in]  pointer to rhs vector _b
-		* \author Stefan Sicklinger
-		***********/
-		void solveDirect(T* _x, T* _b, int nRHS) { //Computes x=A\b
-#ifdef USE_INTEL_MKL
-										 // pardiso forward and backward substitution
-			pardiso_phase = 33; // forward and backward substitution
-								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
-			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
-
-			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
-				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
-				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, _b, _x, &pardiso_error);
-			if (pardiso_error != 0)
-			{
-				errorOut << "Error pardiso forward and backward substitution failed with error code: " << pardiso_error
-					<< std::endl;
-				exit(EXIT_FAILURE);
-			}
-			infoOut << "Forward and backward substitution completed" << std::endl;
+			linearSolverTimer02.stop();
+			std::cout << "Direct solver PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec)" << std::endl;
 #endif
 		}
 

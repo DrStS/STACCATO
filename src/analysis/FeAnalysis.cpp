@@ -568,11 +568,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << ">> Solving for all " << size << " RHSs.\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					solReal.resize(bReal.size());
-					(*AReal).solveDirect(&solReal[0], &bReal[0], size);
+					(*AReal).solveDirect(&solReal[0], &bReal[0]);
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
 					solComplex.resize(bComplex.size());
-					(*AComplex).solveDirect(&solComplex[0], &bComplex[0], size);
+					(*AComplex).solveDirect(&solComplex[0], &bComplex[0]);
 				}
 			}
 

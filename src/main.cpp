@@ -83,10 +83,13 @@ int main(int argc, char **argv) {
 	//for (std::vector<std::string>::iterator it = allArgs.begin(); it != allArgs.end(); ++it) {
 	//	 std::cout << *it << std::endl;
 	//}
-	STACCATOComputeEngine* myComputeEngine = new STACCATOComputeEngine(allArgs[1]);
-	myComputeEngine->prepare();
-	myComputeEngine->compute();
-	myComputeEngine->clean();
+	//allArgs[0] = "STACCATO.exe"
+	if (allArgs.size()>1){
+		STACCATOComputeEngine* myComputeEngine = new STACCATOComputeEngine(allArgs[1]);
+		myComputeEngine->prepare();
+		myComputeEngine->compute();
+		myComputeEngine->clean();
+	}
 
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON

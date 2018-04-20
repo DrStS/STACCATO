@@ -30,13 +30,14 @@
 #include <assert.h>
 
 #include "AuxiliaryParameters.h"
+#include "AuxiliaryFunctions.h"
+
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1
 #include <mkl.h>
 #endif
 
-																								 //Iter tests
-
+#include <type_traits>
 
 namespace MathLibrary {
 	/***********************************************************************************************
@@ -298,27 +299,23 @@ namespace MathLibrary {
 				else if (std::is_same<T, double>::value) pardiso_mtype = 11;		// real and unsymmetric matrix
 			}
 
+			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
+
 			// set pardiso default parameters
 			for (int i = 0; i < 64; i++) {
 				pardiso_iparm[i] = 0;
 			}
 
-			pardiso_iparm[0] = 1;	// No solver defaults
-			pardiso_iparm[1] = 3;	// Fill-in reordering from METIS 
-			pardiso_iparm[7] = 2;	// Max numbers of iterative refinement steps
-			pardiso_iparm[9] = 13;	// Perturb the pivot elements with 1E-13
-			pardiso_iparm[10] = 0;	// Use nonsymmetric permutation and scaling MPS
-			pardiso_iparm[11] = 0;	// Solve with transposed or conjugate transposed matrix A
-			pardiso_iparm[12] = 0;	// Maximum weighted matching algorithm is switched-on
-			pardiso_iparm[17] = -1;	// Output: Number of nonzeros in the factor LU
-			pardiso_iparm[18] = -1; // Output: Report Mflops
-			pardiso_iparm[19] = 0;	// Output: Number of CG iterations
-			pardiso_iparm[23] = 10;	// 2-level factorization
-			pardiso_iparm[26] = 0;	// Matrix checker
-			pardiso_iparm[34] = 1;	// Zero based indexing
-			pardiso_iparm[36] = -90;// vbsr format
+			pardiso_iparm[0] = 1;    // No solver defaults
+			pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
+			pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
+			pardiso_iparm[23] = 1;   // 2-level factorization
+			pardiso_iparm[36] = -99; // VBSR format
+			pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
+			pardiso_iparm[18] = -1;	 // Output: Report Mflops
+			pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
 
-			pardiso_maxfct = 11;	// max number of factorizations
+			pardiso_maxfct = 1;	    // max number of factorizations
 			pardiso_mnum = 1;		// which factorization to use
 			pardiso_msglvl = 1;		// do NOT print statistical information
 			pardiso_neq = m;		// number of rows of 
@@ -326,9 +323,6 @@ namespace MathLibrary {
 									// pardiso_iparm[27] = 1; // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_nrhs = nRHS;	// number of right hand side
 			pardiso_phase = 12;	// analysis and factorization
-								// pardiso_iparm[36] = -90;
-
-			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 
@@ -342,22 +336,6 @@ namespace MathLibrary {
 				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
-
-				// This is because the stiffness matrix for the SteadyState_DynamicReal may not be SPD
-				/*if (std::is_same<T, double>::value) {
-					std::cout << ">> Retrying to solve with Symmetric Indefinite setting for type double computation..." << std::endl;
-					pardiso_mtype = -2;		// real and symmetric indefinite
-					pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
-						&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
-						&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
-						&pardiso_error);
-				}
-
-				if (pardiso_error != 0) {
-					std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
-						<< std::endl;
-						exit(EXIT_FAILURE);
-				}*/
 			}
 			std::cout << "Reordering and factorization completed" << std::endl;
 			std::cout << "Info: Number of equation = " << pardiso_neq << std::endl;
@@ -411,32 +389,6 @@ namespace MathLibrary {
 		* \author Stefan Sicklinger
 		***********/
 		void solveDirect(T* _x, T* _b) { //Computes x=A\b
-#ifdef USE_INTEL_MKL
-										 // pardiso forward and backward substitution
-			pardiso_phase = 33; // forward and backward substitution
-								//pardiso_iparm[5] = 0; // write solution to b if true otherwise to x (default)
-			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
-
-			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,
-				&pardiso_neq, &values[0], &((*rowIndex)[0]), &columns[0], &pardiso_idum,
-				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, _b, _x, &pardiso_error);
-			if (pardiso_error != 0)
-			{
-				errorOut << "Error pardiso forward and backward substitution failed with error code: " << pardiso_error
-					<< std::endl;
-				exit(EXIT_FAILURE);
-			}
-			infoOut << "Forward and backward substitution completed" << std::endl;
-#endif
-		}
-
-		/***********************************************************************************************
-		* \brief This function performs the prepare of "multiple" solutions
-		* \param[out] pointer to solution vector _x
-		* \param[in]  pointer to rhs vector _b
-		* \author Stefan Sicklinger
-		***********/
-		void solveDirect(T* _x, T* _b, int nRHS) { //Computes x=A\b
 #ifdef USE_INTEL_MKL
 										 // pardiso forward and backward substitution
 			pardiso_phase = 33; // forward and backward substitution
@@ -833,158 +785,40 @@ namespace MathLibrary {
 			}
 #endif
 		}
-
-
-		/***********************************************************************************************
-		* \brief This prints the matrix in CSR style i j value
-		* \author Stefan Sicklinger
-		***********/
-		void printCSR() {
-			row_iter ii;
-			col_iter jj;
-			size_t ele_row; //elements in current row
-			std::cout << std::scientific;
-
-			for (ii = 0; ii < m; ii++) {
-				for (jj = (*mat)[ii].begin(); jj != (*mat)[ii].end(); jj++) {
-					std::cout << ii << ' ';
-					std::cout << (*jj).first << ' ';
-					std::cout << (*jj).second << std::endl;
-				}
-			}
-			std::cout << std::endl;
-		}
-		/***********************************************************************************************
-		* \brief This prints the matrix in full style
-		* \author Stefan Sicklinger
-		***********/
-		void print() {
-			size_t ii_counter;
-			size_t jj_counter;
-
-			std::ofstream myfile;
-			myfile.open("dynStiff.dat");
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_counter = 0; ii_counter < m; ii_counter++) {
-				for (jj_counter = 0; jj_counter < n; jj_counter++) {
-					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
-					}
-					else {
-						//myfile << '\t' << 0.0;
-					}
-				}
-				//myfile << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
-
-		/***********************************************************************************************
-		* \brief This function prints to a DAT file with line vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		void print(std::vector<double> &_vector, std::string _name) {
-			size_t ii_couter;
-
-			std::ofstream myfile;
-			myfile.open(_name);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < _vector.size(); ii_couter++)
-			{
-				myfile << ii_couter << "\t" << _vector[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
 		/***********************************************************************************************
 		* \brief This function print CSR Row and Column Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void printCSRtoFile(std::string _nameIA, std::string _nameJA) {
-			size_t ii_couter;
+		void writeCSRtoFile(std::string _prefix) {
+			determineCSR();
+			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_IA.dat", *rowIndex);
+			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_JA.dat", columns);
 
-			// Print ia
-			std::ofstream myfile;
-			myfile.open(_nameIA);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < n + 1; ii_couter++)
-			{
-				myfile << (*rowIndex)[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
+			writeMat(std::is_floating_point<T>{}, _prefix + "_CSR_MAT.dat", values);
 
-			// Print ja
-			myfile.open(_nameJA);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < columns.size(); ii_couter++)
-			{
-				myfile << columns[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
-
-		/***********************************************************************************************
-		* \brief This function reads in a DAT file with line vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		std::vector<double> readDoubleDat(std::string _filename) {
-			std::vector<double> readVector;
-
-			std::ifstream infile;
-			infile.open("C:/software/repos/staccato/" + _filename);
-			infile.precision(std::numeric_limits<double>::digits10 + 1);
-
-			double lines;
-			if (!infile)
-				std::cout << "File Not Found." << std::endl;
-			else {
-				std::cout << ">> Reading ...";
-				int i = 1;
-				while (!infile.eof())
-				{
-					infile >> lines;
-					if (i % 2 == 0)
-						readVector.push_back(lines);
-					i++;
-				}
-				std::cout << " Finished" << readVector.size() << ".\n";
-			}
-			infile.close();
-
-			return readVector;
 		}
 		/***********************************************************************************************
-		* \brief This reads the matrix in full style
+		* \brief Tag Dispatching. Performs Double Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] Double Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void readStiffnessMatrix(MathLibrary::SparseMatrix<double>* _mat, std::string _fileName) {
-			std::ifstream infile;
-			infile.open("C:/software/repos/staccato/" + _fileName);
-			infile.precision(std::numeric_limits<double>::digits10 + 1);
-
-			double rowId, colId, entry;
-			if (!infile)
-				std::cout << "File Not Found." << std::endl;
-			else {
-				std::cout << ">> Reading Stiffness Matrix...";
-				int i = 1;
-				while (!infile.eof())
-				{
-					infile >> rowId >> colId >> entry;
-					(*_mat)(static_cast<int>(rowId), static_cast<int>(colId)) = entry;
-					i++;
-				}
-				std::cout << " Finished" << ".\n";
-			}
-			infile.close();
+		void writeMat(std::true_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeDoubleVector(_fileName, values);
 		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] MKLComplex Vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMat(std::false_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeMKLComplexVector(_fileName, values);
+		}
+
+
 	private:
 		/// pointer to the vector of maps
 		mat_t* mat;

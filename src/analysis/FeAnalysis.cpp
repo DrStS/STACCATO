@@ -43,6 +43,7 @@
 #include <complex>
 
 #include <OutputDatabase.h>
+#include <AuxiliaryFunctions.h>
 
 using namespace std::complex_literals;
 
@@ -69,12 +70,12 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "\n=============================================\n\n";
 	// --------------------------------------------------------------------------------------------------------------
 
-	int len = 198;
-	char buf[198];
-	mkl_get_version_string(buf, len);
-	printf("%s\n", buf);
-	printf("\n");
-
+	/*- Exporting -------------*/
+	bool exportRHS		= false;
+	bool exportCSR		= false;
+	bool exportSolution = false;
+	/* - -  - - - - - - - - - -*/
+	
 	// Build DataStructure
 	myHMesh->buildDataStructure();
 	debugOut << "SimuliaODB || SimuliaUMA::openFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
@@ -529,13 +530,29 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-			std::cout << ">> Printing Stiffness ...";
-			//(*AReal).print();											// Print
-			std::cout << " Finished." << std::endl;
+			if (exportCSR) {
+				std::cout << ">> Writing CSR ...\n";
+				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+					(*AReal).writeCSRtoFile(std::string(iAnalysis->NAME()->data()));
+				}
+				else if (analysisType == "STEADYSTATE_DYNAMIC") {
+					(*AComplex).writeCSRtoFile(std::string(iAnalysis->NAME()->data()));
+				}
+			}
+			else
+				std::cout << ">> Writing CSR is disabled." << std::endl;
 
-			std::cout << ">> Printing RHS ...";
-			//(*AReal).print(bReal, "RHS.dat");							// Print
-			std::cout << " Finished." << std::endl;
+			if (exportRHS) {
+				std::cout << ">> Writing RHS ...";
+				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+					AuxiliaryFunctions::writeDoubleVector(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bReal);
+				}
+				else if (analysisType == "STEADYSTATE_DYNAMIC") {
+					AuxiliaryFunctions::writeMKLComplexVector(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
+				}
+			}
+			else
+				std::cout << ">> Writing RHS is disabled." << std::endl;
 
 			anaysisTimer01.start();
 			anaysisTimer02.start();
@@ -560,37 +577,33 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Duration for direct solver factorize: " << anaysisTimer01.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 			anaysisTimer01.start();
-			if (size == 1) {
-				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					solReal.resize(bReal.size());
-					(*AReal).solveDirect(&solReal[0], &bReal[0]);
-				}
-				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					solComplex.resize(bComplex.size());
-					(*AComplex).solveDirect(&solComplex[0], &bComplex[0]);
-				}
+			std::cout << ">> Solving for " << size << " RHS(s).\n";
+			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+				solReal.resize(bReal.size());
+				(*AReal).solveDirect(&solReal[0], &bReal[0]);
 			}
-			else {
-				std::cout << ">> Solving for all " << size << " RHSs.\n";
-				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					solReal.resize(bReal.size());
-					(*AReal).solveDirect(&solReal[0], &bReal[0], size);
-				}
-				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					solComplex.resize(bComplex.size());
-					(*AComplex).solveDirect(&solComplex[0], &bComplex[0], size);
-				}
+			else if (analysisType == "STEADYSTATE_DYNAMIC") {
+				solComplex.resize(bComplex.size());
+				(*AComplex).solveDirect(&solComplex[0], &bComplex[0]);
 			}
 
 			anaysisTimer01.stop();
 			anaysisTimer02.stop();
-			infoOut << "direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+			infoOut << "Direct solver substitution : " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			infoOut << "Total duration for direct solver: " << anaysisTimer02.getDurationSec() << " sec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-			std::cout << ">> Printing Solution ...";
-			//(*AReal).print(solReal, "Solution_ST.dat");							// Print
-			std::cout << " Finished." << std::endl;
+			if (exportSolution) {
+				std::cout << ">> Writing Solution ...";
+				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+					AuxiliaryFunctions::writeDoubleVector(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solReal);
+				}
+				else if (analysisType == "STEADYSTATE_DYNAMIC") {
+					AuxiliaryFunctions::writeMKLComplexVector(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solComplex);
+				}
+			}
+			else
+				std::cout << ">> Writing Solution is disabled." << std::endl;
 
 			anaysisTimer01.start();
 			std::cout << ">> Storing for " << size << " RHSs.\n";

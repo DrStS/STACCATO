@@ -60,7 +60,7 @@ option(USE_VTK                 "Use VTK"  ON )
 option(USE_QT5                 "Use QT5"  ON )
 option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 option(USE_XSD                 "Use XSD with XERCES"  ON )
-option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  ON )
+option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  OFF )
 ######################################################################################
 #2. Macros
 ######################################################################################

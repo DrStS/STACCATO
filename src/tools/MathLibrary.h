@@ -31,11 +31,14 @@
 #include "AuxiliaryParameters.h"
 #include "Timer.h"
 
+#include "AuxiliaryFunctions.h"
+
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1
 #include <mkl.h>
 #endif
 
+#include <type_traits>
 
 namespace MathLibrary {
 	/***********************************************************************************************
@@ -811,158 +814,40 @@ namespace MathLibrary {
 			}
 #endif
 		}
-
-
-		/***********************************************************************************************
-		* \brief This prints the matrix in CSR style i j value
-		* \author Stefan Sicklinger
-		***********/
-		void printCSR() {
-			row_iter ii;
-			col_iter jj;
-			size_t ele_row; //elements in current row
-			std::cout << std::scientific;
-
-			for (ii = 0; ii < m; ii++) {
-				for (jj = (*mat)[ii].begin(); jj != (*mat)[ii].end(); jj++) {
-					std::cout << ii << ' ';
-					std::cout << (*jj).first << ' ';
-					std::cout << (*jj).second << std::endl;
-				}
-			}
-			std::cout << std::endl;
-		}
-		/***********************************************************************************************
-		* \brief This prints the matrix in full style
-		* \author Stefan Sicklinger
-		***********/
-		void print() {
-			size_t ii_counter;
-			size_t jj_counter;
-
-			std::ofstream myfile;
-			myfile.open("dynStiff.dat");
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_counter = 0; ii_counter < m; ii_counter++) {
-				for (jj_counter = 0; jj_counter < n; jj_counter++) {
-					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
-					}
-					else {
-						//myfile << '\t' << 0.0;
-					}
-				}
-				//myfile << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
-
-		/***********************************************************************************************
-		* \brief This function prints to a DAT file with line vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		void writeVectorToFile(std::vector<double> &_vector, std::string _name) {
-			size_t ii_couter;
-
-			std::ofstream myfile;
-			myfile.open(_name);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < _vector.size(); ii_couter++)
-			{
-				myfile << ii_couter << "\t" << _vector[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
 		/***********************************************************************************************
 		* \brief This function print CSR Row and Column Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void printCSRtoFile(std::string _nameIA, std::string _nameJA) {
-			size_t ii_couter;
+		void writeCSRtoFile(std::string _prefix) {
+			determineCSR();
+			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_IA.dat", *rowIndex);
+			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_JA.dat", columns);
 
-			// Print ia
-			std::ofstream myfile;
-			myfile.open(_nameIA);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < n + 1; ii_couter++)
-			{
-				myfile << (*rowIndex)[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
+			writeMat(std::is_floating_point<T>{}, _prefix + "_CSR_MAT.dat", values);
 
-			// Print ja
-			myfile.open(_nameJA);
-			myfile.precision(std::numeric_limits<double>::digits10 + 1);
-			myfile << std::scientific;
-			for (ii_couter = 0; ii_couter < columns.size(); ii_couter++)
-			{
-				myfile << columns[ii_couter] << std::endl;
-			}
-			myfile << std::endl;
-			myfile.close();
-		}
-
-		/***********************************************************************************************
-		* \brief This function reads in a DAT file with line vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		std::vector<double> readDoubleDat(std::string _filename) {
-			std::vector<double> readVector;
-
-			std::ifstream infile;
-			infile.open("C:/software/repos/staccato/" + _filename);
-			infile.precision(std::numeric_limits<double>::digits10 + 1);
-
-			double lines;
-			if (!infile)
-				std::cout << "File Not Found." << std::endl;
-			else {
-				std::cout << ">> Reading ...";
-				int i = 1;
-				while (!infile.eof())
-				{
-					infile >> lines;
-					if (i % 2 == 0)
-						readVector.push_back(lines);
-					i++;
-				}
-				std::cout << " Finished" << readVector.size() << ".\n";
-			}
-			infile.close();
-
-			return readVector;
 		}
 		/***********************************************************************************************
-		* \brief This reads the matrix in full style
+		* \brief Tag Dispatching. Performs Double Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] Double Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void readStiffnessMatrix(MathLibrary::SparseMatrix<double>* _mat, std::string _fileName) {
-			std::ifstream infile;
-			infile.open("C:/software/repos/staccato/" + _fileName);
-			infile.precision(std::numeric_limits<double>::digits10 + 1);
-
-			double rowId, colId, entry;
-			if (!infile)
-				std::cout << "File Not Found." << std::endl;
-			else {
-				std::cout << ">> Reading Stiffness Matrix...";
-				int i = 1;
-				while (!infile.eof())
-				{
-					infile >> rowId >> colId >> entry;
-					(*_mat)(static_cast<int>(rowId), static_cast<int>(colId)) = entry;
-					i++;
-				}
-				std::cout << " Finished" << ".\n";
-			}
-			infile.close();
+		void writeMat(std::true_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeDoubleVector(_fileName, values);
 		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] MKLComplex Vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMat(std::false_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeMKLComplexVector(_fileName, values);
+		}
+
+
 	private:
 		/// pointer to the vector of maps
 		mat_t* mat;

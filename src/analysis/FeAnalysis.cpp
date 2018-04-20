@@ -290,7 +290,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true, true);
 			}
 			else if (analysisType == "STEADYSTATE_DYNAMIC") {
-				AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true);
+				AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true, true);
 			}
 
 			std::cout << ">> Building Stiffness Matrix...";
@@ -543,7 +543,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << ">> Writing CSR is disabled." << std::endl;
 
 			if (exportRHS) {
-				std::cout << ">> Writing RHS ...";
+				std::cout << ">> Writing RHS ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 					AuxiliaryFunctions::writeDoubleVector(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bReal);
 				}

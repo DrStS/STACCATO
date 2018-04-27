@@ -30,7 +30,7 @@ AuxiliaryFunctions::~AuxiliaryFunctions()
 {
 }
 
-void AuxiliaryFunctions::writeDoubleVector(std::string _fileName, std::vector<double> &_vector) {
+void AuxiliaryFunctions::writeDoubleVectorDatFormat(std::string _fileName, std::vector<double> &_vector) {
 	std::cout << ">> Writing " << _fileName << "#" << _vector.size() <<"..." << std::endl;
 	size_t ii_couter;
 	std::ofstream myfile;
@@ -46,7 +46,7 @@ void AuxiliaryFunctions::writeDoubleVector(std::string _fileName, std::vector<do
 
 }
 
-void AuxiliaryFunctions::writeIntegerVector(std::string _fileName, std::vector<int> &_vector) {
+void AuxiliaryFunctions::writeIntegerVectorDatFormat(std::string _fileName, std::vector<int> &_vector) {
 	std::cout << ">> Writing " << _fileName << "#" << _vector.size() << "..." << std::endl;
 	size_t ii_couter;
 	std::ofstream myfile;
@@ -60,7 +60,7 @@ void AuxiliaryFunctions::writeIntegerVector(std::string _fileName, std::vector<i
 	myfile.close();
 }
 
-void AuxiliaryFunctions::writeMKLComplexVector(std::string _fileName, std::vector<MKL_Complex16> &_vector) {
+void AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector) {
 	std::cout << ">> Writing " << _fileName << "#C:" << _vector.size() << "..." << std::endl;
 	size_t ii_couter;
 	std::ofstream myfile;

@@ -71,7 +71,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// --------------------------------------------------------------------------------------------------------------
 	
 	/* -- Exporting ------------- */
-	bool exportCSR = false;
+	bool exportCSR = true;
 	bool exportRHS = false;
 	bool exportSolution = false;
 	/* -------------------------- */
@@ -533,10 +533,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			if (exportCSR) {
 				std::cout << ">> Writing CSR ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					(*AReal).writeCSRtoFile(std::string(iAnalysis->NAME()->data()));
+					(*AReal).writeCSRtoFile(std::string(iAnalysis->NAME()->data()),"mtx");
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).writeCSRtoFile(std::string(iAnalysis->NAME()->data()));
+					(*AComplex).writeCSRtoFile(std::string(iAnalysis->NAME()->data()),"mtx");
 				}
 			}
 			else
@@ -545,10 +545,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			if (exportRHS) {
 				std::cout << ">> Writing RHS ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					AuxiliaryFunctions::writeDoubleVector(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bReal);
+					AuxiliaryFunctions::writeDoubleVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bReal);
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					AuxiliaryFunctions::writeMKLComplexVector(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
+					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
 				}
 			}
 			else
@@ -596,10 +596,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			if (exportSolution) {
 				std::cout << ">> Writing Solution ...";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					AuxiliaryFunctions::writeDoubleVector(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solReal);
+					AuxiliaryFunctions::writeDoubleVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solReal);
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					AuxiliaryFunctions::writeMKLComplexVector(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solComplex);
+					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solComplex);
 				}
 			}
 			else

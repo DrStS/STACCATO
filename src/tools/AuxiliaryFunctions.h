@@ -46,26 +46,26 @@ public:
 	***********/
 	~AuxiliaryFunctions();
 	/***********************************************************************************************
-	* \brief Write a double vector to the file with format: <value>
+	* \brief Write a double vector to the DAT file with format: <value>
 	* \param[in] _fileName
 	* \param[in] _vector::double
 	* \author Harikrishnan Sreekumar
 	***********/
-	static void writeDoubleVector(std::string _fileName, std::vector<double> &_vector);
+	static void writeDoubleVectorDatFormat(std::string _fileName, std::vector<double> &_vector);
 	/***********************************************************************************************
-	* \brief Write a int vector to the file with format: <value>
+	* \brief Write a int vector to the DAT file with format: <value>
 	* \param[in] _fileName
 	* \param[in] _vector::int
 	* \author Harikrishnan Sreekumar
 	***********/
-	static void writeIntegerVector(std::string _fileName, std::vector<int> &_vector);
+	static void writeIntegerVectorDatFormat(std::string _fileName, std::vector<int> &_vector);
 	/***********************************************************************************************
-	* \brief Write a MKL_Complex16 vector to the file with format: <real_value> <imag_value>
+	* \brief Write a MKL_Complex16 vector to the DAT file with format: <real_value> <imag_value>
 	* \param[in] _fileName
 	* \param[in] _vector::int
 	* \author Harikrishnan Sreekumar
 	***********/
-	static void writeMKLComplexVector(std::string _fileName, std::vector<MKL_Complex16> &_vector);
+	static void writeMKLComplexVectorDatFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector);
 
 };
 

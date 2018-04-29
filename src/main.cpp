@@ -67,6 +67,7 @@
 #include "STACCATOComputeEngine.h"
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON
+#include <omp.h>
 //Qt5
 #include <QApplication>
 //VTK
@@ -95,6 +96,7 @@ int main(int argc, char **argv) {
 #ifndef STACCATO_COMMANDLINE_ON
 	//TODO
 	// statusBar coordinate
+	omp_set_nested(1);
 	// 2D mode
 	// interactive points 2D 
 	// interactive lines 2D

@@ -318,15 +318,15 @@ namespace MathLibrary {
 			pardiso_iparm[0] = 1;    // No solver defaults
 			pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
 			pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
-			//pardiso_iparm[23] = 1;   // 2-level factorization
-			//pardiso_iparm[36] = -99; // VBSR format
+			pardiso_iparm[23] = 1;   // 2-level factorization
+			pardiso_iparm[36] = -99; // VBSR format
 			pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
 			pardiso_iparm[18] = -1;	 // Output: Report Mflops
 			pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
 		 // pardiso_iparm[27] = 1;   // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
 			pardiso_maxfct = 1;	    // max number of factorizations
 			pardiso_mnum = 1;		// which factorization to use
-			pardiso_msglvl = 1;		// do NOT print statistical information
+			pardiso_msglvl = 0;		// do NOT print statistical information
 			pardiso_neq = m;		// number of rows of 
 			pardiso_error = 1;		// Initialize error flag 
 			pardiso_nrhs = nRHS;	// number of right hand side
@@ -433,7 +433,7 @@ namespace MathLibrary {
 			linearSolverTimer01.stop();
 			std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 			linearSolverTimer02.stop();
-			std::cout << "Direct solver PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec)" << std::endl;
+			std::cout << "=== Complete duration PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec)" << std::endl;
 #endif
 		}
 

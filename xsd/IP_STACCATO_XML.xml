@@ -2,7 +2,7 @@
 	<PARTS>
 		<PART TYPE="FE" Name="FCoupleFelgeDynamicODB">
 			<FILEIMPORT Type="AbqODB">
-				<FILE>FelgeStaticDistributingBig.odb</FILE>
+				<FILE>FelgeStaticDistributing.odb</FILE>
 				<IMPORT Type="Nodes">
 					<LIST>ALL</LIST>
 				</IMPORT>

@@ -71,7 +71,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// --------------------------------------------------------------------------------------------------------------
 	
 	/* -- Exporting ------------- */
-	bool exportCSR = true;
+	bool exportSparseMatrix = true;
 	bool exportRHS = false;
 	bool exportSolution = false;
 	/* -------------------------- */
@@ -530,13 +530,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			infoOut << "Duration for assembly loop: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
-			if (exportCSR) {
+			if (exportSparseMatrix) {
 				std::cout << ">> Writing CSR ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					(*AReal).writeCSRtoFile(std::string(iAnalysis->NAME()->data()),"mtx");
+					(*AReal).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).writeCSRtoFile(std::string(iAnalysis->NAME()->data()),"mtx");
+					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
 				}
 			}
 			else

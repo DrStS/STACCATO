@@ -818,7 +818,7 @@ namespace MathLibrary {
 		* \brief This function print CSR Row and Column Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void writeCSRtoFile(std::string _prefix, std::string _format) {
+		void writeSparseMatrixToFile(std::string _prefix, std::string _format) {
 			if (_format == "dat" || _format == "DAT" || _format == ".dat" || _format == ".DAT") {
 				determineCSR();
 				AuxiliaryFunctions::writeIntegerVectorDatFormat(_prefix + "_CSR_IA.dat", *rowIndex);

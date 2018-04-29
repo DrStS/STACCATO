@@ -59,6 +59,7 @@
  * \date 4/2/2016
  * \version alpha
  **************************************************************************************************/
+#ifndef USE_ONLY_QT5
 #ifdef STACCATO_COMMANDLINE_ON
 #include <iostream>
 #include <string>
@@ -67,16 +68,29 @@
 #include "STACCATOComputeEngine.h"
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON
-#include <omp.h>
-//Qt5
+ //Qt5
 #include <QApplication>
-//VTK
+ //VTK
 #include <QVTKOpenGLWidget.h>
-//USER
+ //USER
 #include <STACCATOMainWindow.h>
 #endif // STACCATO_COMMANDLINE_ON
+#endif // !USE_ONLY_QT5
+
+#ifdef USE_ONLY_QT5
+#include "AuxiliaryParameters.h"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <QApplication>
+#include<qpushbutton.h>
+#include "STACCATOComputeEngine.h"
+#endif // USE_ONLY_QT5
+
 
 int main(int argc, char **argv) {
+#ifndef USE_ONLY_QT5
+
 #ifdef STACCATO_COMMANDLINE_ON
 	std::cout << "Hello STACCATO is fired up!" << std::endl;
 	std::cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;
@@ -85,7 +99,7 @@ int main(int argc, char **argv) {
 	//	 std::cout << *it << std::endl;
 	//}
 	//allArgs[0] = "STACCATO.exe"
-	if (allArgs.size()>1){
+	if (allArgs.size()>1) {
 		STACCATOComputeEngine* myComputeEngine = new STACCATOComputeEngine(allArgs[1]);
 		myComputeEngine->prepare();
 		myComputeEngine->compute();
@@ -96,15 +110,39 @@ int main(int argc, char **argv) {
 #ifndef STACCATO_COMMANDLINE_ON
 	//TODO
 	// statusBar coordinate
-	omp_set_nested(1);
 	// 2D mode
 	// interactive points 2D 
 	// interactive lines 2D
 	QSurfaceFormat::setDefaultFormat(QVTKOpenGLWidget::defaultFormat());
-    QApplication mySTACCATO(argc, argv);
+	QApplication mySTACCATO(argc, argv);
 	STACCATOMainWindow* mySTACCATOMainWindow = new STACCATOMainWindow();
 	mySTACCATOMainWindow->show();
-    return mySTACCATO.exec();
+	return mySTACCATO.exec();
 #endif // STACCATO_COMMANDLINE_ON
+
+#endif // USE_ONLY_QT5
+
+#ifdef USE_ONLY_QT5
+	QApplication myTestQt(argc, argv);
+
+	QPushButton hello("HelloWorld!", 0);
+	
+	hello.show();
+
+	std::cout << "Hello STACCATO is fired up!" << std::endl;
+	std::cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;
+	std::vector<std::string> allArgs(argv, argv + argc);
+
+	if (allArgs.size()>1) {
+		STACCATOComputeEngine* myComputeEngine = new STACCATOComputeEngine(allArgs[1]);
+		myComputeEngine->prepare();
+		myComputeEngine->compute();
+		myComputeEngine->clean();
+	}
+
+	return myTestQt.exec();
+#endif 
+
+
 }
 

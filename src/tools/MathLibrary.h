@@ -818,35 +818,21 @@ namespace MathLibrary {
 		* \brief This function print CSR Row and Column Vector
 		* \author Harikrishnan Sreekumar
 		***********/
-		void writeCSRtoFile(std::string _prefix) {
-			determineCSR();
-			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_IA.dat", *rowIndex);
-			AuxiliaryFunctions::writeIntegerVector(_prefix + "_CSR_JA.dat", columns);
+		void writeCSRtoFile(std::string _prefix, std::string _format) {
+			if (_format == "dat" || _format == "DAT" || _format == ".dat" || _format == ".DAT") {
+				determineCSR();
+				AuxiliaryFunctions::writeIntegerVectorDatFormat(_prefix + "_CSR_IA.dat", *rowIndex);
+				AuxiliaryFunctions::writeIntegerVectorDatFormat(_prefix + "_CSR_JA.dat", columns);
 
-			writeMat(std::is_floating_point<T>{}, _prefix + "_CSR_MAT.dat", values);
+				writeMat(std::is_floating_point<T>{}, _prefix + "_CSR_MAT.dat", values);
+			}
+			else if (_format == "mtx" || _format == "MTX" || _format == ".mtx" || _format == ".MTX") {
+				writeMtxMat(std::is_floating_point<T>{}, _prefix + "_CSR_MAT.mtx");
+			}
+			else
+				std::cout << "Unsupported File Format."<< std::endl;
 
 		}
-		/***********************************************************************************************
-		* \brief Tag Dispatching. Performs Double Writing Code for the Matrix
-		* \param[in] type_trail - true_type for Double and false_type for Complex
-		* \param[in] File Name
-		* \param[in] Double Vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		void writeMat(std::true_type, std::string _fileName, std::vector<T> &_vector) {
-			AuxiliaryFunctions::writeDoubleVector(_fileName, values);
-		}
-		/***********************************************************************************************
-		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix
-		* \param[in] type_trail - true_type for Double and false_type for Complex
-		* \param[in] File Name
-		* \param[in] MKLComplex Vector
-		* \author Harikrishnan Sreekumar
-		***********/
-		void writeMat(std::false_type, std::string _fileName, std::vector<T> &_vector) {
-			AuxiliaryFunctions::writeMKLComplexVector(_fileName, values);
-		}
-
 
 	private:
 		/// pointer to the vector of maps
@@ -1060,6 +1046,78 @@ namespace MathLibrary {
 			/* unless you disable Intel(R) MKL Memory Manager                                   */
 			/*-------------------------------------------------------------------------*/
 			MKL_Free_Buffers();
+		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs Double Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] Double Vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMat(std::true_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeDoubleVectorDatFormat(_fileName, values);
+		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \param[in] MKLComplex Vector
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMat(std::false_type, std::string _fileName, std::vector<T> &_vector) {
+			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(_fileName, values);
+		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs Double Writing Code for the Matrix to Mtx File
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMtxMat(std::true_type, std::string _fileName) {
+			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
+			size_t ii_counter;
+			size_t jj_counter;
+
+			std::ofstream myfile;
+			myfile.open(_fileName);
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
+			myfile << std::scientific;
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {
+				for (jj_counter = 0; jj_counter < n; jj_counter++) {
+					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
+						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
+					}
+				}
+				//myfile << std::endl;
+			}
+			myfile << std::endl;
+			myfile.close();
+		}
+		/***********************************************************************************************
+		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix to Mtx File
+		* \param[in] type_trail - true_type for Double and false_type for Complex
+		* \param[in] File Name
+		* \author Harikrishnan Sreekumar
+		***********/
+		void writeMtxMat(std::false_type, std::string _fileName) {
+			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
+			size_t ii_counter;
+			size_t jj_counter;
+
+			std::ofstream myfile;
+			myfile.open(_fileName);
+			myfile.precision(std::numeric_limits<double>::digits10 + 1);
+			myfile << std::scientific;
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {
+				for (jj_counter = 0; jj_counter < n; jj_counter++) {
+					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
+						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second.real << "+" << (*mat)[ii_counter].find(jj_counter)->second.real << "i" << std::endl;
+					}
+				}
+				//myfile << std::endl;
+			}
+			myfile << std::endl;
+			myfile.close();
 		}
 	};
 	/***********************************************************************************************

@@ -61,6 +61,7 @@ option(USE_QT5                 "Use QT5"  ON )
 option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 option(USE_XSD                 "Use XSD with XERCES"  ON )
 option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  OFF )
+option(USE_ONLY_QT5							"Use ONLY_QT5" OFF )
 ######################################################################################
 #2. Macros
 ######################################################################################
@@ -176,6 +177,10 @@ ENDIF()
 IF (${STACCATO_COMMANDLINE})
   MESSAGE("Build STACCATO commandline only!")
   add_definitions(-DSTACCATO_COMMANDLINE_ON)
+ENDIF()
+IF (${USE_ONLY_QT5})
+  MESSAGE("Build STACCATO using QT only!")
+  add_definitions(-DUSE_ONLY_QT5)
 ENDIF()
 
 #------------------------------------------------------------------------------------#

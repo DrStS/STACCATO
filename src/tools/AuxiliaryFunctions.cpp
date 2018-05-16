@@ -21,6 +21,7 @@
 #include <AuxiliaryFunctions.h>
 #include <fstream>
 #include <iostream>
+#include <limits>
 
 AuxiliaryFunctions::AuxiliaryFunctions()
 {

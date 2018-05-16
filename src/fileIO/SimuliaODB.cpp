@@ -20,11 +20,13 @@
 #include "AuxiliaryParameters.h"
 #include "SimuliaODB.h"
 #include "Message.h"
-#include "memWatcher.h"
+#include "MemWatcher.h"
 #include "HMesh.h"
+//XML
+#include "MetaDatabase.h"
 
 /// SIMULIA includes
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_ODB_API
 #include <odb_API.h>
 #include <odb_Coupling.h>
 #include <odb_MPC.h>
@@ -33,13 +35,12 @@
 #include <odb_SectionTypes.h>
 #endif
 
-//XML
-#include "MetaDatabase.h"
 
-//#define DEBUG
+
+//#define DEBUG_OUTPUT_SIMULIA_ODB_SIMULIA_ODB
 
 SimuliaODB::SimuliaODB(std::string _fileName, HMesh& myHMesh, int _partId) : myHMesh(&myHMesh) {
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_ODB_API
 	myFileName = _fileName;
 	myPartId = _partId;
 	std::cout << ">> ODB Reader initialized for file " << myFileName << std::endl;
@@ -47,26 +48,26 @@ SimuliaODB::SimuliaODB(std::string _fileName, HMesh& myHMesh, int _partId) : myH
 	openFile();
 	myHMesh.hasParts = true;
 #endif 
-#ifndef SIMULIA_API_ON
+#ifndef SIMULIA_ODB_API
 	std::cout << ">> ODB Reader NOT initialized for file " << myFileName << std::endl;
 #endif 
 }
 
 SimuliaODB::~SimuliaODB() {
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_ODB_API
 	odb_finalizeAPI();
 #endif 
 }
 
 void SimuliaODB::openFile() {
 
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_ODB_API
 	try {
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 		infoOut << "Open OBD file: " << myFileName << std::endl;
 #endif
 		odb_Odb& odb = openOdb(odb_String(myFileName.c_str()));
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 		infoOut << odb.name().CStr() << " '__________" << std::endl;
 		infoOut << "analysisTitle: " << odb.analysisTitle().CStr() << std::endl;
 		infoOut << "description: " << odb.description().CStr() << std::endl;
@@ -91,14 +92,14 @@ void SimuliaODB::openFile() {
 				if (importType == "Nodes") {
 					if (std::string(iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].LIST()->c_str()) == "ALL") {
 						//Nodes
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 						infoOut << "Total number of nodes: " << numOfNodes << std::endl;
 #endif
 						for (int i = 0; i < numOfNodes; i++)
 						{
 							const odb_Node aNode = nodes.node(i);
 							const float * const coords = aNode.coordinates();
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 							char formattedOut[256];
 							sprintf(formattedOut, " %9d [%10.6f %10.6f %10.6f]", aNode.label(),
 								coords[0], coords[1], coords[2]);
@@ -118,7 +119,7 @@ void SimuliaODB::openFile() {
 					if (std::string(iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].LIST()->c_str()) == "ALL") {
 
 						//Elements
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 						infoOut << "Total number of elements: " << numOfElements << std::endl;
 #endif
 						for (int i = 0; i < numOfElements; i++)
@@ -127,7 +128,7 @@ void SimuliaODB::openFile() {
 
 
 
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 							infoOut << aElement.label() << " " << aElement.type().CStr() << " [";
 #endif
 							int elemConSize;
@@ -135,12 +136,12 @@ void SimuliaODB::openFile() {
 							std::vector<int> elementTopo;
 							elementTopo.resize(elemConSize);
 							for (int j = 0; j < elemConSize; j++) {
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 								infoOut << " " << conn[j];
 #endif
 								elementTopo[j] = conn[j];
 							}
-#ifdef DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT_SIMULIA_ODB
 							infoOut << " ] " << std::endl;
 
 #endif

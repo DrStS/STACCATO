@@ -45,7 +45,9 @@
 #endif
 
 #include <string>
+#ifdef USE_INTEL_MKL
 #include <mkl.h>
+#endif
 
 typedef MKL_Complex16 STACCATOComplexDouble;
 namespace STACCATO {

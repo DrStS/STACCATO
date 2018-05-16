@@ -28,17 +28,17 @@
 #include <map>
 #include <vector>
 #include <assert.h>
+#include <type_traits>
+#include <math.h>
 #include "AuxiliaryParameters.h"
-#include "Timer.h"
-
 #include "AuxiliaryFunctions.h"
+#include "Timer.h"
+#include "Message.h"
 
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1
 #include <mkl.h>
 #endif
-
-#include <type_traits>
 
 namespace MathLibrary {
 	/***********************************************************************************************
@@ -1082,10 +1082,14 @@ namespace MathLibrary {
 			myfile.open(_fileName);
 			myfile.precision(std::numeric_limits<double>::digits10 + 1);
 			myfile << std::scientific;
+			myfile << "%%MatrixMarket matrix coordinate real symmetric" << std::endl;
+			myfile << "% Generated with STACCCATO" << std::endl;
+			myfile << m << " " << n << " " << values.size() << std::endl;
+
 			for (ii_counter = 0; ii_counter < m; ii_counter++) {
 				for (jj_counter = 0; jj_counter < n; jj_counter++) {
 					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
+						myfile << ii_counter+1 << " " << jj_counter+1 << " " << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
 					}
 				}
 				//myfile << std::endl;
@@ -1108,10 +1112,14 @@ namespace MathLibrary {
 			myfile.open(_fileName);
 			myfile.precision(std::numeric_limits<double>::digits10 + 1);
 			myfile << std::scientific;
+			myfile << "%%MatrixMarket matrix coordinate complex symmetric" << std::endl;
+			myfile << "% Generated with STACCCATO" << std::endl;
+			myfile << m << " " << n << " " << values.size() << std::endl;
+
 			for (ii_counter = 0; ii_counter < m; ii_counter++) {
 				for (jj_counter = 0; jj_counter < n; jj_counter++) {
 					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << ii_counter << "\t" << jj_counter << "\t" << (*mat)[ii_counter].find(jj_counter)->second.real << "+" << (*mat)[ii_counter].find(jj_counter)->second.real << "i" << std::endl;
+						myfile << ii_counter+1 << " " << jj_counter+1 << " " << (*mat)[ii_counter].find(jj_counter)->second.real << "+" << (*mat)[ii_counter].find(jj_counter)->second.real << "i" << std::endl;
 					}
 				}
 				//myfile << std::endl;

@@ -19,7 +19,6 @@
 */
 #include "STACCATOComputeEngine.h"
 #include "HMesh.h"
-#include "HMeshToVtkUnstructuredGrid.h"
 #include "Reader.h"
 #include "Timer.h"
 #include "MemWatcher.h"

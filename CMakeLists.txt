@@ -56,12 +56,12 @@ MESSAGE("Current source dir is" ${STACCATO_SOURCE_DIR})
 option(USE_INTEL_COMPILER      "Use Intel Compilers C/C++"  OFF )
 option(USE_INTEL_MKL           "Use Intel MKL"  ON )
 option(USE_OCCT                "Use Opencascade"  OFF )
-option(USE_VTK                 "Use VTK"  ON )
-option(USE_QT5                 "Use QT5"  ON )
+option(USE_VTK                 "Use VTK"  OFF )
+option(USE_QT5                 "Use QT5"  OFF )
 option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 option(USE_SIMULIA_UMA         "Use SIMULIA UMA"  OFF )
 option(USE_XSD                 "Use XSD with XERCES"  ON )
-option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  OFF )
+option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  ON)
 ######################################################################################
 #2. Macros
 ######################################################################################
@@ -146,6 +146,7 @@ SET(CMAKE_PREFIX_PATH "$ENV{HOME}/software/libs/Qt/5.10.1/gcc_64/lib/cmake")
 ENDIF()
 # Try to find QT5
 IF (${USE_QT5})
+  add_definitions(-DUSE_QT5)
   find_package(Qt5Widgets REQUIRED)
   MESSAGE("Qt5Widgets status: ${Qt5Widgets_FOUND}")
   set(CMAKE_AUTOMOC ON)

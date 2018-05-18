@@ -1,3 +1,4 @@
+IF (${USE_QT5})
 #------------------------------------------------------------------------------------#
 file(GLOB SOURCES *.cpp)
 MACRO_APPEND_GLOBAL_VARIABLE(STACCATO_SOURCES "${SOURCES}")
@@ -12,3 +13,4 @@ FOREACH(sf ${STACCATO_src_sub_subdirectories})
   ENDIF()
 ENDFOREACH()
 #------------------------------------------------------------------------------------#
+ENDIF()

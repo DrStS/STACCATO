@@ -31,7 +31,9 @@
 
 
 //QT5
+#ifdef USE_QT5
 #include <QTextEdit>
+#endif // USE_QT5
 #undef ERROR
 // forward declaration
 class QTextEdit;
@@ -120,7 +122,7 @@ private:
 				if (myParent.textOutput != NULL){
 
 					std::string echoString;
-
+#ifdef USE_QT5
 					if (outputLevel == ERROR){
 						myParent.textOutput->setTextColor(QColor("red"));
 					}
@@ -137,6 +139,7 @@ private:
 						assert(false);
 					}
 					myParent.textOutput->insertPlainText(QString::fromStdString(str()));
+#endif // USE_QT5
 				}
 				str("");
 			}

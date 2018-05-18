@@ -46,6 +46,11 @@ ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+IF (${STACCATO_COMMANDLINE})
+LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/STACCATOMainWindow.h)
+LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/STACCATOMainWindow.cpp)
+ENDIF()
+
 #------------------------------------------------------------------------------------#
 IF (CMAKE_SYSTEM_NAME MATCHES "Windows") 
 # WIN32
@@ -55,7 +60,9 @@ IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 add_executable(STACCATO ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${STACCATO_SOURCES} resources.qrc)
 ENDIF()
 target_link_libraries(STACCATO ${STACCATO_LIBS})
+IF (${USE_QT5})
 qt5_use_modules(STACCATO Core Gui Charts)
+ENDIF()
 #------------------------------------------------------------------------------------#
 #
 #------------------------------------------------------------------------------------#

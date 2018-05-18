@@ -244,7 +244,9 @@ void SimuliaODB::openFile() {
 	catch (odb_BaseException& exc) {
 		errorOut << "odbBaseException caught" << std::endl;
 		errorOut << "Abaqus error message: " << exc.UserReport().CStr() << std::endl;
+#ifdef USE_QT5
 		qFatal(exc.UserReport().CStr());
+#endif // USE_QT5
 		//ToDo add error handling
 	}
 	catch (...) {

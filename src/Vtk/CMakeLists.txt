@@ -1,3 +1,4 @@
+IF (${USE_VTK})
 #------------------------------------------------------------------------------------#
 file(GLOB SOURCES *.cpp *.c)
 MACRO_APPEND_GLOBAL_VARIABLE(STACCATO_SOURCES "${SOURCES}")
@@ -13,3 +14,4 @@ FOREACH(sf ${STACCATO_src_sub_subdirectories})
   ENDIF()
 ENDFOREACH()
 #------------------------------------------------------------------------------------#
+ENDIF()

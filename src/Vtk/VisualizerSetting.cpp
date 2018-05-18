@@ -17,9 +17,12 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
+#include <string.h>
 #include "VisualizerSetting.h"
+#include "WireFrameSetting.h"
 #include "SignalDataVisualizer.h"
 #include "OutputDatabase.h"
+
 
 VisualizerSetting::VisualizerSetting()
 {
@@ -106,7 +109,8 @@ void VisualizerSetting::commitCurrentFrame(int _frameID) {
 
 void VisualizerSetting::setScalarbarTitle(std::string _title) {
 	PROPERTY_SCALARBAR_TITLE = new char[_title.size() + 1];
-	strcpy_s(PROPERTY_SCALARBAR_TITLE, sizeof PROPERTY_SCALARBAR_TITLE, _title.c_str());
+    _title.resize(sizeof PROPERTY_SCALARBAR_TITLE);
+	strcpy(PROPERTY_SCALARBAR_TITLE, _title.c_str());
 }
 
 void VisualizerSetting::generateCaseAnimation(std::vector<int> &_frameIndices) {

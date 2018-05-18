@@ -20,21 +20,19 @@
 #include "AuxiliaryParameters.h"
 #include "SimuliaUMA.h"
 #include "Message.h"
-#include "memWatcher.h"
+#include "MemWatcher.h"
 #include "HMesh.h"
+//XML
+#include "MetaDatabase.h"
 
 //UMA
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_UMA_API
 #include <ads_CoreFESystemC.h>
 #include <ads_CoreMeshC.h>
 #include <uma_System.h>
 #include <uma_SparseMatrix.h>
 #include <uma_ArrayInt.h>
 #endif
-
-//XML
-#include "MetaDatabase.h"
-
 //#define DEBUG
 
 SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHMesh(&_hMesh) {
@@ -51,7 +49,7 @@ SimuliaUMA::~SimuliaUMA() {
 }
 
 void SimuliaUMA::openFile() {
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_UMA_API
 	std::vector<std::string> mapTypeName;
 	mapTypeName.push_back("DOFS");
 	mapTypeName.push_back("NODES");

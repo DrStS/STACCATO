@@ -57,7 +57,13 @@ void STACCATOComputeEngine::prepare(void) {
 		{
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
-				std::string filePath = "C:/software/repos/STACCATO/model/";
+                //Todo add global search path to xml file
+#if defined(_WIN32) || defined(__WIN32__) 
+std::string filePath = "C:/software/repos/STACCATO/model/";
+#endif
+#if defined(__linux__) 
+std::string filePath = "/home/stefan/software/repos/STACCATO/model/";
+#endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
 					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);

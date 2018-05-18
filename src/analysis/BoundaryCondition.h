@@ -64,7 +64,7 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void computeDistributingCouplingLoad(std::vector<int> &_referenceNode, std::vector<int> &_couplingNodes, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
-		myCaseType = STACCATO_Case_Load;
+		myCaseType = STACCATO_Results::STACCATO_ResultsCase_type::STACCATO_Case_Load;
 
 		int numCouplingNodes = _couplingNodes.size();
 		double weightingFactor = 1.0 / (double)numCouplingNodes;
@@ -177,7 +177,7 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	void addConcentratedForceContribution(std::vector<int> &_nodeList, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
-		myCaseType = STACCATO_Case_None;
+		myCaseType = STACCATO_Results::STACCATO_ResultsCase_type::STACCATO_Case_None;
 		bool flagLabel = true;
 		int flagIndex = _rhs.size();
 		_rhs.resize(_rhs.size() + myHMesh->getTotalNumOfDoFsRaw());
@@ -204,7 +204,7 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void addRotatingForceContribution(std::vector<int> &_refNode, std::vector<int> &_couplingNodes, std::vector<T> &_loadVector, std::vector<T> &_rhs) {
-		myCaseType = STACCATO_Case_Load;
+		myCaseType = STACCATO_Results::STACCATO_ResultsCase_type::STACCATO_Case_Load;
 
 		std::cout << ">> Looking for Rotating Distributed Coupling ...\n";
 
@@ -279,7 +279,7 @@ public:
 	int getNumberOfTotalCases() {
 		switch (myCaseType)
 		{
-		case STACCATO_Case_Load:
+            case STACCATO_Results::STACCATO_ResultsCase_type::STACCATO_Case_Load:
 			return getBCCaseDescription().size();
 		default:
 			return 1;

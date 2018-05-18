@@ -24,12 +24,11 @@
 **************************************************************************************************/
 #pragma once
 
-#include <FieldDataVisualizer.h>
-#include <FieldDataSetting.h>
+#include "FieldDataVisualizer.h"
+#include "FieldDataSetting.h"
+#include "SurfaceSetting.h"
+#include "SurfaceWithEdgesSetting.h"
 
-#include <SurfaceSetting.h>
-#include <SurfaceWithEdgesSetting.h>
-#include <WireframeSetting.h>
 
 using namespace STACCATO_Visualizer;
 using namespace STACCATO_Results;

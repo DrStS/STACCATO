@@ -17,7 +17,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
  */
-#include "chartview.h"
+#include "ChartView.h"
 #include <QtGui/QMouseEvent>
 
 ChartView::ChartView(QChart *chart, QWidget *parent) :

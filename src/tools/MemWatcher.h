@@ -26,10 +26,15 @@
  **************************************************************************************************/
 #pragma once
 
+#include <cstddef>
 
 #if defined(_WIN32) || defined(__WIN32__) 
 #include <windows.h>
 #include <psapi.h>
+#endif
+
+#if defined(__linux__) 
+
 #endif
 
 /********//**
@@ -54,20 +59,30 @@ public:
 	* \author Stefan Sicklinger
 	***********/
 	size_t getCurrentUsedPhysicalMemory (void) {
+        #if defined(_WIN32) || defined(__WIN32__) 
 		PROCESS_MEMORY_COUNTERS_EX pmc;
 		GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
 		SIZE_T physMemUsedByMe = pmc.WorkingSetSize;
 		return physMemUsedByMe;
+        #endif
+        #if defined(__linux__) 
+        return 0;
+        #endif
 	}
 	/***********************************************************************************************
 	* \brief Physical memory currently used by current process in bytes
 	* \author Stefan Sicklinger
 	***********/
 	size_t getCurrentUsedVirtualMemory(void) {
+        #if defined(_WIN32) || defined(__WIN32__) 
 		PROCESS_MEMORY_COUNTERS_EX pmc;
 		GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
 		SIZE_T virtualMemUsedByMe = pmc.PrivateUsage;
 		return virtualMemUsedByMe;
+        #endif
+        #if defined(__linux__) 
+        return 0;
+        #endif
 	}
 
 

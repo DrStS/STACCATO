@@ -71,7 +71,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// --------------------------------------------------------------------------------------------------------------
 	
 	/* -- Exporting ------------- */
-	bool exportSparseMatrix = true;
+	bool exportSparseMatrix = false;
 	bool exportRHS = false;
 	bool exportSolution = false;
 	/* -------------------------- */
@@ -123,7 +123,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
 					}
 					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef SIMULIA_API_ON
+#ifdef SIMULIA_UMA_API
 						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
 #endif
 					}

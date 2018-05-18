@@ -339,7 +339,7 @@ void SignalDataVisualizer::handleClickedPoint(const QPointF &_point) {
 	QPointF closest(INT_MAX, INT_MAX);
 	qreal distance(INT_MAX);
 	
-	for each (QLineSeries* series in mySeriesList) {
+	foreach (QLineSeries* series, mySeriesList) {
 		const auto points = series->points();
 		for (const QPointF &currentPoint : points) {
 			qreal currentDistance = qSqrt((currentPoint.x() - clickedPoint.x())
@@ -399,7 +399,7 @@ void SignalDataVisualizer::handleClickedPoint(const QPointF &_point) {
 			myCallOuts.last()->updateGeometry();
 		}
 		else {
-			for each (ChartViewToolTip *callout in mySnapCallOuts) {
+			foreach (ChartViewToolTip *callout, mySnapCallOuts) {
 				callout->scene()->removeItem(callout);
 				mySnapCallOuts.pop_back();
 			}
@@ -435,7 +435,7 @@ void SignalDataVisualizer::tooltip(QPointF _point, bool _state) {
 		myToolTip->hide();
 		if(mySnapOnHoverBox->isChecked()){
 			if (myToolTipBox->isChecked()) {
-				for each (ChartViewToolTip *callout in mySnapCallOuts) {
+				foreach (ChartViewToolTip *callout , mySnapCallOuts) {
 					callout->scene()->removeItem(callout);
 					mySnapCallOuts.pop_back();
 				}
@@ -731,8 +731,9 @@ std::vector<int> SignalDataVisualizer::getSelection() {
 }
 
 void SignalDataVisualizer::setSelection(std::vector<int> _selected){
-	for each(int item in _selected)
+	foreach(int item , _selected){
 		myPickedNodes.push_back(item);
+    }
 	if (myPickerButton->isChecked()) {
 		myNodePickText->setText(QString::fromStdString(std::to_string(myHMesh->getNodeLabels().at(myPickedNodes.at(myPickedNodes.size()-1)))));
 	}
@@ -775,7 +776,7 @@ void SignalDataVisualizer::updateList() {
 void SignalDataVisualizer::updateOutputTree() {
 	if (myNodePickRadio->isChecked()) {
 		QList<QTreeWidgetItem*> List = myPickTree->selectedItems();
-		for each (QTreeWidgetItem* item in List){
+		foreach (QTreeWidgetItem* item , List){
 			addChildToTree(myHistoryRoot, item->text(0) + " at Node " + myNodePickText->text(), false);
 			if (item->text(0) == "Ux_Re")
 				add2dPlotToChart(std::stoi(myNodePickText->text().toStdString()), STACCATO_x_Re);
@@ -810,18 +811,18 @@ void SignalDataVisualizer::myClearPointSelection(){
 	myXCoordInfo->setText(tr(""));
 	myYCoordInfo->setText(tr(""));
 
-	for each (ChartViewToolTip *callout in myCallOuts) {
+	foreach (ChartViewToolTip *callout , myCallOuts) {
 		callout->scene()->removeItem(callout);
 		myCallOuts.pop_back();
 	}
-	for each (ChartViewToolTip *callout in mySnapCallOuts) {
+	foreach (ChartViewToolTip *callout , mySnapCallOuts) {
 		callout->scene()->removeItem(callout);
 		mySnapCallOuts.pop_back();
 	}
 }
 
 void SignalDataVisualizer::updateSeriesProperty() {
-	for each (QLineSeries* series in mySeriesList) {
+	foreach (QLineSeries* series, mySeriesList) {
 		if (myPointVisibilityBox->isChecked()) {
 			series->setPointsVisible(true);
 		}
@@ -845,7 +846,7 @@ void SignalDataVisualizer::setLineWidthWidgets() {
 
 void SignalDataVisualizer::updateToolTip() {
 	if (!myToolTipBox->isChecked()) {
-		for each (ChartViewToolTip *callout in myCallOuts) {
+		foreach (ChartViewToolTip *callout, myCallOuts) {
 			callout->scene()->removeItem(callout);
 			myCallOuts.pop_back();
 		}
@@ -854,7 +855,7 @@ void SignalDataVisualizer::updateToolTip() {
 
 void SignalDataVisualizer::deleteSeries(){
 	QList<QTreeWidgetItem*> List = myOutputTree->selectedItems();
-	for each (QTreeWidgetItem* item in List) {
+	foreach (QTreeWidgetItem* item , List) {
 		int currIndex = myOutputTree->currentIndex().row();
 		myChart2D->removeSeries(mySeriesList.at(currIndex));
 		if (myOrdinateList.size() != 0) {
@@ -868,7 +869,7 @@ void SignalDataVisualizer::deleteSeries(){
 
 void SignalDataVisualizer::addOrdinateToSeries() {
 	QList<QTreeWidgetItem*> List = myOutputTree->selectedItems();
-	for each (QTreeWidgetItem* item in List) {
+	foreach (QTreeWidgetItem* item , List) {
 		int currIndex = myOutputTree->currentIndex().row();
 		QValueAxis* newAxisY = new QValueAxis();
 
@@ -939,7 +940,7 @@ void SignalDataVisualizer::myColorPickWidget() {
 		myColorText->setText(color.name());
 		QList<QTreeWidgetItem*> List = myOutputTree->selectedItems();
 
-		for each (QTreeWidgetItem* item in List) {
+		foreach (QTreeWidgetItem* item , List) {
 			int currIndex = myOutputTree->currentIndex().row();
 
 			QPen pen(color);

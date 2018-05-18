@@ -24,13 +24,9 @@
 **************************************************************************************************/
 #pragma once
 
-#include<string>
-#include<vector>
-
-#ifdef USE_INTEL_MKL
-#define MKL_DIRECT_CALL 1
-#include <mkl.h>
-#endif
+#include <string>
+#include <vector>
+#include "AuxiliaryParameters.h"
 
 class AuxiliaryFunctions
 {
@@ -60,12 +56,12 @@ public:
 	***********/
 	static void writeIntegerVectorDatFormat(std::string _fileName, std::vector<int> &_vector);
 	/***********************************************************************************************
-	* \brief Write a MKL_Complex16 vector to the DAT file with format: <real_value> <imag_value>
+	* \brief Write a STACCATOComplexDouble vector to the DAT file with format: <real_value> <imag_value>
 	* \param[in] _fileName
 	* \param[in] _vector::int
 	* \author Harikrishnan Sreekumar
 	***********/
-	static void writeMKLComplexVectorDatFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector);
+	static void writeMKLComplexVectorDatFormat(std::string _fileName, std::vector< STACCATOComplexDouble > &_vector);
 
 };
 

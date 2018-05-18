@@ -26,7 +26,7 @@
 #include "MetaDatabase.h"
 
 //UMA
-#ifdef SIMULIA_UMA_API
+#ifdef USE_SIMULIA_UMA_API
 #include <ads_CoreFESystemC.h>
 #include <ads_CoreMeshC.h>
 #include <uma_System.h>
@@ -49,7 +49,7 @@ SimuliaUMA::~SimuliaUMA() {
 }
 
 void SimuliaUMA::openFile() {
-#ifdef SIMULIA_UMA_API
+#ifdef USE_SIMULIA_UMA_API
 	std::vector<std::string> mapTypeName;
 	mapTypeName.push_back("DOFS");
 	mapTypeName.push_back("NODES");

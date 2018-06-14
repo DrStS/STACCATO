@@ -161,12 +161,14 @@ void SimuliaODB::openFile() {
 				else if (importType == "Sets") {
 					// SETS
 					// NODES
-					std::cout << ">> Found Odb sets: ";
+					std::cout << ">> Found Odb NSETS: ";
+
 					for (int i = 0; i < iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].NODE().begin()->TRANSLATETO().size(); i++) {
 
 						std::string translateSource = iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].NODE().begin()->TRANSLATETO()[i].Source()->c_str();
 						std::string translateTarget = iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].NODE().begin()->TRANSLATETO()[i].Target()->c_str();
 
+						// Assembly Sets
 						odb_SetRepositoryIT setIter(odb.rootAssembly().nodeSets());
 						for (setIter.first(); !setIter.isDone() && setIter.currentValue().type() == odb_Enum::NODE_SET; setIter.next()) {
 
@@ -192,21 +194,46 @@ void SimuliaODB::openFile() {
 								}
 							}
 						}
+						// Part Sets
+						odb_SetRepositoryIT setIterParts(inst.nodeSets());
+						for (setIterParts.first(); !setIterParts.isDone() && setIterParts.currentValue().type() == odb_Enum::NODE_SET; setIterParts.next()) {
+
+							odb_Set set = setIterParts.currentValue();
+							int setSize = set.size();
+
+							if (std::string(set.name().CStr()) == translateSource) {
+								odb_SequenceString names = set.instanceNames();
+								int numInstances = names.size();
+
+								int i;
+								for (i = 0; i < numInstances; i++)
+								{
+									odb_String name = names.constGet(i);
+									const odb_SequenceNode& nodesInMySet = set.nodes(name);
+									int n_max = nodesInMySet.size();
+									std::vector<int> nodeLabels;
+									for (int n = 0; n < n_max; n++) {
+										nodeLabels.push_back(nodesInMySet.node(n).label());
+									}
+									std::cout << translateTarget << " with " << nodeLabels.size() << " nodes. ";
+									myHMesh->addNodeSet(translateTarget, nodeLabels);
+								}
+							}
+						}
 					}
 					std::cout << std::endl;
 					// ELEMENTS
+					std::cout << ">> Found Odb ESETS: ";
 					for (int i = 0; i < iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO().size(); i++) {
-
 						std::string translateSource = iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO()[i].Source()->c_str();
 						std::string translateTarget = iterParts->PART()[myPartId].FILEIMPORT().begin()->IMPORT()[iImport].ELEMENT().begin()->TRANSLATETO()[i].Target()->c_str();
 
-						odb_SetRepositoryIT setIter(odb.rootAssembly().nodeSets());
-
+						// Assembly Sets
+						odb_SetRepositoryIT setIter(odb.rootAssembly().elementSets());
 						for (setIter.first(); !setIter.isDone() && setIter.currentValue().type() == odb_Enum::ELEMENT_SET; setIter.next()) {
 
 							odb_Set set = setIter.currentValue();
 							int setSize = set.size();
-
 							if (std::string(set.name().CStr()) == translateSource) {
 								odb_SequenceString names = set.instanceNames();
 								int numInstances = names.size();
@@ -218,15 +245,40 @@ void SimuliaODB::openFile() {
 
 									const odb_SequenceElement& elemsInMySet = set.elements(name);
 									int n_max = elemsInMySet.size();
+									std::vector<int> elemLabels;
 									for (int n = 0; n < n_max; n++)
 									{
-										int elemConSize;
-										const int* const conn = elemsInMySet.element(n).connectivity(elemConSize);
-										std::vector<int> elemLabels;
-										for (int j = 0; j < elemConSize; j++)
-											elemLabels.push_back(elemsInMySet.element(n).label());
-										myHMesh->addElemSet(translateTarget, elemLabels);
+										elemLabels.push_back(elemsInMySet.element(n).label());
 									}
+									myHMesh->addElemSet(translateTarget, elemLabels);
+									std::cout << translateTarget << " with " << n_max <<" elements. ";
+								}
+							}
+						}
+
+						// Part Sets
+						odb_SetRepositoryIT setIterParts(inst.elementSets());
+						for (setIterParts.first(); !setIterParts.isDone() && setIterParts.currentValue().type() == odb_Enum::ELEMENT_SET; setIterParts.next()) {
+							odb_Set set = setIterParts.currentValue();
+							int setSize = set.size();
+							if (std::string(set.name().CStr()) == translateSource) {
+								odb_SequenceString names = set.instanceNames();
+								int numInstances = names.size();
+
+								int i;
+								for (i = 0; i < numInstances; i++)
+								{
+									odb_String name = names.constGet(i);
+
+									const odb_SequenceElement& elemsInMySet = set.elements(name);
+									int n_max = elemsInMySet.size();
+									std::vector<int> elemLabels;
+									for (int n = 0; n < n_max; n++)
+									{
+										elemLabels.push_back(elemsInMySet.element(n).label());
+									}
+									myHMesh->addElemSet(translateTarget, elemLabels);
+									std::cout << translateTarget << " with " << n_max << " elements. ";
 								}
 							}
 						}
@@ -237,6 +289,7 @@ void SimuliaODB::openFile() {
 			}
 
 		}
+		std::cout << std::endl;
 		debugOut << "SimuliaODB::openODBFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		odb.close();//Change datastrc here HMesh should node be a member of odb
 

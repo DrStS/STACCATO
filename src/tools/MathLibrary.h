@@ -340,6 +340,8 @@ namespace MathLibrary {
 
 			mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
 			std::cout << "Matrixtype for PARDISO: " << pardiso_mtype << std::endl;
+			std::cout << "#Threads   for PARDISO: " << mkl_get_max_threads() << std::endl;
+
 			linearSolverTimer01.start();
 			linearSolverTimer02.start();
 			pardiso_phase = 11;

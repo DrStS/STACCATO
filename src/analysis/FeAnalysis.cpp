@@ -102,40 +102,58 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 	// Section Material Assignement
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+	
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
+		int matElCount = 0;
+		// Map for mapping element labels to material
+		std::map<int, std::string> elementLabelToMaterialMap;
 		for (int j = 0; j < iterParts->PART()[iPart].SECTIONS().begin()->SECTION().size(); j++) {
-			Material * elasticMaterial = new Material(std::string(iterParts->PART()[iPart].SECTIONS().begin()->SECTION()[j].MATERIAL()->c_str()), iPart);
-
 			// Find the Corresponding Set
 			std::vector<int> idList = myHMesh->convertElementSetNameToLabels(std::string(iterParts->PART()[iPart].SECTIONS().begin()->SECTION()[j].ELEMENTSET()->c_str()));
+			matElCount += idList.size();
 
 			if (!idList.empty()) {
 				// Assign Elements in idList
-				int lastIndex = 0;
 				for (int iElement = 0; iElement < idList.size(); iElement++)
-				{
-					int elemIndex = myHMesh->convertElementLabelToElementIndex(idList[iElement]);
-					if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
-						allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
-					}
-					else	if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
-						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
-					}
-					else    if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef USE_SIMULIA_UMA_API
-						allElements[elemIndex] = new FeUmaElement(elasticMaterial);
-#endif
-					}
-					int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
-					double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-					allElements[elemIndex]->computeElementMatrix(eleCoords);
-					lastIndex += numNodesPerElement*myHMesh->getDomainDimension();
-				}
+					elementLabelToMaterialMap[idList[iElement]] = std::string(iterParts->PART()[iPart].SECTIONS().begin()->SECTION()[j].MATERIAL()->c_str());
 			}
 			else
-				std::cerr << ">> Error while assigning Material to element: ELEMENTSET " << std::string(iterParts->PART()[iPart].SECTIONS().begin()->SECTION()[j].ELEMENTSET()->c_str()) << " not Found.\n";
+				std::cerr << ">> Error while mapping Material to element: ELEMENTSET " << std::string(iterParts->PART()[iPart].SECTIONS().begin()->SECTION()[j].ELEMENTSET()->c_str()) << " not Found.\n";
+
 		}
+		std::vector<int> allElemsLabel = myHMesh->getElementLabels();
+
+		if (!allElemsLabel.empty() && matElCount == numElements) {
+			// Assign Elements in idList
+			int lastIndex = 0;
+			for (int iElement = 0; iElement < allElemsLabel.size(); iElement++)
+			{
+				Material * elasticMaterial = new Material(elementLabelToMaterialMap[allElemsLabel[iElement]], iPart);
+
+				int elemIndex = myHMesh->convertElementLabelToElementIndex(allElemsLabel[iElement]);
+				if (myHMesh->getElementTypes()[elemIndex] == STACCATO_PlainStress4Node2D) {
+					allElements[elemIndex] = new FePlainStress4NodeElement(elasticMaterial);
+				}
+				else if (myHMesh->getElementTypes()[elemIndex] == STACCATO_Tetrahedron10Node3D) {
+					if (!allElements[elemIndex])
+						allElements[elemIndex] = new FeTetrahedron10NodeElement(elasticMaterial);
+					else
+						std::cerr << ">> Warning: Attempt to assign already assigned element is skipped. ******************" << std::endl;
+				}
+				else if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
+#ifdef USE_SIMULIA_UMA_API
+					allElements[elemIndex] = new FeUmaElement(elasticMaterial);
+#endif
+				}
+				int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
+				double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
+				allElements[elemIndex]->computeElementMatrix(eleCoords);
+				lastIndex += numNodesPerElement * myHMesh->getDomainDimension();
+			}
+		}
+		else
+			std::cerr << ">> Error while assigning Material to element sets: Not all elements are assigned with a defined material." << std::endl;
 	}
 
 	std::cout << ">> Section Material Assignment is Complete." << std::endl;
@@ -149,7 +167,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		iAnalysis != MetaDatabase::getInstance()->xmlHandle->ANALYSIS().end();
 		++iAnalysis)
 	{
-		std::cout << "==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+		std::cout << std::endl <<"==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
 		// --- Testing: Code to Find number of RHS upfront --------------------------------------------------------------
 		std::cout << "- Upfornt Size Calculation -" << std::endl;
 		int numRHS_test = 0;
@@ -285,7 +303,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
 			int lastIndex = 0;
 			int sizeofRHS = 0;
-
+			
+			// Stiffness Matrix
 			if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 				AReal = new MathLibrary::SparseMatrix<double>(totalDoF, true, true);
 			}
@@ -293,6 +312,15 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				AComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(totalDoF, true, true);
 			}
 
+			// User Information
+			if (analysisType == "STATIC") {
+				std::cout << ">> Computing static step ..."<< std::endl;
+			}
+			else if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC") {
+				std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ..." << std::endl;
+			}
+
+			// Assembling Element Stiffness Matrices
 			std::cout << ">> Building Stiffness Matrix...";
 			for (int iElement = 0; iElement < numElements; iElement++)
 			{
@@ -533,10 +561,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			if (exportSparseMatrix) {
 				std::cout << ">> Writing CSR ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					(*AReal).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
+					(*AReal).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"dat");
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
+					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"dat");
 				}
 			}
 			else

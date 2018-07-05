@@ -19,7 +19,7 @@
 */
 #include <string.h>
 #include "VisualizerSetting.h"
-#include "WireFrameSetting.h"
+#include "WireframeSetting.h"
 #include "SignalDataVisualizer.h"
 #include "OutputDatabase.h"
 

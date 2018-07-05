@@ -29,9 +29,11 @@
 #include <vector>
 #include <sstream>
 #include <assert.h>
+#include <cmath>
 #include "AuxiliaryParameters.h"
 #include "Timer.h"
 #include "AuxiliaryFunctions.h"
+#include "Message.h"
 
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1

@@ -4,26 +4,26 @@
         <file>Qt/resources/pan.png</file>
         <file>Qt/resources/rotate.png</file>
         <file>Qt/resources/zoom.png</file>
-				<file>Qt/resources/closeDoc.png</file>
-				<file>Qt/resources/openDoc.png</file>
-				<file>Qt/resources/STACCATO.png</file>
-				<file>Qt/resources/about.png</file>
-				<file>Qt/resources/dataflow.png</file>
-				<file>Qt/resources/add.ico</file>
-				<file>Qt/resources/selectElement.ico</file>
-				<file>Qt/resources/scalarBar.ico</file>
-				<file>Qt/resources/scale.ico</file>
-				<file>Qt/resources/none.ico</file>
-				<file>Qt/resources/2dPlot.ico</file>
-				<file>Qt/resources/cursor.ico</file>
-				<file>Qt/resources/picker.ico</file>
-				<file>Qt/resources/list.ico</file>
-				<file>Qt/resources/animate.ico</file>
-				<file>Qt/resources/play.ico</file>
-				<file>Qt/resources/repeat.ico</file>
-				<file>Qt/resources/stop.ico</file>
-				<file>Qt/resources/delete.ico</file>
-				<file>Qt/resources/xmlFile.ico</file>
-				<file>Qt/resources/setting.ico</file>
+	<file>Qt/resources/closeDoc.png</file>
+	<file>Qt/resources/openDoc.png</file>
+	<file>Qt/resources/STACCATO.png</file>
+	<file>Qt/resources/about.png</file>
+	<file>Qt/resources/dataflow.png</file>
+	<file>Qt/resources/add.ico</file>
+	<file>Qt/resources/selectElement.ico</file>
+	<file>Qt/resources/scalarBar.ico</file>
+	<file>Qt/resources/scale.ico</file>
+	<file>Qt/resources/none.ico</file>
+	<file>Qt/resources/2dPlot.ico</file>
+	<file>Qt/resources/cursor.ico</file>
+	<file>Qt/resources/picker.ico</file>
+	<file>Qt/resources/list.ico</file>
+	<file>Qt/resources/animate.ico</file>
+	<file>Qt/resources/play.ico</file>
+	<file>Qt/resources/repeat.ico</file>
+	<file>Qt/resources/stop.ico</file>
+	<file>Qt/resources/delete.ico</file>
+	<file>Qt/resources/xmlFile.ico</file>
+	<file>Qt/resources/setting.ico</file>
     </qresource>
 </RCC>

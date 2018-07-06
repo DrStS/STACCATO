@@ -1076,11 +1076,12 @@ namespace MathLibrary {
 		* \param[in] type_trail - true_type for Double and false_type for Complex
 		* \param[in] File Name
 		* \author Harikrishnan Sreekumar
+		* \edited Jiho Yang
 		***********/
 		void writeMtxMat(std::true_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			size_t jj_counter;
+			typename std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);
@@ -1095,17 +1096,13 @@ namespace MathLibrary {
 			myfile << "% Generated with STACCCATO" << std::endl;
 			myfile << m << " " << n << " " << values.size() << std::endl;
 
-			for (ii_counter = 0; ii_counter < m; ii_counter++) {
-				for (jj_counter = 0; jj_counter < n; jj_counter++) {
-					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << jj_counter+1 << " " << ii_counter+1 << " " << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
-					}
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {	// Loop through rows
+				for (jj_counter = (*mat)[ii_counter].begin(); jj_counter != (*mat)[ii_counter].end(); jj_counter++){    // Loop through existing column entries for given row
+					// Write column index in as row index, and vice-versa to generate a lower triangular matrix (note we are writing a symmetric matrix)
+					myfile << jj_counter->first + 1 << " " << ii_counter + 1 << " " << jj_counter->second << std::endl;
 				}
-				//myfile << std::endl;
 			}
-
 			myfile << std::endl;
-
 			//myfile.write(bufferStringStream.str().c_str(), bufferStringStream.str().length());
 			myfile.close();
 		}

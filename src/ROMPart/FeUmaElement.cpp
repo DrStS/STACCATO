@@ -42,13 +42,13 @@ FeUmaElement::~FeUmaElement() {
 }
 
 void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
-	char * _fileName = "C:/software/repos/staccato/model/B31_fe_X1.sim";
+	char * _fileName = "C:/software/repos/staccato/model/trussCoupling_X2.sim";
 
 	char * simFile = _fileName;
 	printf("SIM file: %s\n", simFile);
 
 
-#ifdef SIMULIA_API_ON
+#ifdef USE_SIMULIA_UMA_API
 	uma_System system(simFile);
 
 	std::cout << "\n>> Importing SIM to HMesh ..." << std::endl;

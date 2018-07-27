@@ -11,8 +11,7 @@
 // THRUST
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/functional.h>
-#include <thrust/transform.h>
+#include <thrust/reduce.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>
@@ -34,13 +33,12 @@ Validated:
 	1. M_tilde
 	2. LU Decomposition and solver
 
-*/
+TODO
+	1. Cuncurrent kernel execution
 
-/*
-ERROR:
-	1. Assembled matrices A using cuBLAS are giving wrong results
-	----> cuBLAS is doing complex multiplications, not scalar multiplication. We will need to do Zscal first and then sum them. Maybe use thrust instead of cublas?
-
+Possible optimization:
+	1. Cuncurrent kernel execution
+	2. Shared memory for the matrices
 */
 
 int main (int argc, char *argv[]){
@@ -67,10 +65,31 @@ int main (int argc, char *argv[]){
 
 	// Parameters
 	bool isComplex = 1;
-	double freq;
+	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 1000;
+	double freq_max = 10;
 	const double alpha = 4*PI*PI;
+	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
+	one.x = 1;
+	one.y = 0;
+	cuDoubleComplex rhs_val;
+	rhs_val.x = (double)1.0;
+	rhs_val.y = (double)0.0;
+
+	// Time measurements
+	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large;
+	thrust::host_vector<float> vec_time_small(freq_max);
+	thrust::host_vector<float> vec_time_mid(freq_max);
+	thrust::host_vector<float> vec_time_large(freq_max);
+
+	// Library initialisation
+	cublasStatus_t cublasStatus;
+	cublasHandle_t cublasHandle;
+	cublasCreate(&cublasHandle);
+
+	cusolverStatus_t cusolverStatus = CUSOLVER_STATUS_ALLOC_FAILED;
+	cusolverDnHandle_t cusolverHandle;
+	cusolverStatus = cusolverDnCreate(&cusolverHandle);
 
 	// Create matrix host_vectors
 	thrust::host_vector<cuDoubleComplex> K_small;
@@ -87,9 +106,9 @@ int main (int argc, char *argv[]){
 	io::readMtxDense(K_small, filepath_small, filename_K_small, isComplex);
 	io::readMtxDense(M_small, filepath_small, filename_M_small, isComplex);
 	io::readMtxDense(D_small, filepath_small, filename_D_small, isComplex);
-	io::readMtxDense(K_mid, filepath_mid, filename_K_mid, isComplex);
-	io::readMtxDense(M_mid, filepath_mid, filename_M_mid, isComplex);
-	io::readMtxDense(D_mid, filepath_mid, filename_D_mid, isComplex);
+	io::readMtxDense(K_mid,   filepath_mid,   filename_K_mid,   isComplex);
+	io::readMtxDense(M_mid,   filepath_mid,   filename_M_mid,   isComplex);
+	io::readMtxDense(D_mid,   filepath_mid,   filename_D_mid,   isComplex);
 	io::readMtxDense(K_large, filepath_large, filename_K_large, isComplex);
 	io::readMtxDense(M_large, filepath_large, filename_M_large, isComplex);
 	io::readMtxDense(D_large, filepath_large, filename_D_large, isComplex);
@@ -105,18 +124,15 @@ int main (int argc, char *argv[]){
 	M_large.pop_back();
 	D_large.pop_back();
 
+	// Get matrix sizes
 	int size_small = K_small.size();
 	int size_mid   = K_mid.size();
 	int size_large = K_large.size();
-
 	int row_small  = sqrt(size_small);
 	int row_mid    = sqrt(size_mid);
 	int row_large  = sqrt(size_large);
 
 	// Create RHS directly on device
-	cuDoubleComplex rhs_val;
-	rhs_val.x = (double)1.0;
-	rhs_val.y = (double)0.0;
 	thrust::device_vector<cuDoubleComplex> d_rhs_small(row_small, rhs_val);
 	thrust::device_vector<cuDoubleComplex> d_rhs_mid(row_mid, rhs_val);
 	thrust::device_vector<cuDoubleComplex> d_rhs_large(row_large, rhs_val);
@@ -125,7 +141,7 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_rhs_large_buf(row_large, rhs_val);
 
 	// Send matrices to device
-	clock_t matrixCpyTime = clock();
+	matrixCpyTime = clock();
 	thrust::device_vector<cuDoubleComplex> d_K_small = K_small;
 	thrust::device_vector<cuDoubleComplex> d_M_small = M_small;
 	thrust::device_vector<cuDoubleComplex> d_D_small = D_small;
@@ -181,13 +197,8 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_sol_mid(row_mid);
 	thrust::device_vector<cuDoubleComplex> d_sol_large(row_large);
 
-	// Initialise cuBLAS
-	cublasStatus_t cublasStatus;
-	cublasHandle_t cublasHandle;
-	cublasCreate(&cublasHandle);
-
 	// M = 4*pi^2*M (Single computation suffices)
-	clock_t time = clock();
+	time = clock();
 	cublasStatus = cublasZdscal(cublasHandle, size_small, &alpha, d_ptr_M_small, 1);
 	time = clock() - time;
 	std::cout << ">> M_tilde (small) computed with cuBLAS" << std::endl;
@@ -212,17 +223,6 @@ int main (int argc, char *argv[]){
 		std::cout << ">>>>>> ERROR: cuBLAS failed!" << std::endl;
 	}
 
-	// Initialise cuSolver
-	cusolverStatus_t cusolverStatus = CUSOLVER_STATUS_ALLOC_FAILED;
-	cusolverDnHandle_t cusolverHandle;
-	cusolverStatus = cusolverDnCreate(&cusolverHandle);
-	if (cusolverStatus == CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver created" << std::endl;
-
-	// Dummy scaling factor for global matrix assembly
-	cuDoubleComplex one;
-	one.x = 1;
-	one.y = 0;
-
 	// LU decomposition prep
 	thrust::host_vector<int> solverInfo(1);
 	thrust::device_vector<int> d_solverInfo(1);
@@ -239,19 +239,20 @@ int main (int argc, char *argv[]){
 	int *d_ptr_pivot_mid   = thrust::raw_pointer_cast(d_pivot_mid.data());
 	int *d_ptr_pivot_large = thrust::raw_pointer_cast(d_pivot_large.data());
 
-	clock_t time_loop = clock();
+	int i = 0;
+	time_loop = clock();
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-		clock_t time_it = clock();
+		time_it = clock();
 
 		// Compute scaling
 		freq = (double)it;
-		double freq_square = -(freq*freq);
+		freq_square = -(freq*freq);
 
 		/*------------
 		Small matrices
 		------------*/
-		clock_t time_small = clock();
+		time_small = clock();
 		// Assemble global matrix ( A = K - f^2*M_tilde )
 		d_A_small = d_M_small;
 		// Scale A with -f^2
@@ -294,7 +295,7 @@ int main (int argc, char *argv[]){
 		/*------------
 		Mid matrices
 		------------*/
-		clock_t time_mid = clock();
+		time_mid = clock();
 		// Assemble global matrix
 		d_A_mid   = d_M_mid;
 		cublasStatus = cublasZdscal(cublasHandle, size_mid, &freq_square, d_ptr_A_mid, 1);
@@ -335,7 +336,7 @@ int main (int argc, char *argv[]){
 		/*------------
 		Large matrices
 		------------*/
-		clock_t time_large = clock();
+		time_large = clock();
 		// Assemble global matrix
 		d_A_large = d_M_large;
 		cublasStatus = cublasZdscal(cublasHandle, size_large, &freq_square, d_ptr_A_large, 1);
@@ -386,11 +387,27 @@ int main (int argc, char *argv[]){
 		// Output messages
 		time_it = clock() - time_it;
 		//std::cout << ">> Iteration finished for frequency = " << freq << " || Time taken = " << ((float)time_it)/CLOCKS_PER_SEC << std::endl;
-		std::cout << ">>>> Time taken for: Small = " << ((float)time_small)/CLOCKS_PER_SEC << " || " << "Mid = " << ((float)time_mid)/CLOCKS_PER_SEC << " || " << "Large = " << ((float)time_large)/CLOCKS_PER_SEC << std::endl;
+		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << ((float)time_small)/CLOCKS_PER_SEC << " || " << "Mid = " << ((float)time_mid)/CLOCKS_PER_SEC << " || " << "Large = " << ((float)time_large)/CLOCKS_PER_SEC << std::endl;
+
+		// Accumulate time measurements
+		vec_time_small[i] = ((float)time_small)/CLOCKS_PER_SEC;
+		vec_time_mid[i]   = ((float)time_mid)/CLOCKS_PER_SEC;
+		vec_time_large[i] = ((float)time_large)/CLOCKS_PER_SEC;
+		i++;
 	}
 	time_loop = clock() - time_loop;
-	std::cout << ">>>> Frequency loop finished" << std::endl;
-	std::cout << ">>>>>> Time taken = " << ((float)time_loop)/CLOCKS_PER_SEC << std::endl;
+
+	// Compute average time per matrices
+	float time_small_avg = thrust::reduce(vec_time_small.begin(), vec_time_small.end(), (float)0, thrust::plus<float>());
+	float time_mid_avg   = thrust::reduce(vec_time_mid.begin(),   vec_time_mid.end(),   (float)0, thrust::plus<float>());
+	float time_large_avg = thrust::reduce(vec_time_large.begin(), vec_time_large.end(), (float)0, thrust::plus<float>());
+	time_small_avg /= freq_max;
+	time_mid_avg   /= freq_max;
+	time_large_avg /= freq_max;
+
+	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
+	std::cout << ">>>>>> Time taken (s) = " << ((float)time_loop)/CLOCKS_PER_SEC << "\n" << std::endl;
+	std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
 
 	// Write out solution vectors
 	io::writeSolVecComplex(sol_small, filepath_sol, filename_sol_small);

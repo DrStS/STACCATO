@@ -132,6 +132,45 @@ namespace MathLibrary {
 #endif
 	}
 
+	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall) {
+
+#ifdef USE_INTEL_MKL_BLAS
+		CBLAS_TRANSPOSE transposeA;
+		int ka, nb;
+		if (!_transposeA) {
+			transposeA = CblasNoTrans;
+			ka = _k;
+			//	nb = _n;
+		}
+		else {
+			transposeA = CblasTrans;
+			ka = _m;
+			//	nb = _n;
+		}
+		STACCATOComplexDouble alpha;
+		if (!_multByScalar) {
+			alpha.real = 1.0;
+			alpha.imag = 1.0;
+		}
+		else {
+			alpha = _alpha;
+		}
+		STACCATOComplexDouble beta;
+		if (!_addPrevious) {
+			beta.real = 0.0;
+			beta.imag = 0.0;
+		}
+		else {
+			beta.real = 1.0;
+			beta.imag = 1.0;
+		}
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		cblas_zgemm(CblasRowMajor, transposeA, CblasNoTrans, _m, _n, _k, &alpha, _A, ka, _B, _n, &beta, _C, _n);
+
+#endif
+	}
+
+	
 	void computeDenseMatrixVectorMultiplication(int _m, int _n, const double *_A, const double *_b, double *_c){
 		assert(_A != NULL);
 		assert(_b != NULL);

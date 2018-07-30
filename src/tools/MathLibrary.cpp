@@ -28,7 +28,7 @@ namespace MathLibrary {
 
 	double computeDenseDotProduct(const double *vec1, const double *vec2, const int elements) {
 #ifdef USE_INTEL_MKL
-		return 0;// cblas_ddot(elements, vec1, 1, vec2, 1);
+		return cblas_ddot(elements, vec1, 1, vec2, 1);
 #endif
 #ifndef USE_INTEL_MKL
 		return 0;
@@ -175,5 +175,53 @@ namespace MathLibrary {
 	double det3x3(std::vector<double>& _A) {
 		return _A[0] * _A[4] * _A[8] + _A[1] * _A[5] * _A[6] + _A[2] * _A[3] * _A[7]
 			- _A[0] * _A[5] * _A[7] - _A[1] * _A[3] * _A[8] - _A[2] * _A[4] * _A[6];
+	}
+
+	void computeDenseMatrixQRDecomposition(int _m, int _n, double *_A) {
+#ifdef USE_INTEL_MKL
+		std::vector<double> tau;
+		tau.resize(_m < _n ? _m : _n);
+		// QR Factorization
+		LAPACKE_dgeqrf(CblasRowMajor, _m, _n, _A, _n, &tau[0]);
+		// Generation of Orthogonal Q
+		LAPACKE_dorgqr(CblasRowMajor, _m, _n, tau.size(), _A, _n, &tau[0]);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+	void computeSparseMatrixAddition(MathLibrary::SparseMatrix<MKL_Complex16>* _mat1, MathLibrary::SparseMatrix<MKL_Complex16>* _mat2) {
+#ifdef USE_INTEL_MKL
+		const sparse_matrix_t* sparsemat1 = _mat1->createMKLSparseCSR();
+		const sparse_matrix_t* sparsemat2 = _mat2->createMKLSparseCSR();
+
+		MKL_Complex16 alpha;
+		alpha.real = 1;
+		alpha.imag = 0;
+		sparse_matrix_t* sparseSum;
+		mkl_sparse_z_add(SPARSE_OPERATION_NON_TRANSPOSE, *sparsemat1, alpha, *sparsemat2, sparseSum);
+		/*
+		// Read Matrix Data and Print it
+			int row, col;
+			sparse_index_base_t indextype;
+			int * bi, *ei;
+			int * j;
+			MKL_Complex16* rv;
+			sparse_status_t status = mkl_sparse_z_export_csr(csrA, &indextype, &row, &col, &bi, &ei, &j, &rv);
+			if (status == SPARSE_STATUS_SUCCESS)
+			{
+				printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
+				for (int r = 0; r<row; ++r)
+				{
+					for (int idx = bi[r]; idx<ei[r]; ++idx)
+					{
+						printf("<%d, %d> \t %f +1i*%f\n", r, j[idx], rv[idx].real, rv[idx].imag);
+					}
+				}
+			}*/
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
 	}
 } /* namespace Math */

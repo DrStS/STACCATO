@@ -44,6 +44,7 @@
 
 #include <OutputDatabase.h>
 #include <AuxiliaryFunctions.h>
+#include <iomanip>
 
 using namespace std::complex_literals;
 
@@ -72,8 +73,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	
 	/* -- Exporting ------------- */
 	bool exportSparseMatrix = false;
-	bool exportRHS = false;
-	bool exportSolution = false;
+	bool exportRHS = true;
+	bool exportSolution = true;
 	/* -------------------------- */
 	
 	// Build DataStructure
@@ -94,6 +95,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 	std::vector<FeElement*> allElements(numElements);
+	std::vector<FeUmaElement*> allUMAElements(numElements);
 
 	// Build XML NodeSets and ElementSets
 	MetaDatabase::getInstance()->buildXML(*myHMesh);
@@ -124,7 +126,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		}
 		std::vector<int> allElemsLabel = myHMesh->getElementLabels();
 
-		if (!allElemsLabel.empty() && matElCount == numElements) {
+		if ((!allElemsLabel.empty() && matElCount == numElements)) {
 			// Assign Elements in idList
 			int lastIndex = 0;
 			for (int iElement = 0; iElement < allElemsLabel.size(); iElement++)
@@ -143,17 +145,20 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}
 				else if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
 #ifdef USE_SIMULIA_UMA_API
-					allElements[elemIndex] = new FeUmaElement(elasticMaterial);
+					allUMAElements[elemIndex] = new FeUmaElement(elasticMaterial);
 #endif
 				}
 				int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
 				double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-				allElements[elemIndex]->computeElementMatrix(eleCoords);
+				if (myHMesh->isSIM)
+					allUMAElements[elemIndex]->computeElementMatrix(eleCoords);
+				else
+					allElements[elemIndex]->computeElementMatrix(eleCoords);
 				lastIndex += numNodesPerElement * myHMesh->getDomainDimension();
 			}
 		}
 		else
-			std::cerr << ">> Error while assigning Material to element sets: Not all elements are assigned with a defined material." << std::endl;
+			std::cerr << ">> *Ignore if UMA* Error while assigning Material to element sets: Not all elements are assigned with a defined material." << std::endl;
 	}
 
 	std::cout << ">> Section Material Assignment is Complete." << std::endl;
@@ -327,32 +332,26 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				int numDoFsPerElement = myHMesh->getNumDoFsPerElement()[iElement];
 				int*  eleDoFs = &myHMesh->getElementDoFListRestricted()[lastIndex];
 				lastIndex += numDoFsPerElement;
-				double omega = 2 * M_PI*freq[iFreqCounter];
-				//Assembly routine symmetric stiffness
-				for (int i = 0; i < numDoFsPerElement; i++) {
-					if (eleDoFs[i] != -1) {
-						for (int j = 0; j < numDoFsPerElement; j++) {
-							if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
-								//K(1+eta*i)
-								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-									(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-								}
-								else if (analysisType == "STEADYSTATE_DYNAMIC") {
-									(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-									(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
-								}
-							}
-						}
-					}
-				}
-				//K - omega*omega*M
-				//Assembly routine symmetric mass
-				if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC")
+				double omega = 2.0 * M_PI*freq[iFreqCounter];
+
+				double omegaSquare = omega * omega;
+
+				if (!myHMesh->isSIM) {
+					//Assembly routine symmetric stiffness
 					for (int i = 0; i < numDoFsPerElement; i++) {
 						if (eleDoFs[i] != -1) {
 							for (int j = 0; j < numDoFsPerElement; j++) {
 								if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
-									//K(1+eta*i) - omega*omega*M
+									//K(1+eta*i)
+									if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+										(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+									}
+									else if (analysisType == "STEADYSTATE_DYNAMIC") {
+										(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+										(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
+
+									}
+
 									if (analysisType == "STEADYSTATE_DYNAMIC_REAL") {
 										(*AReal)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
 									}
@@ -363,9 +362,56 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 							}
 						}
 					}
+				}
+				else {
+					//Assembly routine symmetric stiffness
+					int num_SparseK_row = allUMAElements[iElement]->myK_row.size();
+					int num_SparseK_col = allUMAElements[iElement]->myK_col.size();
+					int num_SparseM_row = allUMAElements[iElement]->myM_row.size();
+					int num_SparseM_col = allUMAElements[iElement]->myM_col.size();
+
+					std::cout << ">> \nSparse Info: " << std::endl;
+					std::cout << "Stiffness : row " << num_SparseK_row << " col: " << num_SparseK_col << std::endl;
+					std::cout << "     Mass : row " << num_SparseM_row << " col: " << num_SparseM_col << std::endl;
+
+					std::vector<int> internalDOFs;
+					for (std::map<int, std::vector<int>>::iterator it = allUMAElements[iElement]->nodeToGlobalMap.begin(); it != allUMAElements[iElement]->nodeToGlobalMap.end(); ++it) {
+						if(it->first>= 1000000000)
+							for (int j = 0; j < it->second.size(); j++)
+								internalDOFs.push_back(it->second[j]);
+					}
+
+					for (int i = 0; i < num_SparseK_row; i++) {
+						if (analysisType == "STEADYSTATE_DYNAMIC") {
+							(*AComplex)(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]).real = allUMAElements[iElement]->getSparseStiffnessMatrix()(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]);
+						}
+					}
+					//K - omega*omega*M
+					//Assembly routine symmetric mass
+					if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC")
+						for (int i = 0; i < num_SparseM_row; i++) {
+							if (analysisType == "STEADYSTATE_DYNAMIC") {
+								(*AComplex)(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i]).real -= allUMAElements[iElement]->getSparseMassMatrix()(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i])*omegaSquare;
+							}
+						}
+
+					
+					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+					std::cout << "clearing...\n";
+					delete allUMAElements[iElement]->mySparseKReal;
+					delete allUMAElements[iElement]->mySparseMReal;
+					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+					allUMAElements[iElement]->myK_row.clear();
+					allUMAElements[iElement]->myK_col.clear();
+					allUMAElements[iElement]->myM_row.clear();
+					allUMAElements[iElement]->myM_col.clear();
+					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+				}
+				
 			}
 
 			std::cout << " Finished." << std::endl;
+			//(*AComplex).printSparseMatrix();
 			std::cout << ">> Building RHS Matrix for Neumann...\n";
 			//Add cload rhs contribution 
 			anaysisTimer02.start();
@@ -624,10 +670,10 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			if (exportSolution) {
 				std::cout << ">> Writing Solution ...";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					AuxiliaryFunctions::writeDoubleVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solReal);
+					AuxiliaryFunctions::writeDoubleVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution_F" + std::to_string(freq[iFreqCounter]) + ".dat", solReal);
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution.dat", solComplex);
+					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_Solution_F" + std::to_string(freq[iFreqCounter]) + ".dat", solComplex);
 				}
 			}
 			else

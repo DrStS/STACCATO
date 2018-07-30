@@ -40,70 +40,6 @@
 
 #include "IP_STACCATO_XML.hxx"
 
-// TRANSLATETO
-// 
-
-const TRANSLATETO::Source_optional& TRANSLATETO::
-Source () const
-{
-  return this->Source_;
-}
-
-TRANSLATETO::Source_optional& TRANSLATETO::
-Source ()
-{
-  return this->Source_;
-}
-
-void TRANSLATETO::
-Source (const Source_type& x)
-{
-  this->Source_.set (x);
-}
-
-void TRANSLATETO::
-Source (const Source_optional& x)
-{
-  this->Source_ = x;
-}
-
-void TRANSLATETO::
-Source (::std::auto_ptr< Source_type > x)
-{
-  this->Source_.set (x);
-}
-
-const TRANSLATETO::Target_optional& TRANSLATETO::
-Target () const
-{
-  return this->Target_;
-}
-
-TRANSLATETO::Target_optional& TRANSLATETO::
-Target ()
-{
-  return this->Target_;
-}
-
-void TRANSLATETO::
-Target (const Target_type& x)
-{
-  this->Target_.set (x);
-}
-
-void TRANSLATETO::
-Target (const Target_optional& x)
-{
-  this->Target_ = x;
-}
-
-void TRANSLATETO::
-Target (::std::auto_ptr< Target_type > x)
-{
-  this->Target_.set (x);
-}
-
-
 // NODESET
 // 
 
@@ -165,6 +101,70 @@ void NODESET::
 Name (::std::auto_ptr< Name_type > x)
 {
   this->Name_.set (x);
+}
+
+
+// TRANSLATETO
+// 
+
+const TRANSLATETO::Source_optional& TRANSLATETO::
+Source () const
+{
+  return this->Source_;
+}
+
+TRANSLATETO::Source_optional& TRANSLATETO::
+Source ()
+{
+  return this->Source_;
+}
+
+void TRANSLATETO::
+Source (const Source_type& x)
+{
+  this->Source_.set (x);
+}
+
+void TRANSLATETO::
+Source (const Source_optional& x)
+{
+  this->Source_ = x;
+}
+
+void TRANSLATETO::
+Source (::std::auto_ptr< Source_type > x)
+{
+  this->Source_.set (x);
+}
+
+const TRANSLATETO::Target_optional& TRANSLATETO::
+Target () const
+{
+  return this->Target_;
+}
+
+TRANSLATETO::Target_optional& TRANSLATETO::
+Target ()
+{
+  return this->Target_;
+}
+
+void TRANSLATETO::
+Target (const Target_type& x)
+{
+  this->Target_.set (x);
+}
+
+void TRANSLATETO::
+Target (const Target_optional& x)
+{
+  this->Target_ = x;
+}
+
+void TRANSLATETO::
+Target (::std::auto_ptr< Target_type > x)
+{
+  this->Target_.set (x);
 }
 
 
@@ -561,24 +561,6 @@ Z (::std::auto_ptr< Z_type > x)
 // STACCATO_XML
 // 
 
-const STACCATO_XML::TRANSLATETO_sequence& STACCATO_XML::
-TRANSLATETO () const
-{
-  return this->TRANSLATETO_;
-}
-
-STACCATO_XML::TRANSLATETO_sequence& STACCATO_XML::
-TRANSLATETO ()
-{
-  return this->TRANSLATETO_;
-}
-
-void STACCATO_XML::
-TRANSLATETO (const TRANSLATETO_sequence& s)
-{
-  this->TRANSLATETO_ = s;
-}
-
 const STACCATO_XML::NODESET_sequence& STACCATO_XML::
 NODESET () const
 {
@@ -595,6 +577,24 @@ void STACCATO_XML::
 NODESET (const NODESET_sequence& s)
 {
   this->NODESET_ = s;
+}
+
+const STACCATO_XML::TRANSLATETO_sequence& STACCATO_XML::
+TRANSLATETO () const
+{
+  return this->TRANSLATETO_;
+}
+
+STACCATO_XML::TRANSLATETO_sequence& STACCATO_XML::
+TRANSLATETO ()
+{
+  return this->TRANSLATETO_;
+}
+
+void STACCATO_XML::
+TRANSLATETO (const TRANSLATETO_sequence& s)
+{
+  this->TRANSLATETO_ = s;
 }
 
 const STACCATO_XML::LOAD_sequence& STACCATO_XML::
@@ -993,6 +993,24 @@ LOADCASES (const LOADCASES_sequence& s)
 // PART
 // 
 
+const PART::ROMDATA_sequence& PART::
+ROMDATA () const
+{
+  return this->ROMDATA_;
+}
+
+PART::ROMDATA_sequence& PART::
+ROMDATA ()
+{
+  return this->ROMDATA_;
+}
+
+void PART::
+ROMDATA (const ROMDATA_sequence& s)
+{
+  this->ROMDATA_ = s;
+}
+
 const PART::FILEIMPORT_sequence& PART::
 FILEIMPORT () const
 {
@@ -1357,6 +1375,82 @@ void LOADCASES::
 LOADCASE (const LOADCASE_sequence& s)
 {
   this->LOADCASE_ = s;
+}
+
+
+// ROMDATA
+// 
+
+const ROMDATA::EXP_POINTS_sequence& ROMDATA::
+EXP_POINTS () const
+{
+  return this->EXP_POINTS_;
+}
+
+ROMDATA::EXP_POINTS_sequence& ROMDATA::
+EXP_POINTS ()
+{
+  return this->EXP_POINTS_;
+}
+
+void ROMDATA::
+EXP_POINTS (const EXP_POINTS_sequence& s)
+{
+  this->EXP_POINTS_ = s;
+}
+
+const ROMDATA::KRYLOV_ORDER_sequence& ROMDATA::
+KRYLOV_ORDER () const
+{
+  return this->KRYLOV_ORDER_;
+}
+
+ROMDATA::KRYLOV_ORDER_sequence& ROMDATA::
+KRYLOV_ORDER ()
+{
+  return this->KRYLOV_ORDER_;
+}
+
+void ROMDATA::
+KRYLOV_ORDER (const KRYLOV_ORDER_sequence& s)
+{
+  this->KRYLOV_ORDER_ = s;
+}
+
+const ROMDATA::INPUTS_sequence& ROMDATA::
+INPUTS () const
+{
+  return this->INPUTS_;
+}
+
+ROMDATA::INPUTS_sequence& ROMDATA::
+INPUTS ()
+{
+  return this->INPUTS_;
+}
+
+void ROMDATA::
+INPUTS (const INPUTS_sequence& s)
+{
+  this->INPUTS_ = s;
+}
+
+const ROMDATA::OUTPUTS_sequence& ROMDATA::
+OUTPUTS () const
+{
+  return this->OUTPUTS_;
+}
+
+ROMDATA::OUTPUTS_sequence& ROMDATA::
+OUTPUTS ()
+{
+  return this->OUTPUTS_;
+}
+
+void ROMDATA::
+OUTPUTS (const OUTPUTS_sequence& s)
+{
+  this->OUTPUTS_ = s;
 }
 
 
@@ -1803,6 +1897,160 @@ void LOADCASE::
 NamePrefix (::std::auto_ptr< NamePrefix_type > x)
 {
   this->NamePrefix_.set (x);
+}
+
+
+// EXP_POINTS
+// 
+
+const EXP_POINTS::Type_optional& EXP_POINTS::
+Type () const
+{
+  return this->Type_;
+}
+
+EXP_POINTS::Type_optional& EXP_POINTS::
+Type ()
+{
+  return this->Type_;
+}
+
+void EXP_POINTS::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void EXP_POINTS::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void EXP_POINTS::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// KRYLOV_ORDER
+// 
+
+const KRYLOV_ORDER::Type_optional& KRYLOV_ORDER::
+Type () const
+{
+  return this->Type_;
+}
+
+KRYLOV_ORDER::Type_optional& KRYLOV_ORDER::
+Type ()
+{
+  return this->Type_;
+}
+
+void KRYLOV_ORDER::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void KRYLOV_ORDER::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void KRYLOV_ORDER::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// INPUTS
+// 
+
+const INPUTS::NODESET_sequence& INPUTS::
+NODESET () const
+{
+  return this->NODESET_;
+}
+
+INPUTS::NODESET_sequence& INPUTS::
+NODESET ()
+{
+  return this->NODESET_;
+}
+
+void INPUTS::
+NODESET (const NODESET_sequence& s)
+{
+  this->NODESET_ = s;
+}
+
+const INPUTS::Type_optional& INPUTS::
+Type () const
+{
+  return this->Type_;
+}
+
+INPUTS::Type_optional& INPUTS::
+Type ()
+{
+  return this->Type_;
+}
+
+void INPUTS::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void INPUTS::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void INPUTS::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// OUTPUTS
+// 
+
+const OUTPUTS::Type_optional& OUTPUTS::
+Type () const
+{
+  return this->Type_;
+}
+
+OUTPUTS::Type_optional& OUTPUTS::
+Type ()
+{
+  return this->Type_;
+}
+
+void OUTPUTS::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void OUTPUTS::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void OUTPUTS::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
 }
 
 
@@ -2400,91 +2648,6 @@ TRANSLATETO (const TRANSLATETO_sequence& s)
 
 #include <xsd/cxx/xml/dom/parsing-source.hxx>
 
-// TRANSLATETO
-//
-
-TRANSLATETO::
-TRANSLATETO ()
-: ::xml_schema::type (),
-  Source_ (this),
-  Target_ (this)
-{
-}
-
-TRANSLATETO::
-TRANSLATETO (const TRANSLATETO& x,
-             ::xml_schema::flags f,
-             ::xml_schema::container* c)
-: ::xml_schema::type (x, f, c),
-  Source_ (x.Source_, f, this),
-  Target_ (x.Target_, f, this)
-{
-}
-
-TRANSLATETO::
-TRANSLATETO (const ::xercesc::DOMElement& e,
-             ::xml_schema::flags f,
-             ::xml_schema::container* c)
-: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
-  Source_ (this),
-  Target_ (this)
-{
-  if ((f & ::xml_schema::flags::base) == 0)
-  {
-    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
-    this->parse (p, f);
-  }
-}
-
-void TRANSLATETO::
-parse (::xsd::cxx::xml::dom::parser< char >& p,
-       ::xml_schema::flags f)
-{
-  while (p.more_attributes ())
-  {
-    const ::xercesc::DOMAttr& i (p.next_attribute ());
-    const ::xsd::cxx::xml::qualified_name< char > n (
-      ::xsd::cxx::xml::dom::name< char > (i));
-
-    if (n.name () == "Source" && n.namespace_ ().empty ())
-    {
-      this->Source_.set (Source_traits::create (i, f, this));
-      continue;
-    }
-
-    if (n.name () == "Target" && n.namespace_ ().empty ())
-    {
-      this->Target_.set (Target_traits::create (i, f, this));
-      continue;
-    }
-  }
-}
-
-TRANSLATETO* TRANSLATETO::
-_clone (::xml_schema::flags f,
-        ::xml_schema::container* c) const
-{
-  return new class TRANSLATETO (*this, f, c);
-}
-
-TRANSLATETO& TRANSLATETO::
-operator= (const TRANSLATETO& x)
-{
-  if (this != &x)
-  {
-    static_cast< ::xml_schema::type& > (*this) = x;
-    this->Source_ = x.Source_;
-    this->Target_ = x.Target_;
-  }
-
-  return *this;
-}
-
-TRANSLATETO::
-~TRANSLATETO ()
-{
-}
-
 // NODESET
 //
 
@@ -2584,6 +2747,91 @@ operator= (const NODESET& x)
 
 NODESET::
 ~NODESET ()
+{
+}
+
+// TRANSLATETO
+//
+
+TRANSLATETO::
+TRANSLATETO ()
+: ::xml_schema::type (),
+  Source_ (this),
+  Target_ (this)
+{
+}
+
+TRANSLATETO::
+TRANSLATETO (const TRANSLATETO& x,
+             ::xml_schema::flags f,
+             ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Source_ (x.Source_, f, this),
+  Target_ (x.Target_, f, this)
+{
+}
+
+TRANSLATETO::
+TRANSLATETO (const ::xercesc::DOMElement& e,
+             ::xml_schema::flags f,
+             ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Source_ (this),
+  Target_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void TRANSLATETO::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Source" && n.namespace_ ().empty ())
+    {
+      this->Source_.set (Source_traits::create (i, f, this));
+      continue;
+    }
+
+    if (n.name () == "Target" && n.namespace_ ().empty ())
+    {
+      this->Target_.set (Target_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+TRANSLATETO* TRANSLATETO::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class TRANSLATETO (*this, f, c);
+}
+
+TRANSLATETO& TRANSLATETO::
+operator= (const TRANSLATETO& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Source_ = x.Source_;
+    this->Target_ = x.Target_;
+  }
+
+  return *this;
+}
+
+TRANSLATETO::
+~TRANSLATETO ()
 {
 }
 
@@ -3029,8 +3277,8 @@ IMAGINARY::
 STACCATO_XML::
 STACCATO_XML ()
 : ::xml_schema::type (),
-  TRANSLATETO_ (this),
   NODESET_ (this),
+  TRANSLATETO_ (this),
   LOAD_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
@@ -3044,8 +3292,8 @@ STACCATO_XML (const STACCATO_XML& x,
               ::xml_schema::flags f,
               ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
-  TRANSLATETO_ (x.TRANSLATETO_, f, this),
   NODESET_ (x.NODESET_, f, this),
+  TRANSLATETO_ (x.TRANSLATETO_, f, this),
   LOAD_ (x.LOAD_, f, this),
   REAL_ (x.REAL_, f, this),
   IMAGINARY_ (x.IMAGINARY_, f, this),
@@ -3059,8 +3307,8 @@ STACCATO_XML (const ::xercesc::DOMElement& e,
               ::xml_schema::flags f,
               ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
-  TRANSLATETO_ (this),
   NODESET_ (this),
+  TRANSLATETO_ (this),
   LOAD_ (this),
   REAL_ (this),
   IMAGINARY_ (this),
@@ -3084,17 +3332,6 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
     const ::xsd::cxx::xml::qualified_name< char > n (
       ::xsd::cxx::xml::dom::name< char > (i));
 
-    // TRANSLATETO
-    //
-    if (n.name () == "TRANSLATETO" && n.namespace_ ().empty ())
-    {
-      ::std::auto_ptr< TRANSLATETO_type > r (
-        TRANSLATETO_traits::create (i, f, this));
-
-      this->TRANSLATETO_.push_back (r);
-      continue;
-    }
-
     // NODESET
     //
     if (n.name () == "NODESET" && n.namespace_ ().empty ())
@@ -3103,6 +3340,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
         NODESET_traits::create (i, f, this));
 
       this->NODESET_.push_back (r);
+      continue;
+    }
+
+    // TRANSLATETO
+    //
+    if (n.name () == "TRANSLATETO" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< TRANSLATETO_type > r (
+        TRANSLATETO_traits::create (i, f, this));
+
+      this->TRANSLATETO_.push_back (r);
       continue;
     }
 
@@ -3178,8 +3426,8 @@ operator= (const STACCATO_XML& x)
   if (this != &x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
-    this->TRANSLATETO_ = x.TRANSLATETO_;
     this->NODESET_ = x.NODESET_;
+    this->TRANSLATETO_ = x.TRANSLATETO_;
     this->LOAD_ = x.LOAD_;
     this->REAL_ = x.REAL_;
     this->IMAGINARY_ = x.IMAGINARY_;
@@ -3702,6 +3950,7 @@ ANALYSIS::
 PART::
 PART ()
 : ::xml_schema::type (),
+  ROMDATA_ (this),
   FILEIMPORT_ (this),
   MATERIALS_ (this),
   SECTIONS_ (this),
@@ -3718,6 +3967,7 @@ PART (const PART& x,
       ::xml_schema::flags f,
       ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
+  ROMDATA_ (x.ROMDATA_, f, this),
   FILEIMPORT_ (x.FILEIMPORT_, f, this),
   MATERIALS_ (x.MATERIALS_, f, this),
   SECTIONS_ (x.SECTIONS_, f, this),
@@ -3734,6 +3984,7 @@ PART (const ::xercesc::DOMElement& e,
       ::xml_schema::flags f,
       ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  ROMDATA_ (this),
   FILEIMPORT_ (this),
   MATERIALS_ (this),
   SECTIONS_ (this),
@@ -3759,6 +4010,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
     const ::xercesc::DOMElement& i (p.cur_element ());
     const ::xsd::cxx::xml::qualified_name< char > n (
       ::xsd::cxx::xml::dom::name< char > (i));
+
+    // ROMDATA
+    //
+    if (n.name () == "ROMDATA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< ROMDATA_type > r (
+        ROMDATA_traits::create (i, f, this));
+
+      this->ROMDATA_.push_back (r);
+      continue;
+    }
 
     // FILEIMPORT
     //
@@ -3862,6 +4124,7 @@ operator= (const PART& x)
   if (this != &x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
+    this->ROMDATA_ = x.ROMDATA_;
     this->FILEIMPORT_ = x.FILEIMPORT_;
     this->MATERIALS_ = x.MATERIALS_;
     this->SECTIONS_ = x.SECTIONS_;
@@ -4196,6 +4459,133 @@ operator= (const LOADCASES& x)
 
 LOADCASES::
 ~LOADCASES ()
+{
+}
+
+// ROMDATA
+//
+
+ROMDATA::
+ROMDATA ()
+: ::xml_schema::type (),
+  EXP_POINTS_ (this),
+  KRYLOV_ORDER_ (this),
+  INPUTS_ (this),
+  OUTPUTS_ (this)
+{
+}
+
+ROMDATA::
+ROMDATA (const ROMDATA& x,
+         ::xml_schema::flags f,
+         ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  EXP_POINTS_ (x.EXP_POINTS_, f, this),
+  KRYLOV_ORDER_ (x.KRYLOV_ORDER_, f, this),
+  INPUTS_ (x.INPUTS_, f, this),
+  OUTPUTS_ (x.OUTPUTS_, f, this)
+{
+}
+
+ROMDATA::
+ROMDATA (const ::xercesc::DOMElement& e,
+         ::xml_schema::flags f,
+         ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  EXP_POINTS_ (this),
+  KRYLOV_ORDER_ (this),
+  INPUTS_ (this),
+  OUTPUTS_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, false);
+    this->parse (p, f);
+  }
+}
+
+void ROMDATA::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // EXP_POINTS
+    //
+    if (n.name () == "EXP_POINTS" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< EXP_POINTS_type > r (
+        EXP_POINTS_traits::create (i, f, this));
+
+      this->EXP_POINTS_.push_back (r);
+      continue;
+    }
+
+    // KRYLOV_ORDER
+    //
+    if (n.name () == "KRYLOV_ORDER" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< KRYLOV_ORDER_type > r (
+        KRYLOV_ORDER_traits::create (i, f, this));
+
+      this->KRYLOV_ORDER_.push_back (r);
+      continue;
+    }
+
+    // INPUTS
+    //
+    if (n.name () == "INPUTS" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< INPUTS_type > r (
+        INPUTS_traits::create (i, f, this));
+
+      this->INPUTS_.push_back (r);
+      continue;
+    }
+
+    // OUTPUTS
+    //
+    if (n.name () == "OUTPUTS" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< OUTPUTS_type > r (
+        OUTPUTS_traits::create (i, f, this));
+
+      this->OUTPUTS_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+}
+
+ROMDATA* ROMDATA::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class ROMDATA (*this, f, c);
+}
+
+ROMDATA& ROMDATA::
+operator= (const ROMDATA& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->EXP_POINTS_ = x.EXP_POINTS_;
+    this->KRYLOV_ORDER_ = x.KRYLOV_ORDER_;
+    this->INPUTS_ = x.INPUTS_;
+    this->OUTPUTS_ = x.OUTPUTS_;
+  }
+
+  return *this;
+}
+
+ROMDATA::
+~ROMDATA ()
 {
 }
 
@@ -4986,6 +5376,372 @@ operator= (const LOADCASE& x)
 
 LOADCASE::
 ~LOADCASE ()
+{
+}
+
+// EXP_POINTS
+//
+
+EXP_POINTS::
+EXP_POINTS ()
+: ::xml_schema::string (),
+  Type_ (this)
+{
+}
+
+EXP_POINTS::
+EXP_POINTS (const char* _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+EXP_POINTS::
+EXP_POINTS (const ::std::string& _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+EXP_POINTS::
+EXP_POINTS (const ::xml_schema::string& _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+EXP_POINTS::
+EXP_POINTS (const EXP_POINTS& x,
+            ::xml_schema::flags f,
+            ::xml_schema::container* c)
+: ::xml_schema::string (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+EXP_POINTS::
+EXP_POINTS (const ::xercesc::DOMElement& e,
+            ::xml_schema::flags f,
+            ::xml_schema::container* c)
+: ::xml_schema::string (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void EXP_POINTS::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+EXP_POINTS* EXP_POINTS::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class EXP_POINTS (*this, f, c);
+}
+
+EXP_POINTS& EXP_POINTS::
+operator= (const EXP_POINTS& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::string& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+EXP_POINTS::
+~EXP_POINTS ()
+{
+}
+
+// KRYLOV_ORDER
+//
+
+KRYLOV_ORDER::
+KRYLOV_ORDER ()
+: ::xml_schema::string (),
+  Type_ (this)
+{
+}
+
+KRYLOV_ORDER::
+KRYLOV_ORDER (const char* _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+KRYLOV_ORDER::
+KRYLOV_ORDER (const ::std::string& _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+KRYLOV_ORDER::
+KRYLOV_ORDER (const ::xml_schema::string& _xsd_string_base)
+: ::xml_schema::string (_xsd_string_base),
+  Type_ (this)
+{
+}
+
+KRYLOV_ORDER::
+KRYLOV_ORDER (const KRYLOV_ORDER& x,
+              ::xml_schema::flags f,
+              ::xml_schema::container* c)
+: ::xml_schema::string (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+KRYLOV_ORDER::
+KRYLOV_ORDER (const ::xercesc::DOMElement& e,
+              ::xml_schema::flags f,
+              ::xml_schema::container* c)
+: ::xml_schema::string (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void KRYLOV_ORDER::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+KRYLOV_ORDER* KRYLOV_ORDER::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class KRYLOV_ORDER (*this, f, c);
+}
+
+KRYLOV_ORDER& KRYLOV_ORDER::
+operator= (const KRYLOV_ORDER& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::string& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+KRYLOV_ORDER::
+~KRYLOV_ORDER ()
+{
+}
+
+// INPUTS
+//
+
+INPUTS::
+INPUTS ()
+: ::xml_schema::type (),
+  NODESET_ (this),
+  Type_ (this)
+{
+}
+
+INPUTS::
+INPUTS (const INPUTS& x,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  NODESET_ (x.NODESET_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+INPUTS::
+INPUTS (const ::xercesc::DOMElement& e,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  NODESET_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void INPUTS::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // NODESET
+    //
+    if (n.name () == "NODESET" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< NODESET_type > r (
+        NODESET_traits::create (i, f, this));
+
+      this->NODESET_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+INPUTS* INPUTS::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class INPUTS (*this, f, c);
+}
+
+INPUTS& INPUTS::
+operator= (const INPUTS& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->NODESET_ = x.NODESET_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+INPUTS::
+~INPUTS ()
+{
+}
+
+// OUTPUTS
+//
+
+OUTPUTS::
+OUTPUTS ()
+: ::xml_schema::type (),
+  Type_ (this)
+{
+}
+
+OUTPUTS::
+OUTPUTS (const OUTPUTS& x,
+         ::xml_schema::flags f,
+         ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+OUTPUTS::
+OUTPUTS (const ::xercesc::DOMElement& e,
+         ::xml_schema::flags f,
+         ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void OUTPUTS::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+OUTPUTS* OUTPUTS::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class OUTPUTS (*this, f, c);
+}
+
+OUTPUTS& OUTPUTS::
+operator= (const OUTPUTS& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+OUTPUTS::
+~OUTPUTS ()
 {
 }
 
@@ -5821,272 +6577,6 @@ ELEMENT::
 #include <xsd/cxx/xml/sax/std-input-source.hxx>
 #include <xsd/cxx/tree/error-handler.hxx>
 
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (const ::std::string& u,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xsd::cxx::tree::error_handler< char > h;
-
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      u, h, p, f));
-
-  h.throw_if_failed< ::xsd::cxx::tree::parsing< char > > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (const ::std::string& u,
-              ::xml_schema::error_handler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      u, h, p, f));
-
-  if (!d.get ())
-    throw ::xsd::cxx::tree::parsing< char > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (const ::std::string& u,
-              ::xercesc::DOMErrorHandler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      u, h, p, f));
-
-  if (!d.get ())
-    throw ::xsd::cxx::tree::parsing< char > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xsd::cxx::xml::sax::std_input_source isrc (is);
-  return ::TRANSLATETO_ (isrc, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              ::xml_schema::error_handler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xsd::cxx::xml::sax::std_input_source isrc (is);
-  return ::TRANSLATETO_ (isrc, h, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              ::xercesc::DOMErrorHandler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::sax::std_input_source isrc (is);
-  return ::TRANSLATETO_ (isrc, h, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              const ::std::string& sid,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
-  return ::TRANSLATETO_ (isrc, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              const ::std::string& sid,
-              ::xml_schema::error_handler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::auto_initializer i (
-    (f & ::xml_schema::flags::dont_initialize) == 0,
-    (f & ::xml_schema::flags::keep_dom) == 0);
-
-  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
-  return ::TRANSLATETO_ (isrc, h, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::std::istream& is,
-              const ::std::string& sid,
-              ::xercesc::DOMErrorHandler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
-  return ::TRANSLATETO_ (isrc, h, f, p);
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::xercesc::InputSource& i,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xsd::cxx::tree::error_handler< char > h;
-
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      i, h, p, f));
-
-  h.throw_if_failed< ::xsd::cxx::tree::parsing< char > > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::xercesc::InputSource& i,
-              ::xml_schema::error_handler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      i, h, p, f));
-
-  if (!d.get ())
-    throw ::xsd::cxx::tree::parsing< char > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::xercesc::InputSource& i,
-              ::xercesc::DOMErrorHandler& h,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-    ::xsd::cxx::xml::dom::parse< char > (
-      i, h, p, f));
-
-  if (!d.get ())
-    throw ::xsd::cxx::tree::parsing< char > ();
-
-  return ::std::auto_ptr< ::TRANSLATETO > (
-    ::TRANSLATETO_ (
-      d, f | ::xml_schema::flags::own_dom, p));
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (const ::xercesc::DOMDocument& doc,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties& p)
-{
-  if (f & ::xml_schema::flags::keep_dom)
-  {
-    ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
-      static_cast< ::xercesc::DOMDocument* > (doc.cloneNode (true)));
-
-    return ::std::auto_ptr< ::TRANSLATETO > (
-      ::TRANSLATETO_ (
-        d, f | ::xml_schema::flags::own_dom, p));
-  }
-
-  const ::xercesc::DOMElement& e (*doc.getDocumentElement ());
-  const ::xsd::cxx::xml::qualified_name< char > n (
-    ::xsd::cxx::xml::dom::name< char > (e));
-
-  if (n.name () == "TRANSLATETO" &&
-      n.namespace_ () == "")
-  {
-    ::std::auto_ptr< ::TRANSLATETO > r (
-      ::xsd::cxx::tree::traits< ::TRANSLATETO, char >::create (
-        e, f, 0));
-    return r;
-  }
-
-  throw ::xsd::cxx::tree::unexpected_element < char > (
-    n.name (),
-    n.namespace_ (),
-    "TRANSLATETO",
-    "");
-}
-
-::std::auto_ptr< ::TRANSLATETO >
-TRANSLATETO_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
-              ::xml_schema::flags f,
-              const ::xml_schema::properties&)
-{
-  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > c (
-    ((f & ::xml_schema::flags::keep_dom) &&
-     !(f & ::xml_schema::flags::own_dom))
-    ? static_cast< ::xercesc::DOMDocument* > (d->cloneNode (true))
-    : 0);
-
-  ::xercesc::DOMDocument& doc (c.get () ? *c : *d);
-  const ::xercesc::DOMElement& e (*doc.getDocumentElement ());
-
-  const ::xsd::cxx::xml::qualified_name< char > n (
-    ::xsd::cxx::xml::dom::name< char > (e));
-
-  if (f & ::xml_schema::flags::keep_dom)
-    doc.setUserData (::xml_schema::dom::tree_node_key,
-                     (c.get () ? &c : &d),
-                     0);
-
-  if (n.name () == "TRANSLATETO" &&
-      n.namespace_ () == "")
-  {
-    ::std::auto_ptr< ::TRANSLATETO > r (
-      ::xsd::cxx::tree::traits< ::TRANSLATETO, char >::create (
-        e, f, 0));
-    return r;
-  }
-
-  throw ::xsd::cxx::tree::unexpected_element < char > (
-    n.name (),
-    n.namespace_ (),
-    "TRANSLATETO",
-    "");
-}
-
 ::std::auto_ptr< ::NODESET >
 NODESET_ (const ::std::string& u,
           ::xml_schema::flags f,
@@ -6350,6 +6840,272 @@ NODESET_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
     n.name (),
     n.namespace_ (),
     "NODESET",
+    "");
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& u,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xsd::cxx::tree::error_handler< char > h;
+
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      u, h, p, f));
+
+  h.throw_if_failed< ::xsd::cxx::tree::parsing< char > > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& u,
+              ::xml_schema::error_handler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      u, h, p, f));
+
+  if (!d.get ())
+    throw ::xsd::cxx::tree::parsing< char > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::std::string& u,
+              ::xercesc::DOMErrorHandler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      u, h, p, f));
+
+  if (!d.get ())
+    throw ::xsd::cxx::tree::parsing< char > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xsd::cxx::xml::sax::std_input_source isrc (is);
+  return ::TRANSLATETO_ (isrc, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xml_schema::error_handler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xsd::cxx::xml::sax::std_input_source isrc (is);
+  return ::TRANSLATETO_ (isrc, h, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              ::xercesc::DOMErrorHandler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::sax::std_input_source isrc (is);
+  return ::TRANSLATETO_ (isrc, h, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& sid,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
+  return ::TRANSLATETO_ (isrc, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& sid,
+              ::xml_schema::error_handler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::auto_initializer i (
+    (f & ::xml_schema::flags::dont_initialize) == 0,
+    (f & ::xml_schema::flags::keep_dom) == 0);
+
+  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
+  return ::TRANSLATETO_ (isrc, h, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::std::istream& is,
+              const ::std::string& sid,
+              ::xercesc::DOMErrorHandler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::xml::sax::std_input_source isrc (is, sid);
+  return ::TRANSLATETO_ (isrc, h, f, p);
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& i,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xsd::cxx::tree::error_handler< char > h;
+
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      i, h, p, f));
+
+  h.throw_if_failed< ::xsd::cxx::tree::parsing< char > > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& i,
+              ::xml_schema::error_handler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      i, h, p, f));
+
+  if (!d.get ())
+    throw ::xsd::cxx::tree::parsing< char > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xercesc::InputSource& i,
+              ::xercesc::DOMErrorHandler& h,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+    ::xsd::cxx::xml::dom::parse< char > (
+      i, h, p, f));
+
+  if (!d.get ())
+    throw ::xsd::cxx::tree::parsing< char > ();
+
+  return ::std::auto_ptr< ::TRANSLATETO > (
+    ::TRANSLATETO_ (
+      d, f | ::xml_schema::flags::own_dom, p));
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (const ::xercesc::DOMDocument& doc,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties& p)
+{
+  if (f & ::xml_schema::flags::keep_dom)
+  {
+    ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d (
+      static_cast< ::xercesc::DOMDocument* > (doc.cloneNode (true)));
+
+    return ::std::auto_ptr< ::TRANSLATETO > (
+      ::TRANSLATETO_ (
+        d, f | ::xml_schema::flags::own_dom, p));
+  }
+
+  const ::xercesc::DOMElement& e (*doc.getDocumentElement ());
+  const ::xsd::cxx::xml::qualified_name< char > n (
+    ::xsd::cxx::xml::dom::name< char > (e));
+
+  if (n.name () == "TRANSLATETO" &&
+      n.namespace_ () == "")
+  {
+    ::std::auto_ptr< ::TRANSLATETO > r (
+      ::xsd::cxx::tree::traits< ::TRANSLATETO, char >::create (
+        e, f, 0));
+    return r;
+  }
+
+  throw ::xsd::cxx::tree::unexpected_element < char > (
+    n.name (),
+    n.namespace_ (),
+    "TRANSLATETO",
+    "");
+}
+
+::std::auto_ptr< ::TRANSLATETO >
+TRANSLATETO_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
+              ::xml_schema::flags f,
+              const ::xml_schema::properties&)
+{
+  ::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > c (
+    ((f & ::xml_schema::flags::keep_dom) &&
+     !(f & ::xml_schema::flags::own_dom))
+    ? static_cast< ::xercesc::DOMDocument* > (d->cloneNode (true))
+    : 0);
+
+  ::xercesc::DOMDocument& doc (c.get () ? *c : *d);
+  const ::xercesc::DOMElement& e (*doc.getDocumentElement ());
+
+  const ::xsd::cxx::xml::qualified_name< char > n (
+    ::xsd::cxx::xml::dom::name< char > (e));
+
+  if (f & ::xml_schema::flags::keep_dom)
+    doc.setUserData (::xml_schema::dom::tree_node_key,
+                     (c.get () ? &c : &d),
+                     0);
+
+  if (n.name () == "TRANSLATETO" &&
+      n.namespace_ () == "")
+  {
+    ::std::auto_ptr< ::TRANSLATETO > r (
+      ::xsd::cxx::tree::traits< ::TRANSLATETO, char >::create (
+        e, f, 0));
+    return r;
+  }
+
+  throw ::xsd::cxx::tree::unexpected_element < char > (
+    n.name (),
+    n.namespace_ (),
+    "TRANSLATETO",
     "");
 }
 

@@ -252,6 +252,7 @@ public:
 	bool hasParts;
 	bool isSIM;
 	std::vector<int> referenceNodeLabel;
+	int numUMADofs;
 private:
 	/// mesh name
 	std::string name;

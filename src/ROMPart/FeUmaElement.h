@@ -31,6 +31,12 @@
 #include <vector>
 #include <FeElement.h>
 
+#include <MathLibrary.h>
+
+#ifdef USE_SIMULIA_UMA_API
+class uma_System;
+#endif
+
 /********//**
 * \brief Class FeUmaElement
 **************************************************************************************************/
@@ -62,4 +68,81 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	const std::vector<double> & getMassMatrix(void) const { return myMe; }
+	/***********************************************************************************************
+	* \brief Return pointer to double array
+	* \author Stefan Sicklinger
+	***********/
+	const std::vector<double> & getStructuralDampingMatrix(void) const { return mySDe; }
+	/***********************************************************************************************
+	* \brief Return pointer to sparse class
+	* \author Harikrishnan Sreekumar
+	***********/
+	const MathLibrary::SparseMatrix<double> & getSparseMassMatrix(void) const { return *mySparseMReal; }
+	/***********************************************************************************************
+	* \brief Return pointer to sparse class
+	* \author Harikrishnan Sreekumar
+	***********/
+	const MathLibrary::SparseMatrix<double> & getSparseStiffnessMatrix(void) const { return *mySparseKReal; }
+	/***********************************************************************************************
+	* \brief Prints the UMA imported matrix
+	* \param[in] UMA System with the valid matrix
+	* \param[in] Name of matrix
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+#ifdef USE_SIMULIA_UMA_API
+	void PrintMatrix(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile);
+#endif
+	/***********************************************************************************************
+	* \brief Extract data from UMA
+	* \param[in] UMA System with the valid matrix
+	* \param[in] Name of matrix
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+#ifdef USE_SIMULIA_UMA_API
+	void extractData(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile);
+#endif
+	/***********************************************************************************************
+	* \brief Debug routine to visualize pure UMA without any map formulation
+	* \param[in] Matrix key
+	* \param[in] SIM file name
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void DebugSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile);
+	/***********************************************************************************************
+	* \brief Import routine to load data from SIM
+	* \param[in] Matrix key
+	* \param[in] SIM file name
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void ImportSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile);
+
+	/// Stiffness Matrix
+	MathLibrary::SparseMatrix<double> *mySparseMReal;
+	MathLibrary::SparseMatrix<double> *mySparseKReal;
+
+	/// [To be deleted when sparse addition is implemented]
+	std::vector<int> myK_row;
+	std::vector<int> myK_col;
+	std::vector<int> myM_row;
+	std::vector<int> myM_col;
+
+	/// Maps
+	std::map<int, std::vector<int>> nodeToDofMap;
+	std::map<int, std::vector<int>> nodeToGlobalMap;
+
+	/// Definition of keys
+	char* stiffnessUMA_key;
+	char* massUMA_key;
+	char* structuralDampingUMA_key;
+
+	/// Total system dimension
+	int totalDOFs;
 };

@@ -33,6 +33,7 @@ Material::Material(std::string _materialName, int _partId) {
 			myPoissonsRatio = std::stod(MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART()[_partId].MATERIALS().begin()->MATERIAL().at(j).nu()->data());
 			myDensity = std::stod(MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART()[_partId].MATERIALS().begin()->MATERIAL().at(j).rho()->data());
 			myDampingParameter = std::stod(MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART()[_partId].MATERIALS().begin()->MATERIAL().at(j).eta()->data());
+			myName = _materialName;
 			flag = 1;
 			break;
 		}

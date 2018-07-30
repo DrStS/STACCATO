@@ -28,6 +28,13 @@
 #include <assert.h>
 #include <Reader.h>
 #include <vector>
+#include <map>
+
+#ifdef USE_SIMULIA_UMA_API
+class uma_System;
+class uma_SparseMatrix;
+//#include <uma_SparseMatrix.h>
+#endif
 
 class HMesh;
 /********//**
@@ -53,7 +60,61 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void openFile();
+	/***********************************************************************************************
+	* \brief Import routine to load datastructure from SIM
+	* \param[in] SIM file name
+	* \param[in] Matrix key
+	* \param[in] Flag for displaying imported matrices and maps
+	* \author Harikrishnan Sreekumar
+	***********/
+	void importDatastructureSIM(char* _file, char* _key, bool _printToScreen);
 
+#ifdef USE_SIMULIA_UMA_API
+	/***********************************************************************************************
+	* \brief Extract datastructure from UMA
+	* \param[in] UMA System with the valid matrix
+	* \param[in] Name of matrix
+	* \param[in] Flag for displaying imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void extractDatastructure(const uma_System &system, char *matrixName, bool _printToScreen);
+#endif
+	/***********************************************************************************************
+	* \brief Routine to check for internal dofs (Can be disabled if not required)
+	* \param[in] UMA System with the valid matrix
+	* \param[in] Name of matrix
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+#ifdef USE_SIMULIA_UMA_API
+	void checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrixName, bool _printToScreen);
+#endif
+	/***********************************************************************************************
+	* \brief Adds an internal dof to the datastructure
+	* \param[in] Name of matrix
+	* \param[in] GlobalIndex
+	* \param[in] Flag to mark detection of internal dof
+	* \author Harikrishnan Sreekumar
+	***********/
+	void addInternalDof(char *matrixName, int _index, bool _flag);
+	/***********************************************************************************************
+	* \brief Generates global map
+	* \author Harikrishnan Sreekumar
+	***********/
+	void generateGlobalMap(bool _printToScreen);
+	/***********************************************************************************************
+	* \brief Generates a file with node to local dof and global dof map
+	* \author Harikrishnan Sreekumar
+	***********/
+	void printMapToFile();
+	/***********************************************************************************************
+	* \brief Adds a detected node and its dof to the map (accumulates info from all SIMs and avoid duplicates)
+	* \param[in] Node
+	* \param[in] Dof
+	* \author Harikrishnan Sreekumar
+	***********/
+	void addEntryToNodeDofMap(int _node, int _dof);
 private:
 	std::string myFileName;
 	/// HMesh object 
@@ -62,6 +123,32 @@ private:
 	std::vector<std::vector<int>> simNodeMap;
 	/// Number of nodes
 	int numNodes;
+	/// Total number of dofs
+	int totalDOFs;
 	/// Number of DoFs per Node
 	int numDoFperNode;
+
+	// Flags
+	bool hasInternalDOF_K;
+	bool hasInternalDOF_M;
+	bool hasInternalDOF_SD;
+
+	// vectors with local dof of internaldofs
+	std::vector<int> internalDOF_K;
+	std::vector<int> internalDOF_M;
+	std::vector<int> internalDOF_SD;
+
+	// SIM File Names
+	std::string stiffnessFileName;
+	std::string massFileName ;
+	std::string structDampingFileName;
+
+	// Definition of matrix keys
+	char* stiffnessUMA_key ;
+	char* massUMA_key;
+	char* structuralDampingUMA_key;
+
+	// Maps
+	std::map<int, std::vector<int>> nodeToDofMap;
+	std::map<int, std::vector<int>> nodeToGlobalMap;
 };

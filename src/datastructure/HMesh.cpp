@@ -82,15 +82,15 @@ void HMesh::buildDataStructure(void) {
 			domainDimension = 3;
 		}
 		else if (elementTyps[i] == STACCATO_UmaElement) {
-			numNodesPerElem[i] = 5;  // Take care of this
+			numNodesPerElem[i] = getNumNodes();  // Take care of this
 									 //1. DoF -> u_x
 									 //2. DoF -> u_y
 									 //3. DoF -> u_z
 									 //4. DoF -> phi_x
 									 //5. DoF -> phi_y
 									 //6. DoF -> phi_z
-			numDoFsPerNodeCurrent = 6;
-			domainDimension = 3;
+			numDoFsPerNodeCurrent = 1;
+			domainDimension = numUMADofs;
 		}
 
 		for (int j = 0; j < numNodesPerElem[i]; j++) {

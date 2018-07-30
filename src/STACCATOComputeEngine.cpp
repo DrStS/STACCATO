@@ -26,6 +26,7 @@
 #include "SimuliaUMA.h"
 
 #include "FeAnalysis.h"
+#include "KrylovROMSubStructure.h"
 #include "HMesh.h"
 #include "MetaDatabase.h"
 
@@ -52,7 +53,7 @@ void STACCATOComputeEngine::prepare(void) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
-		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE")
+		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE" || std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
 		{
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
@@ -86,15 +87,42 @@ std::string filePath = "/home/stefan/software/repos/STACCATO/model/";
 }
 
 void STACCATOComputeEngine::compute(void) {
+	for (STACCATO_XML::ANALYSIS_const_iterator iAnalysis(MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin());
+		iAnalysis != MetaDatabase::getInstance()->xmlHandle->ANALYSIS().end();
+		++iAnalysis)
+	{
+		if (std::string(iAnalysis->TYPE()->c_str()) == "STATIC" || std::string(iAnalysis->TYPE()->c_str()) == "STEADYSTATE_DYNAMIC_REAL" || std::string(iAnalysis->TYPE()->c_str()) == "STEADYSTATE_DYNAMIC") {
+			std::cout << std::endl << "==== ComputeEngine Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+			std::cout << ">> Monolithic approach detected." << std::endl;
 
-	//Run FE Analysis
-	FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
-	anaysisTimer03.stop();
-	std::cout << "Duration for STACCATO Finite Element run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
-	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+			//Run FE Analysis
+			FeAnalysis *mFeAnalysis = new FeAnalysis(*myHMesh);
+
+			anaysisTimer03.stop();
+			std::cout << "Duration for STACCATO Finite Element Monolithic run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+			std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 
-	std::cout << ">> FeAnalysis Finished." << std::endl;
+			std::cout << ">> FeAnalysis Finished." << std::endl;
+
+		}
+		else if (std::string(iAnalysis->TYPE()->c_str()) == "SUBSTRUCTURING") {
+			std::cout << std::endl << "==== ComputeEngine Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+			std::cout << ">> Substructuring approach detected." << std::endl;
+
+			// Run Krylov Reductions
+			KrylovROMSubstructure *mRomAnalysis = new KrylovROMSubstructure(*myHMesh);
+
+			anaysisTimer03.stop();
+			std::cout << "Duration for STACCATO Finite Element ROM run: " << anaysisTimer03.getDurationSec() << " sec" << std::endl;
+			std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		}
+		else
+			std::cerr << "Invalid Analysis type" <<std::endl;
+	}
+
+
+	
 
 }
 

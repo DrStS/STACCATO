@@ -93,7 +93,7 @@ void MetaDatabase::buildXML(HMesh& _hMesh) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
-		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE")
+		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE" || std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
 		{
 			// Add STACCATO_XML-User Entered Sets
 			// Element Sets

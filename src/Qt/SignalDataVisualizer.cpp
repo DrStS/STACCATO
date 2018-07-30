@@ -630,9 +630,11 @@ void SignalDataVisualizer::createDockWindow(void) {
 
 	myToolTipBox = new QCheckBox(this);
 	myToolTipBox->setText("Tool Tip");
+	myToolTipBox->setChecked(true);
 	connect(myToolTipBox, SIGNAL(clicked()), this, SLOT(updateToolTip()));
 
 	mySnapOnHoverBox = new QCheckBox("Snap to Series", this);
+	mySnapOnHoverBox->setChecked(true);
 	connect(mySnapOnHoverBox, SIGNAL(clicked()), this, SLOT(updateSnap()));
 
 	myChartPropertyLabel = new QLabel(this);

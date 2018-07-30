@@ -77,4 +77,6 @@ private:
 	double myPoissonsRatio;
 	double myDensity;
 	double myDampingParameter;
+public:
+	std::string myName;
 };

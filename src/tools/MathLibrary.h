@@ -136,11 +136,20 @@ namespace MathLibrary {
 	* \author Stefan Sicklinger
 	***********/
 	double det3x3(std::vector<double>& _A);
-	/********//**
-			  * \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
-			  *
-			  * \author Stefan Sicklinger
-			  **************************************************************************************************/
+	/***********************************************************************************************
+	* \brief Computes the QR factorization of mxn matrix
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A m rows by _n columns, out-> the orthogonal matrix Q
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixQRDecomposition(int _m, int _n, double *_A);
+
+	/**********
+	* \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
+	*
+	* \author Stefan Sicklinger
+	**************************************************************************************************/
 	template<class T>
 	class SparseMatrix {
 	public:
@@ -318,8 +327,8 @@ namespace MathLibrary {
 			pardiso_iparm[0] = 1;    // No solver defaults
 			pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
 			pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
-			pardiso_iparm[23] = 1;   // 2-level factorization
-			pardiso_iparm[36] = -99; // VBSR format
+			//pardiso_iparm[23] = 1;   // 2-level factorization
+			//pardiso_iparm[36] = -99; // VBSR format
 			pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
 			pardiso_iparm[18] = -1;	 // Output: Report Mflops
 			pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
@@ -330,6 +339,11 @@ namespace MathLibrary {
 			pardiso_neq = m;		// number of rows of 
 			pardiso_error = 1;		// Initialize error flag 
 			pardiso_nrhs = nRHS;	// number of right hand side
+
+			pardiso_iparm[10] = 1;   //Scaling vectors.
+			pardiso_iparm[12] = 1; 
+
+			pardiso_iparm[7] = 6;	// Iterative refinement
 
 			// Print MKL Version
 			int len = 198;
@@ -350,7 +364,11 @@ namespace MathLibrary {
 				&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 				&pardiso_error);
 			linearSolverTimer01.stop();
-			std::cout << "Reordering completed: "<< linearSolverTimer01.getDurationMilliSec() <<" (milliSec)" << std::endl;
+			if (pardiso_error != 0) {
+				std::cout << "Error pardiso reordering failed with error code: " << pardiso_error
+					<< std::endl;
+				exit(EXIT_FAILURE);
+			}
 
 			linearSolverTimer01.start();
 			pardiso_phase = 22;
@@ -361,6 +379,7 @@ namespace MathLibrary {
 			linearSolverTimer01.stop();
 			if (pardiso_error != 0) {
 				std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
+				std::cout << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
 				std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 					<< std::endl;
 				exit(EXIT_FAILURE);
@@ -433,9 +452,10 @@ namespace MathLibrary {
 				exit(EXIT_FAILURE);
 			}
 			linearSolverTimer01.stop();
+			std::cout << "Number of iterative refinement steps performed: " << pardiso_iparm[6] << std::endl;
 			std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 			linearSolverTimer02.stop();
-			std::cout << "=== Complete duration PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec)" << std::endl;
+			std::cout << "=== Complete duration PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec) for system dimension "<< m << "x" << n << std::endl;
 #endif
 		}
 
@@ -834,9 +854,82 @@ namespace MathLibrary {
 			else
 				std::cout << "Unsupported File Format."<< std::endl;
 
+		}	
+		/***********************************************************************************************
+		* \brief This Creates a handle for a CSR-format matrix.
+		* \author Harikrishnan
+		***********/
+		sparse_matrix_t* createMKLSparseCSR() {
+			determineCSR();
+			std::vector<int> pointerB;		// Check for existence
+			std::vector<int> pointerE;		// Check for existence
+			std::cout << "CSR Row: " << (*rowIndex).size() << std::endl;
+			for (int i = 0; i < (*rowIndex).size()-1; i++)
+			{
+				pointerB.push_back((*rowIndex)[i]-1);
+				pointerE.push_back((*rowIndex)[i + 1]-1);
+			}
+			std::cout << "pointerB: ";
+			for (int i = 0; i < pointerB.size(); i++)
+				std::cout << pointerB[i] << " ";
+			std::cout << std::endl;
+			std::cout << "pointerE: ";
+			for (int i = 0; i < pointerE.size(); i++)
+				std::cout << pointerE[i] << " ";
+			std::cout << std::endl;
+			sparse_matrix_t* sparsecsr;
+			mkl_sparse_z_create_csr(sparsecsr, SPARSE_INDEX_BASE_ZERO, m, n, &pointerB[0], &pointerE[0], &columns[0], &values[0]);
+			//this->sparseMat = &sparsecsr;
+			return sparsecsr;
+		}
+		void printSparseMatrix() {
+			size_t ii_counter;
+			size_t jj_counter;
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {
+				for (jj_counter = 0; jj_counter < n; jj_counter++) {
+					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
+						std::cout<< " > (" << ii_counter+1 << "," << jj_counter+1 << ") " << std::scientific << std::setprecision(15) << (*mat)[ii_counter].find(jj_counter)->second.real << std::endl;
+					}
+				}
+			}
+
 		}
 
+		void SparseSparseAddition(SparseMatrix* _mat) {
+			/*this->createMKLSparseCSR();
+			_mat->createMKLSparseCSR();
+			MKL_Complex16 alpha;
+			alpha.real = 1;
+			alpha.imag = 0;
+			sparse_matrix_t* sparseSum;
+			mkl_sparse_z_add(SPARSE_OPERATION_NON_TRANSPOSE, *this->sparseMat, alpha, *_mat->sparseMat, sparseSum);
+			print_csr_sparse_z(*sparseSum);*/
+		}
+		void print_csr_sparse_z(const sparse_matrix_t csrA)
+		{
+			// Read Matrix Data and Print it
+			/*int row, col;
+			sparse_index_base_t indextype;
+			int * bi, *ei;
+			int * j;
+			MKL_Complex16* rv;
+			sparse_status_t status = mkl_sparse_z_export_csr(csrA, &indextype, &row, &col, &bi, &ei, &j, &rv);
+			if (status == SPARSE_STATUS_SUCCESS)
+			{
+				printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
+				for (int r = 0; r<row; ++r)
+				{
+					for (int idx = bi[r]; idx<ei[r]; ++idx)
+					{
+						printf("<%d, %d> \t %f +1i*%f\n", r, j[idx], rv[idx].real, rv[idx].imag);
+					}
+				}
+			}
+			return;*/
+		}
 	private:
+
+		const sparse_matrix_t * sparseMat;
 		/// pointer to the vector of maps
 		mat_t* mat;
 		/// true if a square matrix should be stored
@@ -930,6 +1023,7 @@ namespace MathLibrary {
 
 			alreadyCalled = true;
 		}
+		
 		/***********************************************************************************************
 		* \brief This function handles iterative solver errors
 		* \author Stefan Sicklinger
@@ -1078,7 +1172,7 @@ namespace MathLibrary {
 		void writeMtxMat(std::true_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			size_t jj_counter;
+			typename std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);
@@ -1093,19 +1187,16 @@ namespace MathLibrary {
 			myfile << "% Generated with STACCCATO" << std::endl;
 			myfile << m << " " << n << " " << values.size() << std::endl;
 
-			for (ii_counter = 0; ii_counter < m; ii_counter++) {
-				for (jj_counter = 0; jj_counter < n; jj_counter++) {
-					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << jj_counter+1 << " " << ii_counter+1 << " " << (*mat)[ii_counter].find(jj_counter)->second << std::endl;
-					}
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {	// Loop through rows
+				for (jj_counter = (*mat)[ii_counter].begin(); jj_counter != (*mat)[ii_counter].end(); jj_counter++) {    // Loop through existing column entries for given row
+																														 // Write column index in as row index, and vice-versa to generate a lower triangular matrix (note we are writing a symmetric matrix)
+					myfile << jj_counter->first + 1 << " " << ii_counter + 1 << " " << jj_counter->second << std::endl;
 				}
-				//myfile << std::endl;
 			}
-
 			myfile << std::endl;
-
 			//myfile.write(bufferStringStream.str().c_str(), bufferStringStream.str().length());
 			myfile.close();
+
 		}
 		/***********************************************************************************************
 		* \brief Tag Dispatching. Performs MKLComplex Writing Code for the Matrix to Mtx File
@@ -1116,23 +1207,26 @@ namespace MathLibrary {
 		void writeMtxMat(std::false_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			size_t jj_counter;
+			typename std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);
 			myfile.precision(std::numeric_limits<double>::digits10 + 1);
 			myfile << std::scientific;
+
+			std::stringstream bufferStringStream;
+			bufferStringStream.precision(std::numeric_limits<double>::digits10 + 1);
+			bufferStringStream << std::scientific;
+
 			myfile << "%%MatrixMarket matrix coordinate complex symmetric" << std::endl;
 			myfile << "% Generated with STACCCATO" << std::endl;
 			myfile << m << " " << n << " " << values.size() << std::endl;
 
-			for (ii_counter = 0; ii_counter < m; ii_counter++) {
-				for (jj_counter = 0; jj_counter < n; jj_counter++) {
-					if ((*mat)[ii_counter].find(jj_counter) != (*mat)[ii_counter].end()) {
-						myfile << ii_counter+1 << " " << jj_counter+1 << " " << (*mat)[ii_counter].find(jj_counter)->second.real << "+" << (*mat)[ii_counter].find(jj_counter)->second.real << "i" << std::endl;
-					}
+			for (ii_counter = 0; ii_counter < m; ii_counter++) {	// Loop through rows
+				for (jj_counter = (*mat)[ii_counter].begin(); jj_counter != (*mat)[ii_counter].end(); jj_counter++) {    // Loop through existing column entries for given row
+																														 // Write column index in as row index, and vice-versa to generate a lower triangular matrix (note we are writing a symmetric matrix)
+					myfile << jj_counter->first + 1 << " " << ii_counter + 1 << " " << jj_counter->second.real << " "<< jj_counter->second.imag << std::endl;
 				}
-				//myfile << std::endl;
 			}
 			myfile << std::endl;
 			myfile.close();
@@ -1191,4 +1285,8 @@ namespace MathLibrary {
 		tmpG4A, tmpG4A, tmpG4A, tmpG4A
 	};
 	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
+
+
+
+	void computeSparseMatrixAddition(MathLibrary::SparseMatrix<MKL_Complex16>* _mat1, MathLibrary::SparseMatrix<MKL_Complex16>* _mat2);
 } /* namespace Math */

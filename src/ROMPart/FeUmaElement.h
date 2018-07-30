@@ -69,11 +69,6 @@ public:
 	***********/
 	const std::vector<double> & getMassMatrix(void) const { return myMe; }
 	/***********************************************************************************************
-	* \brief Return pointer to double array
-	* \author Stefan Sicklinger
-	***********/
-	const std::vector<double> & getStructuralDampingMatrix(void) const { return mySDe; }
-	/***********************************************************************************************
 	* \brief Return pointer to sparse class
 	* \author Harikrishnan Sreekumar
 	***********/

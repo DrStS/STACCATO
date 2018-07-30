@@ -62,7 +62,7 @@ void STACCATOComputeEngine::prepare(void) {
 std::string filePath = "C:/software/repos/STACCATO/model/";
 #endif
 #if defined(__linux__) 
-std::string filePath = "/home/stefan/software/repos/STACCATO/model/";
+std::string filePath = "/opt/software/repos/STACCATO/model/";
 #endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {

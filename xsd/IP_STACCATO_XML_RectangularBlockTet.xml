@@ -1,0 +1,82 @@
+<STACCATO_XML>
+	<PARTS>
+		<PART TYPE="FE" Name="Block">
+			<FILEIMPORT Type="AbqODB">
+				<FILE>RectangularBlockTet_coarse.odb</FILE>
+				<IMPORT Type="Nodes">
+					<LIST>ALL</LIST>
+				</IMPORT>
+				<IMPORT Type="Elements">
+					<LIST>ALL</LIST>
+					<TRANSLATETO Source="C3D10" Target="STACCATO_Tetrahedron10Node3D"/>
+				</IMPORT>
+				<IMPORT Type="Sets">
+					<NODE>
+						<TRANSLATETO Source="CLOAD" Target="CLOAD-1"/>
+						<TRANSLATETO Source="DBC" Target="DBC-1"/>
+					</NODE>
+					<ELEMENT>
+					</ELEMENT>
+				</IMPORT>
+			</FILEIMPORT>
+			<MATERIALS>
+				<MATERIAL Name="Steel" Type="Isotropic">
+					<E>211000</E>
+					<nu>0.3</nu>
+					<rho>7.85e-9</rho>
+					<eta>0.00</eta>
+				</MATERIAL>
+			</MATERIALS>
+			<SECTIONS>
+				<SECTION Name="Sec1">
+					<ELEMENTSET>allElem</ELEMENTSET>
+					<MATERIAL>Steel</MATERIAL>
+				</SECTION>
+			</SECTIONS>
+			<SETS>
+				<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
+			</SETS>
+			<LOADS>
+				<LOAD Type="ConcentratedForce" Name='LOAD1'>
+						<NODESET Name="CLOAD-1"/>
+						<REAL><X>0.000</X><Y>-1.000</Y><Z>0.000</Z></REAL>
+						<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
+				</LOAD>
+			</LOADS>
+			<BC_DEF>
+				<DISPLACEMENT Name="DisplacementBC-1">
+					<NODESET Name="DBC-1"/>
+					<REAL>
+						<X>0.000</X>
+						<Y>0.000</Y>
+						<Z>0.000</Z>
+					</REAL>
+					<IMAGINARY>
+						<X>0.000</X>
+						<Y>0.000</Y>
+						<Z>0.000</Z>
+					</IMAGINARY>
+				</DISPLACEMENT>
+			</BC_DEF>
+		</PART>
+	</PARTS>
+
+	<ANALYSIS>
+		<NAME>RectangularBlockTet_coarse</NAME>
+		<TYPE>STATIC</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
+		<FREQUENCY Type="STEP">
+			<START_FREQ>5</START_FREQ>
+			<END_FREQ>800</END_FREQ>
+			<STEP_FREQ>5</STEP_FREQ>
+		</FREQUENCY>
+		<BCCASE Name="ALL-BCs">
+			<BC Name = "DisplacementBC-1" Instance="Block"/>
+		</BCCASE>
+		<LOADCASES>
+			<LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-1">
+				<LOAD Name = "LOAD1" Instance="Block"/>
+			</LOADCASE>
+		</LOADCASES>
+	</ANALYSIS>
+
+</STACCATO_XML>

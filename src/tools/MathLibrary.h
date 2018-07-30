@@ -29,9 +29,11 @@
 #include <vector>
 #include <sstream>
 #include <assert.h>
+#include <cmath>
 #include "AuxiliaryParameters.h"
 #include "Timer.h"
 #include "AuxiliaryFunctions.h"
+#include "Message.h"
 
 #ifdef USE_INTEL_MKL
 #define MKL_DIRECT_CALL 1
@@ -108,6 +110,25 @@ namespace MathLibrary {
 	* \author Stefan Sicklinger
 	***********/
 	void computeDenseMatrixMatrixMultiplication(int _m, int _n, int _k, const double *_A, const double *_B, double *_C, const bool _transposeA, const bool _multByScalar, const double _alpha, const bool _addPrevious, const bool _useIntelSmall);
+	/***********************************************************************************************
+	* \brief Compute the matrix product between two complex matrices (general)
+	* \param[in] _m Specifies the number of rows of the matrix op(A) and of the matrix C.The value
+	*  of m must be at least zero.
+	* \param[in] _n Specifies the number of columns of the matrix op(B) and the number of columns
+	*  of the matrix C. The value of n must be at least zero.
+	* \param[in] _k Specifies the number of columns of the matrix op(A) and the number of rows
+	*  of the matrix op(B).
+	* \param[in] _A m rows by k columns
+	* \param[in] _B k rows by n columns
+	* \param[in/out] _C m rows by n columns
+	* \param[in] _transposeA C=A^T*B
+	* \param[in] false->C=A*B true -> C=alpha*A*B
+	* \param[in] _alpha scalar
+	* \param[in] false-> C=A*B true -> C+=A*B
+	* \author Stefan Sicklinger
+	***********/
+	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall);
+
 	/***********************************************************************************************
 	* \brief Compute dense matrix-vector product
 	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
@@ -1168,6 +1189,7 @@ namespace MathLibrary {
 		* \param[in] type_trail - true_type for Double and false_type for Complex
 		* \param[in] File Name
 		* \author Harikrishnan Sreekumar
+		* \edited Jiho Yang
 		***********/
 		void writeMtxMat(std::true_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;

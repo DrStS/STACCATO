@@ -19,7 +19,17 @@
 */
 
 #define _USE_MATH_DEFINES
+
+// Libraries
 #include <math.h>
+#include <string.h>
+#include <complex>
+#include <OutputDatabase.h>
+#include <AuxiliaryFunctions.h>
+#include <iostream>
+#include <ctime>
+
+// Header Files
 #include "Message.h"
 #include "FeAnalysis.h"
 #include "HMesh.h"
@@ -27,18 +37,13 @@
 #include "FeElement.h"
 #include "FePlainStress4NodeElement.h"
 #include "FeTetrahedron10NodeElement.h"
-
 #include "FeUmaElement.h"
-
 #include "Material.h"
-
 #include "MathLibrary.h"
 #include "Timer.h"
 #include "MemWatcher.h"
-
 #include "MetaDatabase.h"
 #include "VectorFieldResults.h"
-#include <string.h>
 
 #include <complex>
 
@@ -72,7 +77,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// --------------------------------------------------------------------------------------------------------------
 	
 	/* -- Exporting ------------- */
-	bool exportSparseMatrix = false;
+	bool exportSparseMatrix = true;
 	bool exportRHS = true;
 	bool exportSolution = true;
 	/* -------------------------- */
@@ -301,6 +306,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}
 			}
 		}
+
 		anaysisTimer02.stop();
 		infoOut << "Duration for killing DOF loop: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 
@@ -605,9 +611,13 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			if (exportSparseMatrix) {
-				std::cout << ">> Writing CSR ...\n";
+				std::cout << ">> Writing MTX ...\n";
 				if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-					(*AReal).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"dat");
+					std::clock_t begin = clock();
+					(*AReal).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
+					std::clock_t end = clock();
+					double write_time = double(end - begin) / CLOCKS_PER_SEC;
+					std::cout<< "==== Time taken for writing MTX file: " << write_time << std::endl;
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
 					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"dat");

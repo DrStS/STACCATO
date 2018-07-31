@@ -2,7 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <ctime>
+#include <chrono>
 #include <cmath>
 #include <numeric>
 #include <algorithm>
@@ -10,11 +10,10 @@
 
 // MKL
 #include <mkl.h>
-#include <mkl_lapacke.h>
-
 
 // Header Files
 #include "io/io.hpp"
+#include "helper/Timer.hpp"
 
 // Definitions
 #define	PI	3.14159265359
@@ -24,8 +23,8 @@
 int main (int argc, char *argv[]){
 
 	// OpenMP Threads
-	//int nt = mkl_get_max_threads();
-	int nt = 1;
+	int nt = mkl_get_max_threads();
+	//int nt = 1;
 	mkl_set_num_threads(nt);
 
 	int tid = omp_get_thread_num();
@@ -65,12 +64,16 @@ int main (int argc, char *argv[]){
 	rhs_val.imag = 0;
 
 	// Time measurement
-	clock_t time, time_loop, time_it, time_small, time_mid, time_large, time_total;
-	std::vector<float> vec_time_small((size_t)freq_max);
-	std::vector<float> vec_time_mid((size_t)freq_max);
-	std::vector<float> vec_time_large((size_t)freq_max);
+	std::chrono::high_resolution_clock::time_point start_time_M_tilde, start_time_loop, start_time_it, start_time_small, start_time_mid, start_time_large, start_time_total;
+	std::chrono::high_resolution_clock::time_point end_time_M_tilde, end_time_loop, end_time_it, end_time_small, end_time_mid, end_time_large, end_time_total;
+	std::chrono::seconds time_loop, time_it, time_small, time_mid, time_large, time_total;
 
-	time_total = clock();
+	std::vector<std::chrono::seconds> vec_time_small((size_t)freq_max);
+	std::vector<std::chrono::seconds> vec_time_mid((size_t)freq_max);
+	std::vector<std::chrono::seconds> vec_time_large((size_t)freq_max);
+
+	//start_time_total = std::chrono::high_resolution_clock::now();
+	anaysisTimer01.start();
 
 	// Matrices
 	std::vector<MKL_Complex16> K_small, M_small, D_small, K_mid, M_mid, D_mid, K_large, M_large, D_large;
@@ -121,21 +124,23 @@ int main (int argc, char *argv[]){
 	std::vector<MKL_Complex16> sol_large(row_large);
 
 	// M = 4*pi^2*M (Single computation suffices)
-	time = clock();
+	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_small, alpha, M_small.data(), 1);
-	time = clock() - time;
+	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (small) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
-	time = clock();
+	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
+
+	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_mid, alpha, M_mid.data(), 1);
-	time = clock() - time;
+	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (mid) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
-	time = clock();
+	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
+
+	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_large, alpha, M_large.data(), 1);
-	time = clock() - time;
+	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (large) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
+	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
 
 	// Pivots for LU Decomposition
 	std::vector<lapack_int> pivot_small(size_small);
@@ -143,17 +148,18 @@ int main (int argc, char *argv[]){
 	std::vector<lapack_int> pivot_large(size_large);
 
 	int i = 0;
-	time_loop = clock();
+	start_time_loop = std::chrono::high_resolution_clock::now();
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-		if (tid == 0) time_it = clock();
+		start_time_it = std::chrono::high_resolution_clock::now();
 		// Compute scaling
 		freq = (double)it;
 		freq_square = -(freq*freq);
+
 		/*------------
 		Small matrics
 		------------*/
-		time_small = clock();
+		start_time_small = std::chrono::high_resolution_clock::now();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_small, M_small.data(), 1, A_small.data(), 1);
 		cblas_zdscal(size_small, freq_square, A_small.data(), 1);
@@ -162,12 +168,12 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_small, row_small, A_small.data(), row_small, pivot_small.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_small, 1, A_small.data(), row_small, pivot_small.data(), rhs_small.data(), row_small);
-		if (tid == 0) time_small = clock() - time_small;
+		end_time_small = std::chrono::high_resolution_clock::now();
 
 		/*------------
 		Mid matrics
 		------------*/
-		if (tid == 0) time_mid = clock();
+		start_time_mid = std::chrono::high_resolution_clock::now();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_mid, M_mid.data(), 1, A_mid.data(), 1);
 		cblas_zdscal(size_mid, freq_square, A_mid.data(), 1);
@@ -176,12 +182,12 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mid, row_mid, A_mid.data(), row_mid, pivot_mid.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mid, 1, A_mid.data(), row_mid, pivot_mid.data(), rhs_mid.data(), row_mid);
-		if (tid == 0) time_mid = clock() - time_mid;
+		end_time_mid = std::chrono::high_resolution_clock::now();
 
 		/*------------
 		Large matrics
 		------------*/
-		if (tid == 0) time_large = clock();
+		start_time_large = std::chrono::high_resolution_clock::now();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_large, M_large.data(), 1, A_large.data(), 1);
 		cblas_zdscal(size_large, freq_square, A_large.data(), 1);
@@ -190,7 +196,8 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_large, row_large, A_large.data(), row_large, pivot_large.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_large, 1, A_large.data(), row_large, pivot_large.data(), rhs_large.data(), row_large);
-		if (tid == 0) time_large = clock() - time_large;
+		end_time_large = std::chrono::high_resolution_clock::now();
+
 
 		// Copy solution to solution vector
 		cblas_zcopy(row_small, rhs_small.data(), 1, sol_small.data(), 1);
@@ -203,32 +210,36 @@ int main (int argc, char *argv[]){
 		std::fill(rhs_large.begin(), rhs_large.end(), one);
 
 		// Output messages
-		if (tid == 0) time_it = clock() - time_it;
-		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << ((float)time_small)/CLOCKS_PER_SEC << " || " << "Mid = " << ((float)time_mid)/CLOCKS_PER_SEC << " || " << "Large = " << ((float)time_large)/CLOCKS_PER_SEC << std::endl;
+		end_time_it = std::chrono::high_resolution_clock::now();
+		//time_small  = std::chrono::duration_cast<std::chrono::seconds>(start_time_small - end_time_small).count();
+		//time_mid    = std::chrono::duration_cast<std::chrono::seconds>(start_time_mid   - end_time_mid).count();
+		//time_large  = std::chrono::duration_cast<std::chrono::seconds>(start_time_large - end_time_large).count();
+		//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << time_small << " || " << "Mid = " << time_mid << " || " << "Large = " << time_large << std::endl;
 
 		// Accumulate time measurements
-		vec_time_small[i] = ((float)time_small)/CLOCKS_PER_SEC;
-		vec_time_mid[i]   = ((float)time_mid)/CLOCKS_PER_SEC;
-		vec_time_large[i] = ((float)time_large)/CLOCKS_PER_SEC;
+		//vec_time_small[i] = time_small;
+		//vec_time_mid[i]   = time_mid;
+		//vec_time_large[i] = time_large;
 		i++;
 	}
-	if (tid == 0) time_loop = clock()-time_loop;
+	end_time_loop = std::chrono::high_resolution_clock::now();
+	//end_time_total = std::chrono::high_resolution_clock::now();
+	anaysisTimer01.stop();
 
 	// Get average time
-	float time_small_avg = cblas_sasum((int)freq_max, vec_time_small.data(), 1); time_small_avg /= freq_max;
-	float time_mid_avg   = cblas_sasum((int)freq_max, vec_time_mid.data(), 1);   time_mid_avg   /= freq_max;
-	float time_large_avg = cblas_sasum((int)freq_max, vec_time_large.data(), 1);  time_large_avg /= freq_max;
+	//float time_small_avg = cblas_sasum((int)freq_max, vec_time_small.data(), 1); time_small_avg /= freq_max;
+	//float time_mid_avg   = cblas_sasum((int)freq_max, vec_time_mid.data(), 1);   time_mid_avg   /= freq_max;
+	//float time_large_avg = cblas_sasum((int)freq_max, vec_time_large.data(), 1); time_large_avg /= freq_max;
 
 	// Output messages
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
-	std::cout << ">>>>>> Time taken (s) = " << ((float)time_loop)/CLOCKS_PER_SEC << "\n" << std::endl;
-	std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
+	//std::cout << ">>>>>> Time taken (s) = " << std::chrono::duration_cast<std::chrono::seconds>(start_time_loop - end_time_loop).count() << "\n" << std::endl;
+	//std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
 
 	// Output solutions
 	io::writeSolVecComplex(sol_small, filepath_sol, filename_sol_small);
 	io::writeSolVecComplex(sol_mid,   filepath_sol, filename_sol_mid);
 	io::writeSolVecComplex(sol_large, filepath_sol, filename_sol_large);
 
-	time_total = clock() - time_total;
-	std::cout << ">>>>>> Total execution time = " << ((float)time_total)/CLOCKS_PER_SEC << "\n" << std::endl;
+	std::cout << ">>>>>> Total execution time = " << anaysisTimer01.getDurationSec() << "\n" << std::endl;
 }

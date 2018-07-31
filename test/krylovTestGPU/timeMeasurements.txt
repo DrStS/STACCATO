@@ -1,17 +1,19 @@
 <GPU>
 >>>> Frequency loop finished
 >>>>>> Time taken (s) = 44.1783
-
 >>>>>> Average time (s) for each matrix: Small = 0.000533727 ||  Mid = 0.00218559 ||  Large = 0.0411956
 >>>>>> Total execution time = 59.866
 
-
-
+<CPU> - 20 threads
+* NOTE: Divide the time measurement by 20
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 5756.6
+>>>>>> Average time (s) for each matrix: Small = 0.000151403 ||  Mid = 0.75656 ||  Large = 4.99873
+>>>>>> Total execution time = 5771.11
 
 
 <CPU> - 1 thread
 >>>> Frequency loop finished
 >>>>>> Time taken (s) = 1694.66
-
 >>>>>> Average time (s) for each matrix: Small = 4.6308e-05 ||  Mid = 0.00142638 ||  Large = 1.6931
 >>>>>> Total execution time = 1708.65

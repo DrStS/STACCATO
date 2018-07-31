@@ -67,7 +67,7 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 1;
+	double freq_max = 1000;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -77,11 +77,12 @@ int main (int argc, char *argv[]){
 	rhs_val.y = (double)0.0;
 
 	// Time measurements
-	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large;
+	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large, time_total;
 	thrust::host_vector<float> vec_time_small(freq_max);
 	thrust::host_vector<float> vec_time_mid(freq_max);
 	thrust::host_vector<float> vec_time_large(freq_max);
 
+	time_total = clock();
 	// Library initialisation
 	cublasStatus_t cublasStatus;
 	cublasHandle_t cublasHandle;
@@ -136,6 +137,9 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_rhs_small(row_small, rhs_val);
 	thrust::device_vector<cuDoubleComplex> d_rhs_mid(row_mid, rhs_val);
 	thrust::device_vector<cuDoubleComplex> d_rhs_large(row_large, rhs_val);
+	thrust::device_vector<cuDoubleComplex> d_rhs_small_buf(row_small, rhs_val);
+	thrust::device_vector<cuDoubleComplex> d_rhs_mid_buf(row_mid, rhs_val);
+	thrust::device_vector<cuDoubleComplex> d_rhs_large_buf(row_large, rhs_val);
 
 	// Send matrices to device
 	matrixCpyTime = clock();
@@ -414,4 +418,8 @@ int main (int argc, char *argv[]){
 	// Destroy cuBLAS & cuSolver
 	cublasDestroy(cublasHandle);
 	cusolverDnDestroy(cusolverHandle);
+
+	time_total = clock() - time_total;
+	std::cout << ">>>>>> Total execution time = " << ((float)time_total)/CLOCKS_PER_SEC << "\n" << std::endl;
+
 }

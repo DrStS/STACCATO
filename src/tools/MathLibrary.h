@@ -61,6 +61,16 @@ namespace MathLibrary {
 	***********/
 	double computeDenseDotProduct(const double *vec1, const double *vec2, const int elements);
 	/***********************************************************************************************
+	* \brief Compute the dot product of two dense complex vectors
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \param[in] vec3 the Dot Product
+	* \param[in] elements number of elements in vec1 (vec2)
+	* \param[in] _conjugateVec1: true -> conjugate(vec1)*vec2, false -> vec1*vec2
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseDotProductComplex(const STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, STACCATOComplexDouble* dotProduct, const int elements, const bool _conjugateVec1);
+	/***********************************************************************************************
 	* \brief Copy dense vector vec1 <- vec2
 	* \param[in] vec1 the 1st vector
 	* \param[in] vec2 the 2nd vector
@@ -76,6 +86,14 @@ namespace MathLibrary {
 	***********/
 	double computeDenseEuclideanNorm(const double *vec1, const int elements);
 	/***********************************************************************************************
+	* \brief Compute Euclidean norm of a complex vector
+	* \param[in] vec1 the 1st vector
+	* \param[in] elements number of elements in vec1
+	* \return Euclidean norm
+	* \author Harikrishnan Sreekumar
+	***********/
+	double computeDenseEuclideanNormComplex(const STACCATOComplexDouble *vec1, const int elements);
+	/***********************************************************************************************
 	* \brief Computes a vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
 	* \param[in] vec1 the 1st vector
 	* \param[in] vec2 the 2nd vector
@@ -84,6 +102,15 @@ namespace MathLibrary {
 	* \author Stefan Sicklinger
 	***********/
 	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements);
+	/***********************************************************************************************
+	* \brief Computes a complex vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \param[in] a    complex scalar
+	* \param[in] elements number of elements in vec1
+	* \author HarikrishnanSreekumar
+	***********/
+	void computeDenseVectorAdditionComplex(const STACCATOComplexDouble *vec1, STACCATOComplexDouble *vec2, const STACCATOComplexDouble* a, const int elements);
 	/***********************************************************************************************
 	* \brief Computes vector scales by scalar vec1 <- vec1*a
 	* \param[in] vec1 the 1st vector
@@ -165,6 +192,49 @@ namespace MathLibrary {
 	* \author Harikrishnan Sreekumar
 	***********/
 	void computeDenseMatrixQRDecomposition(int _m, int _n, double *_A);
+	/***********************************************************************************************
+	* \brief Computes a sparse matrix sparse matrix addition C := alpha*op(A) + B
+	* \param[in] _matA the A sparse matrix
+	* \param[in] _matB the B sparse matrix
+	* \param[in] _conjugatetransposeA Operation on matrix A
+	* \param[in] _multByScalar false->C := op(A) + B true -> C := alpha*op(A) + B
+	* \param[in] _alpha a scalar
+	* \param[in/out] _matC the sum C := alpha*op(A) + B
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeSparseMatrixAddition(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha);
+	/***********************************************************************************************
+	* \brief Computes product of two sparse matrices and stores the result as a sparse matrix. C := opA(A) *opB(B)
+	* \param[in] _matA the A sparse matrix
+	* \param[in] _matB the B sparse matrix
+	* \param[in] _conjugatetransposeA Operation on matrix A
+	* \param[in] _conjugatetransposeB Operation on matrix B
+	* \param[in] _symmetricA symmetricity of A
+	* \param[in] _symmetricB symmetricity of B
+	* \param[in/out] _matC the product C := opA(A) *opB(B)
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeSparseMatrixMultiplication(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB);
+	/***********************************************************************************************
+	* \brief Computes the product of a sparse matrix and a dense matrix. y := alpha*op(A)*x + beta*y
+	* \param[in] _k Specifies the number of columns of the matrix X 
+	* \param[in] _matX the X dense matrix
+	* \param[in/out] _matY the Y dense matrix
+	* \param[in] _matA the A sparse matrix
+	* \param[in] _conjugatetransposeA Operation on matrix A
+	* \param[in] _multByScalar false->C := op(A)*x  true -> alpha*op(A)*x 
+	* \param[in] _alpha a scalar
+	* \param[in] _symmetricA symmetricity of A
+	* \param[in] _addPrevious performs dense matrix addition. false->y := alpha*op(A)*x , true-> y := alpha*op(A)*x + beta*y
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeSparseMatrixDenseMatrixMultiplication(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious);
+	/***********************************************************************************************
+	* \brief Displays the CSR sparse data type
+	* \param[in] _mat Sparse matrix for displaying
+	* \author Harikrishnan Sreekumar
+	***********/
+	void print_csr_sparse_z(sparse_matrix_t* _mat);
 
 	/**********
 	* \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
@@ -342,7 +412,7 @@ namespace MathLibrary {
 			pardisoinit(pardiso_pt, &pardiso_mtype, pardiso_iparm);
 			// set pardiso default parameters
 			for (int i = 0; i < 64; i++) {
-				//pardiso_iparm[i] = 0;
+				pardiso_iparm[i] = 0;
 			}
 
 			pardiso_iparm[0] = 1;    // No solver defaults
@@ -361,10 +431,10 @@ namespace MathLibrary {
 			pardiso_error = 1;		// Initialize error flag 
 			pardiso_nrhs = nRHS;	// number of right hand side
 
-			pardiso_iparm[10] = 1;   //Scaling vectors.
-			pardiso_iparm[12] = 1; 
+			//pardiso_iparm[10] = 1;   //Scaling vectors.
+			pardiso_iparm[12] = 1;   //Improved accuracy using (non-) symmetric weighted matching.
 
-			pardiso_iparm[7] = 6;	// Iterative refinement
+			//pardiso_iparm[7] = 6;	// Iterative refinement
 
 			// Print MKL Version
 			int len = 198;
@@ -876,33 +946,7 @@ namespace MathLibrary {
 				std::cout << "Unsupported File Format."<< std::endl;
 
 		}	
-		/***********************************************************************************************
-		* \brief This Creates a handle for a CSR-format matrix.
-		* \author Harikrishnan
-		***********/
-		sparse_matrix_t* createMKLSparseCSR() {
-			determineCSR();
-			std::vector<int> pointerB;		// Check for existence
-			std::vector<int> pointerE;		// Check for existence
-			std::cout << "CSR Row: " << (*rowIndex).size() << std::endl;
-			for (int i = 0; i < (*rowIndex).size()-1; i++)
-			{
-				pointerB.push_back((*rowIndex)[i]-1);
-				pointerE.push_back((*rowIndex)[i + 1]-1);
-			}
-			std::cout << "pointerB: ";
-			for (int i = 0; i < pointerB.size(); i++)
-				std::cout << pointerB[i] << " ";
-			std::cout << std::endl;
-			std::cout << "pointerE: ";
-			for (int i = 0; i < pointerE.size(); i++)
-				std::cout << pointerE[i] << " ";
-			std::cout << std::endl;
-			sparse_matrix_t* sparsecsr;
-			mkl_sparse_z_create_csr(sparsecsr, SPARSE_INDEX_BASE_ZERO, m, n, &pointerB[0], &pointerE[0], &columns[0], &values[0]);
-			//this->sparseMat = &sparsecsr;
-			return sparsecsr;
-		}
+
 		void printSparseMatrix() {
 			size_t ii_counter;
 			size_t jj_counter;
@@ -913,44 +957,8 @@ namespace MathLibrary {
 					}
 				}
 			}
-
-		}
-
-		void SparseSparseAddition(SparseMatrix* _mat) {
-			/*this->createMKLSparseCSR();
-			_mat->createMKLSparseCSR();
-			MKL_Complex16 alpha;
-			alpha.real = 1;
-			alpha.imag = 0;
-			sparse_matrix_t* sparseSum;
-			mkl_sparse_z_add(SPARSE_OPERATION_NON_TRANSPOSE, *this->sparseMat, alpha, *_mat->sparseMat, sparseSum);
-			print_csr_sparse_z(*sparseSum);*/
-		}
-		void print_csr_sparse_z(const sparse_matrix_t csrA)
-		{
-			// Read Matrix Data and Print it
-			/*int row, col;
-			sparse_index_base_t indextype;
-			int * bi, *ei;
-			int * j;
-			MKL_Complex16* rv;
-			sparse_status_t status = mkl_sparse_z_export_csr(csrA, &indextype, &row, &col, &bi, &ei, &j, &rv);
-			if (status == SPARSE_STATUS_SUCCESS)
-			{
-				printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
-				for (int r = 0; r<row; ++r)
-				{
-					for (int idx = bi[r]; idx<ei[r]; ++idx)
-					{
-						printf("<%d, %d> \t %f +1i*%f\n", r, j[idx], rv[idx].real, rv[idx].imag);
-					}
-				}
-			}
-			return;*/
 		}
 	private:
-
-		const sparse_matrix_t * sparseMat;
 		/// pointer to the vector of maps
 		mat_t* mat;
 		/// true if a square matrix should be stored
@@ -1020,7 +1028,6 @@ namespace MathLibrary {
 		***********/
 		void determineCSR() {
 			if (!alreadyCalled) {
-				std::cout << "!alreadyCalled" << std::endl;
 				row_iter ii;
 				col_iter jj;
 				size_t ele_row = 0; //elements in current row
@@ -1036,13 +1043,15 @@ namespace MathLibrary {
 
 				}
 				(*rowIndex)[m] = (ele_row + 1);
-			}
-			// This will free the memory
-			mat->clear();
-			mat_t dummyMat;
-			mat->swap(dummyMat);
+				// This will free the memory
+				mat->clear();
+				mat_t dummyMat;
+				mat->swap(dummyMat);
 
-			alreadyCalled = true;
+				alreadyCalled = true;
+			}
+			else
+				std::cout << "!alreadyCalled" << std::endl;
 		}
 		
 		/***********************************************************************************************
@@ -1310,5 +1319,4 @@ namespace MathLibrary {
 
 
 
-	void computeSparseMatrixAddition(MathLibrary::SparseMatrix<MKL_Complex16>* _mat1, MathLibrary::SparseMatrix<MKL_Complex16>* _mat2);
 } /* namespace Math */

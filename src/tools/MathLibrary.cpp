@@ -35,6 +35,18 @@ namespace MathLibrary {
 #endif
 	}
 
+	void computeDenseDotProductComplex(const STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, STACCATOComplexDouble* dotProduct, const int elements, bool _conjugateVec1) {
+#ifdef USE_INTEL_MKL
+		if (_conjugateVec1)
+			cblas_zdotc_sub(elements, vec1, 1, vec2, 1, dotProduct);
+		else
+			cblas_zdotu_sub(elements, vec1, 1, vec2, 1, dotProduct);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
 	double computeDenseDotProduct(const std::vector<double> &vec1, const std::vector<double> &vec2) {
 #ifdef USE_INTEL_MKL
 		return 0;// cblas_ddot(vec1.size(), &vec1[0], 1, &vec2[0], 1);
@@ -60,9 +72,24 @@ namespace MathLibrary {
 #endif
 	}
 
+	double computeDenseEuclideanNormComplex(const STACCATOComplexDouble *vec1, const int elements) {
+#ifdef USE_INTEL_MKL
+		return cblas_dznrm2(elements, vec1, 1);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
 	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements){
 #ifdef USE_INTEL_MKL
 		cblas_daxpy(elements, a, vec1, 1, vec2, 1);
+#endif
+	}
+
+	void computeDenseVectorAdditionComplex(const STACCATOComplexDouble *vec1, STACCATOComplexDouble *vec2, const STACCATOComplexDouble* a, const int elements) {
+#ifdef USE_INTEL_MKL
+		cblas_zaxpy(elements, a, vec1, 1, vec2, 1);
 #endif
 	}
 
@@ -229,38 +256,130 @@ namespace MathLibrary {
 		return 0;
 #endif
 	}
-	void computeSparseMatrixAddition(MathLibrary::SparseMatrix<MKL_Complex16>* _mat1, MathLibrary::SparseMatrix<MKL_Complex16>* _mat2) {
+	
+	void computeSparseMatrixAddition(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha) {
 #ifdef USE_INTEL_MKL
-		const sparse_matrix_t* sparsemat1 = _mat1->createMKLSparseCSR();
-		const sparse_matrix_t* sparsemat2 = _mat2->createMKLSparseCSR();
+		sparse_operation_t operationA;
+		if (!_conjugatetransposeA)
+			operationA = SPARSE_OPERATION_NON_TRANSPOSE;
+		else
+			operationA = SPARSE_OPERATION_CONJUGATE_TRANSPOSE;
 
-		MKL_Complex16 alpha;
-		alpha.real = 1;
-		alpha.imag = 0;
-		sparse_matrix_t* sparseSum;
-		mkl_sparse_z_add(SPARSE_OPERATION_NON_TRANSPOSE, *sparsemat1, alpha, *sparsemat2, sparseSum);
-		/*
-		// Read Matrix Data and Print it
-			int row, col;
-			sparse_index_base_t indextype;
-			int * bi, *ei;
-			int * j;
-			MKL_Complex16* rv;
-			sparse_status_t status = mkl_sparse_z_export_csr(csrA, &indextype, &row, &col, &bi, &ei, &j, &rv);
-			if (status == SPARSE_STATUS_SUCCESS)
-			{
-				printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
-				for (int r = 0; r<row; ++r)
-				{
-					for (int idx = bi[r]; idx<ei[r]; ++idx)
-					{
-						printf("<%d, %d> \t %f +1i*%f\n", r, j[idx], rv[idx].real, rv[idx].imag);
-					}
-				}
-			}*/
+		if (!_multByScalar){
+			_alpha.real = 1;
+			_alpha.imag = 0;
+		}
+
+		sparse_status_t status = mkl_sparse_z_add(operationA, *_matA, _alpha, *_matB, _matC);
 #endif
 #ifndef USE_INTEL_MKL
 		return 0;
+#endif
+	}
+	void computeSparseMatrixMultiplication(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB) {
+#ifdef USE_INTEL_MKL
+		matrix_descr descrA;
+		sparse_operation_t operationA;
+		if (!_conjugatetransposeA)
+			operationA = SPARSE_OPERATION_NON_TRANSPOSE;
+		else
+			operationA = SPARSE_OPERATION_CONJUGATE_TRANSPOSE;
+
+		if (_symmetricA)
+		{
+			descrA.type = SPARSE_MATRIX_TYPE_SYMMETRIC;
+			descrA.mode = SPARSE_FILL_MODE_UPPER;
+			descrA.diag = SPARSE_DIAG_NON_UNIT;
+		}
+		else
+			descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
+
+		matrix_descr descrB;
+		sparse_operation_t operationB;
+		if (!_conjugatetransposeB)
+			operationB = SPARSE_OPERATION_NON_TRANSPOSE;
+		else
+			operationB = SPARSE_OPERATION_CONJUGATE_TRANSPOSE;
+
+		if (_symmetricA)
+		{
+			descrB.type = SPARSE_MATRIX_TYPE_SYMMETRIC;
+			descrB.mode = SPARSE_FILL_MODE_UPPER;
+			descrB.diag = SPARSE_DIAG_NON_UNIT;
+		}
+		else
+			descrB.type = SPARSE_MATRIX_TYPE_GENERAL;
+
+
+		// Single stage operation
+		sparse_status_t status = mkl_sparse_sp2m(operationA, descrA, *_matA, operationB, descrB, *_matB, SPARSE_STAGE_FULL_MULT, _matC);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
+	void computeSparseMatrixDenseMatrixMultiplication(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
+#ifdef USE_INTEL_MKL
+		matrix_descr descrA;
+		sparse_operation_t operationA;
+		if (!_conjugatetransposeA) 
+			operationA = SPARSE_OPERATION_NON_TRANSPOSE;
+		else 
+			operationA = SPARSE_OPERATION_CONJUGATE_TRANSPOSE; 
+
+		if (_symmetricA)
+		{
+			descrA.type = SPARSE_MATRIX_TYPE_SYMMETRIC;
+			descrA.mode = SPARSE_FILL_MODE_UPPER;
+			descrA.diag = SPARSE_DIAG_NON_UNIT;
+		}
+		else
+			descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
+
+		if (!_multByScalar) {
+			_alpha.real = 1;
+			_alpha.imag = 0;
+		}
+
+		STACCATOComplexDouble beta;
+		if (!_addPrevious) {
+			beta.real = 0.0;
+			beta.imag = 0.0;
+		}
+		else {
+			beta.real = 1.0;
+			beta.imag = 1.0;
+		}
+
+		sparse_status_t status = mkl_sparse_z_mm(operationA, _alpha, *_matA, descrA, SPARSE_LAYOUT_ROW_MAJOR, _matX, _k, _k, beta, _matY, _k);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
+	void print_csr_sparse_z(sparse_matrix_t* _mat)
+	{
+#ifdef USE_INTEL_MKL
+		// Read Matrix Data and Print it
+		int row, col;
+		sparse_index_base_t indextype;
+		int * bi, *ei;
+		int * j;
+		MKL_Complex16* rv;
+		sparse_status_t status = mkl_sparse_z_export_csr(*_mat, &indextype, &row, &col, &bi, &ei, &j, &rv);
+		if (status == SPARSE_STATUS_SUCCESS)
+		{
+			printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
+			for (int r = 0; r < row; ++r)
+			{
+				for (int idx = bi[r]; idx < ei[r]; ++idx)
+				{
+					printf("<%d, %d> \t %f +1i*%f\n", r + 1, j[idx - 1], rv[idx - 1].real, rv[idx - 1].imag);
+				}
+			}
+		}
 #endif
 	}
 } /* namespace Math */

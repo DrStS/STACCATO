@@ -1,0 +1,109 @@
+<STACCATO_XML>
+	<PARTS>
+		<PART TYPE="FE_KMOR" Name="BeamSSD_ODB">
+			<ROMDATA>
+				<EXP_POINTS Type="MANUAL">100 2400</EXP_POINTS>		<!-- TYPE= MANUAL, AUTO -->
+				<KRYLOV_ORDER Type="MANUAL">2</KRYLOV_ORDER>			<!-- TYPE= MANUAL, AUTO -->
+				<INPUTS Type="NODES">															<!-- TYPE= NODES -->
+					<NODESET Name="INTERFACESET"></NODESET>
+					<NODESET Name="CLOAD"></NODESET>
+				</INPUTS>
+				<OUTPUTS Type="MIMO">															<!-- TYPE= NODES, MIMO -->
+				</OUTPUTS>
+			</ROMDATA>
+			<FILEIMPORT Type="AbqODB">
+				<FILE>KMOR_BeamTetSSD.odb</FILE>
+				<IMPORT Type="Nodes">
+					<LIST>ALL</LIST>
+				</IMPORT>
+				<IMPORT Type="Elements">
+					<LIST>ALL</LIST>
+					<TRANSLATETO Source="C3D10" Target="STACCATO_Tetrahedron10Node3D"/>
+				</IMPORT>
+				<IMPORT Type="Sets">
+					<NODE>
+						<TRANSLATETO Source="INTERFACESET" Target="INTERFACESET"/>
+						<TRANSLATETO Source="DOFLOAD" Target="CLOAD"/>
+					</NODE>
+					<ELEMENT>
+						<!--<TRANSLATETO Source="allEle" Target="LOAD"/>-->
+					</ELEMENT>
+				</IMPORT>
+			</FILEIMPORT>
+			<MATERIALS>
+				<MATERIAL Name="Steel" Type="Isotropic">
+					<E>211000</E>
+					<nu>0.3</nu>
+					<rho>7.85e-11</rho>
+					<eta>0.01</eta>
+				</MATERIAL>
+			</MATERIALS>
+			<SECTIONS>
+				<SECTION Name="Sec">
+					<ELEMENTSET>allElem</ELEMENTSET>
+					<MATERIAL>Steel</MATERIAL>
+				</SECTION>
+			</SECTIONS>
+			<SETS>
+				<ELEMENTSET Name="allElem"><LIST>ALL</LIST></ELEMENTSET>
+			</SETS>
+			<LOADS>
+				<!--<LOAD Type="DistributingCouplingForce" Name='LOAD-1'>
+					<REFERENCENODESET Name="REFNODE"/>
+					<REFERENCENODE><X>0.000</X><Y>500.000</Y><Z>0.000</Z></REFERENCENODE>
+					<COUPLINGNODESET Name="SLAVENODES"/>
+					<REAL><X>5000.000</X><Y>150.000</Y><Z>180.00</Z></REAL>
+					<IMAGINARY><X>0.000</X><Y>0.000</Y><Z>0.000</Z></IMAGINARY>
+				</LOAD>-->
+				<LOAD Type="ConcentratedForce" Name='LOAD-2'>
+						<NODESET Name="clamp22"/>
+						<REAL><X>0.000</X><Y>150.000</Y><Z>5005.49</Z></REAL>
+						<IMAGINARY><X>20.000</X><Y>30.000</Y><Z>40.000</Z></IMAGINARY>
+				</LOAD>
+			</LOADS>
+			<BC_DEF>
+				<DISPLACEMENT Name="DisplacementBC-1">
+					<NODESET Name="BOUNDARY"/>
+					<REAL>
+						<X>0.000</X>
+						<Y>0.000</Y>
+						<Z>0.000</Z>
+					</REAL>
+					<IMAGINARY>
+						<X>0.000</X>
+						<Y>0.000</Y>
+						<Z>0.000</Z>
+					</IMAGINARY>
+				</DISPLACEMENT>
+			</BC_DEF>
+		</PART>
+	</PARTS>
+
+	<ANALYSIS>
+		<NAME>KMOR_BeamSSD</NAME>
+		<TYPE>SUBSTRUCTURING</TYPE>  <!-- TYPE = STATIC, STEADYSTATE_DYNAMIC_REAL, STEADYSTATE_DYNAMIC -->
+		<FREQUENCY Type="RANGE">
+			<START_FREQ>100</START_FREQ>
+			<END_FREQ>2400</END_FREQ>
+			<STEP_FREQ>1</STEP_FREQ>
+		</FREQUENCY>
+		<BCCASE Name="ALL-BCs">
+			<!--<BC Name = "DisplacementBC-1" Instance="FCoupleFelgeDynamicODB"/>-->
+		</BCCASE>
+		<LOADCASES>
+			 <!--<LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-1">
+				<LOAD Name = "LOAD-2" Instance="FCoupleFelgeDynamicODB"/>
+			</LOADCASE> 
+			<LOADCASE Type="ConcentratedLoadCase" NamePrefix="LC-2">
+				<LOAD Name = "LOAD-2" Instance="FCoupleFelgeDynamicODB"/>
+			</LOADCASE>-->
+			<!--<LOADCASE Type="RotateGenerate" NamePrefix="LG-1">
+				<LOAD Name = "LOAD-1" Instance="FCoupleFelgeDynamicODB"/>
+				<START_THETA>0</START_THETA>
+				<END_THETA>360</END_THETA>
+				<STEP_THETA>10</STEP_THETA>
+			</LOADCASE>--> 
+		</LOADCASES>
+	</ANALYSIS>
+
+</STACCATO_XML>

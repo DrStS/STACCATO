@@ -46,6 +46,11 @@
 #include <AuxiliaryFunctions.h>
 #include <iomanip>
 
+#ifdef USE_INTEL_MKL
+#define MKL_DIRECT_CALL 1
+#include <mkl.h>
+#endif
+
 KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "=============== STACCATO ROM Analysis =============\n";
 
@@ -240,31 +245,157 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << std::endl;
 			}
 
-			// Sparse Mat + Sparse Mat Addition
-			MathLibrary::SparseMatrix<MKL_Complex16>* Mat1 = new MathLibrary::SparseMatrix<MKL_Complex16>(3, true, true);
-			MathLibrary::SparseMatrix<MKL_Complex16>* Mat2 = new MathLibrary::SparseMatrix<MKL_Complex16>(3, true, true);
+			// Dense matrix matri multiplication complex
+			std::vector<STACCATOComplexDouble> DenseMat1;
+			std::vector<STACCATOComplexDouble> DenseMat2;
+			std::vector<STACCATOComplexDouble> DenseProduct;
 
-			(*Mat1)(0, 0).real = 2;
-			(*Mat1)(0, 0).imag = 10;
-			(*Mat1)(1, 0).real = 11;
-			(*Mat1)(1, 1).real = -2;
-			(*Mat1)(1, 1).imag = -20;
-			(*Mat1)(2, 2).real = 10;
+			STACCATOComplexDouble zero;
+			zero.real = 0;
+			zero.imag = 0;
+			DenseMat1.resize(9);
+			DenseMat2.resize(9);
+			DenseProduct.resize(9, zero);
 
-			(*Mat2)(0, 0).real = 5;
-			(*Mat2)(0, 0).imag = 7;
-			(*Mat2)(0, 1).imag = 1;
-			(*Mat2)(1, 1).real = 9;
-			(*Mat2)(1, 1).imag = -1;
+			// Square Mat
+			DenseMat1[0].real = 2; DenseMat1[0].imag = 1;
+			DenseMat1[1].real = 1; DenseMat1[1].imag = 1;
+			DenseMat1[2].real = 4; DenseMat1[2].imag = 1;
+			DenseMat1[3].real = 5; DenseMat1[3].imag = 1;
+			DenseMat1[4].real = 6; DenseMat1[4].imag = 1;
+			DenseMat1[5].real = 11; DenseMat1[5].imag = 1;
+			DenseMat1[6].real = 12; DenseMat1[6].imag = 1;
+			DenseMat1[7].real = 13; DenseMat1[7].imag = 1;
+			DenseMat1[8].real = 4; DenseMat1[8].imag = 1;
+
+			DenseMat2[0].real = 2; DenseMat2[0].imag = 0;
+			DenseMat2[1].real = 1; DenseMat2[1].imag = 0;
+			DenseMat2[2].real = 4; DenseMat2[2].imag = 0;
+			DenseMat2[3].real = 5; DenseMat2[3].imag = 0;
+			DenseMat2[4].real = 6; DenseMat2[4].imag = 0;
+			DenseMat2[5].real = 11; DenseMat2[5].imag = 0;
+			DenseMat2[6].real = 12; DenseMat2[6].imag = 2;
+			DenseMat2[7].real = 13; DenseMat2[7].imag = 0;
+			DenseMat2[8].real = 4; DenseMat2[8].imag = 0;
+
+			STACCATOComplexDouble alpha;
+			alpha.real = 1;
+			alpha.imag = 0;
+			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(3, 3, 3, &DenseMat1[0], &DenseMat2[0], &DenseProduct[0], false, true, alpha, false, false);
+			std::cout << "Check Product: " << std::endl;;
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << DenseProduct[i * 3 + j].real << " + 1i*"<< DenseProduct[i*3+j].imag << " , ";
+				}
+				std::cout << std::endl;
+			}
+
+			// Complex Norm
+			DenseMat1[0].real = 2; DenseMat1[0].imag = 1;
+			DenseMat1[1].real = 1; DenseMat1[1].imag = 1;
+			DenseMat1[2].real = 4; DenseMat1[2].imag = 1;
+			DenseMat1[3].real = 5; DenseMat1[3].imag = 1;
+			DenseMat1[4].real = 6; DenseMat1[4].imag = 1;
+			DenseMat1[5].real = 11; DenseMat1[5].imag = 1;
+			DenseMat1[6].real = 12; DenseMat1[6].imag = 1;
+			DenseMat1[7].real = 13; DenseMat1[7].imag = 1;
+			DenseMat1[8].real = 4; DenseMat1[8].imag = 1;
+			std::cout << "Euclidean norm of complex vector: " << MathLibrary::computeDenseEuclideanNormComplex(&DenseMat1[0], 9) << std::endl;
+
+			// Double norm
+			std::vector<double> vecNorm2 = { 1,2, 3,4, 5,6, 7,8, 9, 10 };
+			std::cout << "Euclidean norm of double vector : " << MathLibrary::computeDenseEuclideanNorm(&vecNorm2[0],10) << std::endl;
 
 
-			//(*Mat1).writeSparseMatrixToFile("Test_Mat1", "dat");
-			//(*Mat2).writeSparseMatrixToFile("Test_Mat2", "dat");
+			// Complex Dot Product (Conjugate)
+			STACCATOComplexDouble dotProduct;
+			MathLibrary::computeDenseDotProductComplex(&DenseMat1[0], &DenseMat2[0], &dotProduct, 9, true);
+			std::cout << "Conjugated dot product : " << dotProduct.real << "+1i*"<< dotProduct.imag << std::endl;
+			// Complex Dot Product (Unconjugate)
+			MathLibrary::computeDenseDotProductComplex(&DenseMat1[0], &DenseMat2[0], &dotProduct, 9, false);
+			std::cout << "Unconjugated dot product : " << dotProduct.real << "+1i*" << dotProduct.imag << std::endl;
 
-			//(*Mat1).createMKLSparseCSR();
-			//(*Mat1).SparseSparseAddition(Mat2);
+			// Complex Vector addition
+			STACCATOComplexDouble alpha1;
+			alpha1.real = 100;
+			alpha1.imag = 200;
+			MathLibrary::computeDenseVectorAdditionComplex(&DenseMat1[0], &DenseMat2[0], &alpha1, 9);
+			std::cout << "Complex vector Sum: ";
+			for (int i = 0; i < 9; i++)
+					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << DenseMat2[i].real << " + 1i*" << DenseMat2[i].imag << " < ";
+			std::cout << std::endl;
 
-			MathLibrary::computeSparseMatrixAddition(Mat1, Mat2);
+			// Sparse Mat + Sparse Mat Addition (Pending)
+			std::vector<STACCATOComplexDouble> SparseMat1;
+			SparseMat1.resize(3);
+			SparseMat1[0].real = 2; SparseMat1[0].imag = 10; //(0,0)
+			SparseMat1[1].real = 11; SparseMat1[1].imag = 0; //(1,0)
+			SparseMat1[2].real = -2; SparseMat1[2].imag = -20; //(1,1)
+			SparseMat1[3].real = 10; SparseMat1[3].imag = 0; //(2,2)
+
+			std::vector<STACCATOComplexDouble> SparseMat2;
+			SparseMat2.resize(3);
+			SparseMat2[0].real = 5; SparseMat2[0].imag = 7; //(0,0)
+			SparseMat2[1].real = 0; SparseMat2[1].imag = 1; //(0,1)
+			SparseMat2[2].real = 9; SparseMat2[2].imag = -1; //(1,1)
+			SparseMat2[3].real = 500; SparseMat2[3].imag = 0; //(2,2)
+
+			std::vector<int> pointerB1 = {1,2,4};
+			std::vector<int> pointerE1 = {2,4,5};
+			std::vector<int> columns1 = {1,1,2,3};
+			sparse_matrix_t sparsecsr1;
+			sparse_status_t status1 = mkl_sparse_z_create_csr(&sparsecsr1, SPARSE_INDEX_BASE_ONE, 3, 3, &pointerB1[0], &pointerE1[0], &columns1[0], &SparseMat1[0]);
+
+			std::vector<int> pointerB2 = { 1,3,4 };
+			std::vector<int> pointerE2 = { 3,4,5 };
+			std::vector<int> columns2 = { 1,2,2,3 };
+			sparse_matrix_t sparsecsr2;
+			sparse_matrix_t sparsecsrSum;
+			STACCATOComplexDouble alpha4;
+			alpha4.real = 1;
+			alpha4.imag = 0;
+			sparse_status_t status2 = mkl_sparse_z_create_csr(&sparsecsr2, SPARSE_INDEX_BASE_ONE, 3, 3, &pointerB2[0], &pointerE2[0], &columns2[0], &SparseMat2[0]);
+			std::cout << "Sparse Sparse Addition: " << std::endl;
+			MathLibrary::computeSparseMatrixAddition(&sparsecsr1, &sparsecsr2, &sparsecsrSum, false, false, alpha4);
+			MathLibrary::print_csr_sparse_z(&sparsecsrSum);
+
+			// Sparse Mat Sparse Mat Multiplication
+			std::cout << "Sparse Sparse Multiplication: " << std::endl;
+			sparse_matrix_t sparsecsrPdt;
+			MathLibrary::computeSparseMatrixMultiplication(&sparsecsr1, &sparsecsr2, &sparsecsrPdt, false, false, false, false);
+			MathLibrary::print_csr_sparse_z(&sparsecsrPdt);
+
+			// Sparse Mat Dense Mat Multiplication
+			DenseMat1[0].real = 2; DenseMat1[0].imag = 1;
+			DenseMat1[1].real = 1; DenseMat1[1].imag = 1;
+			DenseMat1[2].real = 4; DenseMat1[2].imag = 1;
+			DenseMat1[3].real = 5; DenseMat1[3].imag = 1;
+			DenseMat1[4].real = 6; DenseMat1[4].imag = 1;
+			DenseMat1[5].real = 11; DenseMat1[5].imag = 1;
+			DenseMat1[6].real = 12; DenseMat1[6].imag = 1;
+			DenseMat1[7].real = 13; DenseMat1[7].imag = 1;
+			DenseMat1[8].real = 4; DenseMat1[8].imag = 1;
+
+			std::vector<STACCATOComplexDouble> SparseDenseProduct;
+			SparseDenseProduct.resize(9);
+			STACCATOComplexDouble alpha3;
+			alpha3.real =1;
+			alpha3.imag = 0;
+			MathLibrary::computeSparseMatrixDenseMatrixMultiplication(3, &sparsecsr1, &DenseMat1[0], &SparseDenseProduct[0], false, false, alpha3, false, false);
+			std::cout << "Check Sparse Dense Product: " << std::endl;;
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+				{
+					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << SparseDenseProduct[i * 3 + j].real << " + 1i*" << SparseDenseProduct[i * 3 + j].imag << " , ";
+				}
+				std::cout << std::endl;
+			}
+			
+
+		
 			//-----------------------------------------------------------------------------
 
 			exit(0);

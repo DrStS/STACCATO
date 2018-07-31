@@ -67,7 +67,7 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 10;
+	double freq_max = 1000;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -77,11 +77,12 @@ int main (int argc, char *argv[]){
 	rhs_val.y = (double)0.0;
 
 	// Time measurements
-	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large;
+	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large, time_total;
 	thrust::host_vector<float> vec_time_small(freq_max);
 	thrust::host_vector<float> vec_time_mid(freq_max);
 	thrust::host_vector<float> vec_time_large(freq_max);
 
+	time_total = clock();
 	// Library initialisation
 	cublasStatus_t cublasStatus;
 	cublasHandle_t cublasHandle;
@@ -276,7 +277,7 @@ int main (int argc, char *argv[]){
 		cuDoubleComplex *d_ptr_workspace_small = thrust::raw_pointer_cast(d_workspace_small.data());
 
 		// LU decomposition
-		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_small, row_small, d_ptr_A_small, row_small, d_ptr_workspace_small, d_ptr_pivot_small, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_small, row_small, d_ptr_A_small, row_small, d_ptr_workspace_small, NULL, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed (small)" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0){
@@ -284,7 +285,7 @@ int main (int argc, char *argv[]){
 		}
 
 		// Solve x = A\b
-		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_small, 1, d_ptr_A_small, row_small, d_ptr_pivot_small, d_ptr_rhs_small, row_small, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_small, 1, d_ptr_A_small, row_small, NULL, d_ptr_rhs_small, row_small, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0) {
@@ -317,7 +318,7 @@ int main (int argc, char *argv[]){
 		cuDoubleComplex *d_ptr_workspace_mid = thrust::raw_pointer_cast(d_workspace_mid.data());
 
 		// LU Decomposition
-		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_mid, row_mid, d_ptr_A_mid, row_mid, d_ptr_workspace_mid, d_ptr_pivot_mid, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_mid, row_mid, d_ptr_A_mid, row_mid, d_ptr_workspace_mid, NULL, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed (mid)" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0){
@@ -325,7 +326,7 @@ int main (int argc, char *argv[]){
 		}
 
 		// Solve x = A\b
-		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_mid, 1, d_ptr_A_mid, row_mid, d_ptr_pivot_mid, d_ptr_rhs_mid, row_mid, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_mid, 1, d_ptr_A_mid, row_mid, NULL, d_ptr_rhs_mid, row_mid, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0) {
@@ -358,7 +359,7 @@ int main (int argc, char *argv[]){
 		cuDoubleComplex *d_ptr_workspace_large = thrust::raw_pointer_cast(d_workspace_large.data());
 
 		// LU Decomposition
-		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_large, row_large, d_ptr_A_large, row_large, d_ptr_workspace_large, d_ptr_pivot_large, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_large, row_large, d_ptr_A_large, row_large, d_ptr_workspace_large, NULL, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed (large)" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0){
@@ -366,7 +367,7 @@ int main (int argc, char *argv[]){
 		}
 
 		// Solve x = A\b
-		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_large, 1, d_ptr_A_large, row_large, d_ptr_pivot_large, d_ptr_rhs_large, row_large, d_ptr_solverInfo);
+		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_large, 1, d_ptr_A_large, row_large, NULL, d_ptr_rhs_large, row_large, d_ptr_solverInfo);
 		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
 		solverInfo = d_solverInfo;
 		if (solverInfo[0] != 0) {
@@ -417,4 +418,8 @@ int main (int argc, char *argv[]){
 	// Destroy cuBLAS & cuSolver
 	cublasDestroy(cublasHandle);
 	cusolverDnDestroy(cusolverHandle);
+
+	time_total = clock() - time_total;
+	std::cout << ">>>>>> Total execution time = " << ((float)time_total)/CLOCKS_PER_SEC << "\n" << std::endl;
+
 }

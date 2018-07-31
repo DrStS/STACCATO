@@ -155,7 +155,6 @@ namespace MathLibrary {
 	* \author Stefan Sicklinger
 	***********/
 	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall);
-
 	/***********************************************************************************************
 	* \brief Compute dense matrix-vector product
 	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
@@ -193,6 +192,14 @@ namespace MathLibrary {
 	***********/
 	void computeDenseMatrixQRDecomposition(int _m, int _n, double *_A);
 	/***********************************************************************************************
+	* \brief Computes the QR factorization of a complex mxn matrix
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A m rows by _n columns, out-> the orthogonal matrix Q
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A);
+	/***********************************************************************************************
 	* \brief Computes a sparse matrix sparse matrix addition C := alpha*op(A) + B
 	* \param[in] _matA the A sparse matrix
 	* \param[in] _matB the B sparse matrix
@@ -202,7 +209,7 @@ namespace MathLibrary {
 	* \param[in/out] _matC the sum C := alpha*op(A) + B
 	* \author Harikrishnan Sreekumar
 	***********/
-	void computeSparseMatrixAddition(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha);
+	void computeSparseMatrixAdditionComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha);
 	/***********************************************************************************************
 	* \brief Computes product of two sparse matrices and stores the result as a sparse matrix. C := opA(A) *opB(B)
 	* \param[in] _matA the A sparse matrix
@@ -214,7 +221,7 @@ namespace MathLibrary {
 	* \param[in/out] _matC the product C := opA(A) *opB(B)
 	* \author Harikrishnan Sreekumar
 	***********/
-	void computeSparseMatrixMultiplication(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB);
+	void computeSparseMatrixMultiplicationComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB);
 	/***********************************************************************************************
 	* \brief Computes the product of a sparse matrix and a dense matrix. y := alpha*op(A)*x + beta*y
 	* \param[in] _k Specifies the number of columns of the matrix X 
@@ -228,7 +235,7 @@ namespace MathLibrary {
 	* \param[in] _addPrevious performs dense matrix addition. false->y := alpha*op(A)*x , true-> y := alpha*op(A)*x + beta*y
 	* \author Harikrishnan Sreekumar
 	***********/
-	void computeSparseMatrixDenseMatrixMultiplication(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious);
+	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious);
 	/***********************************************************************************************
 	* \brief Displays the CSR sparse data type
 	* \param[in] _mat Sparse matrix for displaying

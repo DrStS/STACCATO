@@ -170,14 +170,14 @@ namespace MathLibrary {
 			//	nb = _n;
 		}
 		else {
-			transposeA = CblasTrans;
+			transposeA = CblasConjTrans;
 			ka = _m;
 			//	nb = _n;
 		}
 		STACCATOComplexDouble alpha;
 		if (!_multByScalar) {
 			alpha.real = 1.0;
-			alpha.imag = 1.0;
+			alpha.imag = 0.0;
 		}
 		else {
 			alpha = _alpha;
@@ -256,8 +256,22 @@ namespace MathLibrary {
 		return 0;
 #endif
 	}
+
+	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A) {
+#ifdef USE_INTEL_MKL
+		std::vector<STACCATOComplexDouble> tau;
+		tau.resize(_m < _n ? _m : _n);
+		// QR Factorization
+		LAPACKE_zgeqrf(CblasRowMajor, _m, _n, _A, _n, &tau[0]);
+		// Generation of Orthogonal Q
+		LAPACKE_zungqr(CblasRowMajor, _m, _n, tau.size(), _A, _n, &tau[0]);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
 	
-	void computeSparseMatrixAddition(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha) {
+	void computeSparseMatrixAdditionComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha) {
 #ifdef USE_INTEL_MKL
 		sparse_operation_t operationA;
 		if (!_conjugatetransposeA)
@@ -276,7 +290,7 @@ namespace MathLibrary {
 		return 0;
 #endif
 	}
-	void computeSparseMatrixMultiplication(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB) {
+	void computeSparseMatrixMultiplicationComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB) {
 #ifdef USE_INTEL_MKL
 		matrix_descr descrA;
 		sparse_operation_t operationA;
@@ -319,7 +333,7 @@ namespace MathLibrary {
 #endif
 	}
 
-	void computeSparseMatrixDenseMatrixMultiplication(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
+	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
 #ifdef USE_INTEL_MKL
 		matrix_descr descrA;
 		sparse_operation_t operationA;

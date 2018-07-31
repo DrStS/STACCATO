@@ -245,6 +245,51 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << std::endl;
 			}
 
+			// Dense Mat Complex QR Decomposition
+			std::vector<STACCATOComplexDouble> vecqrComplex;
+			vecqrComplex.resize(10);
+			vecqrComplex[0].real = 2; vecqrComplex[0].imag = 1;
+			vecqrComplex[1].real = 1; vecqrComplex[1].imag = 1;
+			vecqrComplex[2].real = 4; vecqrComplex[2].imag = 1;
+			vecqrComplex[3].real = 5; vecqrComplex[3].imag = 1;
+			vecqrComplex[4].real = 6; vecqrComplex[4].imag = 1;
+			vecqrComplex[5].real = 11; vecqrComplex[5].imag = 1;
+			vecqrComplex[6].real = 12; vecqrComplex[6].imag = 1;
+			vecqrComplex[7].real = 13; vecqrComplex[7].imag = 1;
+			vecqrComplex[8].real = 4; vecqrComplex[8].imag = 1;
+			vecqrComplex[9].real = 15; vecqrComplex[9].imag = 5;
+
+			int nrowC = 5;
+			int ncolC = 2;
+			MathLibrary::computeDenseMatrixQRDecompositionComplex(nrowC, ncolC, &vecqrComplex[0]);
+
+			std::cout << "Complex QR Decomposition: " << std::endl;;
+			for (int i = 0; i < nrowC; i++)
+			{
+				for (int j = 0; j < ncolC; j++)
+				{
+					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << vecqrComplex[i * ncolC + j].real<< "+1i*" << vecqrComplex[i * ncolC + j].imag << " , ";
+				}
+				std::cout << std::endl;
+			}
+
+			std::vector<STACCATOComplexDouble> vecorthoComplex;
+			vecorthoComplex.resize(ncolC*ncolC);
+
+			STACCATOComplexDouble alpha5;
+			alpha5.real = 1;
+
+			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ncolC, ncolC, nrowC, &vecqrComplex[0], &vecqrComplex[0], &vecorthoComplex[0], true, false, alpha5, false, false);
+			std::cout << "Check Orthogonality: " << std::endl;;
+			for (int i = 0; i < ncolC; i++)
+			{
+				for (int j = 0; j < ncolC; j++)
+				{
+					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << vecorthoComplex[i * ncolC + j].real << "+1i*" << vecorthoComplex[i * ncolC + j].imag  << " , ";
+				}
+				std::cout << std::endl;
+			}
+
 			// Dense matrix matri multiplication complex
 			std::vector<STACCATOComplexDouble> DenseMat1;
 			std::vector<STACCATOComplexDouble> DenseMat2;
@@ -358,13 +403,13 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			alpha4.imag = 0;
 			sparse_status_t status2 = mkl_sparse_z_create_csr(&sparsecsr2, SPARSE_INDEX_BASE_ONE, 3, 3, &pointerB2[0], &pointerE2[0], &columns2[0], &SparseMat2[0]);
 			std::cout << "Sparse Sparse Addition: " << std::endl;
-			MathLibrary::computeSparseMatrixAddition(&sparsecsr1, &sparsecsr2, &sparsecsrSum, false, false, alpha4);
+			MathLibrary::computeSparseMatrixAdditionComplex(&sparsecsr1, &sparsecsr2, &sparsecsrSum, false, false, alpha4);
 			MathLibrary::print_csr_sparse_z(&sparsecsrSum);
 
 			// Sparse Mat Sparse Mat Multiplication
 			std::cout << "Sparse Sparse Multiplication: " << std::endl;
 			sparse_matrix_t sparsecsrPdt;
-			MathLibrary::computeSparseMatrixMultiplication(&sparsecsr1, &sparsecsr2, &sparsecsrPdt, false, false, false, false);
+			MathLibrary::computeSparseMatrixMultiplicationComplex(&sparsecsr1, &sparsecsr2, &sparsecsrPdt, false, false, false, false);
 			MathLibrary::print_csr_sparse_z(&sparsecsrPdt);
 
 			// Sparse Mat Dense Mat Multiplication
@@ -383,7 +428,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			STACCATOComplexDouble alpha3;
 			alpha3.real =1;
 			alpha3.imag = 0;
-			MathLibrary::computeSparseMatrixDenseMatrixMultiplication(3, &sparsecsr1, &DenseMat1[0], &SparseDenseProduct[0], false, false, alpha3, false, false);
+			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(3, &sparsecsr1, &DenseMat1[0], &SparseDenseProduct[0], false, false, alpha3, false, false);
 			std::cout << "Check Sparse Dense Product: " << std::endl;;
 			for (int i = 0; i < 3; i++)
 			{

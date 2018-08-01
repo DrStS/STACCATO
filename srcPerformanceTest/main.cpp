@@ -132,7 +132,8 @@ int main(int argc, char *argv[]) {
 	// OpenMP Threads
 	//int nt = mkl_get_max_threads();
 	int nt = 4;
-	mkl_set_num_threads(nt);
+	mkl_set_num_threads(4);
+	omp_set_num_threads(4);
 	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
 
 	// Parameters
@@ -191,7 +192,8 @@ int main(int argc, char *argv[]) {
 	// Loop over frequency
 #pragma omp parallel
 {
-		std::cout << "OMP test" << std::endl;
+#pragma omp critical (cout)
+		std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
 #pragma omp for
 	for (int it = (int)freq_min; it <= (int)freq_max; it++) {
 		timerIteration.start();

@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
 
 	// OpenMP Threads
 	//int nt = mkl_get_max_threads();
-	int nt = 1;
+	int nt = 4;
 	mkl_set_num_threads(nt);
 	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
 
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
 
 		// Output messages
 		timerIteration.stop();
-		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
+		//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
 
 		// Accumulate time measurements
 		vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;

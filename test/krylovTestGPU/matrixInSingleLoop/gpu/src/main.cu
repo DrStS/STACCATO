@@ -377,7 +377,7 @@ int main (int argc, char *argv[]){
 
 		// Output messages
 		timerIteration.stop();
-		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Mid = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Large = " << timerSmall.getDurationMicroSec()*1e-6 << std::endl;
+		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Mid = " << timerMid.getDurationMicroSec()*1e-6 << " || " << "Large = " << timerMid.getDurationMicroSec()*1e-6 << std::endl;
 
 		// Accumulate time measurements
 		vec_time_small[i] = timerSmall.getDurationMicroSec()*1e-6;

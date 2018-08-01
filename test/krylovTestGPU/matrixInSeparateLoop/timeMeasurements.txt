@@ -1,25 +1,69 @@
-<All of the matrices are solved in a single program>
+<Each matrix size solved separately upon user input> 1000 frequency iterations
 
 <GPU>
+------------------------------SMALL------------------------------
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 44.2682
->>>>>> Average time (s) for each matrix: Small = 0.000557274 ||  Mid = 0.00216472 ||  Large = 0.0412625
->>>>>> Total execution time (s) = 59.8143
+>>>>>> Time taken (s) = 0.437314
+>>>>>> Average time (s) for computing small matrix: = 0.000380466
+>>>>>> Total execution time (s) = 1.12437
+------------------------------MID------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 2.18882
+>>>>>> Average time (s) for computing mid matrix: = 0.0020865
+>>>>>> Total execution time (s) = 2.92213
+------------------------------LARGE------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 40.8399
+>>>>>> Average time (s) for computing large matrix: = 0.0406756
+>>>>>> Total execution time (s) = 56.354
 
 <CPU> - 20 threads (without optimisation flags)
+------------------------------SMALL------------------------------
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 271.222
->>>>>> Average time (s) for each matrix: Small = 5.0774e-05 ||  Mid = 0.0406044 ||  Large = 0.230109
->>>>>> Total execution time (s) = 285.586
+>>>>>> Time taken (s) = 0.049124
+>>>>>> Average time (s) for matrix computation (small) : 2.394e-05
+>>>>>> Total execution time (s) = 0.053166
+------------------------------MID------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 29.1806
+>>>>>> Average time (s) for matrix computation (mid) : 0.0291545
+>>>>>> Total execution time (s) = 29.2866
+------------------------------LARGE------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 241.441
+>>>>>> Average time (s) for matrix computation (large) : 0.240976
+>>>>>> Total execution time (s) = 255.362
 
 <CPU> - 20 threads (with optimisation flags)
+------------------------------SMALL------------------------------
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 280.256
->>>>>> Average time (s) for each matrix: Small = 5.9843e-05 ||  Mid = 0.0397201 ||  Large = 0.240051
->>>>>> Total execution time (s) = 294.451
+>>>>>> Time taken (s) = 0.041466
+>>>>>> Average time (s) for matrix computation (small) : 2.1786e-05
+>>>>>> Total execution time (s) = 0.045465
+------------------------------MID------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 32.3357
+>>>>>> Average time (s) for matrix computation (mid) : 0.032311
+>>>>>> Total execution time (s) = 32.4346
+------------------------------LARGE------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 234.863
+>>>>>> Average time (s) for matrix computation (large) : 0.234421
+>>>>>> Total execution time (s) = 248.909
 
 <CPU> - 1 thread (with optimisation flags)
+------------------------------SMALL------------------------------
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 1697.78
->>>>>> Average time (s) for each matrix: Small = 3.7971e-05 ||  Mid = 0.0014292 ||  Large = 1.69626
->>>>>> Total execution time (s) = 1711.88
+>>>>>> Time taken (s) = 0.065734
+>>>>>> Average time (s) for matrix computation (small) : 4.2741e-05
+>>>>>> Total execution time (s) = 0.070238
+------------------------------MID------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 1.16951
+>>>>>> Average time (s) for matrix computation (mid) : 0.00115982
+>>>>>> Total execution time (s) = 1.29315
+------------------------------LARGE------------------------------
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 1727.93
+>>>>>> Average time (s) for matrix computation (large) : 1.72789
+>>>>>> Total execution time (s) = 1741.98

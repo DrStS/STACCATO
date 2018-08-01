@@ -1,4 +1,4 @@
-<All of the matrices are solved in a single program>
+<All of the matrices are solved in a single program> 1000 frequency iterations
 
 <GPU>
 >>>> Frequency loop finished

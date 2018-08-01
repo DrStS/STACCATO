@@ -27,8 +27,6 @@ int main (int argc, char *argv[]){
 	int nt = mkl_get_max_threads();
 	//int nt = 1;
 	mkl_set_num_threads(nt);
-
-	int tid = omp_get_thread_num();
 	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
 
 	// Filepaths

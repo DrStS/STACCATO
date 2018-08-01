@@ -1,5 +1,0 @@
-*.dat
-*.mtx
-*.o
-krylovCPU
-krylovGPU

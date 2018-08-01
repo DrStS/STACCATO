@@ -11,8 +11,6 @@ NVCC = nvcc
 #--------
 CFLAGS = -std=c++14
 CUDA_LIB = -lcublas -lcusolver
-#OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops
-#OFLAGS = -g
 
 #Architecture
 #--------

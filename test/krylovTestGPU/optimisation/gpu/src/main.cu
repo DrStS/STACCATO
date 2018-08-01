@@ -48,16 +48,16 @@ int main (int argc, char *argv[]){
 	std::cout << ">> Matrix Size: " << SIZE << std::endl;
 
 	std::string filepath_input, filepath_sol;
-	std::string filename_K, filename_M, filename_D, filename_sol;
+	std::string filename_K_sub, filename_M_sub, filename_D_sub, filename_sol;
 
 	if (SIZE == "small"){
 		// Filepaths
 		filepath_input = "/opt/software/examples/MOR/small/";
 		filepath_sol = "output/";
 		// Filenames
-		filename_K   = "KSM_Stiffness_r21.mtx";
-		filename_M   = "KSM_Mass_r21.mtx";
-		filename_D   = "KSM_Damping_r21.mtx";
+		filename_K_sub   = "KSM_Stiffness_r21.mtx";
+		filename_M_sub   = "KSM_Mass_r21.mtx";
+		filename_D_sub   = "KSM_Damping_r21.mtx";
 		filename_sol = "solution_mkl_small.dat";
 	}
 	else if (SIZE == "mid"){
@@ -65,9 +65,9 @@ int main (int argc, char *argv[]){
 		filepath_input = "/opt/software/examples/MOR/mid/";
 		filepath_sol = "output/";
 		// Filenames
-		filename_K   = "KSM_Stiffness_r189.mtx";
-		filename_M   = "KSM_Mass_r189.mtx";
-		filename_D   = "KSM_Damping_r189.mtx";
+		filename_K_sub   = "KSM_Stiffness_r189.mtx";
+		filename_M_sub   = "KSM_Mass_r189.mtx";
+		filename_D_sub   = "KSM_Damping_r189.mtx";
 		filename_sol = "solution_mkl_mid.dat";
 	}
 
@@ -76,9 +76,9 @@ int main (int argc, char *argv[]){
 		filepath_input = "/opt/software/examples/MOR/large/";
 		filepath_sol = "output/";
 		// Filenames
-		filename_K   = "KSM_Stiffness_r2520.mtx";
-		filename_M   = "KSM_Mass_r2520.mtx";
-		filename_D   = "KSM_Damping_r2520.mtx";
+		filename_K_sub   = "KSM_Stiffness_r2520.mtx";
+		filename_M_sub   = "KSM_Mass_r2520.mtx";
+		filename_D_sub   = "KSM_Damping_r2520.mtx";
 		filename_sol = "solution_mkl_large.dat";
 	}
 	else{
@@ -98,6 +98,7 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
+	int num_matrix = 3;
 
 	// Time measurements
 	thrust::host_vector<float> vec_time(freq_max);
@@ -113,31 +114,46 @@ int main (int argc, char *argv[]){
 	cusolverStatus = cusolverDnCreate(&cusolverHandle);
 
 	// Create matrix host_vectors
-	thrust::host_vector<cuDoubleComplex> K, M, D;
+	thrust::host_vector<cuDoubleComplex> K_sub, M_sub, D_sub;
 
 	// Read MTX file
-	io::readMtxDense(K, filepath_input, filename_K, isComplex);
-	io::readMtxDense(M, filepath_input, filename_M, isComplex);
-	io::readMtxDense(D, filepath_input, filename_D, isComplex);
+	io::readMtxDense(K_sub, filepath_input, filename_K_sub, isComplex);
+	io::readMtxDense(M_sub, filepath_input, filename_M_sub, isComplex);
+	io::readMtxDense(D_sub, filepath_input, filename_D_sub, isComplex);
 
 	// Readjust matrix size (matrix size initially increased by 1 due to segmentation fault. See also io.cu)
-	K.pop_back();
-	M.pop_back();
-	D.pop_back();
+	K_sub.pop_back();
+	M_sub.pop_back();
+	D_sub.pop_back();
 
 	// Get matrix sizes
-	int size = K.size();
-	int row  = sqrt(size);
+	int size_sub = K_sub.size();
+	int row_sub  = sqrt(size_sub);
+	int size = size_sub*num_matrix;
+	int row  = row_sub*num_matrix;
+	thrust::host_vector<cuDoubleComplex> K(size);
+	thrust::host_vector<cuDoubleComplex> M(size);
+	thrust::host_vector<cuDoubleComplex> D(size);
 
 	// Create RHS directly on device
-	thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
-	thrust::device_vector<cuDoubleComplex> d_rhs_buf(row, rhs_val);
+	//thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
+	//thrust::device_vector<cuDoubleComplex> d_rhs_buf(row, rhs_val);
+	std::cout << "rhs created" << std::endl;
+
+	// Combine matrices into a single array (do this on host to make use of GPU's high bandwidth)
+	for (size_t i = 0; i < num_matrix; i++){
+		thrust::copy(K_sub.begin(), K_sub.end(), K.begin()+i*size_sub);
+		thrust::copy(M_sub.begin(), M_sub.end(), M.begin()+i*size_sub);
+		thrust::copy(D_sub.begin(), D_sub.end(), D.begin()+i*size_sub);
+	}
 
 	// Send matrices to device
 	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K = K;
 	thrust::device_vector<cuDoubleComplex> d_M = M;
 	thrust::device_vector<cuDoubleComplex> d_D = D;
+
+/*
 	timerMatrixCpy.stop();
 	std::cout << ">> " << SIZE << " matrices copied to device " << std::endl;
 	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -260,4 +276,5 @@ int main (int argc, char *argv[]){
 
 	timerTotal.stop();
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+*/
 }

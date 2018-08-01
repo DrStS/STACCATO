@@ -187,7 +187,12 @@ IF (${STACCATO_COMMANDLINE})
   MESSAGE("Build STACCATO commandline only!")
   add_definitions(-DSTACCATO_COMMANDLINE_ON)
 ENDIF()
-
+find_package(OpenMP)
+IF (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+ENDIF()
 #------------------------------------------------------------------------------------#
 # Global compiler flags
 IF (${USE_GCC_COMPILERS_LINUX})

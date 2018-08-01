@@ -189,7 +189,11 @@ int main(int argc, char *argv[]) {
 	int i = 0;
 	timerLoop.start();
 	// Loop over frequency
-	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++) {
+#pragma omp parallel
+{
+		std::cout << "OMP test" << std::endl;
+#pragma omp for
+	for (int it = (int)freq_min; it <= (int)freq_max; it++) {
 		timerIteration.start();
 		// Compute scaling
 		freq = (double)it;
@@ -220,6 +224,7 @@ int main(int argc, char *argv[]) {
 		vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;
 		i++;
 	}
+}
 	timerLoop.stop();
 	timerTotal.stop();
 

@@ -1,6 +1,6 @@
 #Include files
 #-------------
-SOURCES=src/main.cu src/io/io.cu
+SOURCES=src/main.cu src/io/io.cu src/helper/Timer.cu
 
 #Compiler
 #--------
@@ -23,7 +23,7 @@ ARCH = -arch=sm_70
 LDFLAGS= -lm
 
 OBJECTS=$(SOURCES:.cu=.o)
-EXECUTABLE=krylov
+EXECUTABLE=krylovGPU
 
 all: $(EXECUTABLE)
 

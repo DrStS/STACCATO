@@ -93,3 +93,4 @@ extern Timer	timerLarge;
 extern Timer	timerIteration;
 extern Timer	timerLoop;
 extern Timer	timerIO;
+extern Timer	timerMatrixCpy;

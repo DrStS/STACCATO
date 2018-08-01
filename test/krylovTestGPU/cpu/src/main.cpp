@@ -1,3 +1,4 @@
+
 // Libraries
 #include <iostream>
 #include <vector>
@@ -64,16 +65,11 @@ int main (int argc, char *argv[]){
 	rhs_val.imag = 0;
 
 	// Time measurement
-	std::chrono::high_resolution_clock::time_point start_time_M_tilde, start_time_loop, start_time_it, start_time_small, start_time_mid, start_time_large, start_time_total;
-	std::chrono::high_resolution_clock::time_point end_time_M_tilde, end_time_loop, end_time_it, end_time_small, end_time_mid, end_time_large, end_time_total;
-	std::chrono::seconds time_loop, time_it, time_small, time_mid, time_large, time_total;
+	std::vector<float> vec_time_small((size_t)freq_max);
+	std::vector<float> vec_time_mid((size_t)freq_max);
+	std::vector<float> vec_time_large((size_t)freq_max);
 
-	std::vector<std::chrono::seconds> vec_time_small((size_t)freq_max);
-	std::vector<std::chrono::seconds> vec_time_mid((size_t)freq_max);
-	std::vector<std::chrono::seconds> vec_time_large((size_t)freq_max);
-
-	//start_time_total = std::chrono::high_resolution_clock::now();
-	anaysisTimer01.start();
+	timerTotal.start();
 
 	// Matrices
 	std::vector<MKL_Complex16> K_small, M_small, D_small, K_mid, M_mid, D_mid, K_large, M_large, D_large;
@@ -124,23 +120,12 @@ int main (int argc, char *argv[]){
 	std::vector<MKL_Complex16> sol_large(row_large);
 
 	// M = 4*pi^2*M (Single computation suffices)
-	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_small, alpha, M_small.data(), 1);
-	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (small) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
-
-	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_mid, alpha, M_mid.data(), 1);
-	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (mid) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
-
-	start_time_M_tilde = std::chrono::high_resolution_clock::now();
 	cblas_zdscal(size_large, alpha, M_large.data(), 1);
-	end_time_M_tilde = std::chrono::high_resolution_clock::now();
 	std::cout << ">> M_tilde (large) computed with Intel MKL" << std::endl;
-	std::cout << ">>>> Time taken = " << std::chrono::duration_cast<std::chrono::seconds>(end_time_M_tilde - start_time_M_tilde).count() << " (sec)" << "\n" << std::endl;
 
 	// Pivots for LU Decomposition
 	std::vector<lapack_int> pivot_small(size_small);
@@ -148,10 +133,10 @@ int main (int argc, char *argv[]){
 	std::vector<lapack_int> pivot_large(size_large);
 
 	int i = 0;
-	start_time_loop = std::chrono::high_resolution_clock::now();
+	timerLoop.start();
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-		start_time_it = std::chrono::high_resolution_clock::now();
+		timerIteration.start();
 		// Compute scaling
 		freq = (double)it;
 		freq_square = -(freq*freq);
@@ -159,7 +144,7 @@ int main (int argc, char *argv[]){
 		/*------------
 		Small matrics
 		------------*/
-		start_time_small = std::chrono::high_resolution_clock::now();
+		timerSmall.start();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_small, M_small.data(), 1, A_small.data(), 1);
 		cblas_zdscal(size_small, freq_square, A_small.data(), 1);
@@ -168,12 +153,12 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_small, row_small, A_small.data(), row_small, pivot_small.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_small, 1, A_small.data(), row_small, pivot_small.data(), rhs_small.data(), row_small);
-		end_time_small = std::chrono::high_resolution_clock::now();
+		timerSmall.stop();
 
 		/*------------
 		Mid matrics
 		------------*/
-		start_time_mid = std::chrono::high_resolution_clock::now();
+		timerMid.start();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_mid, M_mid.data(), 1, A_mid.data(), 1);
 		cblas_zdscal(size_mid, freq_square, A_mid.data(), 1);
@@ -182,12 +167,12 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mid, row_mid, A_mid.data(), row_mid, pivot_mid.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mid, 1, A_mid.data(), row_mid, pivot_mid.data(), rhs_mid.data(), row_mid);
-		end_time_mid = std::chrono::high_resolution_clock::now();
+		timerMid.stop();
 
 		/*------------
 		Large matrics
 		------------*/
-		start_time_large = std::chrono::high_resolution_clock::now();
+		timerLarge.start();
 		// Assemble global matrix ( A = K - f^2*M_tilde)
 		cblas_zcopy(size_large, M_large.data(), 1, A_large.data(), 1);
 		cblas_zdscal(size_large, freq_square, A_large.data(), 1);
@@ -196,8 +181,7 @@ int main (int argc, char *argv[]){
 		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_large, row_large, A_large.data(), row_large, pivot_large.data());
 		// Solve system
 		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_large, 1, A_large.data(), row_large, pivot_large.data(), rhs_large.data(), row_large);
-		end_time_large = std::chrono::high_resolution_clock::now();
-
+		timerLarge.stop();
 
 		// Copy solution to solution vector
 		cblas_zcopy(row_small, rhs_small.data(), 1, sol_small.data(), 1);
@@ -210,36 +194,32 @@ int main (int argc, char *argv[]){
 		std::fill(rhs_large.begin(), rhs_large.end(), one);
 
 		// Output messages
-		end_time_it = std::chrono::high_resolution_clock::now();
-		//time_small  = std::chrono::duration_cast<std::chrono::seconds>(start_time_small - end_time_small).count();
-		//time_mid    = std::chrono::duration_cast<std::chrono::seconds>(start_time_mid   - end_time_mid).count();
-		//time_large  = std::chrono::duration_cast<std::chrono::seconds>(start_time_large - end_time_large).count();
-		//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << time_small << " || " << "Mid = " << time_mid << " || " << "Large = " << time_large << std::endl;
+		timerIteration.stop();
+		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Mid = " << timerMid.getDurationMicroSec()*1e-6  << " || " << "Large = " << timerLarge.getDurationMicroSec()*1e-6  << std::endl;
 
 		// Accumulate time measurements
-		//vec_time_small[i] = time_small;
-		//vec_time_mid[i]   = time_mid;
-		//vec_time_large[i] = time_large;
+		vec_time_small[i] = (float)timerSmall.getDurationMicroSec()*1e-6 ;
+		vec_time_mid[i]   = (float)timerMid.getDurationMicroSec()*1e-6 ;
+		vec_time_large[i] = (float)timerLarge.getDurationMicroSec()*1e-6 ;
 		i++;
 	}
-	end_time_loop = std::chrono::high_resolution_clock::now();
-	//end_time_total = std::chrono::high_resolution_clock::now();
-	anaysisTimer01.stop();
+	timerLoop.stop();
+	timerTotal.stop();
 
 	// Get average time
-	//float time_small_avg = cblas_sasum((int)freq_max, vec_time_small.data(), 1); time_small_avg /= freq_max;
-	//float time_mid_avg   = cblas_sasum((int)freq_max, vec_time_mid.data(), 1);   time_mid_avg   /= freq_max;
-	//float time_large_avg = cblas_sasum((int)freq_max, vec_time_large.data(), 1); time_large_avg /= freq_max;
+	float time_small_avg = cblas_sasum((int)freq_max, vec_time_small.data(), 1); time_small_avg /= freq_max;
+	float time_mid_avg   = cblas_sasum((int)freq_max, vec_time_mid.data(), 1);   time_mid_avg   /= freq_max;
+	float time_large_avg = cblas_sasum((int)freq_max, vec_time_large.data(), 1); time_large_avg /= freq_max;
 
 	// Output messages
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
-	//std::cout << ">>>>>> Time taken (s) = " << std::chrono::duration_cast<std::chrono::seconds>(start_time_loop - end_time_loop).count() << "\n" << std::endl;
-	//std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
+	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6  << "\n" << std::endl;
+	std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
 
 	// Output solutions
 	io::writeSolVecComplex(sol_small, filepath_sol, filename_sol_small);
 	io::writeSolVecComplex(sol_mid,   filepath_sol, filename_sol_mid);
 	io::writeSolVecComplex(sol_large, filepath_sol, filename_sol_large);
 
-	std::cout << ">>>>>> Total execution time = " << anaysisTimer01.getDurationSec() << "\n" << std::endl;
+	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6  << "\n" << std::endl;
 }

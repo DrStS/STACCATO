@@ -14,8 +14,8 @@ CXX = g++
 #--------
 CFLAGS = -std=c++14 
 MKLFLAGS = -DUSE_INTEL_MKL -m64 -I${MKLROOT}/include
-OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops
-#OFLAGS = -g
+#OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops
+OFLAGS = -g
 
 #Linker flags
 #------------

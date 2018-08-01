@@ -17,7 +17,7 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "Timer.hpp"
+#include "Timer.cuh"
 
 //Instantiate the timer object
 Timer   timerTotal;
@@ -27,3 +27,4 @@ Timer   timerLarge;
 Timer	timerIteration;
 Timer	timerLoop;
 Timer	timerIO;
+Timer	timerMatrixCpy;

@@ -1,19 +1,19 @@
+<All of the matrices are solved in a single program>
+
 <GPU>
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 44.1783
->>>>>> Average time (s) for each matrix: Small = 0.000533727 ||  Mid = 0.00218559 ||  Large = 0.0411956
->>>>>> Total execution time = 59.866
+>>>>>> Time taken (s) = 44.2682
+>>>>>> Average time (s) for each matrix: Small = 0.000557274 ||  Mid = 0.00216472 ||  Large = 0.0412625
+>>>>>> Total execution time (s) = 59.8143
 
-<CPU> - 20 threads
-* NOTE: Divide the time measurement by 20
+<CPU> - 20 threads (with optimisation flags)
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 5756.6
->>>>>> Average time (s) for each matrix: Small = 0.000151403 ||  Mid = 0.75656 ||  Large = 4.99873
->>>>>> Total execution time = 5771.11
+>>>>>> Time taken (s) = 280.256
+>>>>>> Average time (s) for each matrix: Small = 5.9843e-05 ||  Mid = 0.0397201 ||  Large = 0.240051
+>>>>>> Total execution time (s) = 294.451
 
-
-<CPU> - 1 thread
+<CPU> - 1 thread (with optimisation flags)
 >>>> Frequency loop finished
->>>>>> Time taken (s) = 1694.66
->>>>>> Average time (s) for each matrix: Small = 4.6308e-05 ||  Mid = 0.00142638 ||  Large = 1.6931
->>>>>> Total execution time = 1708.65
+>>>>>> Time taken (s) = 1697.78
+>>>>>> Average time (s) for each matrix: Small = 3.7971e-05 ||  Mid = 0.0014292 ||  Large = 1.69626
+>>>>>> Total execution time (s) = 1711.88

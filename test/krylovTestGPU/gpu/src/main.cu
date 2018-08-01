@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <ctime>
 #include <cmath>
 
 // CUDA
@@ -24,6 +23,7 @@
 
 // Header files
 #include "io/io.cuh"
+#include "helper/Timer.cuh"
 
 // Definitions
 #define	PI	3.14159265359
@@ -77,12 +77,11 @@ int main (int argc, char *argv[]){
 	rhs_val.y = (double)0.0;
 
 	// Time measurements
-	clock_t matrixCpyTime, time, time_loop, time_it, time_small, time_mid, time_large, time_total;
 	thrust::host_vector<float> vec_time_small(freq_max);
 	thrust::host_vector<float> vec_time_mid(freq_max);
 	thrust::host_vector<float> vec_time_large(freq_max);
 
-	time_total = clock();
+	timerTotal.start();
 	// Library initialisation
 	cublasStatus_t cublasStatus;
 	cublasHandle_t cublasHandle;
@@ -142,27 +141,27 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_rhs_large_buf(row_large, rhs_val);
 
 	// Send matrices to device
-	matrixCpyTime = clock();
+	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K_small = K_small;
 	thrust::device_vector<cuDoubleComplex> d_M_small = M_small;
 	thrust::device_vector<cuDoubleComplex> d_D_small = D_small;
-	matrixCpyTime = clock() - matrixCpyTime;
+	timerMatrixCpy.stop();
 	std::cout << ">> Small matrices copied to device " << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)matrixCpyTime)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
-	matrixCpyTime = clock();
+	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K_mid = K_mid;
 	thrust::device_vector<cuDoubleComplex> d_M_mid = M_mid;
 	thrust::device_vector<cuDoubleComplex> d_D_mid = D_mid;
-	matrixCpyTime = clock() - matrixCpyTime;
+	timerMatrixCpy.stop();
 	std::cout << ">> Mid matrices copied to device " << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)matrixCpyTime)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
-	matrixCpyTime = clock();
+	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K_large = K_large;
 	thrust::device_vector<cuDoubleComplex> d_M_large = M_large;
 	thrust::device_vector<cuDoubleComplex> d_D_large = D_large;
-	matrixCpyTime = clock() - matrixCpyTime;
+	timerMatrixCpy.stop();
 	std::cout << ">> Large matrices copied to device " << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)matrixCpyTime)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
+	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 
 	// Create matrix device_vectors
 	thrust::device_vector<cuDoubleComplex> d_A_small(size_small);
@@ -199,27 +198,18 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_sol_large(row_large);
 
 	// M = 4*pi^2*M (Single computation suffices)
-	time = clock();
 	cublasStatus = cublasZdscal(cublasHandle, size_small, &alpha, d_ptr_M_small, 1);
-	time = clock() - time;
 	std::cout << ">> M_tilde (small) computed with cuBLAS" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
 	if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 		std::cout << "cublas failed!" << std::endl;
 	}
-	time = clock();
 	cublasStatus = cublasZdscal(cublasHandle, size_mid, &alpha, d_ptr_M_mid, 1);
-	time = clock() - time;
 	std::cout << ">> M_tilde (mid) computed with cuBLAS" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
 	if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 		std::cout << ">>>>>> ERROR: cuBLAS failed!" << std::endl;
 	}
-	time = clock();
 	cublasStatus = cublasZdscal(cublasHandle, size_large, &alpha, d_ptr_M_large, 1);
-	time = clock() - time;
 	std::cout << ">> M_tilde (large) computed with cuBLAS" << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
 	if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 		std::cout << ">>>>>> ERROR: cuBLAS failed!" << std::endl;
 	}
@@ -241,10 +231,10 @@ int main (int argc, char *argv[]){
 	int *d_ptr_pivot_large = thrust::raw_pointer_cast(d_pivot_large.data());
 
 	int i = 0;
-	time_loop = clock();
+	timerLoop.start();
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-		time_it = clock();
+		timerIteration.start();
 
 		// Compute scaling
 		freq = (double)it;
@@ -253,7 +243,7 @@ int main (int argc, char *argv[]){
 		/*------------
 		Small matrices
 		------------*/
-		time_small = clock();
+		timerSmall.start();
 		// Assemble global matrix ( A = K - f^2*M_tilde )
 		d_A_small = d_M_small;
 		// Scale A with -f^2
@@ -291,12 +281,12 @@ int main (int argc, char *argv[]){
 		if (solverInfo[0] != 0) {
 			std::cout << ">>>> System solution failure (small)" << std::endl;
 		}
-		time_small = clock() - time_small;
+		timerSmall.stop();
 
 		/*------------
 		Mid matrices
 		------------*/
-		time_mid = clock();
+		timerMid.start();
 		// Assemble global matrix
 		d_A_mid   = d_M_mid;
 		cublasStatus = cublasZdscal(cublasHandle, size_mid, &freq_square, d_ptr_A_mid, 1);
@@ -332,12 +322,12 @@ int main (int argc, char *argv[]){
 		if (solverInfo[0] != 0) {
 			std::cout << ">>>> System solution failure (mid)" << std::endl;
 		}
-		time_mid = clock() - time_mid;
+		timerMid.stop();
 
 		/*------------
 		Large matrices
 		------------*/
-		time_large = clock();
+		timerLarge.start();
 		// Assemble global matrix
 		d_A_large = d_M_large;
 		cublasStatus = cublasZdscal(cublasHandle, size_large, &freq_square, d_ptr_A_large, 1);
@@ -373,7 +363,7 @@ int main (int argc, char *argv[]){
 		if (solverInfo[0] != 0) {
 			std::cout << ">>>> System solution failure (large)" << std::endl;
 		}
-		time_large = clock() - time_large;
+		timerLarge.stop();
 
 		// Retrieve results from device to host
 		sol_small = d_rhs_small;
@@ -386,17 +376,16 @@ int main (int argc, char *argv[]){
 		d_rhs_large = d_rhs_large_buf;
 
 		// Output messages
-		time_it = clock() - time_it;
-		//std::cout << ">> Iteration finished for frequency = " << freq << " || Time taken = " << ((float)time_it)/CLOCKS_PER_SEC << std::endl;
-		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << ((float)time_small)/CLOCKS_PER_SEC << " || " << "Mid = " << ((float)time_mid)/CLOCKS_PER_SEC << " || " << "Large = " << ((float)time_large)/CLOCKS_PER_SEC << std::endl;
+		timerIteration.stop();
+		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Mid = " << timerSmall.getDurationMicroSec()*1e-6 << " || " << "Large = " << timerSmall.getDurationMicroSec()*1e-6 << std::endl;
 
 		// Accumulate time measurements
-		vec_time_small[i] = ((float)time_small)/CLOCKS_PER_SEC;
-		vec_time_mid[i]   = ((float)time_mid)/CLOCKS_PER_SEC;
-		vec_time_large[i] = ((float)time_large)/CLOCKS_PER_SEC;
+		vec_time_small[i] = timerSmall.getDurationMicroSec()*1e-6;
+		vec_time_mid[i]   = timerMid.getDurationMicroSec()*1e-6;
+		vec_time_large[i] = timerLarge.getDurationMicroSec()*1e-6;
 		i++;
 	}
-	time_loop = clock() - time_loop;
+	timerLoop.stop();
 
 	// Compute average time per matrices
 	float time_small_avg = thrust::reduce(vec_time_small.begin(), vec_time_small.end(), (float)0, thrust::plus<float>());
@@ -407,7 +396,7 @@ int main (int argc, char *argv[]){
 	time_large_avg /= freq_max;
 
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
-	std::cout << ">>>>>> Time taken (s) = " << ((float)time_loop)/CLOCKS_PER_SEC << "\n" << std::endl;
+	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 	std::cout << ">>>>>> Average time (s) for each matrix: Small = " << time_small_avg << " || " << " Mid = " << time_mid_avg << " || " << " Large = " << time_large_avg << "\n" << std::endl;
 
 	// Write out solution vectors
@@ -419,7 +408,6 @@ int main (int argc, char *argv[]){
 	cublasDestroy(cublasHandle);
 	cusolverDnDestroy(cusolverHandle);
 
-	time_total = clock() - time_total;
-	std::cout << ">>>>>> Total execution time = " << ((float)time_total)/CLOCKS_PER_SEC << "\n" << std::endl;
-
+	timerTotal.stop();
+	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

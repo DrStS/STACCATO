@@ -2,7 +2,6 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <ctime>
 #include <limits>
 #include <iomanip>
 
@@ -15,6 +14,7 @@
 
 // Header files
 #include "io.cuh"
+#include "../helper/Timer.cuh"
 
 // Reads dense Mtx file
 void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _filepath, std::string _filename, bool _isComplex){
@@ -38,8 +38,7 @@ void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _file
 		std::cout << ">> Reading matrix from "<< _filepath + _filename << " ... " << std::endl;
 		std::cout << ">> Matrix size: " << rowSize << " x " << colSize << std::endl;
 		A.resize(entrySize+1);	// Causes segmentation fault without +1
-		clock_t io_time;
-		io_time = clock();
+		timerIO.start();
 		// Complex matrix
 		if (_isComplex){
 			std::cout << ">> Matrix type: COMPLEX" << std::endl;
@@ -54,9 +53,9 @@ void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _file
 				A[i] = temp;
 				i++;
 			}
-			io_time = clock() - io_time;
+			timerIO.stop();
 			std::cout << ">> Matrix " << _filename << " read" << std::endl;
-			std::cout << ">>>> Time taken = " << ((float)io_time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
+			std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 		}
 		// Real matrix
 		else if (!_isComplex){
@@ -72,9 +71,9 @@ void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _file
 				A[i] = temp;
 				i++;
 			}
-			io_time = clock() - io_time;
+			timerIO.stop();
 			std::cout << ">> Matrix " << _filename << " read" << std::endl;
-			std::cout << ">>>> Time taken = " << ((float)io_time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
+			std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 		}
 	}
 	input.close();
@@ -84,8 +83,7 @@ void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _file
 void io::writeSolVecComplex(thrust::host_vector<cuDoubleComplex> &sol, std::string _filepath, std::string _filename){
 	std::ofstream output;
 	output.open(_filepath + _filename);
-	clock_t io_time;
-	io_time = clock();
+	timerIO.start();
 	// Write header
 	if (!output.is_open()){
 		std::cout << ">> ERROR: Unable to open output file for solution vector" << std::endl;
@@ -100,10 +98,9 @@ void io::writeSolVecComplex(thrust::host_vector<cuDoubleComplex> &sol, std::stri
 		}
 	}
 	// Close file
-	output.close();
-	io_time = clock() - io_time;
+	timerIO.stop();
 	// Output messages
 	std::cout << ">> Solution vector written in " << _filepath + _filename << std::endl;
 	std::cout << ">>>> Vector size = " << sol.size() << std::endl;
-	std::cout << ">>>> Time taken = " << ((float)io_time)/CLOCKS_PER_SEC << " (sec)" << "\n" << std::endl;
+	std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 }

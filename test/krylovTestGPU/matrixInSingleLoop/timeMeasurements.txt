@@ -6,6 +6,12 @@
 >>>>>> Average time (s) for each matrix: Small = 0.000557274 ||  Mid = 0.00216472 ||  Large = 0.0412625
 >>>>>> Total execution time (s) = 59.8143
 
+<CPU> - 20 threads (without optimisation flags)
+>>>> Frequency loop finished
+>>>>>> Time taken (s) = 271.222
+>>>>>> Average time (s) for each matrix: Small = 5.0774e-05 ||  Mid = 0.0406044 ||  Large = 0.230109
+>>>>>> Total execution time (s) = 285.586
+
 <CPU> - 20 threads (with optimisation flags)
 >>>> Frequency loop finished
 >>>>>> Time taken (s) = 280.256

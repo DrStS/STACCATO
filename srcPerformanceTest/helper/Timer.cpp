@@ -20,8 +20,8 @@
 #include "Timer.hpp"
 
 //Instantiate the timer object
-Timer   anaysisTimer01;
-Timer   anaysisTimer02;
-Timer   anaysisTimer03;
-Timer   linearSolverTimer01;
-Timer   linearSolverTimer02;
+Timer   timerTotal;
+Timer   timerMatrixComp;
+Timer	timerIteration;
+Timer	timerLoop;
+Timer	timerIO;

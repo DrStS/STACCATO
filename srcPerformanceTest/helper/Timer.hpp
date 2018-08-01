@@ -86,9 +86,8 @@ private:
 
 };
 
-
-extern Timer anaysisTimer01;
-extern Timer anaysisTimer02;
-extern Timer anaysisTimer03;
-extern Timer linearSolverTimer01;
-extern Timer linearSolverTimer02;
+extern Timer	timerTotal;
+extern Timer	timerMatrixComp;
+extern Timer	timerIteration;
+extern Timer	timerLoop;
+extern Timer	timerIO;

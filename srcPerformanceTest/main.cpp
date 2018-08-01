@@ -83,9 +83,15 @@ int main (int argc, char *argv[]){
 	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
 
 	// Filepaths
-	std::string filepath_small = "/opt/software/examples/MOR/small/";
-	std::string filepath_mid = "/opt/software/examples/MOR/mid/";
-	std::string filepath_large = "/opt/software/examples/MOR/large/";
+#if defined(_WIN32) || defined(__WIN32__) 
+	std::string filePathPrefix = "C:/software/examples/";
+#endif
+#if defined(__linux__) 
+	std::string filePathPrefix = "/opt/software/examples/";
+#endif
+	std::string filepath_small = "MOR/small/";
+	std::string filepath_mid = "MOR/mid/";
+	std::string filepath_large = "MOR/large/";
 	std::string filepath_sol = "output/";
 
 	// Filenames
@@ -131,15 +137,15 @@ int main (int argc, char *argv[]){
 	std::vector<MKL_Complex16> K_small, M_small, D_small, K_mid, M_mid, D_mid, K_large, M_large, D_large;
 
 	// Read MTX files
-	io::readMtxDense(K_small, filepath_small, filename_K_small, isComplex);
-	io::readMtxDense(M_small, filepath_small, filename_M_small, isComplex);
-	io::readMtxDense(D_small, filepath_small, filename_D_small, isComplex);
-	io::readMtxDense(K_mid,   filepath_mid,   filename_K_mid,   isComplex);
-	io::readMtxDense(M_mid,   filepath_mid,   filename_M_mid,   isComplex);
-	io::readMtxDense(D_mid,   filepath_mid,   filename_D_mid,   isComplex);
-	io::readMtxDense(K_large, filepath_large, filename_K_large, isComplex);
-	io::readMtxDense(M_large, filepath_large, filename_M_large, isComplex);
-	io::readMtxDense(D_large, filepath_large, filename_D_large, isComplex);
+	io::readMtxDense(K_small, filePathPrefix+filepath_small, filename_K_small, isComplex);
+	io::readMtxDense(M_small, filePathPrefix+filepath_small, filename_M_small, isComplex);
+	io::readMtxDense(D_small, filePathPrefix+filepath_small, filename_D_small, isComplex);
+	io::readMtxDense(K_mid,   filePathPrefix+filepath_mid,   filename_K_mid,   isComplex);
+	io::readMtxDense(M_mid,   filePathPrefix+filepath_mid,   filename_M_mid,   isComplex);
+	io::readMtxDense(D_mid,   filePathPrefix+filepath_mid,   filename_D_mid,   isComplex);
+	io::readMtxDense(K_large, filePathPrefix+filepath_large, filename_K_large, isComplex);
+	io::readMtxDense(M_large, filePathPrefix+filepath_large, filename_M_large, isComplex);
+	io::readMtxDense(D_large, filePathPrefix+filepath_large, filename_D_large, isComplex);
 
 	// Readjust matrix size (matrix size initially increased by 1 due to segmentation fault. See also io.cpp)
 	K_small.pop_back();

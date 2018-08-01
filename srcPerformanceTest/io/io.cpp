@@ -29,7 +29,7 @@ void io::readMtxDense(std::vector<MKL_Complex16> &A, std::string _filepath, std:
 	entrySize = rowSize * colSize;
 
 	if (!input){
-		std::cout << "File not found." << std::endl;
+		std::cout << "File not found: " << _filepath + _filename << std::endl;
 	}
 	else {
 		std::cout << ">> Reading matrix from "<< _filepath + _filename << " ... " << std::endl;

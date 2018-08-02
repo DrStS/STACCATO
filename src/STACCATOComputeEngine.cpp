@@ -26,7 +26,7 @@
 #include "SimuliaUMA.h"
 
 #include "FeAnalysis.h"
-#include "KrylovROMSubStructure.h"
+#include "KrylovROMSubstructure.h"
 #include "HMesh.h"
 #include "MetaDatabase.h"
 

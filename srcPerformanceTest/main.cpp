@@ -22,9 +22,9 @@
  *
  *  Additional permission under GNU GPL version 3 section 7
  *
- * If you modify this Program, or any covered work, by linking or combining it with Intel Math Kernel Libraries(MKL) 
- * (or a modified version of that library), containing parts covered by the terms of the license of the MKL, 
- * the licensors of this Program grant you additional permission to convey the resulting work. 
+ * If you modify this Program, or any covered work, by linking or combining it with Intel Math Kernel Libraries(MKL)
+ * (or a modified version of that library), containing parts covered by the terms of the license of the MKL,
+ * the licensors of this Program grant you additional permission to convey the resulting work.
  *
  * \section DESCRIPTION
  *  This is the main file of STACCATO Performance Tests
@@ -48,10 +48,10 @@
  * This file holds the main function of STACCATO Performance Tests.
  * \author Stefan Sicklinger
  * \date 8/1/2018
- * \version 
+ * \version
  **************************************************************************************************/
 
- // Libraries
+// Libraries
 #include <iostream>
 #include <vector>
 #include <string>
@@ -61,17 +61,17 @@
 #include <algorithm>
 #include <omp.h>
 
- // MKL
+// MKL
 #include <mkl.h>
 
- // Header Files
+// Header Files
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
 
- // Definitions
+// Definitions
 #define	PI	3.14159265359
 
- //#define MKL_Complex16 std::complex<double>
+//#define MKL_Complex16 std::complex<double>
 
 int main(int argc, char *argv[]) {
 
@@ -86,10 +86,10 @@ int main(int argc, char *argv[]) {
 	std::string filepath_input, filepath_sol;
 	std::string filename_K, filename_M, filename_D, filename_sol;
 
-#if defined(_WIN32) || defined(__WIN32__) 
+#if defined(_WIN32) || defined(__WIN32__)
 	std::string filePathPrefix = "C:/software/examples/";
 #endif
-#if defined(__linux__) 
+#if defined(__linux__)
 	std::string filePathPrefix = "/opt/software/examples/";
 #endif
 
@@ -191,42 +191,42 @@ int main(int argc, char *argv[]) {
 	timerLoop.start();
 	// Loop over frequency
 #pragma omp parallel
-{
+	{
 #pragma omp critical (cout)
 		std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
 #pragma omp for
-	for (int it = (int)freq_min; it <= (int)freq_max; it++) {
-		timerIteration.start();
-		// Compute scaling
-		freq = (double)it;
-		freq_square = -(freq*freq);
+		for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+			timerIteration.start();
+			// Compute scaling
+			freq = (double)it;
+			freq_square = -(freq*freq);
 
-		timerMatrixComp.start();
-		// Assemble global matrix ( A = K - f^2*M_tilde)
-		cblas_zcopy(size, M.data(), 1, A.data(), 1);
-		cblas_zdscal(size, freq_square, A.data(), 1);
-		cblas_zaxpy(size, &one, K.data(), 1, A.data(), 1);
-		// LU Decomposition
-		LAPACKE_zgetrf(LAPACK_COL_MAJOR, row, row, A.data(), row, pivot.data());
-		// Solve system
-		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row, 1, A.data(), row, pivot.data(), rhs.data(), row);
-		timerMatrixComp.stop();
+			timerMatrixComp.start();
+			// Assemble global matrix ( A = K - f^2*M_tilde)
+			cblas_zcopy(size, M.data(), 1, A.data(), 1);
+			cblas_zdscal(size, freq_square, A.data(), 1);
+			cblas_zaxpy(size, &one, K.data(), 1, A.data(), 1);
+			// LU Decomposition
+			LAPACKE_zgetrf(LAPACK_COL_MAJOR, row, row, A.data(), row, pivot.data());
+			// Solve system
+			LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row, 1, A.data(), row, pivot.data(), rhs.data(), row);
+			timerMatrixComp.stop();
 
-		// Copy solution to solution vector
-		cblas_zcopy(row, rhs.data(), 1, sol.data(), 1);
+			// Copy solution to solution vector
+			cblas_zcopy(row, rhs.data(), 1, sol.data(), 1);
 
-		// Reset RHS values
-		std::fill(rhs.begin(), rhs.end(), one);
+			// Reset RHS values
+			std::fill(rhs.begin(), rhs.end(), one);
 
-		// Output messages
-		timerIteration.stop();
-		//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
+			// Output messages
+			timerIteration.stop();
+			//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
 
-		// Accumulate time measurements
-		vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;
-		i++;
+			// Accumulate time measurements
+			vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;
+			i++;
+		}
 	}
-}
 	timerLoop.stop();
 	timerTotal.stop();
 

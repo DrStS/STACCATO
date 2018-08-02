@@ -219,5 +219,5 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/tools/AuxiliaryParameters.cpp.in
 ######################################################################################
 #5. Subdirectories THE ORDER IS IMPORTANT, BECAUSE THEY ARE COMPILED IN THAT ORDER
 ######################################################################################
-#add_subdirectory(src)
+add_subdirectory(src)
 add_subdirectory(srcPerformanceTest)

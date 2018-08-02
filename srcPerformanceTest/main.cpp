@@ -131,9 +131,9 @@ int main(int argc, char *argv[]) {
 
 	// OpenMP Threads
 	//int nt = mkl_get_max_threads();
-	int nt = 4;
-	mkl_set_num_threads(4);
-	omp_set_num_threads(4);
+	int nt = 1;
+	mkl_set_num_threads(1);
+	omp_set_num_threads(1);
 	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
 
 	// Parameters

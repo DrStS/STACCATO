@@ -351,6 +351,7 @@ void SimuliaUMA::addInternalDof(char *matrixName, int _index, bool _flag) {
 
 void SimuliaUMA::generateGlobalMap(bool _printToScreen) {
 	std::cout << ">> Generating global map..." << std::endl;
+#ifdef USE_SIMULIA_UMA_API
 	// Stiffness
 	uma_System system_K(stiffnessFileName.c_str());
 	uma_SparseMatrix smtx_K;
@@ -415,6 +416,7 @@ void SimuliaUMA::generateGlobalMap(bool _printToScreen) {
 			std::cout << std::endl;
 		}
 	}
+#endif
 }
 
 void SimuliaUMA::addEntryToNodeDofMap(int _node, int _dof) {

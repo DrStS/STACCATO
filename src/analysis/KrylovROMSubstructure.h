@@ -32,6 +32,7 @@
 
 class HMesh;
 class FeElement;
+class FeUmaElement;
 /**********
 * \brief Class KrylovROMSubstructure holds and builds the whole ROM Analysis
 * Input to this class is a FeMetaDatabase and a HMesh object
@@ -63,6 +64,12 @@ public:
 	***********/
 	void assembleGlobalMatrices(std::string _analysisType);
 	/***********************************************************************************************
+	* \brief Assemble UMA stiffness and mass matrices
+	* \param[in] Type of analysis
+	* \author Harikrishnan Sreekumar
+	***********/
+	void assembleUmaMatrices(std::string _analysisType);
+	/***********************************************************************************************
 	* \brief Build projection basis for second order Krylov subspaces for manual settings
 	* \author Harikrishnan Sreekumar
 	***********/
@@ -73,12 +80,39 @@ public:
 	* \param[in] krylov order
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addKrylovModesForExpansionPoint(double _expPoint, int _krylovOrder);
+	void addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder);
+	/***********************************************************************************************
+	* \brief PARDISO factorization for sparse matrix
+	* \param[in] _mat sparse matrix
+	* \param[in] _symmetric symmetricity
+	* \param[in] _positiveDefinite
+	* \param[in] _nRHS number of RHS
+	* \author Harikrishnan Sreekumar
+	***********/
+	void factorizeSparseMatrixComplex(const sparse_matrix_t* _mat, const bool _symmetric, const bool _positiveDefinite, int _nRHS);
+	/***********************************************************************************************
+	* \brief PARDISO solving for sparse matrix
+	* \param[in] _mat sparse matrix
+	* \param[in] _symmetric symmetricity
+	* \param[in] _positiveDefinite
+	* \param[in] _nRHS number of RHS
+	* \param[out] _x solution vector
+	* \param[in] _b right hand side
+	* \author Harikrishnan Sreekumar
+	***********/
+	void solveDirectSparseComplex(const sparse_matrix_t* _mat, const bool _symmetric, const bool _positiveDefinite, int _nRHS, STACCATOComplexDouble* _x, STACCATOComplexDouble* _b);
+	/***********************************************************************************************
+	* \brief Generate reduced matrices from projection matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void generateROM();
+
 private:
 	/// HMesh object 
 	HMesh * myHMesh;
 	/// All Elements
 	std::vector<FeElement*> myAllElements;
+	std::vector<FeUmaElement*> allUMAElements;
 
 	// FOM Complex data
 	/// Stiffness Matrix
@@ -87,19 +121,19 @@ private:
 	MathLibrary::SparseMatrix<MKL_Complex16> *MComplex;
 	
 	/// Input Matrix
-	MathLibrary::SparseMatrix<int> *myB;
-	/// Output Matrix
-	MathLibrary::SparseMatrix<int> *myC;
-	
+	std::vector<MKL_Complex16> myB;
+	/// Output matrix
+	std::vector<MKL_Complex16> myC;
+
 	// ROM Complex data
 	/// Dense reduced stiffness matrix
 	std::vector<MKL_Complex16> myKComplexReduced;
 	/// Dense reduced mass matrix
 	std::vector<MKL_Complex16> myMComplexReduced;
 	/// Dense reduced Input matrix
-	std::vector<double> myBReduced;
+	std::vector<MKL_Complex16> myBReduced;
 	/// Dense reduced Output matrix
-	std::vector<double> myCReduced;
+	std::vector<MKL_Complex16> myCReduced;
 
 	// KMOR Data
 	/// Expansion points
@@ -107,11 +141,53 @@ private:
 	/// Krylov order
 	int myKrylovOrder;
 	/// Projection matrix spanning input subspace
-	std::vector<double> myV;
+	std::vector<MKL_Complex16> myV;
 	/// Projection matrix spanning output subspace
-	std::vector<double> myZ;
+	std::vector<MKL_Complex16> myZ;
 	/// inputDOFS
 	std::vector<int> myInputDOFS;
 	/// outputDOFS
 	std::vector<int> myOutputDOFS;
+
+	/// Common Storage for PARDISO sparse matrix
+	int* pointerE;
+	int* pointerB;
+	int* columns;
+	int* rowIndex;
+
+	// FOM Sparse
+#ifdef USE_INTEL_MKL
+	sparse_matrix_t mySparseK;
+	sparse_matrix_t mySparseM;
+
+	MKL_INT m;
+	/// number of columns
+	MKL_INT n;
+	/// pardiso variable
+	MKL_INT *pardiso_pt[64]; // this is related to internal memory management, see PARDISO manual
+							 /// pardiso variable
+	MKL_INT pardiso_iparm[64];
+	/// pardiso variable
+	MKL_INT pardiso_mtype;
+	/// pardiso variable
+	MKL_INT pardiso_maxfct;
+	/// pardiso variable
+	MKL_INT pardiso_mnum;
+	/// pardiso variable
+	MKL_INT pardiso_msglvl;
+	/// pardiso variable
+	MKL_INT pardiso_neq;
+	/// pardiso variable
+	MKL_INT pardiso_nrhs;
+	/// pardiso variable
+	MKL_INT pardiso_phase;
+	/// pardiso variable
+	double pardiso_ddum;
+	/// pardiso variable
+	MKL_INT pardiso_idum;
+	/// pardiso variable
+	MKL_INT pardiso_error;
+
+	STACCATOComplexDouble* values;
+#endif
 };

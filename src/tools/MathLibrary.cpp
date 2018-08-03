@@ -159,21 +159,12 @@ namespace MathLibrary {
 #endif
 	}
 
-	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall) {
+	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall, const bool _rowMajor) {
 
 #ifdef USE_INTEL_MKL_BLAS
+		CBLAS_LAYOUT layout = CblasRowMajor;
 		CBLAS_TRANSPOSE transposeA;
-		int ka, nb;
-		if (!_transposeA) {
-			transposeA = CblasNoTrans;
-			ka = _k;
-			//	nb = _n;
-		}
-		else {
-			transposeA = CblasConjTrans;
-			ka = _m;
-			//	nb = _n;
-		}
+		int lda, ldb, ldc;
 		STACCATOComplexDouble alpha;
 		if (!_multByScalar) {
 			alpha.real = 1.0;
@@ -189,11 +180,41 @@ namespace MathLibrary {
 		}
 		else {
 			beta.real = 1.0;
-			beta.imag = 1.0;
+			beta.imag = 0.0;
 		}
-		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
-		cblas_zgemm(CblasRowMajor, transposeA, CblasNoTrans, _m, _n, _k, &alpha, _A, ka, _B, _n, &beta, _C, _n);
 
+		if (_rowMajor && _transposeA) {
+			layout = CblasRowMajor;
+			transposeA = CblasConjTrans;
+			lda = _m;
+		}
+		else if (_rowMajor && !_transposeA) {
+			layout = CblasRowMajor;
+			transposeA = CblasNoTrans;
+			lda = _k;
+		}
+		else if (!_rowMajor && _transposeA) {
+			layout = CblasColMajor;
+			transposeA = CblasConjTrans;
+			lda = _k;
+		}
+		else if (!_rowMajor && !_transposeA) {
+			layout = CblasColMajor;
+			transposeA = CblasNoTrans;
+			lda = _m;
+		}
+
+		if (_rowMajor) {
+			ldb = _n;
+			ldc = _n;
+		}
+		else {
+			ldb = _k;
+			ldc = _m;
+		}
+
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		cblas_zgemm(layout, transposeA, CblasNoTrans, _m, _n, _k, &alpha, _A, lda, _B, ldb, &beta, _C, ldc);
 #endif
 	}
 
@@ -248,7 +269,7 @@ namespace MathLibrary {
 		std::vector<double> tau;
 		tau.resize(_m < _n ? _m : _n);
 		// QR Factorization
-		LAPACKE_dgeqrf(CblasRowMajor, _m, _n, _A, _n, &tau[0]);
+		LAPACKE_dgeqrfp(CblasRowMajor, _m, _n, _A, _n, &tau[0]);
 		// Generation of Orthogonal Q
 		LAPACKE_dorgqr(CblasRowMajor, _m, _n, tau.size(), _A, _n, &tau[0]);
 #endif
@@ -257,14 +278,24 @@ namespace MathLibrary {
 #endif
 	}
 
-	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A) {
+	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor) {
 #ifdef USE_INTEL_MKL
+		int lda;
+		 int layout;
+		if (_rowMajor) {
+			lda = _n;
+			layout = LAPACK_ROW_MAJOR;
+		}
+		else {
+			lda = _m;
+			layout = LAPACK_COL_MAJOR;
+		}
 		std::vector<STACCATOComplexDouble> tau;
 		tau.resize(_m < _n ? _m : _n);
 		// QR Factorization
-		LAPACKE_zgeqrf(CblasRowMajor, _m, _n, _A, _n, &tau[0]);
+		LAPACKE_zgeqrfp(layout, _m, _n, _A, lda, &tau[0]);
 		// Generation of Orthogonal Q
-		LAPACKE_zungqr(CblasRowMajor, _m, _n, tau.size(), _A, _n, &tau[0]);
+		LAPACKE_zungqr(layout, _m, _n, tau.size(), _A, lda, &tau[0]);
 #endif
 #ifndef USE_INTEL_MKL
 		return 0;
@@ -333,10 +364,11 @@ namespace MathLibrary {
 #endif
 	}
 
-	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
+	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _col, int _ldx, int _ldy, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
 #ifdef USE_INTEL_MKL
 		matrix_descr descrA;
 		sparse_operation_t operationA;
+		int kY;
 		if (!_conjugatetransposeA) 
 			operationA = SPARSE_OPERATION_NON_TRANSPOSE;
 		else 
@@ -350,6 +382,7 @@ namespace MathLibrary {
 		}
 		else
 			descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
+
 
 		if (!_multByScalar) {
 			_alpha.real = 1;
@@ -366,7 +399,7 @@ namespace MathLibrary {
 			beta.imag = 1.0;
 		}
 
-		sparse_status_t status = mkl_sparse_z_mm(operationA, _alpha, *_matA, descrA, SPARSE_LAYOUT_ROW_MAJOR, _matX, _k, _k, beta, _matY, _k);
+		sparse_status_t status = mkl_sparse_z_mm(operationA, _alpha, *_matA, descrA, SPARSE_LAYOUT_COLUMN_MAJOR, _matX, _col, _ldx, beta, _matY, _ldy);
 #endif
 #ifndef USE_INTEL_MKL
 		return 0;
@@ -390,10 +423,25 @@ namespace MathLibrary {
 			{
 				for (int idx = bi[r]; idx < ei[r]; ++idx)
 				{
-					printf("<%d, %d> \t %f +1i*%f\n", r + 1, j[idx - 1], rv[idx - 1].real, rv[idx - 1].imag);
+					printf("<%d, %d> \t %.9E +1i*%.9E\n", r + 1, j[idx - 1], rv[idx - 1].real, rv[idx - 1].imag);
 				}
 			}
 		}
 #endif
 	}
+
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries) {
+#ifdef USE_INTEL_MKL
+		sparse_status_t status = mkl_sparse_z_create_csr(_mat, SPARSE_INDEX_BASE_ONE, _m, _n, &_pointerB[0], &_pointerE[0], &_columns[0], &_entries[0]);
+#endif
+	}
+
+	double computeDenseMatrixFrobeniusNormComplex(const STACCATOComplexDouble *vec1, const int _m, const int _n) {
+#ifdef USE_INTEL_MKL
+		return LAPACKE_zlange(CblasRowMajor, 'E', _m, _n, vec1, _n);
+#endif // USE_INTEL_MKL
+
+	}
 } /* namespace Math */
+
+	

@@ -150,6 +150,7 @@ void SimuliaUMA::openFile() {
 	// Import all individual data
 	importDatastructureSIM(simFileStiffness, stiffnessUMA_key, printDetails);
 	importDatastructureSIM(simFileMass, massUMA_key, printDetails);
+	importDatastructureSIM(simFileStructD, structuralDampingUMA_key, printDetails);
 	//importDatastructureSIM(simFileStiffness, structuralDampingUMA_key, true);
 	// Generate global map
 	generateGlobalMap(printDetails);
@@ -230,21 +231,31 @@ void SimuliaUMA::openFile() {
 void SimuliaUMA::importDatastructureSIM(char* _fileName, char* _matrixkey, bool _printToScreen) {
 #ifdef USE_SIMULIA_UMA_API
 	std::cout << ">> Sensing SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
+	bool flag = false;
 	std::ifstream ifile(_fileName);
 	if (!ifile) {
-		std::cout << ">> File not found." << std::endl;
-		exit(EXIT_FAILURE);
+		if (std::string(_matrixkey) == structuralDampingUMA_key)
+		{
+			std::cout << ">> StructuralDamping file not found and hence skipped." << std::endl;
+			flag = true;
+		}
+		else {
+			std::cout << ">> File not found." << std::endl;
+			exit(EXIT_FAILURE);
+		}
 	}
+	if (!flag)
+	{
+		uma_System system(_fileName);
+		if (system.IsNull()) {
+			std::cout << ">> Error: System not defined.\n";
+		}
+		if (system.Type() != ads_GenericSystem) {
+			std::cout << ">> Error: Not a Generic System.\n";
+		}
 
-	uma_System system(_fileName);
-	if (system.IsNull()) {
-		std::cout << ">> Error: System not defined.\n";
+		extractDatastructure(system, _matrixkey, _printToScreen);
 	}
-	if (system.Type() != ads_GenericSystem) {
-		std::cout << ">> Error: Not a Generic System.\n";
-	}
-
-	extractDatastructure(system, _matrixkey, _printToScreen);
 #endif
 }
 
@@ -324,7 +335,6 @@ void SimuliaUMA::checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrix
 			flagIDOF = true;
 		}
 	}
-	printf("\n");
 
 	if (flagIDOF)
 		std::cout << " ! Presence of Internal DOF." << std::endl;

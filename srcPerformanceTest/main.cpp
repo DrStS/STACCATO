@@ -130,11 +130,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	// OpenMP Threads
-	//int nt = mkl_get_max_threads();
 	int nt = 1;
-	mkl_set_num_threads(1);
-	omp_set_num_threads(1);
-	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
+	int nt_mkl = 1;
+	mkl_set_num_threads(nt_mkl);
+	omp_set_num_threads(nt);
+	std::cout << "\n>> Software will use the following number of threads: " << nt << "(OpenMP), " << nt_mkl << "(MKL)\n" << std::endl;
 
 	// Parameters
 	bool isComplex = true;
@@ -190,7 +190,7 @@ int main(int argc, char *argv[]) {
 	int i = 0;
 	timerLoop.start();
 	// Loop over frequency
-#pragma omp parallel
+#pragma omp parallel private(freq)
 	{
 #pragma omp critical (cout)
 		std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
 	std::cout << ">>>>>> Average time (s) for matrix computation (" << SIZE << ") : " << time_avg << "\n" << std::endl;
 
 	// Output solutions
-	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

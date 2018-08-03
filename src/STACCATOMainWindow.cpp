@@ -629,17 +629,17 @@ void STACCATOMainWindow::importXMLFile(void) {
 		myComputeEngine->clean();
 
 		myOutputDatabase = (myComputeEngine->getOutputDatabase());
-		myFieldDataVisualizer->setHMesh(myComputeEngine->getHMesh());
-
-		notifyAnalysisCompleteSuccessfully();
-
-		anaysisTimer01.start();
-		myFieldDataVisualizer->myHMeshToVtkUnstructuredGridInitializer();
-		anaysisTimer01.stop();
-		debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-		debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-		myViewPropertyUpdate();
+		if (!myComputeEngine->getHMesh().isKROM) {
+			myFieldDataVisualizer->setHMesh(myComputeEngine->getHMesh());
+			notifyAnalysisCompleteSuccessfully();
+			anaysisTimer01.start();
+			myFieldDataVisualizer->myHMeshToVtkUnstructuredGridInitializer();
+			anaysisTimer01.stop();
+			debugOut << "Duration for reading HMeshToVtkUnstructuredGrid " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+			debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+			myViewPropertyUpdate();
+		} else
+			mySignalDataVisualizerVisiblility->setEnabled(true);
 	}
 }
 

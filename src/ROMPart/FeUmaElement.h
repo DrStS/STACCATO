@@ -79,6 +79,11 @@ public:
 	***********/
 	const MathLibrary::SparseMatrix<double> & getSparseStiffnessMatrix(void) const { return *mySparseKReal; }
 	/***********************************************************************************************
+	* \brief Return pointer to sparse class
+	* \author Harikrishnan Sreekumar
+	***********/
+	const MathLibrary::SparseMatrix<double> & getSparseStructuralDampingMatrix(void) const { return *mySparseSDReal; }
+	/***********************************************************************************************
 	* \brief Prints the UMA imported matrix
 	* \param[in] UMA System with the valid matrix
 	* \param[in] Name of matrix
@@ -122,12 +127,15 @@ public:
 	/// Stiffness Matrix
 	MathLibrary::SparseMatrix<double> *mySparseMReal;
 	MathLibrary::SparseMatrix<double> *mySparseKReal;
+	MathLibrary::SparseMatrix<double> *mySparseSDReal;
 
 	/// [To be deleted when sparse addition is implemented]
 	std::vector<int> myK_row;
 	std::vector<int> myK_col;
 	std::vector<int> myM_row;
 	std::vector<int> myM_col;
+	std::vector<int> mySD_row;
+	std::vector<int> mySD_col;
 
 	/// Maps
 	std::map<int, std::vector<int>> nodeToDofMap;

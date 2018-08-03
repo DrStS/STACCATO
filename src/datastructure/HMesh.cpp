@@ -26,6 +26,7 @@
 HMesh::HMesh(std::string _name) : name(_name) {
 	hasParts = false;
 	isSIM = false;
+	isKROM = false;
 
 	myOutputDatabase = new OutputDatabase();
 }

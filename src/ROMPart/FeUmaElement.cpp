@@ -47,6 +47,7 @@ FeUmaElement::FeUmaElement(Material *_material) : FeElement(_material) {
 	for (std::map<int, std::vector<int>>::iterator it = nodeToDofMap.begin(); it != nodeToDofMap.end(); ++it) {
 		totalDOFs += it->second.size();
 	}
+	mySparseSDReal = new MathLibrary::SparseMatrix<double>(totalDOFs, true, true);
 
 	std::cout << " >> UMA Element Created with TotalDoFs: " << totalDOFs << std::endl;
 }
@@ -80,6 +81,7 @@ void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
 //DebugSIM(massUMA_key, simFileMass, matdisp, fileexp);
 ImportSIM(stiffnessUMA_key, simFileStiffness, matdisp, fileexp);
 ImportSIM(massUMA_key, simFileMass, matdisp, fileexp);
+ImportSIM(structuralDampingUMA_key, simFileSD, matdisp, fileexp);
 #endif
 }
 
@@ -172,22 +174,31 @@ void FeUmaElement::DebugSIM(const char* _matrixkey, const char* _fileName, bool 
 void FeUmaElement::ImportSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile) {
 #ifdef USE_SIMULIA_UMA_API
 	std::cout << ">>> Import SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
+	bool flag = false;
 	std::ifstream ifile(_fileName);
 	if (!ifile) {
-		std::cout << ">> File not found." << std::endl;
-		exit(EXIT_FAILURE);
+		if (std::string(_matrixkey) == structuralDampingUMA_key)
+		{
+			std::cout << ">> StructuralDamping file not found and hence skipped." << std::endl;
+			flag = true;
+		}
+		else {
+			std::cout << ">> File not found." << std::endl;
+			exit(EXIT_FAILURE);
+		}
 	}
+	if (!flag)
+	{
+		uma_System system(_fileName);
+		if (system.IsNull()) {
+			std::cout << ">> Error: System not defined.\n";
+		}
+		if (system.Type() != ads_GenericSystem) {
+			std::cout << ">> Error: Not a Generic System.\n";
+		}
 
-	uma_System system(_fileName);
-	if (system.IsNull()) {
-		std::cout << ">> Error: System not defined.\n";
+		extractData(system, _matrixkey, _printToScreen, _printToFile);
 	}
-	if (system.Type() != ads_GenericSystem) {
-		std::cout << ">> Error: Not a Generic System.\n";
-	}
-
-	extractData(system, _matrixkey, _printToScreen, _printToFile);
-
 #endif
 }
 
@@ -267,7 +278,8 @@ void FeUmaElement::extractData(const uma_System &system, const char *matrixName,
 
 			(*mySparseKReal)(globalrow, globalcol) = val;
 			myK_row.push_back(globalrow);
-			myK_col.push_back(globalcol);
+			myK_col.push_back(globalcol);			
+
 			if (globalrow == globalcol) {
 				if (val >= 1e36) {
 					std::cout << "Error: DBC pivot found!";
@@ -330,6 +342,51 @@ void FeUmaElement::extractData(const uma_System &system, const char *matrixName,
 	}
 	else if (std::string(matrixName) == std::string(structuralDampingUMA_key)) {
 		std::cout << " > Importing SDe ..." << std::endl;
+
+		for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
+			iter.Entry(row, col, val);
+
+			int fnode_row = nodes[row];
+			int fdof_row = ldofs[row];
+			int fnode_col = nodes[col];
+			int fdof_col = ldofs[col];
+
+			int globalrow = -1;
+			int globalcol = -1;
+
+			for (int i = 0; i < nodeToDofMap[fnode_row].size(); i++)
+			{
+				if (nodeToDofMap[fnode_row][i] == fdof_row)
+					globalrow = nodeToGlobalMap[fnode_row][i];
+			}
+			for (int i = 0; i < nodeToDofMap[fnode_col].size(); i++)
+			{
+				if (nodeToDofMap[fnode_col][i] == fdof_col)
+					globalcol = nodeToGlobalMap[fnode_col][i];
+			}
+
+			//std::cout << "Entry @ " << globalrow << " , " << globalcol << std::endl;
+			if (globalrow > globalcol) {
+				int temp = globalrow;
+				globalrow = globalcol;
+				globalcol = temp;
+			}
+
+			(*mySparseSDReal)(globalrow, globalcol) = val;
+			mySD_row.push_back(globalrow);
+			mySD_col.push_back(globalcol);
+
+			if (globalrow == globalcol) {
+				if (val >= 1e36) {
+					std::cout << "Error: DBC pivot found!";
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+		if (_printToFile) {
+			std::cout << ">> Printing to file Staccato_Sparse_StructuralDamping.mtx..." << std::endl;
+			(*mySparseSDReal).writeSparseMatrixToFile("Staccato_Sparse_StructuralDamping", "mtx");
+		}
 	}
 }
 #endif

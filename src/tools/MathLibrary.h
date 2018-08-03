@@ -94,7 +94,16 @@ namespace MathLibrary {
 	***********/
 	double computeDenseEuclideanNormComplex(const STACCATOComplexDouble *vec1, const int elements);
 	/***********************************************************************************************
-	* \brief Computes a vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
+	* \brief Compute Frobenius norm of a complex matrix
+	* \param[in] vec1 the 1st vector
+	* \param[in] number of rows
+	* \param[in] number of columns
+	* \return Frobenius norm
+	* \author Harikrishnan Sreekumar
+	***********/
+	double computeDenseMatrixFrobeniusNormComplex(const STACCATOComplexDouble *vec1, const int _m, const int _n);
+	/***********************************************************************************************
+	* \brief Computes a vector-scalar product and adds the result to a vector. vec2 <- a*vec1 + vec2
 	* \param[in] vec1 the 1st vector
 	* \param[in] vec2 the 2nd vector
 	* \param[in] a    scalar
@@ -103,7 +112,7 @@ namespace MathLibrary {
 	***********/
 	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements);
 	/***********************************************************************************************
-	* \brief Computes a complex vector-scalar product and adds the result to a vector. vec1 <- a*vec1 + vec2
+	* \brief Computes a complex vector-scalar product and adds the result to a vector. vec2 <- a*vec1 + vec2
 	* \param[in] vec1 the 1st vector
 	* \param[in] vec2 the 2nd vector
 	* \param[in] a    complex scalar
@@ -154,7 +163,7 @@ namespace MathLibrary {
 	* \param[in] false-> C=A*B true -> C+=A*B
 	* \author Stefan Sicklinger
 	***********/
-	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall);
+	void computeDenseMatrixMatrixMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_B, STACCATOComplexDouble *_C, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall, const bool _rowMajor);
 	/***********************************************************************************************
 	* \brief Compute dense matrix-vector product
 	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
@@ -198,7 +207,7 @@ namespace MathLibrary {
 	* \param[in/out] _A m rows by _n columns, out-> the orthogonal matrix Q
 	* \author Harikrishnan Sreekumar
 	***********/
-	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A);
+	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor);
 	/***********************************************************************************************
 	* \brief Computes a sparse matrix sparse matrix addition C := alpha*op(A) + B
 	* \param[in] _matA the A sparse matrix
@@ -224,7 +233,9 @@ namespace MathLibrary {
 	void computeSparseMatrixMultiplicationComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB);
 	/***********************************************************************************************
 	* \brief Computes the product of a sparse matrix and a dense matrix. y := alpha*op(A)*x + beta*y
-	* \param[in] _k Specifies the number of columns of the matrix X 
+	* \param[in] _col Number of columns of X
+	* \param[in] _ldx Number of rows of X (for Column major)
+	* \param[in] _ldy Number of rows of Y (for Column major)
 	* \param[in] _matX the X dense matrix
 	* \param[in/out] _matY the Y dense matrix
 	* \param[in] _matA the A sparse matrix
@@ -235,14 +246,25 @@ namespace MathLibrary {
 	* \param[in] _addPrevious performs dense matrix addition. false->y := alpha*op(A)*x , true-> y := alpha*op(A)*x + beta*y
 	* \author Harikrishnan Sreekumar
 	***********/
-	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _k, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious);
+	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _col, int _ldx, int _ldy, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious);
+	/***********************************************************************************************
+	* \brief Computes the csr sparse matrix data type
+	* \param[in/out] _mat Sparse Matrix of data type sparse_matrix_t
+	* \param[in] _m Number of rows
+	* \param[in] _n Number of columns
+	* \param[in] _pointerB Handle to sparse pointerB
+	* \param[in] _pointerE Handle to sparse pointerE
+	* \param[in] _columns Handle to sparse column indices
+	* \param[in] _entries Handle to complex entries
+	* \author Harikrishnan Sreekumar
+	***********/
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries);
 	/***********************************************************************************************
 	* \brief Displays the CSR sparse data type
 	* \param[in] _mat Sparse matrix for displaying
 	* \author Harikrishnan Sreekumar
 	***********/
 	void print_csr_sparse_z(sparse_matrix_t* _mat);
-
 	/**********
 	* \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
 	*
@@ -953,7 +975,10 @@ namespace MathLibrary {
 				std::cout << "Unsupported File Format."<< std::endl;
 
 		}	
-
+		/***********************************************************************************************
+		* \brief This function print Sparse Matrix to the console
+		* \author Harikrishnan Sreekumar
+		***********/
 		void printSparseMatrix() {
 			size_t ii_counter;
 			size_t jj_counter;
@@ -964,6 +989,56 @@ namespace MathLibrary {
 					}
 				}
 			}
+		}
+		/***********************************************************************************************
+		* \brief This function returns the handle to the row indices data
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<int>* getRowIndicesCSR() {
+			determineCSR();
+			return rowIndex;
+		}
+		/***********************************************************************************************
+		* \brief This function returns the handle to the columns data
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<int>* getColumnsCSR() {
+			determineCSR();
+			return &columns;
+		}
+		/***********************************************************************************************
+		* \brief This function returns the handle to the PointerB data
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<int>* getSparsePointerB() {
+			determineCSR();
+			return &pointerB;
+		}
+		/***********************************************************************************************
+		* \brief This function returns the handle to the PointerE data
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<int>* getSparsePointerE() {
+			determineCSR();
+			return &pointerE;
+		}
+		/***********************************************************************************************
+		* \brief This function returns the handle to the Sparse entries
+		* \author Harikrishnan Sreekumar
+		***********/
+		std::vector<T>* getSparseEntries() {
+			determineCSR();
+			return &values;
+		}
+		/***********************************************************************************************
+		* \brief This function creates and returns the SparseMatrix of data type sparse_matrix_t
+		* \author Harikrishnan Sreekumar
+		***********/
+		sparse_matrix_t convertToSparseDatatype() {
+			determineCSR();
+			sparse_matrix_t sparseMat;
+			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, pointerB, pointerE, columns, values);
+			return sparseMat;
 		}
 	private:
 		/// pointer to the vector of maps
@@ -1028,6 +1103,10 @@ namespace MathLibrary {
 		MKL_INT dcg_RCI_request;
 		/// Contains the value of the current iteration number
 		MKL_INT dcg_itercount;
+		/// Element j of this integer array gives the index of the element in the values array that is first non-zero element in a row j of A
+		std::vector<int> pointerB;
+		/// An integer array that contains row indices, such that pointerE[j]-indexing is the index of the element in the values array that is last non-zero element in a row j of A
+		std::vector<int> pointerE;
 
 		/***********************************************************************************************
 		* \brief This fills the three vectors of the CSR format (one-based)
@@ -1056,6 +1135,13 @@ namespace MathLibrary {
 				mat->swap(dummyMat);
 
 				alreadyCalled = true;
+
+				// Setting up PointerB and PointerE
+				for (int i = 0; i < (*rowIndex).size() - 1; i++)
+				{
+					pointerB.push_back((*rowIndex)[i]);
+					pointerE.push_back((*rowIndex)[i + 1]);
+				}
 			}
 			else
 				std::cout << "!alreadyCalled" << std::endl;
@@ -1245,7 +1331,7 @@ namespace MathLibrary {
 		void writeMtxMat(std::false_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			typename std::map<size_t, T>::iterator jj_counter;
+			std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);
@@ -1323,7 +1409,4 @@ namespace MathLibrary {
 		tmpG4A, tmpG4A, tmpG4A, tmpG4A
 	};
 	const double tetGaussWeights3D15Points[15] = { tmpW1 ,tmpW1 ,tmpW1 ,tmpW1, tmpW2 ,tmpW2 ,tmpW2 ,tmpW2, tmpW3 ,tmpW3 ,tmpW3 ,tmpW3, tmpW3, tmpW3, tmpW4 };
-
-
-
 } /* namespace Math */

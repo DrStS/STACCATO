@@ -14,6 +14,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/extrema.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>
@@ -37,6 +38,13 @@ int main (int argc, char *argv[]){
 	thrust::host_vector<std::string> filepath(2);
 	filepath[0] = "/opt/software/examples/MOR/r_approx_180/\0";
 	filepath[1] = "/opt/software/examples/MOR/r_approx_300/\0";
+
+	// Solution filepath
+	std::string filepath_sol = "output/";
+
+	// Solution filename
+	std::string filename_sol = "solution.dat";
+
 	// Vector of matrix sizes (row)
 	thrust::host_vector<int> row_sub(12);
 	row_sub[0] = 126;
@@ -72,9 +80,6 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
-
-	// Time measurements
-	thrust::host_vector<float> vec_time(freq_max);
 
 	timerTotal.start();
 	// Library initialisation
@@ -125,53 +130,45 @@ int main (int argc, char *argv[]){
 		size += size_sub[i];
 		row  += row_sub[i];
 	}
+	row *= 5;
+	size *= 5;
 
 	// Combine matrices into a single array on host (to make use of GPU's high bandwidth. We could also import the matrices directly like this)
 	thrust::host_vector<cuDoubleComplex> K(size);
 	thrust::host_vector<cuDoubleComplex> M(size);
 	thrust::host_vector<cuDoubleComplex> D(size);
-
-	thrust::copy((K_sub.data())->begin(), K_sub.data()->end(), K.begin());
-	thrust::copy((M_sub.data())->begin(), M_sub.data()->end(), K.begin());
-	thrust::copy((D_sub.data())->begin(), D_sub.data()->end(), K.begin());
-
-/*
-	for (size_t i = 1; i < 12; i++){
-		thrust::copy(K_sub[i]->begin(), K_sub[i]->end(), K.begin()+i*size_sub[i-1]);
-		thrust::copy(M_sub[i]->begin(), M_sub[i]->end(), M.begin()+i*size_sub[i-1]);
-		thrust::copy(D_sub[i]->begin(), D_sub[i]->end(), D.begin()+i*size_sub[i-1]);
-		std::cout << i << std::endl;
+	int  array_shift = 0;
+	auto K_sub_ptr = &K_sub[0];
+	auto M_sub_ptr = &M_sub[0];
+	auto D_sub_ptr = &D_sub[0];
+	for (size_t j = 0; j < 5; j++){
+		for (size_t i = 0; i < 12; i++){
+			K_sub_ptr = &K_sub[i];
+			M_sub_ptr = &M_sub[i];
+			D_sub_ptr = &D_sub[i];
+			thrust::copy(K_sub_ptr->begin(), K_sub_ptr->end(), K.begin()+array_shift);
+			thrust::copy(M_sub_ptr->begin(), M_sub_ptr->end(), M.begin()+array_shift);
+			thrust::copy(D_sub_ptr->begin(), D_sub_ptr->end(), D.begin()+array_shift);
+			array_shift += size_sub[i];
+		}
 	}
-
-	// Create RHS on host
-	//thrust::host_vector<cuDoubleComplex> rhs(row);
-
-
-	//thrust::device_vector<cuDoubleComplex> d_rhs(row);
-	//thrust::device_vector<cuDoubleComplex> d_rhs_buf = d_rhs;
-
-	//std::cout << "rhs created" << std::endl;
-
-/*
-	// Create RHS directly on device
-	thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
-	thrust::device_vector<cuDoubleComplex> d_rhs_buf(row, rhs_val);
-
-	// Combine matrices into a single array (do this on host to make use of GPU's high bandwidth)
-	for (size_t i = 0; i < num_matrix; i++){
-		thrust::copy(K_sub.begin(), K_sub.end(), K.begin()+i*size_sub);
-		thrust::copy(M_sub.begin(), M_sub.end(), M.begin()+i*size_sub);
-		thrust::copy(D_sub.begin(), D_sub.end(), D.begin()+i*size_sub);
-	}
+	std::cout <<">> Matrices combined" << std::endl;
 
 	// Send matrices to device
 	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K = K;
-	thrust::device_vector<cuDoubleComplex> d_M = M;
-	thrust::device_vector<cuDoubleComplex> d_D = D;
-
+	thrust::device_vector<cuDoubleComplex> d_M = K;
+	thrust::device_vector<cuDoubleComplex> d_D = K;
 	timerMatrixCpy.stop();
-	std::cout << ">> " << SIZE << " matrices copied to device " << std::endl;
+	std::cout << ">> Matrices copied to device " << std::endl;
+	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+
+	// Create RHS directly on device
+	timerMatrixCpy.start();
+	thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
+	thrust::device_vector<cuDoubleComplex> d_rhs_buf = d_rhs;
+	timerMatrixCpy.stop();
+	std::cout << ">> RHS copied to device " << std::endl;
 	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 
 	// Create matrix device_vectors
@@ -194,7 +191,7 @@ int main (int argc, char *argv[]){
 
 	// M = 4*pi^2*M (Single computation suffices)
 	cublasStatus = cublasZdscal(cublasHandle, size, &alpha, d_ptr_M, 1);
-	std::cout << ">> M_tilde " << "(" << SIZE << ")" << " computed with cuBLAS" << std::endl;
+	std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
 	if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 		std::cout << "cublas failed!" << std::endl;
 	}
@@ -204,12 +201,32 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<int> d_solverInfo(1);
 	int *d_ptr_solverInfo = thrust::raw_pointer_cast(d_solverInfo.data());
 
+/*
 	// Pivots
 	thrust::device_vector<int> d_pivot(row);
 	thrust::sequence(d_pivot.begin(), d_pivot.end()-(int)row/2, row-1, -1);
 	int *d_ptr_pivot = thrust::raw_pointer_cast(d_pivot.data());
+*/
 
-	int i = 0;
+	// Compute workspace size
+	int totalSizeWorkspace = 0;
+	thrust::host_vector<int> sizeWorkspace(60);
+	auto sizeWorkspace_ptr = &sizeWorkspace[0];
+	array_shift = 0;
+	for (size_t j = 0; j < 5; j++){
+		for (size_t i = 0; i < 12; i++){
+			sizeWorkspace_ptr = &sizeWorkspace[i];
+			cusolverStatus = cusolverDnZgetrf_bufferSize(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A, row_sub[i], sizeWorkspace_ptr + array_shift);
+			if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver workspace size computation failed\n" << std::endl;
+			totalSizeWorkspace += sizeWorkspace[i];
+		}
+		array_shift += 12;
+	}
+
+	// Create workspace
+	thrust::device_vector<cuDoubleComplex> d_workspace(totalSizeWorkspace);
+	cuDoubleComplex *d_ptr_workspace = thrust::raw_pointer_cast(d_workspace.data());
+
 	timerLoop.start();
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
@@ -219,7 +236,6 @@ int main (int argc, char *argv[]){
 		freq = (double)it;
 		freq_square = -(freq*freq);
 
-		timerMatrixComp.start();
 		// Assemble global matrix ( A = K - f^2*M_tilde )
 		d_A = d_M;
 		// Scale A with -f^2
@@ -233,55 +249,43 @@ int main (int argc, char *argv[]){
 			std::cout << "cublas failed during matrix assembly!" << std::endl;
 		}
 
-		// Compute workspace size
-		int sizeWorkspace;
-		cusolverStatus = cusolverDnZgetrf_bufferSize(cusolverHandle, row, row, d_ptr_A, row, &sizeWorkspace);
-		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver workspace size computation failed for " << SIZE << " system\n" << std::endl;
+		int workspace_shift = 0;
+		int row_shift = 0;
+		array_shift = 0;
+		for (size_t j = 0; j < 5; j++){
+			for (size_t i = 0; i < 12; i++){
+				// LU decomposition
+				cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + array_shift, row_sub[i], d_ptr_workspace + workspace_shift, NULL, d_ptr_solverInfo);
+				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
+				solverInfo = d_solverInfo;
+				if (solverInfo[0] != 0){
+					std::cout << ">>>> LU decomposition failed" << std::endl;
+					std::cout << ">>>> solverInfo = " << solverInfo[0] << std::endl;
+				}
 
-		// Create workspace
-		thrust::device_vector<cuDoubleComplex> d_workspace(sizeWorkspace);
-		cuDoubleComplex *d_ptr_workspace = thrust::raw_pointer_cast(d_workspace.data());
-
-		// LU decomposition
-		cusolverStatus = cusolverDnZgetrf(cusolverHandle, row, row, d_ptr_A, row, d_ptr_workspace, NULL, d_ptr_solverInfo);
-		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed (" << SIZE << ")" << std::endl;
-		solverInfo = d_solverInfo;
-		if (solverInfo[0] != 0){
-			std::cout << ">>>> LU decomposition failed for " << SIZE << " matrix" << std::endl;
+				// Solve x = A\b
+				cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + array_shift, row_sub[i], NULL, d_ptr_rhs + row_shift, row_sub[i], d_ptr_solverInfo);
+				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
+				solverInfo = d_solverInfo;
+				if (solverInfo[0] != 0) {
+					std::cout << ">>>> System solution failure" << std::endl;
+				}
+				//workspace_shift += 9;
+				array_shift += size_sub[i];
+				row_shift += row_sub[i];
+			}
 		}
-
-		// Solve x = A\b
-		cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row, 1, d_ptr_A, row, NULL, d_ptr_rhs, row, d_ptr_solverInfo);
-		if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
-		solverInfo = d_solverInfo;
-		if (solverInfo[0] != 0) {
-			std::cout << ">>>> System solution failure (" << SIZE << ")" << std::endl;
-		}
-		timerMatrixComp.stop();
-
+		std::cout << freq << std::endl;
 		// Retrieve results from device to host
 		sol = d_rhs;
 
 		// Reset rhs values
 		d_rhs = d_rhs_buf;
-
-		// Output messages
-		timerIteration.stop();
-		std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (s): Small = " << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
-
-		// Accumulate time measurements
-		vec_time[i] = timerMatrixComp.getDurationMicroSec()*1e-6;
-		i++;
 	}
 	timerLoop.stop();
 
-	// Compute average time per matrices
-	float time_avg = thrust::reduce(vec_time.begin(), vec_time.end(), (float)0, thrust::plus<float>());
-	time_avg /= freq_max;
-
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
-	std::cout << ">>>>>> Average time (s) for computing " << SIZE << " matrix: = " << time_avg << "\n" << std::endl;
 
 	// Write out solution vectors
 	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
@@ -292,5 +296,4 @@ int main (int argc, char *argv[]){
 
 	timerTotal.stop();
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
-*/
 }

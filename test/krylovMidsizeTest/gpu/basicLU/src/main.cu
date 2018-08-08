@@ -14,7 +14,6 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
-#include <thrust/extrema.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>

@@ -45,34 +45,23 @@ int main (int argc, char *argv[]){
 	// Solution filename
 	std::string filename_sol = "solution.dat";
 
-	// Vector of matrix sizes (row)
-	thrust::host_vector<int> row_sub(12);
-	row_sub[0] = 126;
-	row_sub[1] = 132;
-	row_sub[2] = 168;
-	row_sub[3] = 174;
-	row_sub[4] = 180;
-	row_sub[5] = 186;
-	row_sub[6] = 192;
-	row_sub[7] = 288;
-	row_sub[8] = 294;
-	row_sub[9] = 300;
-	row_sub[10] = 306;
-	row_sub[11] = 312;
-	// Vector of filenames
+	// Array of matrix sizes (row)
+	int row_sub[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
+
+	// Array of filenames
 	std::string baseName_K = "KSM_Stiffness_r\0";
 	std::string baseName_M = "KSM_Mass_r\0";
 	std::string baseName_D = "KSM_Damping_r\0";
 	std::string base_format = ".mtx\0";
-	thrust::host_vector<std::string> filename_K(12);
-	thrust::host_vector<std::string> filename_M(12);
-	thrust::host_vector<std::string> filename_D(12);
+	std::string filename_K[12];
+	std::string filename_M[12];
+	std::string filename_D[12];
 
 	// Parameters
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 2000;
+	double freq_max = 1;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -80,6 +69,7 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
+	int mat_repetition = 1;
 
 	timerTotal.start();
 	// Library initialisation
@@ -130,8 +120,8 @@ int main (int argc, char *argv[]){
 		size += size_sub[i];
 		row  += row_sub[i];
 	}
-	row *= 5;
-	size *= 5;
+	row *= mat_repetition;
+	size *= mat_repetition;
 
 	// Combine matrices into a single array on host (to make use of GPU's high bandwidth. We could also import the matrices directly like this)
 	thrust::host_vector<cuDoubleComplex> K(size);
@@ -141,7 +131,7 @@ int main (int argc, char *argv[]){
 	auto K_sub_ptr = &K_sub[0];
 	auto M_sub_ptr = &M_sub[0];
 	auto D_sub_ptr = &D_sub[0];
-	for (size_t j = 0; j < 5; j++){
+	for (size_t j = 0; j < mat_repetition; j++){
 		for (size_t i = 0; i < 12; i++){
 			K_sub_ptr = &K_sub[i];
 			M_sub_ptr = &M_sub[i];
@@ -157,8 +147,8 @@ int main (int argc, char *argv[]){
 	// Send matrices to device
 	timerMatrixCpy.start();
 	thrust::device_vector<cuDoubleComplex> d_K = K;
-	thrust::device_vector<cuDoubleComplex> d_M = K;
-	thrust::device_vector<cuDoubleComplex> d_D = K;
+	thrust::device_vector<cuDoubleComplex> d_M = M;
+	thrust::device_vector<cuDoubleComplex> d_D = D;
 	timerMatrixCpy.stop();
 	std::cout << ">> Matrices copied to device " << std::endl;
 	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -168,8 +158,11 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
 	thrust::device_vector<cuDoubleComplex> d_rhs_buf = d_rhs;
 	timerMatrixCpy.stop();
+	std::cout << "rhs size = " << d_rhs.size() << std::endl;
 	std::cout << ">> RHS copied to device " << std::endl;
 	std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+
+	std::cout << "matrix size = " << size << std::endl;
 
 	// Create matrix device_vectors
 	thrust::device_vector<cuDoubleComplex> d_A(size);
@@ -184,14 +177,18 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex *d_ptr_rhs = thrust::raw_pointer_cast(d_rhs.data());
 
 	// Create solution vector on host
-	thrust::host_vector<cuDoubleComplex> sol(row);
+	thrust::host_vector<cuDoubleComplex> sol(row*freq_max);
 
 	// Create solution vector on device
-	thrust::device_vector<cuDoubleComplex> d_sol(row);
+	thrust::device_vector<cuDoubleComplex> d_sol(row*freq_max);
+	std::cout << row*freq_max << std::endl;
 
+	timerMatrixComp.start();
 	// M = 4*pi^2*M (Single computation suffices)
 	cublasStatus = cublasZdscal(cublasHandle, size, &alpha, d_ptr_M, 1);
+	timerMatrixComp.stop();
 	std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
+	std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
 	if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 		std::cout << "cublas failed!" << std::endl;
 	}
@@ -213,7 +210,7 @@ int main (int argc, char *argv[]){
 	thrust::host_vector<int> sizeWorkspace(60);
 	auto sizeWorkspace_ptr = &sizeWorkspace[0];
 	array_shift = 0;
-	for (size_t j = 0; j < 5; j++){
+	for (size_t j = 0; j < mat_repetition; j++){
 		for (size_t i = 0; i < 12; i++){
 			sizeWorkspace_ptr = &sizeWorkspace[i];
 			cusolverStatus = cusolverDnZgetrf_bufferSize(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A, row_sub[i], sizeWorkspace_ptr + array_shift);
@@ -228,6 +225,9 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex *d_ptr_workspace = thrust::raw_pointer_cast(d_workspace.data());
 
 	timerLoop.start();
+	int sol_shift = 0;
+	//int row_shift = 0;
+	//array_shift = 0;
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
 		timerIteration.start();
@@ -249,13 +249,12 @@ int main (int argc, char *argv[]){
 			std::cout << "cublas failed during matrix assembly!" << std::endl;
 		}
 
-		int workspace_shift = 0;
-		int row_shift = 0;
 		array_shift = 0;
-		for (size_t j = 0; j < 5; j++){
+		int row_shift = 0;
+		for (size_t j = 0; j < mat_repetition; j++){
 			for (size_t i = 0; i < 12; i++){
 				// LU decomposition
-				cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + array_shift, row_sub[i], d_ptr_workspace + workspace_shift, NULL, d_ptr_solverInfo);
+				cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + array_shift, row_sub[i], d_ptr_workspace, NULL, d_ptr_solverInfo);
 				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
 				solverInfo = d_solverInfo;
 				if (solverInfo[0] != 0){
@@ -270,23 +269,24 @@ int main (int argc, char *argv[]){
 				if (solverInfo[0] != 0) {
 					std::cout << ">>>> System solution failure" << std::endl;
 				}
-				//workspace_shift += 9;
 				array_shift += size_sub[i];
 				row_shift += row_sub[i];
 			}
 		}
-		std::cout << freq << std::endl;
-		// Retrieve results from device to host
-		sol = d_rhs;
-
+		// Copy the solution to solution vector
+		std::cout << "freq = " << it << std::endl;
+		std::cout << "sol_shift = " << sol_shift << std::endl;
+		thrust::copy(d_rhs.begin(), d_rhs.end(), d_sol.begin() + sol_shift);
+		sol_shift += row;
 		// Reset rhs values
-		d_rhs = d_rhs_buf;
+		//d_rhs = d_rhs_buf;
 	}
 	timerLoop.stop();
 
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
+	sol = d_sol;
 	// Write out solution vectors
 	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 

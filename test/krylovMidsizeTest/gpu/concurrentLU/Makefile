@@ -9,7 +9,7 @@ NVCC = nvcc
 
 #Flags
 #--------
-CFLAGS = -std=c++14
+CFLAGS = -std=c++14 -default-stream per-thread
 OPENMP = -Xcompiler -fopenmp
 CUDA_LIB = -lcublas -lcusolver
 
@@ -19,7 +19,7 @@ ARCH = -arch=sm_70
 
 #Linker flags
 #------------
-LDFLAGS= -lm -lgomp
+LDFLAGS= -lm -Xlinker -lgomp
 
 OBJECTS=$(SOURCES:.cu=.o)
 EXECUTABLE=krylovGPU
@@ -33,4 +33,4 @@ clean:
 	rm -f $(OBJECTS) $(EXECUTABLE)
 
 $(OBJECTS): %.o : %.cu
-	$(NVCC) $(CFLAGS) $(OFLAGS) -c $(ARCH) $< -o $@
+	$(NVCC) $(CFLAGS) $(OFLAGS) $(OPENMP) -c $(ARCH) $< -o $@

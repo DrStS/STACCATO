@@ -33,6 +33,10 @@
 
 int main (int argc, char *argv[]){
 
+	int num_threads = 12;
+	int tid;
+	omp_set_num_threads(num_threads);
+
 	// Vector of filepaths
 	std::string filepath[2];
 	filepath[0] = "/opt/software/examples/MOR/r_approx_180/\0";
@@ -60,7 +64,7 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 2000;
+	double freq_max = 100;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -68,7 +72,7 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
-	int mat_repetition = 5;
+	int mat_repetition = 1;
 
 	timerTotal.start();
 	// Library initialisation
@@ -85,6 +89,9 @@ int main (int argc, char *argv[]){
 	thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
 	thrust::host_vector<thrust::host_vector<cuDoubleComplex>> D_sub(12);
 
+#pragma omp parallel
+{
+	#pragma omp for
 	// Read and process MTX file
 	for (size_t i = 0; i < 7; i++){
 		filename_K[i] = baseName_K + std::to_string(row_sub[i]) + base_format;
@@ -97,6 +104,8 @@ int main (int argc, char *argv[]){
 		M_sub[i].pop_back();
 		D_sub[i].pop_back();
 	}
+
+	#pragma omp for
 	for (size_t i = 7; i < 12; i++){
 		filename_K[i] = baseName_K + std::to_string(row_sub[i]) + base_format;
 		filename_M[i] = baseName_M + std::to_string(row_sub[i]) + base_format;
@@ -108,6 +117,7 @@ int main (int argc, char *argv[]){
 		M_sub[i].pop_back();
 		D_sub[i].pop_back();
 	}
+}
 	std::cout << ">> Matrices imported" << std::endl;
 
 	// Get matrix sizes
@@ -218,6 +228,12 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex *d_ptr_workspace = thrust::raw_pointer_cast(d_workspace.data());
 
 	timerLoop.start();
+
+	// Stream initialisation
+	const int num_streams = num_threads;
+	cudaStream_t streams[num_streams];
+	for (size_t i = 0; i < num_streams; i++) cudaStreamCreate(&streams[i]);
+
 	int sol_shift = 0;
 	// Loop over frequency
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
@@ -240,31 +256,44 @@ int main (int argc, char *argv[]){
 			std::cout << "cublas failed during matrix assembly!" << std::endl;
 		}
 
-		array_shift = 0;
-		size_t row_shift = 0;
-		size_t workspace_shift = 0;
+		size_t row_shift;
+		size_t workspace_shift;
 		for (size_t j = 0; j < mat_repetition; j++){
-			for (size_t i = 0; i < 12; i++){
-				// LU decomposition
-				cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + array_shift, row_sub[i], d_ptr_workspace + workspace_shift, NULL, d_ptr_solverInfo);
-				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
-				solverInfo = d_solverInfo;
-				if (solverInfo[0] != 0){
-					std::cout << ">>>> LU decomposition failed" << std::endl;
-					std::cout << ">>>> solverInfo = " << solverInfo[0] << std::endl;
-				}
+		#pragma omp parallel private(array_shift, row_shift, workspace_shift, tid)
+		{
+			array_shift = 0;
+			row_shift = 0;
+			workspace_shift = 0;
+			tid = omp_get_thread_num();
 
-				// Solve x = A\b
-				cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + array_shift, row_sub[i], NULL, d_ptr_rhs + row_shift, row_sub[i], d_ptr_solverInfo);
-				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
-				solverInfo = d_solverInfo;
-				if (solverInfo[0] != 0) {
-					std::cout << ">>>> System solution failure" << std::endl;
+			if (tid != 0) {
+				for (size_t i = 0; i < tid; i++){
+					array_shift += size_sub[i];
+					row_shift += row_sub[i];
+					workspace_shift += sizeWorkspace[i];
 				}
-				array_shift += size_sub[i];
-				row_shift += row_sub[i];
-				workspace_shift += sizeWorkspace[i];
+				if (tid == 2) std::cout << array_shift << std::endl;
 			}
+
+			// LU decomposition
+			cusolverDnSetStream(cusolverHandle, streams[tid]);
+			cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[tid], row_sub[tid], d_ptr_A + array_shift, row_sub[tid], d_ptr_workspace + workspace_shift, NULL, d_ptr_solverInfo);
+			if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
+			solverInfo = d_solverInfo;
+			if (solverInfo[0] != 0){
+				std::cout << ">>>> LU decomposition failed" << std::endl;
+				std::cout << ">>>> solverInfo = " << solverInfo[0] << std::endl;
+			}
+
+			// Solve x = A\b
+			cusolverDnSetStream(cusolverHandle, streams[tid]);
+			cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[tid], 1, d_ptr_A + array_shift, row_sub[tid], NULL, d_ptr_rhs + row_shift, row_sub[tid], d_ptr_solverInfo);
+			if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
+			solverInfo = d_solverInfo;
+			if (solverInfo[0] != 0) {
+				std::cout << ">>>> System solution failure" << std::endl;
+			}
+		} //pragma omp parallel
 		}
 		// Copy the solution to solution vector
 		thrust::copy(d_rhs.begin(), d_rhs.end(), d_sol.begin() + sol_shift);
@@ -278,8 +307,9 @@ int main (int argc, char *argv[]){
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
 	sol = d_sol;
+
 	// Write out solution vectors
-	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	// Destroy cuBLAS & cuSolver
 	cublasDestroy(cublasHandle);

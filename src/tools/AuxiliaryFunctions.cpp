@@ -75,3 +75,35 @@ void AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string _fileName, s
 	myfile << std::endl;
 	myfile.close();
 }
+
+void AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector, const int _row, const int _col, const bool _isRowMajor) {
+	std::string formatExport = _isRowMajor ? "RowMajor" : "ColumnMajor";
+	std::cout << ">> Writing " << _fileName << "#E:" << _vector.size() << " #R:" << _row << " #C:" << _col << " Format: " << formatExport << "..." << std::endl;
+	size_t ii_couter;
+	size_t jj_couter;
+	std::ofstream myfile;
+	myfile.open(_fileName);
+	myfile.precision(std::numeric_limits<double>::digits10 + 10);
+	myfile << std::scientific;
+	if (_isRowMajor)
+	{
+		myfile << "%%MatrixMarket matrix coordinate complex dense row major" << std::endl;
+		myfile << _row << "\t" << _col << std::endl;
+		for (ii_couter = 0; ii_couter < _row; ii_couter++)
+		{
+			for (jj_couter = 0; jj_couter < _col; jj_couter++)
+				myfile << _vector[jj_couter*_row + ii_couter ].real << "\t" << _vector[jj_couter*_col + ii_couter].imag << std::endl;
+		}
+		myfile << std::endl;
+	}
+	else {
+		myfile << "%%MatrixMarket matrix coordinate complex dense column major" << std::endl;
+		myfile << _row << "\t" << _col << std::endl;
+		for (ii_couter = 0; ii_couter < _vector.size(); ii_couter++)
+		{
+			myfile << _vector[ii_couter].real << "\t" << _vector[ii_couter].imag << std::endl;
+		}
+		myfile << std::endl;
+	}
+	myfile.close();
+}

@@ -28,6 +28,7 @@ namespace MathLibrary {
 
 	double computeDenseDotProduct(const double *vec1, const double *vec2, const int elements) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		return cblas_ddot(elements, vec1, 1, vec2, 1);
 #endif
 #ifndef USE_INTEL_MKL
@@ -37,6 +38,7 @@ namespace MathLibrary {
 
 	void computeDenseDotProductComplex(const STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, STACCATOComplexDouble* dotProduct, const int elements, bool _conjugateVec1) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		if (_conjugateVec1)
 			cblas_zdotc_sub(elements, vec1, 1, vec2, 1, dotProduct);
 		else
@@ -59,12 +61,14 @@ namespace MathLibrary {
 
 	void copyDenseVector(double *vec1, const double *vec2, const int elements){
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		cblas_dcopy(elements, vec2, 1, vec1, 1);
 #endif
 	}
 
 	double computeDenseEuclideanNorm(const double *vec1, const int elements){
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		return cblas_dnrm2 (elements, vec1, 1);
 #endif
 #ifndef USE_INTEL_MKL
@@ -74,6 +78,7 @@ namespace MathLibrary {
 
 	double computeDenseEuclideanNormComplex(const STACCATOComplexDouble *vec1, const int elements) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		return cblas_dznrm2(elements, vec1, 1);
 #endif
 #ifndef USE_INTEL_MKL
@@ -83,18 +88,21 @@ namespace MathLibrary {
 
 	void computeDenseVectorAddition(double *vec1, double *vec2, const double a, const int elements){
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		cblas_daxpy(elements, a, vec1, 1, vec2, 1);
 #endif
 	}
 
 	void computeDenseVectorAdditionComplex(const STACCATOComplexDouble *vec1, STACCATOComplexDouble *vec2, const STACCATOComplexDouble* a, const int elements) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		cblas_zaxpy(elements, a, vec1, 1, vec2, 1);
 #endif
 	}
 
 	void computeDenseVectorScalarMultiplication(double *vec1, const double a, const int elements){
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		cblas_dscal (elements, a, vec1, 1);
 #endif
 	}
@@ -266,6 +274,7 @@ namespace MathLibrary {
 
 	void computeDenseMatrixQRDecomposition(int _m, int _n, double *_A) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		std::vector<double> tau;
 		tau.resize(_m < _n ? _m : _n);
 		// QR Factorization
@@ -280,6 +289,7 @@ namespace MathLibrary {
 
 	void computeDenseMatrixQRDecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		int lda;
 		 int layout;
 		if (_rowMajor) {
@@ -304,6 +314,7 @@ namespace MathLibrary {
 	
 	void computeSparseMatrixAdditionComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		sparse_operation_t operationA;
 		if (!_conjugatetransposeA)
 			operationA = SPARSE_OPERATION_NON_TRANSPOSE;
@@ -323,6 +334,7 @@ namespace MathLibrary {
 	}
 	void computeSparseMatrixMultiplicationComplex(const sparse_matrix_t* _matA, const sparse_matrix_t* _matB, sparse_matrix_t* _matC, bool _conjugatetransposeA, bool _conjugatetransposeB, bool _symmetricA, bool _symmetricB) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		matrix_descr descrA;
 		sparse_operation_t operationA;
 		if (!_conjugatetransposeA)
@@ -366,6 +378,7 @@ namespace MathLibrary {
 
 	void computeSparseMatrixDenseMatrixMultiplicationComplex(int _col, int _ldx, int _ldy, const sparse_matrix_t* _matA, const STACCATOComplexDouble *_matX, STACCATOComplexDouble *_matY, const bool _conjugatetransposeA, const bool _multByScalar, STACCATOComplexDouble _alpha, const bool _symmetricA, const bool _addPrevious) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		matrix_descr descrA;
 		sparse_operation_t operationA;
 		int kY;
@@ -432,12 +445,14 @@ namespace MathLibrary {
 
 	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		sparse_status_t status = mkl_sparse_z_create_csr(_mat, SPARSE_INDEX_BASE_ONE, _m, _n, &_pointerB[0], &_pointerE[0], &_columns[0], &_entries[0]);
 #endif
 	}
 
 	double computeDenseMatrixFrobeniusNormComplex(const STACCATOComplexDouble *vec1, const int _m, const int _n) {
 #ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
 		return LAPACKE_zlange(CblasRowMajor, 'E', _m, _n, vec1, _n);
 #endif // USE_INTEL_MKL
 

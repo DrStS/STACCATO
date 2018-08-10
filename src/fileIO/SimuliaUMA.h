@@ -132,6 +132,7 @@ private:
 	bool hasInternalDOF_K;
 	bool hasInternalDOF_M;
 	bool hasInternalDOF_SD;
+	bool flag_SD;
 
 	// vectors with local dof of internaldofs
 	std::vector<int> internalDOF_K;
@@ -151,4 +152,5 @@ private:
 	// Maps
 	std::map<int, std::vector<int>> nodeToDofMap;
 	std::map<int, std::vector<int>> nodeToGlobalMap;
+
 };

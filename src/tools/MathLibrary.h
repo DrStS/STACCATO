@@ -491,6 +491,8 @@ namespace MathLibrary {
 				exit(EXIT_FAILURE);
 			}
 
+			linearSolverTimer01.stop();
+			std::cout << "Reordering completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 			linearSolverTimer01.start();
 			pardiso_phase = 22;
 			pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase,

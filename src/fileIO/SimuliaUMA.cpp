@@ -61,7 +61,9 @@ void SimuliaUMA::openFile() {
 	bool printDetails = false;
 	bool printFile = false;
 	bool printMap = true;
-	int knowSomeNode = 3;
+	std::vector<int> knowSomeNode = { 9603,     9604,  1601019,  1601024,  1601027,  1601029,  1601033,  1601039,  1601070,
+		1601072, 4020,4022,4024,4026,4028,4021, 4023, 4025, 4027, 4029
+	};
 #ifdef USE_SIMULIA_UMA_API
 	std::vector<std::string> mapTypeName;
 	mapTypeName.push_back("DOFS");
@@ -158,7 +160,7 @@ void SimuliaUMA::openFile() {
 	MetaDatabase::getInstance()->nodeToDofMapMeta = nodeToDofMap;
 	MetaDatabase::getInstance()->nodeToGlobalMapMeta = nodeToGlobalMap;
 	
-	std::cout << "\n>> Importing SIM to HMesh ..." << std::endl;
+	std::cout << ">> Importing SIM to HMesh ..." << std::endl;
 
 	numNodes = nodeToGlobalMap.size();
 	totalDOFs = 0;
@@ -190,12 +192,13 @@ void SimuliaUMA::openFile() {
 		if (printDetails)
 			std::cout << lastHMeshNodeLabel + i << " | ";
 	}
-	std::cout << std::endl;
+	if (printDetails)
+		std::cout << std::endl;
 
 	if (lastHMeshNodeLabel != 0)
-		std::cout << "\n>> Simulia UMA: Adding Nodes and Element in append mode.\n";
+		std::cout << ">> Simulia UMA: Adding Nodes and Element in append mode.\n";
 	else
-		std::cout << "\n>> Simulia UMA: Adding Nodes and Element as new model.\n";
+		std::cout << ">> Simulia UMA: Adding Nodes and Element as new model.\n";
 
 	// Element Labelling
 	int lastHMeshElementLabel = 0;
@@ -207,44 +210,59 @@ void SimuliaUMA::openFile() {
 	if (printMap)
 		printMapToFile();
 
-	if (knowSomeNode > 0) {
-		auto search = nodeToGlobalMap.find(knowSomeNode);
+	std::vector<int> inputdoflist;
+	for (int iKN = 0; iKN < knowSomeNode.size(); iKN++)
+	{
+		auto search = nodeToGlobalMap.find(knowSomeNode[iKN]);
+		auto search2 = nodeToDofMap.find(knowSomeNode[iKN]);
 		if (search != nodeToGlobalMap.end())
 		{
 			std::cout << "==============================================" << std::endl;
-			std::cout << "= Node: " << knowSomeNode << " , #DOFS: "<< search->second.size()<<std::endl;
+			std::cout << "= Node: " << knowSomeNode[iKN] << " , #DOFS: " << search->second.size() << std::endl;
 			std::cout << "= GI: Global Index, GL: Global Label" << std::endl;
-			for (int i = 0; i < search->second.size(); i++)
-				std::cout << "== DOF: " << i+1 << " GI: " << search->second[i]<< " GL: " << search->second[i]+1 << std::endl;
+			for (int i = 0; i < search->second.size(); i++) {
+				std::cout << "== DOF: " << search2->second[i] << " GI: " << search->second[i] << " GL: " << search->second[i] + 1 << std::endl;
+				inputdoflist.push_back(search->second[i] + 1);
+			}
 			std::cout << "==============================================" << std::endl;
-
 		}
 		else {
 			std::cout << "==============================================" << std::endl;
-			std::cout << "= Node: " << knowSomeNode << " DOES NOT EXIST."<<std::endl;
+			std::cout << "= Node: " << knowSomeNode[iKN] << " DOES NOT EXIST." << std::endl;
 			std::cout << "==============================================" << std::endl;
 		}
 	}
+
+	std::string _fileName = "Staccato_KMOR_InputDOF_List.dat";
+	std::cout << ">> Writing " << _fileName << "..." << std::endl;
+	std::ofstream myfile;
+	myfile.open(_fileName);
+
+	for (int i = 0; i < inputdoflist.size(); i++) {
+		myfile << inputdoflist[i] << " ";
+	}
+	myfile << std::endl;
+	myfile.close();
 #endif
 }
 
 void SimuliaUMA::importDatastructureSIM(char* _fileName, char* _matrixkey, bool _printToScreen) {
 #ifdef USE_SIMULIA_UMA_API
 	std::cout << ">> Sensing SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
-	bool flag = false;
+	flag_SD = false;
 	std::ifstream ifile(_fileName);
 	if (!ifile) {
 		if (std::string(_matrixkey) == structuralDampingUMA_key)
 		{
 			std::cout << ">> StructuralDamping file not found and hence skipped." << std::endl;
-			flag = true;
+			flag_SD = true;
 		}
 		else {
 			std::cout << ">> File not found." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 	}
-	if (!flag)
+	if (!flag_SD)
 	{
 		uma_System system(_fileName);
 		if (system.IsNull()) {
@@ -376,17 +394,25 @@ void SimuliaUMA::generateGlobalMap(bool _printToScreen) {
 	uma_ArrayInt nodes_M; smtx_M.MapColumns(nodes_M, uma_Enum::NODES);
 	uma_ArrayInt ldofs_M; smtx_M.MapColumns(ldofs_M, uma_Enum::DOFS);
 
-	// Structural Damping
-	// -
-	// -
-	// -
-
 	// Create pool of all available nodes and dofs
 	for (int col_K = 0; col_K < nodes_K.Size(); col_K++) {
 		addEntryToNodeDofMap(nodes_K[col_K], ldofs_K[col_K]);
 	}
 	for (int col_M = 0; col_M < nodes_M.Size(); col_M++) {
 		addEntryToNodeDofMap(nodes_M[col_M], ldofs_M[col_M]);
+	}
+
+	if (!flag_SD)
+	{
+		// Structural Damping
+		uma_System system_SD(structDampingFileName.c_str());
+		uma_SparseMatrix smtx_SD;
+		system_SD.SparseMatrix(smtx_SD, structuralDampingUMA_key);
+		uma_ArrayInt nodes_SD; smtx_SD.MapColumns(nodes_SD, uma_Enum::NODES);
+		uma_ArrayInt ldofs_SD; smtx_SD.MapColumns(ldofs_SD, uma_Enum::DOFS);
+		for (int col_SD = 0; col_SD < nodes_SD.Size(); col_SD++) {
+			addEntryToNodeDofMap(nodes_SD[col_SD], ldofs_SD[col_SD]);
+		}
 	}
 
 	// Display Map
@@ -445,22 +471,30 @@ void SimuliaUMA::addEntryToNodeDofMap(int _node, int _dof) {
 		}
 	}
 	else {
+		/*if (_dof>3 && nodeToDofMap[_node].size() == 0)
+		{
+			std::cout << "Added missing" << std::endl;
+			nodeToDofMap[_node].push_back(1);
+			nodeToDofMap[_node].push_back(2);
+			nodeToDofMap[_node].push_back(3);
+		}*/
 		nodeToDofMap[_node].push_back(_dof);
 	}
 }
 
 void SimuliaUMA::printMapToFile() {
-	std::string _fileName = "MAP_UMA.dat";
+	std::string _fileName = "Staccato_KMOR_MAP_UMA.dat";
 	std::cout << ">> Writing " << _fileName << "..." << std::endl;
 	std::ofstream myfile;
 	myfile.open(_fileName);
 	myfile << std::scientific;
 	myfile << "% UMA MAP | Generated with STACCCATO" << std::endl;
 	myfile << "% NODE LABEL  |  LOCAL DOF  |  GLOBAL DOF" << std::endl;
-	for (std::map<int, std::vector<int>>::iterator it = nodeToGlobalMap.begin(); it != nodeToGlobalMap.end(); ++it) {
+	std::map<int, std::vector<int>>::iterator it2 = nodeToDofMap.begin();
+	for (std::map<int, std::vector<int>>::iterator it = nodeToGlobalMap.begin(); it != nodeToGlobalMap.end(); ++it, ++it2) {
 		for (int j = 0; j < it->second.size(); j++)
 		{
-			myfile << it->first << " " << j + 1 << " " << it->second[j] << std::endl;
+			myfile << it->first << " " << it2->second[j] << " " << it->second[j] << std::endl;
 		}
 	}
 	myfile << std::endl;

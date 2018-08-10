@@ -58,10 +58,17 @@ public:
 	/***********************************************************************************************
 	* \brief Write a STACCATOComplexDouble vector to the DAT file with format: <real_value> <imag_value>
 	* \param[in] _fileName
-	* \param[in] _vector::int
+	* \param[in] _vector::MKL_Complex16
 	* \author Harikrishnan Sreekumar
 	***********/
 	static void writeMKLComplexVectorDatFormat(std::string _fileName, std::vector< STACCATOComplexDouble > &_vector);
+	/***********************************************************************************************
+	* \brief Write a STACCATOComplexDouble matrix to the MTX file with format: <row_index> <col_index> <real_value> <imag_value>
+	* \param[in] _fileName
+	* \param[in] _vector::int
 
+	* \author Harikrishnan Sreekumar
+	***********/
+	static void writeMKLComplexDenseMatrixMtxFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector, const int _row, const int _col, const bool _isRowMajor);
 };
 

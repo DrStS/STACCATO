@@ -179,11 +179,11 @@ void FeUmaElement::ImportSIM(const char* _matrixkey, const char* _fileName, bool
 	if (!ifile) {
 		if (std::string(_matrixkey) == structuralDampingUMA_key)
 		{
-			std::cout << ">> StructuralDamping file not found and hence skipped." << std::endl;
+			std::cout << " > StructuralDamping file not found and hence skipped." << std::endl;
 			flag = true;
 		}
 		else {
-			std::cout << ">> File not found." << std::endl;
+			std::cout << " > File not found." << std::endl;
 			exit(EXIT_FAILURE);
 		}
 	}

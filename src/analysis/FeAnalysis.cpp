@@ -77,7 +77,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// --------------------------------------------------------------------------------------------------------------
 	
 	/* -- Exporting ------------- */
-	bool exportSparseMatrix = true;
+	bool exportSparseMatrix = false;
 	bool exportRHS = true;
 	bool exportSolution = true;
 	/* -------------------------- */
@@ -375,6 +375,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					int num_SparseK_col = allUMAElements[iElement]->myK_col.size();
 					int num_SparseM_row = allUMAElements[iElement]->myM_row.size();
 					int num_SparseM_col = allUMAElements[iElement]->myM_col.size();
+					int num_SparseSD_row = allUMAElements[iElement]->mySD_row.size();
+					int num_SparseSD_col = allUMAElements[iElement]->mySD_col.size();
 
 					std::cout << ">> \nSparse Info: " << std::endl;
 					std::cout << "Stiffness : row " << num_SparseK_row << " col: " << num_SparseK_col << std::endl;
@@ -390,6 +392,11 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					for (int i = 0; i < num_SparseK_row; i++) {
 						if (analysisType == "STEADYSTATE_DYNAMIC") {
 							(*AComplex)(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]).real = allUMAElements[iElement]->getSparseStiffnessMatrix()(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]);
+						}
+					}
+					for (int i = 0; i < num_SparseSD_row; i++) {
+						if (analysisType == "STEADYSTATE_DYNAMIC") {
+							(*AComplex)(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]).imag = allUMAElements[iElement]->getSparseStructuralDampingMatrix()(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]);
 						}
 					}
 					//K - omega*omega*M
@@ -620,7 +627,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					std::cout<< "==== Time taken for writing MTX file: " << write_time << std::endl;
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
-					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"dat");
+					(*AComplex).writeSparseMatrixToFile(std::string(iAnalysis->NAME()->data()),"mtx");
 				}
 			}
 			else

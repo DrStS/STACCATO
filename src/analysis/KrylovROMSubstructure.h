@@ -107,6 +107,8 @@ public:
 	***********/
 	void generateROM();
 
+	void cleanPardiso();
+
 private:
 	/// HMesh object 
 	HMesh * myHMesh;
@@ -189,5 +191,7 @@ private:
 	MKL_INT pardiso_error;
 
 	STACCATOComplexDouble* values;
+	std::string currentPart;
+	bool isMIMO;
 #endif
 };

@@ -58,7 +58,7 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 1000;
+	double freq_max = 2000;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -66,11 +66,11 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
-	int mat_repetition = 1;
+	int mat_repetition = 5;
 	int num_matrix = 12*mat_repetition;
 
 	// OpenMP
-	int num_threads = 12;
+	int num_threads = num_matrix;
 	omp_set_num_threads(num_threads);
 
 	timerTotal.start();
@@ -255,22 +255,19 @@ int main (int argc, char *argv[]){
 		if (cublasStatus != CUBLAS_STATUS_SUCCESS){
 			std::cout << "cublas failed during matrix assembly!" << std::endl;
 		}
-
-		for (size_t i = 0; i < mat_repetition; i++){
-			// Streams
-			for (size_t st = 0; st < num_streams; st++){
-				d_ptr_A_tmp[st] = d_ptr_A + ptr_mat_shift[st + i*12];
-				d_ptr_workspace_tmp[st] = d_ptr_workspace + ptr_workspace_shift[st + i*12];
-				d_ptr_rhs_tmp[st] = d_ptr_rhs + ptr_vec_shift[st + i*12];
-				// LU decomposition
-				cusolverDnSetStream(cusolverHandle, streams[st]);
-				cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[st], row_sub[st], d_ptr_A_tmp[st], row_sub[st], d_ptr_workspace_tmp[st], NULL, d_ptr_solverInfo);
-				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
-				// Solve A\b
-				cusolverDnSetStream(cusolverHandle, streams[st]);
-				cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[st], 1, d_ptr_A_tmp[st], row_sub[st], NULL, d_ptr_rhs_tmp[st], row_sub[st], d_ptr_solverInfo);
-				if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
-			}
+		// Streams
+		for (size_t st = 0; st < num_streams; st++){
+			d_ptr_A_tmp[st] = d_ptr_A + ptr_mat_shift[st];
+			d_ptr_workspace_tmp[st] = d_ptr_workspace + ptr_workspace_shift[st];
+			d_ptr_rhs_tmp[st] = d_ptr_rhs + ptr_vec_shift[st];
+			// LU decomposition
+			//cusolverDnSetStream(cusolverHandle, streams[st]);
+			cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[st], row_sub[st], d_ptr_A_tmp[st], row_sub[st], d_ptr_workspace_tmp[st], NULL, d_ptr_solverInfo);
+			if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver LU decomposition failed" << std::endl;
+			// Solve A\b
+			//cusolverDnSetStream(cusolverHandle, streams[st]);
+			cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[st], 1, d_ptr_A_tmp[st], row_sub[st], NULL, d_ptr_rhs_tmp[st], row_sub[st], d_ptr_solverInfo);
+			if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> System couldn't be solved" << std::endl;
 		}
 		// Synchronize streams
 		for (size_t st = 0; st < num_streams; st++) cudaStreamSynchronize(streams[st]);

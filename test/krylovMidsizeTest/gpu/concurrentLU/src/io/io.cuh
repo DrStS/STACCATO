@@ -1,5 +1,5 @@
-#ifndef IO_HPP
-#define IO_HPP
+
+#pragma once
 
 // Libraries
 #include <string>
@@ -15,5 +15,3 @@ namespace io{
 	void readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _filepath, std::string _filename, bool _isComplex);
 	void writeSolVecComplex(thrust::host_vector<cuDoubleComplex> &sol, std::string _filepath, std::string _filename);
 }
-
-#endif

@@ -60,7 +60,7 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 2000;
+	double freq_max = 1000;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -68,7 +68,7 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
-	int mat_repetition = 5;
+	int mat_repetition = 1;
 
 	timerTotal.start();
 	// Library initialisation
@@ -279,7 +279,7 @@ int main (int argc, char *argv[]){
 
 	sol = d_sol;
 	// Write out solution vectors
-	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	// Destroy cuBLAS & cuSolver
 	cublasDestroy(cublasHandle);

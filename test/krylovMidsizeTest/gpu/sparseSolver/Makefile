@@ -11,7 +11,7 @@ NVCC = nvcc
 #--------
 CFLAGS = -std=c++14 -default-stream per-thread
 OPENMP = -Xcompiler -fopenmp
-CUDA_LIB = -lcublas -lcusolver
+CUDA_LIB = -lcublas -lcusolver -lcusparse
 
 #Architecture
 #--------

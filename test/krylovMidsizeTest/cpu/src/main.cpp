@@ -252,6 +252,7 @@ int main(int argc, char *argv[]) {
 	std::vector<lapack_int> pivot(nnz);
 
 	int sol_shift = 0;
+	std::cout << ">> Frequency Loop started" << std::endl;
 	timerLoop.start();
 	// Loop over frequency
 #pragma omp parallel
@@ -297,7 +298,7 @@ int main(int argc, char *argv[]) {
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
 	// Output solutions
-	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

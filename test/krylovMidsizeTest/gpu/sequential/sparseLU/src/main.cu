@@ -35,7 +35,7 @@ int main (int argc, char *argv[]){
 
 	// Command line arguments
 	if (argc < 5){
-		std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition>" << std::endl;
+		std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> " << std::endl;
 		std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
 		std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
 		return 1;
@@ -82,10 +82,6 @@ int main (int argc, char *argv[]){
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
 
-	// OpenMP
-	int num_threads = num_matrix;
-	omp_set_num_threads(num_threads);
-
 	timerTotal.start();
 
 	// Library initialisation
@@ -131,8 +127,6 @@ int main (int argc, char *argv[]){
 	// Get matrix sizes
 	thrust::host_vector<int> row_sub(num_matrix);
 	thrust::host_vector<int> size_sub(num_matrix);
-	thrust::host_vector<size_t> ptr_mat_shift(num_matrix);
-	thrust::host_vector<size_t> ptr_vec_shift(num_matrix);
 	int nnz = 0;
 	int row = 0;
 	size_t idx;
@@ -141,8 +135,6 @@ int main (int argc, char *argv[]){
 			idx = i + 12*j;
 			row_sub[idx] = row_baseline[i];
 			size_sub[idx] = row_sub[i]*row_sub[i];
-			ptr_mat_shift[idx] = nnz;
-			ptr_vec_shift[idx] = row;
 			nnz += size_sub[idx];
 			row  += row_sub[idx];
 		}
@@ -203,10 +195,10 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_A(nnz);
 
 	// Get raw pointers to matrices
-	cuDoubleComplex *d_ptr_K 	 = thrust::raw_pointer_cast(d_K.data());
-	cuDoubleComplex *d_ptr_M 	 = thrust::raw_pointer_cast(d_M.data());
-	cuDoubleComplex *d_ptr_D 	 = thrust::raw_pointer_cast(d_D.data());
-	cuDoubleComplex *d_ptr_A 	 = thrust::raw_pointer_cast(d_A.data());
+	cuDoubleComplex *d_ptr_K  = thrust::raw_pointer_cast(d_K.data());
+	cuDoubleComplex *d_ptr_M  = thrust::raw_pointer_cast(d_M.data());
+	cuDoubleComplex *d_ptr_D  = thrust::raw_pointer_cast(d_D.data());
+	cuDoubleComplex *d_ptr_A  = thrust::raw_pointer_cast(d_A.data());
 
 	// Get raw pointers to CSR arrays
 	int *d_ptr_csrRowPtr = thrust::raw_pointer_cast(d_csrRowPtr.data());
@@ -233,11 +225,6 @@ int main (int argc, char *argv[]){
 	timerMatrixComp.stop();
 	std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
 	std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
-
-	// Stream initialisation
-	const int num_streams = num_threads;
-	cudaStream_t streams[num_streams];
-	for (size_t i = 0; i < num_streams; i++) cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
 
 	/*-----------------------------
 	LU Decomposition initialisation
@@ -348,14 +335,11 @@ int main (int argc, char *argv[]){
 	sol = d_sol;
 
 	// Write out solution vectors
-	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	// Destroy cuBLAS & cuSparse
 	cublasDestroy(cublasHandle);
 	cusparseDestroy(cusparseHandle);
-
-	// Destroy streams
-	for (size_t i = 0; i < num_streams; i++) cudaStreamDestroy(streams[i]);
 
 	timerTotal.stop();
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;

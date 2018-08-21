@@ -1,4 +1,5 @@
-// Libraries #include <iostream>
+// Libraries
+#include <iostream>
 #include <vector>
 #include <string>
 #include <cmath>
@@ -32,6 +33,20 @@
 
 int main (int argc, char *argv[]){
 
+	// Command line arguments
+	if (argc < 5){
+		std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition>" << std::endl;
+		std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
+		std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
+		return 1;
+	}
+
+	double freq_max = atof(argv[2]);
+	int mat_repetition = atoi(argv[4]);
+	int num_matrix = mat_repetition*12;
+	std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
+	std::cout << ">> Total number of matrices: " << num_matrix << "\n" << std::endl;
+
 	// Vector of filepaths
 	std::string filepath[2];
 	filepath[0] = "/opt/software/examples/MOR/r_approx_180/\0";
@@ -59,7 +74,6 @@ int main (int argc, char *argv[]){
 	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 2000;
 	const double alpha = 4*PI*PI;
 	cuDoubleComplex one;			// Dummy scailing factor for global matrix assembly
 	one.x = 1;
@@ -67,8 +81,6 @@ int main (int argc, char *argv[]){
 	cuDoubleComplex rhs_val;
 	rhs_val.x = (double)1.0;
 	rhs_val.y = (double)0.0;
-	int mat_repetition = 5;
-	int num_matrix = 12*mat_repetition;
 
 	// OpenMP
 	int num_threads = num_matrix;
@@ -156,7 +168,7 @@ int main (int argc, char *argv[]){
 		}
 	}
 
-	std::cout <<">> Matrices combined" << std::endl;
+	std::cout <<">> Matrices combined\n" << std::endl;
 
 	// Generate CSR format
 	timerAux.start();
@@ -230,6 +242,7 @@ int main (int argc, char *argv[]){
 	/*-----------------------------
 	LU Decomposition initialisation
 	-----------------------------*/
+	timerAux.start();
 	// Matrix Descriptions
 	cusparseMatDescr_t descr_A, descr_L, descr_U;
 	cusparseCreateMatDescr(&descr_A);
@@ -260,15 +273,6 @@ int main (int argc, char *argv[]){
 	const cusparseSolvePolicy_t policy_U = CUSPARSE_SOLVE_POLICY_USE_LEVEL;
 	// Zero Pivoting
 	int structural_zero, numerical_zero;
-	// Assemble global matrix for minimum frequency
-	d_A = d_M;
-	freq_square = -(freq_min*freq_min);
-	// Scale A with -f^2
-	cublasStatus = cublasZdscal(cublasHandle, nnz, &freq_square, d_ptr_A, 1);
-	assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
-	// Sum A with K
-	cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A, 1);
-	assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
 	// Buffer space
 	int bufferSize_A, bufferSize_L, bufferSize_U, bufferSize;
 	cusparseStatus = cusparseZcsrilu02_bufferSize(cusparseHandle, row, nnz, descr_A, d_ptr_A, d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, &bufferSize_A);
@@ -289,6 +293,9 @@ int main (int argc, char *argv[]){
 	assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
 	cusparseStatus = cusparseZcsrsv2_analysis(cusparseHandle, trans_U, row, nnz, descr_U, d_ptr_A, d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U, policy_U, d_ptr_buffer);
 	assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
+	timerAux.stop();
+	std::cout << ">> LU decomposition initialised" << std::endl;
+	std::cout << ">>>> Time taken (s) = " << timerAux.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
 	/*------------
 	Frequency Loop
@@ -296,9 +303,6 @@ int main (int argc, char *argv[]){
 	timerLoop.start();
 	int sol_shift = 0;
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-
-		timerIteration.start();
-
 		// Compute scaling
 		freq = (double)it;
 		freq_square = -(freq*freq);
@@ -331,9 +335,9 @@ int main (int argc, char *argv[]){
 		assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
 		// Solve x = U\z
 		cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_U, row, nnz, &one, descr_U, d_ptr_A, d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U,
-												d_ptr_rhs, d_ptr_sol+sol_shift, policy_U, d_ptr_buffer);
+												d_ptr_z, d_ptr_sol+sol_shift, policy_U, d_ptr_buffer);
 		assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
-
+		// Update solution vector shift
 		sol_shift += row;
 	}
 	timerLoop.stop();
@@ -344,7 +348,7 @@ int main (int argc, char *argv[]){
 	sol = d_sol;
 
 	// Write out solution vectors
-	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	// Destroy cuBLAS & cuSparse
 	cublasDestroy(cublasHandle);

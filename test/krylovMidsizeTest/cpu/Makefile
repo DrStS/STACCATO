@@ -4,7 +4,7 @@ MKLROOT=/opt/software/libs/mkl/mkl
 
 #Include files
 #-------------
-SOURCES=src/main.cpp src/io/io.cpp src/helper/Timer.cpp
+SOURCES=src/main.cpp src/io/io.cpp src/helper/Timer.cpp src/helper/math.cpp
 
 #Compiler
 #--------

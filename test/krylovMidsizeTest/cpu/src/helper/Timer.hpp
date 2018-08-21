@@ -86,6 +86,7 @@ private:
 
 };
 
+extern Timer	timerAux;
 extern Timer	timerTotal;
 extern Timer	timerMatrixComp;
 extern Timer	timerIteration;

@@ -46,8 +46,8 @@
 /***********************************************************************************************//**
  * \file main.cpp
  * This file holds the main function of STACCATO Performance Tests.
- * \author Stefan Sicklinger
- * \date 8/1/2018
+ * \author Jiho Yang
+ * \date 8/21/2018
  * \version
  **************************************************************************************************/
 
@@ -67,6 +67,7 @@
 // Header Files
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
+#include "helper/math.hpp"
 
 // Definitions
 #define	PI	3.14159265359
@@ -76,15 +77,34 @@
 int main(int argc, char *argv[]) {
 
 	// Command line arguments
-	if (argc < 3) {
-		std::cerr << ">> Usage: " << argv[0] << " -s <small/mid/large>" << std::endl;
+	if (argc < 5){
+		std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -mkl <mkl threads> -openmp <OpenMP threads>" << std::endl;
+		std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
+		std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
+		std::cerr << "         Default number of MKL threads is mkl_get_max_threads()" << std::endl;
+		std::cerr << "         Default number of OpenMP threads is 1" << std::endl;
 		return 1;
 	}
-	std::string SIZE = argv[2];
-	std::cout << ">> Matrix Size: " << SIZE << std::endl;
 
-	std::string filepath_input, filepath_sol;
-	std::string filename_K, filename_M, filename_D, filename_sol;
+	double freq_max = atof(argv[2]);
+	int mat_repetition = atoi(argv[4]);
+	int num_matrix = mat_repetition*12;
+	std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
+	std::cout << ">> Total number of matrices: " << num_matrix << "\n" << std::endl;
+
+	// OpenMP
+	int nt_mkl = mkl_get_max_threads();
+	int nt = 1;
+	if (argc > 6) nt_mkl = atoi(argv[6]);
+	if (argc > 8){
+		nt_mkl = atoi(argv[6]);
+		nt = atoi(argv[8]);
+	}
+
+	omp_set_num_threads(nt);
+	mkl_set_num_threads(nt_mkl);
+	std::cout << ">> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
+
 
 #if defined(_WIN32) || defined(__WIN32__)
 	std::string filePathPrefix = "C:/software/examples/";
@@ -93,154 +113,191 @@ int main(int argc, char *argv[]) {
 	std::string filePathPrefix = "/opt/software/examples/";
 #endif
 
-	if (SIZE == "small") {
-		// Filepaths
-		filepath_input = "MOR/small/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r21.mtx";
-		filename_M = "KSM_Mass_r21.mtx";
-		filename_D = "KSM_Damping_r21.mtx";
-		filename_sol = "solution_mkl_small.dat";
-	}
-	else if (SIZE == "mid") {
-		// Filepaths
-		filepath_input = "MOR/mid/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r189.mtx";
-		filename_M = "KSM_Mass_r189.mtx";
-		filename_D = "KSM_Damping_r189.mtx";
-		filename_sol = "solution_mkl_mid.dat";
-	}
-	else if (SIZE == "large") {
-		// Filepaths
-		filepath_input = "MOR/large/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r2520.mtx";
-		filename_M = "KSM_Mass_r2520.mtx";
-		filename_D = "KSM_Damping_r2520.mtx";
-		filename_sol = "solution_mkl_large.dat";
-	}
-	else {
-		std::cerr << ">> Incorrect matrix size, please check commandline argument\n" << std::endl;
-		return 1;
-	}
+	// Vector of filepaths
+	std::string filepath[2];
+	filepath[0] = filePathPrefix + "MOR/r_approx_180/\0";
+	filepath[1] = filePathPrefix + "MOR/r_approx_300/\0";
 
-	// OpenMP Threads
-	//int nt = mkl_get_max_threads();
-	int nt = 20;
-	int nt_mkl = 1;
-	omp_set_num_threads(nt);
-	mkl_set_num_threads(nt_mkl);
-	std::cout << "\n>> Software will use the following number of threads: " << nt << " threads\n" << std::endl;
+	// Solution filepath
+	std::string filepath_sol = "output/";
+
+	// Solution filename
+	std::string filename_sol = "solution.dat";
+
+	// Array of matrix sizes (row)
+	int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
+
+	// Array of filenames
+	std::string baseName_K = "KSM_Stiffness_r\0";
+	std::string baseName_M = "KSM_Mass_r\0";
+	std::string baseName_D = "KSM_Damping_r\0";
+	std::string base_format = ".mtx\0";
+	std::string filename_K[12];
+	std::string filename_M[12];
+	std::string filename_D[12];
 
 	// Parameters
-	bool isComplex = true;
+	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 1000;
-	const double alpha = 4 * PI*PI;
-	MKL_Complex16 one;	// Dummy scaling factor for global matrix assembly
+	const double alpha = 4*PI*PI;
+	MKL_Complex16 one;				// Dummy scaling factor for global matrix assembly
 	one.real = 1;
 	one.imag = 0;
 	MKL_Complex16 rhs_val;
-	rhs_val.real = 1;
-	rhs_val.imag = 0;
-
-	// Time measurement
-	std::vector<float> vec_time((size_t)freq_max);
+	rhs_val.real = 1.0;
+	rhs_val.imag = 0.0;
 
 	timerTotal.start();
 
 	// Matrices
-	std::vector<MKL_Complex16> K, M, D;
+	std::vector<std::vector<MKL_Complex16>> K_sub(12);
+	std::vector<std::vector<MKL_Complex16>> M_sub(12);
+	std::vector<std::vector<MKL_Complex16>> D_sub(12);
 
 	// Read MTX files
-	io::readMtxDense(K, filePathPrefix + filepath_input, filename_K, isComplex);
-	io::readMtxDense(M, filePathPrefix + filepath_input, filename_M, isComplex);
-	io::readMtxDense(D, filePathPrefix + filepath_input, filename_D, isComplex);
+	for (size_t i = 0; i < 7; i++){
+		filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
+		filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
+		filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
+		io::readMtxDense(K_sub[i], filepath[0], filename_K[i], isComplex);
+		io::readMtxDense(M_sub[i], filepath[0], filename_M[i], isComplex);
+		io::readMtxDense(D_sub[i], filepath[0], filename_D[i], isComplex);
+		K_sub[i].pop_back();
+		M_sub[i].pop_back();
+		D_sub[i].pop_back();
+	}
+	for (size_t i = 7; i < 12; i++){
+		filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
+		filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
+		filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
+		io::readMtxDense(K_sub[i], filepath[1], filename_K[i], isComplex);
+		io::readMtxDense(M_sub[i], filepath[1], filename_M[i], isComplex);
+		io::readMtxDense(D_sub[i], filepath[1], filename_D[i], isComplex);
+		K_sub[i].pop_back();
+		M_sub[i].pop_back();
+		D_sub[i].pop_back();
+	}
 
-	// Readjust matrix size (matrix size initially increased by 1 due to segmentation fault. See also io.cpp)
-	K.pop_back();
-	M.pop_back();
-	D.pop_back();
+	std::cout << ">> Matrices imported" << std::endl;
 
-	// Get matrix size
-	int size = K.size();
-	int row = sqrt(size);
+	// Get matrix sizes
+	std::vector<int> row_sub(num_matrix);
+	std::vector<int> size_sub(num_matrix);
+	std::vector<size_t> ptr_mat_shift(num_matrix);
+	std::vector<size_t> ptr_vec_shift(num_matrix);
+	int nnz = 0;
+	int row = 0;
+	size_t idx;
+
+	for (size_t j = 0; j < mat_repetition; j++){
+		for (size_t i = 0; i < 12; i++){
+			idx = i + 12*j;
+			row_sub[idx] = row_baseline[i];
+			size_sub[idx] = row_sub[i]*row_sub[i];
+			ptr_mat_shift[idx] = nnz;
+			ptr_vec_shift[idx] = row;
+			nnz += size_sub[idx];
+			row  += row_sub[idx];
+		}
+	}
+
+	// Combine matrices into a single array
+	std::vector<MKL_Complex16> K(nnz);
+	std::vector<MKL_Complex16> M(nnz);
+	std::vector<MKL_Complex16> D(nnz);
+	auto K_sub_ptr = &K_sub[0];
+	auto M_sub_ptr = &M_sub[0];
+	auto D_sub_ptr = &D_sub[0];
+	size_t array_shift = 0;
+	for (size_t j = 0; j < mat_repetition; j++){
+		for (size_t i = 0; i < 12; i++){
+			K_sub_ptr = &K_sub[i];
+			M_sub_ptr = &M_sub[i];
+			D_sub_ptr = &D_sub[i];
+			std::copy(K_sub_ptr->begin(), K_sub_ptr->end(), K.begin() + array_shift);
+			std::copy(M_sub_ptr->begin(), M_sub_ptr->end(), M.begin() + array_shift);
+			std::copy(D_sub_ptr->begin(), D_sub_ptr->end(), D.begin() + array_shift);
+			array_shift += size_sub[i];
+		}
+	}
+
+	std::cout <<">> Matrices combined\n" << std::endl;
+
+
+
+	// Generate CSR format
+	timerAux.start();
+	std::vector<int> csrRowPtr(row+1);
+	std::vector<int> csrColInd(nnz);
+	generateCSR(csrRowPtr, csrColInd, row_sub, size_sub, row, nnz, num_matrix);
+	timerAux.stop();
+	std::cout <<">> CSR Format Generated" << std::endl;
+	std::cout <<">>>> Time taken = " << timerAux.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 
 	// Allocate global matrices
-	std::vector<MKL_Complex16> A(size);
+	std::vector<MKL_Complex16> A(nnz);
 
 	// Initialise RHS vectors
 	std::vector<MKL_Complex16> rhs(row, rhs_val);
 
 	// Initialise solution vectors
-	std::vector<MKL_Complex16> sol(row);
+	std::vector<MKL_Complex16> sol(row*freq_max);
 
 	// M = 4*pi^2*M (Single computation suffices)
-	cblas_zdscal(size, alpha, M.data(), 1);
-	std::cout << ">> M_tilde (" << SIZE << ")" << " computed with Intel MKL" << std::endl;
+	cblas_zdscal(nnz, alpha, M.data(), 1);
+	std::cout << ">> M_tilde computed with Intel MKL" << std::endl;
 
 	// Pivots for LU Decomposition
-	std::vector<lapack_int> pivot(size);
+	std::vector<lapack_int> pivot(nnz);
 
-	int i = 0;
+	int sol_shift = 0;
 	timerLoop.start();
 	// Loop over frequency
 #pragma omp parallel
 	{
-#pragma omp critical (cout)
-		std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
+//#pragma omp critical (cout)
+		//std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
 #pragma omp for
 		for (int it = (int)freq_min; it <= (int)freq_max; it++) {
-			timerIteration.start();
 			// Compute scaling
 			freq = (double)it;
 			freq_square = -(freq*freq);
 
-			timerMatrixComp.start();
 			// Assemble global matrix ( A = K - f^2*M_tilde)
-			cblas_zcopy(size, M.data(), 1, A.data(), 1);
-			cblas_zdscal(size, freq_square, A.data(), 1);
-			cblas_zaxpy(size, &one, K.data(), 1, A.data(), 1);
-			// LU Decomposition
-			LAPACKE_zgetrf(LAPACK_COL_MAJOR, row, row, A.data(), row, pivot.data());
-			// Solve system
-			LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row, 1, A.data(), row, pivot.data(), rhs.data(), row);
-			timerMatrixComp.stop();
+			cblas_zcopy(nnz, M.data(), 1, A.data(), 1);
+			cblas_zdscal(nnz, freq_square, A.data(), 1);
+			cblas_zaxpy(nnz, &one, K.data(), 1, A.data(), 1);
+
+			array_shift = 0;
+			size_t row_shift = 0;
+			for (size_t j = 0; j < mat_repetition; j++){
+				for (size_t i = 0; i < 12; i++){
+					// LU Decomposition
+					LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + array_shift, row_sub[i], pivot.data());
+					// Solve system
+					LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+					array_shift += size_sub[i];
+					row_shift += row_sub[i];
+				}
+			}
 
 			// Copy solution to solution vector
-			cblas_zcopy(row, rhs.data(), 1, sol.data(), 1);
-
+			cblas_zcopy(row, rhs.data(), 1, sol.data() + sol_shift, 1);
+			sol_shift += row;
 			// Reset RHS values
 			std::fill(rhs.begin(), rhs.end(), one);
-
-			// Output messages
-			timerIteration.stop();
-			//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
-
-			// Accumulate time measurements
-			vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;
-			i++;
-		}
-	}
+		} // frequency loop
+	} // omp parallel
 	timerLoop.stop();
 	timerTotal.stop();
-
-	// Get average time
-	float time_avg = cblas_sasum((int)freq_max, vec_time.data(), 1); time_avg /= freq_max;
 
 	// Output messages
 	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
-	std::cout << ">>>>>> Average time (s) for matrix computation (" << SIZE << ") : " << time_avg << "\n" << std::endl;
 
 	// Output solutions
 	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }
-

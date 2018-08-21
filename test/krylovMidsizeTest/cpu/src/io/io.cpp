@@ -32,13 +32,13 @@ void io::readMtxDense(std::vector<MKL_Complex16> &A, std::string _filepath, std:
 		std::cout << "File not found." << std::endl;
 	}
 	else {
-		std::cout << ">> Reading matrix from "<< _filepath + _filename << " ... " << std::endl;
-		std::cout << ">> Matrix size: " << rowSize << " x " << colSize << std::endl;
+		//std::cout << ">> Reading matrix from "<< _filepath + _filename << " ... " << std::endl;
+		//std::cout << ">> Matrix size: " << rowSize << " x " << colSize << std::endl;
 		A.resize(entrySize+1);	// Causes segmentation fault without +1
 		timerIO.start();
 		// Complex matrix
 		if (_isComplex){
-			std::cout << ">> Matrix type: COMPLEX" << std::endl;
+			//std::cout << ">> Matrix type: COMPLEX" << std::endl;
 			int i = 0;
 			while (!input.eof()) {
 				input >> _real >> _imag;
@@ -49,12 +49,12 @@ void io::readMtxDense(std::vector<MKL_Complex16> &A, std::string _filepath, std:
 				i++;
 			}
 			timerIO.stop();
-			std::cout << ">> Matrix " << _filename << " read" << std::endl;
-			std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+			//std::cout << ">> Matrix " << _filename << " read" << std::endl;
+			//std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 		}
 		// Real matrix
 		else if (!_isComplex){
-			std::cout << ">> Matrix type: REAL" << std::endl;
+			//std::cout << ">> Matrix type: REAL" << std::endl;
 			int i = 0;
 			while (!input.eof()) {
 				input >> _real >> _imag;
@@ -65,8 +65,8 @@ void io::readMtxDense(std::vector<MKL_Complex16> &A, std::string _filepath, std:
 				i++;
 			}
 			timerIO.stop();
-			std::cout << ">> Matrix " << _filename << " read" << std::endl;
-			std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+			//std::cout << ">> Matrix " << _filename << " read" << std::endl;
+			//std::cout << ">>>> Time taken = " << timerIO.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 		}
 	}
 	input.close();

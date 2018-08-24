@@ -239,14 +239,18 @@ int main (int argc, char *argv[]){
 	thrust::device_vector<cuDoubleComplex> d_sol(row*freq_max);		// Final solution
 
 	// Get raw pointers to solution vector
-
 	thrust::host_vector<cuDoubleComplex*> d_ptr_z(num_streams);
 	size_t z_shift = 0;
 	for (size_t i = 0; i < num_streams; i++){
 		d_ptr_z[i] = thrust::raw_pointer_cast(d_z.data() + z_shift);
 		z_shift += row;
 	}
-	cuDoubleComplex *d_ptr_sol = thrust::raw_pointer_cast(d_sol.data());
+	thrust::host_vector<cuDoubleComplex*> d_ptr_sol(freq_max);
+	size_t sol_shift = 0;
+	for (size_t i = 0; i < freq_max; i++){
+		d_ptr_sol[i] = thrust::raw_pointer_cast(d_sol.data() + sol_shift);
+		sol_shift += row;
+	}
 
 	timerMatrixComp.start();
 	// M = 4*pi^2*M (Single computation suffices)
@@ -322,20 +326,17 @@ int main (int argc, char *argv[]){
 	/*------------
 	Frequency Loop
 	------------*/
-	std::cout << "\n" << ">>>> Frequency loop started" << std::endl;
+	std::cout << ">>>> Frequency loop started" << std::endl;
 	timerLoop.start();
-	int sol_shift = 0;
 	for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it += num_streams){
-		// Streams
+
+		/*--------------------------------------------
+		Assemble global matrix ( A = K - f^2*M_tilde )
+		--------------------------------------------*/
 		for (size_t i = 0; i < num_streams; i++){
 			// Compute scaling
 			freq[i] = (double)it + i;
 			freq_square[i] = -(freq[i]*freq[i]);
-
-			d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+i*bufferSize);
-			/*-----------------------------------------------
-			// Assemble global matrix ( A = K - f^2*M_tilde )
-			-----------------------------------------------*/
 			thrust::copy(d_M.begin(), d_M.end(), d_A.begin() + i*nnz);
 			// Scale A with -f^2
 			cublasSetStream(cublasHandle, streams[i]);
@@ -345,19 +346,25 @@ int main (int argc, char *argv[]){
 			cublasSetStream(cublasHandle, streams[i]);
 			cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A[i], 1);
 			assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
+		}
 
-			/*--------------
-			LU Decomposition
-			--------------*/
+		/*--------------
+		LU Decomposition
+		--------------*/
+		for (size_t i = 0; i < num_streams; i++){
+			d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+i*bufferSize);
 			cusparseSetStream(cusparseHandle, streams[i]);
 			cusparseStatus = cusparseZcsrilu02(cusparseHandle, row, nnz, descr_A, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, policy_A, d_ptr_buffer_stream);
 			assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
 			cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
 			if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
+		}
 
-			/*-----------
-			Solve x = A\b
-			-----------*/
+		/*-----------
+		Solve x = A\b
+		-----------*/
+		for (size_t i = 0; i < num_streams; i++){
+			size_t freq_idx = freq[i]-1;
 			// Solve z = L\b
 			cusparseSetStream(cusparseHandle, streams[i]);
 			cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_L, row, nnz, &one, descr_L, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_L,
@@ -366,10 +373,8 @@ int main (int argc, char *argv[]){
 			// Solve x = U\z
 			cusparseSetStream(cusparseHandle, streams[i]);
 			cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_U, row, nnz, &one, descr_U, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U,
-													d_ptr_z[i], d_ptr_sol+sol_shift, policy_U, d_ptr_buffer_stream);
+													d_ptr_z[i], d_ptr_sol[freq_idx], policy_U, d_ptr_buffer_stream);
 			assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
-			// Update solution vector shift
-			sol_shift += row;
 		}
 	}
 	timerLoop.stop();

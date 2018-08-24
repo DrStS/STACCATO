@@ -31,6 +31,11 @@
 // Definitions
 #define	PI	3.14159265359
 
+/*
+    Validated: M_tilde, -f^2*A
+    Wrong : A = K - f^2*A (Initial values of A not being updated)
+*/
+
 int main (int argc, char *argv[]){
 
 	// Command line arguments
@@ -220,7 +225,7 @@ int main (int argc, char *argv[]){
 	thrust::host_vector<cuDoubleComplex*> d_ptr_A(num_streams);
 	size_t mat_shift = 0;
 	for (size_t i = 0; i < num_streams; i++) {
-		d_ptr_A[i] = thrust::raw_pointer_cast(d_A.data() + mat_shift);
+		d_ptr_A[i] = thrust::raw_pointer_cast(d_A.data()) + mat_shift;
 		mat_shift += nnz;
 	}
 
@@ -337,7 +342,8 @@ int main (int argc, char *argv[]){
 			// Compute scaling
 			freq[i] = (double)it + i;
 			freq_square[i] = -(freq[i]*freq[i]);
-			thrust::copy(d_M.begin(), d_M.end(), d_A.begin() + i*nnz);
+            // Copy M to A
+			thrust::copy(d_M.begin(), d_M.end(), d_ptr_A[i]);
 			// Scale A with -f^2
 			cublasSetStream(cublasHandle, streams[i]);
 			cublasStatus = cublasZdscal(cublasHandle, nnz, &freq_square[i], d_ptr_A[i], 1);
@@ -351,6 +357,7 @@ int main (int argc, char *argv[]){
 		/*--------------
 		LU Decomposition
 		--------------*/
+/*
 		for (size_t i = 0; i < num_streams; i++){
 			d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+i*bufferSize);
 			cusparseSetStream(cusparseHandle, streams[i]);
@@ -359,10 +366,12 @@ int main (int argc, char *argv[]){
 			cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
 			if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
 		}
+*/
 
 		/*-----------
 		Solve x = A\b
 		-----------*/
+/*
 		for (size_t i = 0; i < num_streams; i++){
 			size_t freq_idx = freq[i]-1;
 			// Solve z = L\b
@@ -376,11 +385,16 @@ int main (int argc, char *argv[]){
 													d_ptr_z[i], d_ptr_sol[freq_idx], policy_U, d_ptr_buffer_stream);
 			assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
 		}
+*/
 	}
 	timerLoop.stop();
 
 	std::cout << ">>>> Frequency loop finished" << std::endl;
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+
+    thrust::host_vector<cuDoubleComplex> A = d_A;
+    io::writeSolVecComplex(A, filepath_sol, "A.dat");
+    io::writeSolVecComplex(K, filepath_sol, "K.dat");
 
 	sol = d_sol;
 

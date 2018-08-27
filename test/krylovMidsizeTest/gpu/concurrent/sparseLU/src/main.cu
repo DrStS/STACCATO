@@ -345,8 +345,8 @@ int main (int argc, char *argv[]){
             cublasStatus = cublasZdscal(cublasHandle, nnz, &freq_square[i], d_ptr_A[i], 1);
             assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
         }
+
         for (size_t i = 0; i < num_streams; i++){
-            cudaStreamSynchronize(streams[i]);
             // Sum A with K
             cublasSetStream(cublasHandle, streams[i]);
             cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A[i], 1);
@@ -363,8 +363,6 @@ int main (int argc, char *argv[]){
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
             cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
             if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
-
-            cudaStreamSynchronize(streams[i]);
         }
 
         /*-----------
@@ -382,23 +380,19 @@ int main (int argc, char *argv[]){
             cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_U, row, nnz, &one, descr_U, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U,
                     d_ptr_z[i], d_ptr_sol[freq_idx], policy_U, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
-
-            cudaStreamSynchronize(streams[i]);
         }
+        // Synchronize streams
+        for (size_t i = 0; i < num_streams; i++) cudaStreamSynchronize(streams[i]);
     }
     timerLoop.stop();
 
     std::cout << ">>>> Frequency loop finished" << std::endl;
     std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
-    //thrust::host_vector<cuDoubleComplex> A = d_A;
-    //io::writeSolVecComplex(A, filepath_sol, "A.dat");
-    //io::writeSolVecComplex(K, filepath_sol, "K.dat");
-
     sol = d_sol;
 
     // Write out solution vectors
-    io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+    //io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSparse
     cublasDestroy(cublasHandle);

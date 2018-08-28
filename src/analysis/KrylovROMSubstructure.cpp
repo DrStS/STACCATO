@@ -58,7 +58,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	bool exportSparseMatrix = false;
 	bool exportRHS = true;
 	bool exportSolution = true;
-	bool writeTransferFunctions = true;
+	bool writeTransferFunctions = false;
 	/* -------------------------- */
 
 	// Build DataStructure
@@ -175,6 +175,10 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				myC[myOutputDOFS[outIter] * myOutputDOFS.size() + outIter].real = 1;
 			}
 
+
+			KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
+			MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
+
 			// Assemble global FOM system matrices
 			if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB") {
 				std::cout << ">> Assembling FOM system matrices from ODB... " << std::endl;
@@ -185,6 +189,11 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				std::cout << ">> Assembling FOM system matrices from SIM... " << std::endl;
 				assembleUmaMatrices(std::string(std::string(iterParts->PART()[iPart].TYPE()->data())));
 				std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
+			}
+			if (exportSparseMatrix)
+			{
+				(*KComplex).writeSparseMatrixToFile(currentPart + "_KSparse", "dat");
+				(*MComplex).writeSparseMatrixToFile(currentPart + "_MSparse", "dat");
 			}
 
 			anaysisTimer01.start();
@@ -536,8 +545,6 @@ void KrylovROMSubstructure::assembleGlobalMatrices(std::string _type) {
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 	int lastIndex = 0;
-	KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
-	MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
 
 	// Assembling Element Stiffness Matrices
 	for (int iElement = 0; iElement < numElements; iElement++)
@@ -581,12 +588,11 @@ void KrylovROMSubstructure::assembleGlobalMatrices(std::string _type) {
 }
 
 void KrylovROMSubstructure::assembleUmaMatrices(std::string _type) {
+	bool exportCSR = true;
 	//Assembly routine symmetric stiffness
 	int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
-	KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
-	MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
 	for (int iElement = 0; iElement < numElements; iElement++)
 	{
 		int num_SparseK_row = allUMAElements[iElement]->myK_row.size();
@@ -676,7 +682,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	myV.reserve(FOM_DOF*ROM_DOF);
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
+	
 	STACCATOComplexDouble ZeroComplex = {0,0};
 	STACCATOComplexDouble OneComplex = { 1,0 };
 	STACCATOComplexDouble NegOneComplex = { -1,0 };
@@ -699,8 +705,10 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		negativeOmegaSquare.real = -omega * omega;
 		negativeOmegaSquare.imag = 0;
 
+		std::cout << " > flag2";
 		// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
+		std::cout << " > flag3";
 		// K_tilde = - K_tilde
 		STACCATOComplexDouble negativeOne;
 		negativeOne.real = -1;
@@ -712,13 +720,16 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		STACCATOComplexDouble complexTwoOmega;
 		complexTwoOmega.real = 0;
 		complexTwoOmega.imag = 2 * omega;
+		std::cout << " > flag4";
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &zeroMat, &D_tilde, false, true, complexTwoOmega);
 		// QV = - K_tilde\obj.B;               % Initial Search Direction
 		std::vector<STACCATOComplexDouble> QV;
 		QV.resize(FOM_DOF*myInputDOFS.size());
+		std::cout << " > flag5";
 
 		factorizeSparseMatrixComplex(&K_tilde, true, true, myInputDOFS.size());
 		solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &QV[0], &myB[0]);
+		std::cout << " > flag6";
 
 		if (iEP == 0)
 		{
@@ -732,12 +743,15 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			y.resize(FOM_DOF*myInputDOFS.size(), zero);
 
 			MathLibrary::computeDenseVectorAdditionComplex(&QV[0], &y[0], &inv_normQV, QV.size());
+			std::cout << " > flag7";
 
 			QV.swap(y);
+			std::cout << " > flag8";
 		}
 		else {
 			for (int jQV = 0; jQV < myInputDOFS.size(); jQV++)
 			{
+				std::cout << " > flag9";
 				for (int j = 0; j < myV.size()/FOM_DOF; j++)
 				{
 					// h = QV(:, jQV)'*V(:,j);
@@ -752,15 +766,18 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 					// WQ(:, jWQ, i) = WQ(:, jWQ, i) - h * V(:, j) / (V(:, j)'*V(:,j));
 					MathLibrary::computeDenseVectorAdditionComplex(&myV[j*FOM_DOF], &QV[jQV*FOM_DOF], &h_by_hV, FOM_DOF);
 				}
+				std::cout << " > flag10";
 			}
 		}
 
+		std::cout << " > flag11";
 		// WQ(:,:,1) = QV;
 		std::vector<STACCATOComplexDouble> WQ;
 		//WQ.reserve(FOM_DOF*_krylovOrder*myInputDOFS.size());
 		WQ.swap(QV);
 		// V = [V WQ(:, : , 1)];
 		myV.insert(myV.end(), WQ.begin(), WQ.end());
+		std::cout << " > flag12";
 
 		for (int i = 1; i < _krylovOrder; i++)
 		{
@@ -768,11 +785,13 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			std::vector<STACCATOComplexDouble> WQ_i_D;
 			WQ_i_D.resize(FOM_DOF*myInputDOFS.size());
 			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(myInputDOFS.size(), FOM_DOF, FOM_DOF, &D_tilde, &WQ[(i-1)*FOM_DOF*myInputDOFS.size()], &WQ_i_D[0], false, false, ZeroComplex, true, false);
+			std::cout << " > flag13";
 			// obj.M*WQ(:,:,i-1))
 			std::vector<STACCATOComplexDouble> WQ_i_K;
 			WQ_i_K.resize(FOM_DOF*myInputDOFS.size());
 			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(myInputDOFS.size(), FOM_DOF, FOM_DOF, &mySparseM, &WQ[(i - 1)*FOM_DOF*myInputDOFS.size()], &WQ_i_K[0], false, false, ZeroComplex, true, false);
 
+			std::cout << " > flag13a";
 			// (D_tilde*WQ(:,:,i-1)+ obj.M*WQ(:,:,i-1));
 			MathLibrary::computeDenseVectorAdditionComplex(&WQ_i_D[0], &WQ_i_K[0], &OneComplex, FOM_DOF*myInputDOFS.size());
 
@@ -781,6 +800,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			WQ_i.resize(FOM_DOF*myInputDOFS.size(), ZeroComplex);
 			solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &WQ_i[0], &WQ_i_K[0]);
 			WQ.insert(WQ.end(), WQ_i.begin(), WQ_i.end());
+			std::cout << " > flag14";
 
 			// Gram-Schmidt orthogonalization to all previous WQ
 			for (int j = 0; j <= i-1; j++)
@@ -792,10 +812,13 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 				// WQ(:,:,i) = WQ(:,:,i) - WQ(:,:,j)*h;
 				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, myInputDOFS.size(), myInputDOFS.size(), &WQ[(j)*FOM_DOF*myInputDOFS.size()], &hMat[0], &WQ[(i)*FOM_DOF*myInputDOFS.size()], false, true, negativeOne, true, false, false);
 
+				std::cout << " > flag15";
 			}
 			// Gram - Schmidt orthogonalization of WQ_i against V
+			mklTimer01.start();
 			for (int jWQ = 0; jWQ < myInputDOFS.size(); jWQ++)
 			{
+				std::cout << " > flag16";
 				for (int j = 0; j < myV.size()/FOM_DOF ; j++)
 				{
 					// h = WQ(:,jWQ,i)'*V(:,j);
@@ -810,15 +833,25 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 					// WQ(:, jWQ, i) = WQ(:, jWQ, i) - h * V(:, j) / (V(:, j)'*V(:,j));
 					MathLibrary::computeDenseVectorAdditionComplex(&myV[j*FOM_DOF], &WQ[(i)*FOM_DOF*myInputDOFS.size() + jWQ * FOM_DOF], &h_by_hV, FOM_DOF);
 				}
+				std::cout << " > flag17";
 			}
+			mklTimer01.stop();
+			std::cout << "Gram - Schmidt orthogonalization of WQ_i against V completed: " << mklTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 			// V = [V WQ(:,:,i)];
+			std::cout << " > flag18";
 			myV.insert(myV.end(), std::next(WQ.begin()+i*FOM_DOF*myInputDOFS.size()-1), std::next(WQ.begin()+(i+1)*FOM_DOF*myInputDOFS.size()-1));
 
+			std::cout << " > flag19";
 			// [V,~]=qr(V,0);
+			mklTimer01.start();
 			MathLibrary::computeDenseMatrixQRDecompositionComplex(FOM_DOF, myV.size()/FOM_DOF, &myV[0], false);
+			mklTimer01.stop();
+			std::cout << "QR factorization completed: " << mklTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
+			std::cout << " > flag20";
 		}
 		cleanPardiso();
-		std::cout << (int)progress << "% completed." << std::endl;
+		std::cout << (int)progress << "% completed; Performed "<< iEP+1 << " of " << _expPoint.size() << "." << std::endl;
+		std::cout << " > flag21";
 	}
 	// MIMO
 	if(!isMIMO)
@@ -983,6 +1016,7 @@ void KrylovROMSubstructure::generateROM() {
 	// obj.C_R = obj.C*obj.V;
 	MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), ROM_DOF, FOM_DOF, &myC[0], &myV[0], &myCReduced[0], false, false, OneComplex, false, false, false);
 	
+	myV.clear();
 	if (writeROM)
 	{
 		std::string filename = "C://software//repos//staccato//scratch//";

@@ -112,6 +112,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    omp_set_nested(true);
+    mkl_set_dynamic(false);
+    mkl_set_threading_layer(MKL_THREADING_INTEL);
+
     // Print MKL Version
     int len = 198;
     char buf[198];
@@ -332,12 +336,13 @@ int main(int argc, char *argv[]) {
     timerLoop.start();
 #pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift)
     {
+        omp_set_dynamic(true);
+        omp_set_nested(true);
+        mkl_set_threading_layer(MKL_THREADING_INTEL);
         // Get thread number
         tid = omp_get_thread_num();
         // Compute matrix shift
         mat_shift = tid*nnz;
-        // Compute solution shift
-        sol_shift = tid*row;
         #pragma omp for
         for (int it = (int)freq_min; it <= (int)freq_max; it++) {
             // Compute scaling
@@ -370,12 +375,13 @@ int main(int argc, char *argv[]) {
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
             if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
+
+            // Compute solution shift
+            sol_shift += row;
         } // frequency loop
     } // omp parallel
     timerLoop.stop();
     timerTotal.stop();
-
-    io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
     // Output messages
     std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;

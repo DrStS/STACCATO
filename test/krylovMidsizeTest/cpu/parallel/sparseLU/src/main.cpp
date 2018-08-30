@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 
     omp_set_nested(true);
     mkl_set_dynamic(false);
-    mkl_set_threading_layer(MKL_THREADING_INTEL);
+    //mkl_set_threading_layer(MKL_THREADING_INTEL);
 
     // Print MKL Version
     int len = 198;
@@ -338,7 +338,7 @@ int main(int argc, char *argv[]) {
     {
         omp_set_dynamic(true);
         omp_set_nested(true);
-        mkl_set_threading_layer(MKL_THREADING_INTEL);
+        //mkl_set_threading_layer(MKL_THREADING_INTEL);
         // Get thread number
         tid = omp_get_thread_num();
         // Compute matrix shift
@@ -357,6 +357,7 @@ int main(int argc, char *argv[]) {
             /*-----
             PARDISO
             -----*/
+/*
             // Symbolic factorization
             pardiso_phase = 11;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
@@ -375,6 +376,7 @@ int main(int argc, char *argv[]) {
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
             if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
+*/
 
             // Compute solution shift
             sol_shift += row;

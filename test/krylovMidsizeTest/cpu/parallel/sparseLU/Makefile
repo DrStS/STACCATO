@@ -19,7 +19,7 @@ OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops -fopenmp
 #Linker flags
 #------------
 LDFLAGS= -lm
-LMKLFLAGS= -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a $MKLROOT}/lib/intel64/libmkl_rt.so -Wl,--end-group -liomp5 -lpthread -lm -ldl
+LMKLFLAGS= -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_intel_thread.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -liomp5 -lpthread -lm -ldl
 
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=krylovCPU

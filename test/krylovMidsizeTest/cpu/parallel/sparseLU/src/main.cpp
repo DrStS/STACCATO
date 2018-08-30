@@ -331,10 +331,11 @@ int main(int argc, char *argv[]) {
 
     // Loop over frequency
     int sol_shift = 0;
+    int last_sol_shift = 0;
     int mat_shift = 0;
     std::cout << "\n" << ">> Frequency loop started" << std::endl;
     timerLoop.start();
-#pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift)
+#pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift, pardiso_error)
     {
         omp_set_dynamic(true);
         omp_set_nested(true);
@@ -343,6 +344,8 @@ int main(int argc, char *argv[]) {
         tid = omp_get_thread_num();
         // Compute matrix shift
         mat_shift = tid*nnz;
+        // Compute solution shift
+        sol_shift = last_sol_shift + tid*row;
         #pragma omp for
         for (int it = (int)freq_min; it <= (int)freq_max; it++) {
             // Compute scaling
@@ -353,33 +356,31 @@ int main(int argc, char *argv[]) {
             cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
             cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
             cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
-
             /*-----
             PARDISO
             -----*/
-/*
             // Symbolic factorization
             pardiso_phase = 11;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+            //if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+
             // Numerical factorization
             pardiso_phase = 22;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+            //if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
             // Backward substitution
             pardiso_phase = 33;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
-            if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
-*/
+            //if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
-            // Compute solution shift
-            sol_shift += row;
+            if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
+
         } // frequency loop
     } // omp parallel
     timerLoop.stop();

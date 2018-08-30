@@ -50,7 +50,6 @@ IF (${STACCATO_COMMANDLINE})
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/STACCATOMainWindow.h)
 LIST(REMOVE_ITEM STACCATO_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/STACCATOMainWindow.cpp)
 ENDIF()
-
 #------------------------------------------------------------------------------------#
 IF (CMAKE_SYSTEM_NAME MATCHES "Windows") 
 # WIN32

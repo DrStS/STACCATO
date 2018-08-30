@@ -105,6 +105,12 @@ int main(int argc, char *argv[]) {
     mkl_set_num_threads(nt_mkl);
     std::cout << ">> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
 
+    // Print MKL Version
+    int len = 198;
+    char buf[198];
+    mkl_get_version_string(buf, len);
+    printf("%s\n", buf);
+    printf("\n");
 
 #if defined(_WIN32) || defined(__WIN32__)
     std::string filePathPrefix = "C:/software/examples/";
@@ -252,6 +258,25 @@ int main(int argc, char *argv[]) {
     /*--------------------
     PARDISO Initialisation
     --------------------*/
+    // Check if sparse matrix is good
+    std::cout << "\n >> Checking if CSR format is correct ... " << std::endl;
+    sparse_checker_error_values check_err_val;
+    sparse_struct pt;
+    int error = 0;
+    sparse_matrix_checker_init(&pt);
+    pt.n = row;
+    pt.csr_ia = csrRowPtr.data();
+    pt.csr_ja = csrColInd.data();
+    pt.indexing = MKL_ZERO_BASED;
+    pt.print_style = MKL_C_STYLE;
+    pt.message_level = MKL_PRINT;
+    check_err_val = sparse_matrix_checker(&pt);
+    printf(">>>> Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+    if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+    error = 1;
     // Pardiso variables
     void *pardiso_pt[64] = {};   // Internal solver memory pointer
     MKL_INT pardiso_mtype = 13; // Real Complex Unsymmetric Matrix
@@ -287,19 +312,16 @@ int main(int argc, char *argv[]) {
     pardiso_iparm[17] = -1;         // Output: Number of nonzeros in the factor LU
     pardiso_iparm[18] = -1;         // Output: Mflops for LU factorization
     pardiso_iparm[19] = 0;          // Output: Numbers of CG Iterations
+    pardiso_iparm[34] = 1;          // Zero based indexing
     pardiso_maxfct = 1;             // Maximum number of numerical factorizations
     pardiso_mnum = 1;               // Which factorization to use
     pardiso_msglvl = 0;             // Print statistical information
     pardiso_error = 0;              // Initialize error flag
-    // Pardiso configuration
-    pardiso_phase = 23;             // Numerical factorization, solve, iterative refinement
-    // Create 3 array MKL CSR format
-    //mkl_sparse_z_create_csr(&csrA, SPARSE_INDEX_BASE_ZERO, row, row, csrRowPtr, csrRowPtr+1, csrColInd, A);
 
+    // Loop over frequency
     int sol_shift = 0;
     std::cout << "\n" << ">> Frequency loop started" << std::endl;
     timerLoop.start();
-    // Loop over frequency
 #pragma omp parallel
     {
         //#pragma omp critical (cout)
@@ -315,9 +337,24 @@ int main(int argc, char *argv[]) {
             cblas_zdscal(nnz, freq_square, A.data(), 1);
             cblas_zaxpy(nnz, &one, K.data(), 1, A.data(), 1);
 
-            // PARDISO
+            /*-----
+            PARDISO
+            -----*/
+            // Symbolic factorization
+            pardiso_phase = 11;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-                    pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data() + sol_shift, &pardiso_error);
+                    pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+            if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+            // Numerical factorization
+            pardiso_phase = 22;
+            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                    pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+            if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+            // Backward substitution
+            pardiso_phase = 33;
+            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                    pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
+            if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
             // Update solution shift
             sol_shift += row;

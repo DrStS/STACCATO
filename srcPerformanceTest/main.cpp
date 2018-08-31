@@ -252,6 +252,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    std::cout << row << std::endl;
+
     // Combine matrices into a single array
     std::vector<MKL_Complex16> K(nnz);
     std::vector<MKL_Complex16> M(nnz);
@@ -280,8 +282,10 @@ int main(int argc, char *argv[]) {
     std::vector<int> csrColInd(nnz);
     dataStructure::generateCSR(csrRowPtr, csrColInd, row_sub, size_sub, row, nnz, num_matrix);
     timerAux.stop();
-    std::cout <<">> CSR Format Generated" << std::endl;
-    std::cout <<">>>> Time taken = " << timerAux.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+    if (sparse_mode == "Sparse Block Diagonal System"){
+        std::cout <<">> CSR Format Generated" << std::endl;
+        std::cout <<">>>> Time taken = " << timerAux.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+    }
 
     // Allocate global matrices
     std::vector<MKL_Complex16> A(nnz*nt);
@@ -299,7 +303,6 @@ int main(int argc, char *argv[]) {
     PARDISO Initialisation
     --------------------*/
     // Check if sparse matrix is good
-    std::cout << "\n>> Checking if CSR format is correct ... " << std::endl;
     sparse_checker_error_values check_err_val;
     sparse_struct pt;
     int error = 0;
@@ -359,7 +362,7 @@ int main(int argc, char *argv[]) {
     int sol_shift = 0;
     int last_sol_shift = 0;
     int mat_shift = 0;
-    std::cout << "\n" << ">> Frequency loop started (" << sparse_mode << ")" << std::endl;
+    std::cout << ">> Frequency loop started (" << sparse_mode << ")" << std::endl;
 
     /*--------------------------
     Sparse Block Diagonal System
@@ -420,10 +423,11 @@ int main(int argc, char *argv[]) {
     else if (sparse_mode == "Multiple Dense Matrices"){
         // Pivots for LU Decomposition
         std::vector<lapack_int> pivot(nnz);
-
+        std::cout << "sol_shift = " << sol_shift << std::endl;
         timerLoop.start();
-        #pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift)
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift)
         {
+            std::cout << sol_shift << std::endl;
             // Get thread number
             tid = omp_get_thread_num();
             // Compute matrix shift
@@ -456,6 +460,7 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 // Copy solution to solution vector
+                std::cout << sol_shift << std::endl;
                 cblas_zcopy(row, rhs.data(), 1, sol.data() + sol_shift, 1);
                 sol_shift += row;
                 // Reset RHS values

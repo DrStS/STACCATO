@@ -20,6 +20,7 @@
 #include "Timer.hpp"
 
 //Instantiate the timer object
+Timer	timerAux;
 Timer   timerTotal;
 Timer   timerMatrixComp;
 Timer	timerIteration;

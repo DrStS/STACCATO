@@ -67,7 +67,7 @@
 // Header Files
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
-#include "helper/math.hpp"
+#include "helper/dataStructure.hpp"
 
 // Definitions
 #define	PI	3.14159265359
@@ -76,47 +76,75 @@
 
 int main(int argc, char *argv[]) {
 
-    // Command line arguments
+    /*--------------------
+    Command line arguments
+    --------------------*/
+    // Usage
     if (argc < 5){
-        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -mkl <mkl threads> -openmp <OpenMP threads>" << std::endl;
+        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -parallel=<yes/no> -sparse=<yes/no> -mkl <mkl threads> -openmp <OpenMP threads>" << std::endl;
         std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
         std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
+        std::cerr << "         '-parallel=yes' parallelises frequency loop and '-parallel=no' executes it with default master thread. Default is sequential" << std::endl;
+        std::cerr << "         '-sparse=yes' calls PARDISO for block-diagonal matrix system and '-sparse=no' calls LAPACKE for multiple dense matrices. Default is dense" << std::endl;
         std::cerr << "         Default number of MKL threads is mkl_get_max_threads()" << std::endl;
         std::cerr << "         Default number of OpenMP threads is 1" << std::endl;
         return 1;
     }
-
+    // Frequency & Matrix repetition
     double freq_max = atof(argv[2]);
     int mat_repetition = atoi(argv[4]);
     int num_matrix = mat_repetition*12;
     std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
     std::cout << ">> Total number of matrices: " << num_matrix << "\n" << std::endl;
-
+    // Parallel & sparse mode
+    std::string parallel_mode, sparse_mode, arg_parallel, arg_sparse;
+    parallel_mode = "Sequential";
+    sparse_mode = "Multiple Dense Matrices";
+    if (argc > 5) {
+        arg_parallel=argv[5];
+        if (arg_parallel == "-parallel=yes") parallel_mode = "Parallel";
+        else if (arg_parallel == "-parallel=no") parallel_mode = "Sequential";
+    }
+    if (argc > 6) {
+        arg_parallel=argv[5];
+        arg_sparse=argv[6];
+        if (arg_parallel == "-parallel=yes") parallel_mode = "Parallel";
+        else if (arg_parallel == "-parallel=no") parallel_mode = "Sequential";
+        if (arg_sparse == "-sparse=yes") sparse_mode = "Sparse Block Diagonal System";
+        else if (arg_sparse == "-sparse=no") sparse_mode = "Multiple Dense Matrices";
+    }
+    std::cout << ">> Matrix system: " << sparse_mode << std::endl;
+    std::cout << ">> Frequency Loop: " << parallel_mode << std::endl;
     // OpenMP
     int tid;
     int nt_mkl = mkl_get_max_threads();
     int nt = 1;
-    if (argc > 6) nt_mkl = atoi(argv[6]);
-    if (argc > 8){
-        nt_mkl = atoi(argv[6]);
-        nt = atoi(argv[8]);
+    if (argc > 8) nt_mkl = atoi(argv[8]);
+    if (argc > 10){
+        nt_mkl = atoi(argv[8]);
+        nt = atoi(argv[10]);
     }
-
     omp_set_num_threads(nt);
     mkl_set_num_threads(nt_mkl);
-    std::cout << ">> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
-
+    std::cout << "\n>> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
     if ((int)freq_max % nt != 0) {
         std::cerr << ">> ERROR: Invalid number of OpenMP threads" << std::endl;
         std::cerr << ">>        The ratio of OpenMP threads to maximum frequency must be an integer" << std::endl;
         return 1;
     }
+    if (parallel_mode == "Parallel"){
+        omp_set_nested(true);
+        mkl_set_dynamic(false);
+        //mkl_set_threading_layer(MKL_THREADING_INTEL);
+    }
+    if (parallel_mode == "Sequential" && nt > 1){
+        std::cerr << ">> ERROR: Incompatible number of OpenMP threads: " << nt << " with " << parallel_mode << " mode" << std::endl;
+        return 1;
+    }
 
-    omp_set_nested(true);
-    mkl_set_dynamic(false);
-    //mkl_set_threading_layer(MKL_THREADING_INTEL);
-
-    // Print MKL Version
+    /*---------------
+    Print MKL Version
+    ---------------*/
     int len = 198;
     char buf[198];
     mkl_get_version_string(buf, len);
@@ -130,20 +158,19 @@ int main(int argc, char *argv[]) {
     std::string filePathPrefix = "/opt/software/examples/";
 #endif
 
+    /*----------------------
+    Filatpaths and Filenames
+    ----------------------*/
     // Vector of filepaths
     std::string filepath[2];
     filepath[0] = filePathPrefix + "MOR/r_approx_180/\0";
     filepath[1] = filePathPrefix + "MOR/r_approx_300/\0";
-
     // Solution filepath
     std::string filepath_sol = "output/";
-
     // Solution filename
     std::string filename_sol = "solution.dat";
-
     // Array of matrix sizes (row)
     int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
-
     // Array of filenames
     std::string baseName_K = "KSM_Stiffness_r\0";
     std::string baseName_M = "KSM_Mass_r\0";
@@ -153,7 +180,9 @@ int main(int argc, char *argv[]) {
     std::string filename_M[12];
     std::string filename_D[12];
 
-    // Parameters
+    /*--------
+    Parameters
+    --------*/
     bool isComplex = 1;
     double freq, freq_square;
     double freq_min = 1;
@@ -170,11 +199,13 @@ int main(int argc, char *argv[]) {
 
     timerTotal.start();
 
-    // Matrices
+    /*-----------
+    Read Matrices
+    -----------*/
+    // Define Matrices
     std::vector<std::vector<MKL_Complex16>> K_sub(12);
     std::vector<std::vector<MKL_Complex16>> M_sub(12);
     std::vector<std::vector<MKL_Complex16>> D_sub(12);
-
     // Read MTX files
     for (size_t i = 0; i < 7; i++){
         filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
@@ -198,7 +229,6 @@ int main(int argc, char *argv[]) {
         M_sub[i].pop_back();
         D_sub[i].pop_back();
     }
-
     std::cout << ">> Matrices imported" << std::endl;
 
     // Get matrix sizes
@@ -248,7 +278,7 @@ int main(int argc, char *argv[]) {
     timerAux.start();
     std::vector<int> csrRowPtr(row+1);
     std::vector<int> csrColInd(nnz);
-    generateCSR(csrRowPtr, csrColInd, row_sub, size_sub, row, nnz, num_matrix);
+    dataStructure::generateCSR(csrRowPtr, csrColInd, row_sub, size_sub, row, nnz, num_matrix);
     timerAux.stop();
     std::cout <<">> CSR Format Generated" << std::endl;
     std::cout <<">>>> Time taken = " << timerAux.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -264,13 +294,12 @@ int main(int argc, char *argv[]) {
 
     // M = 4*pi^2*M (Single computation suffices)
     cblas_zdscal(nnz, alpha, M.data(), 1);
-    std::cout << ">> M_tilde computed with Intel MKL" << std::endl;
 
     /*--------------------
     PARDISO Initialisation
     --------------------*/
     // Check if sparse matrix is good
-    std::cout << "\n >> Checking if CSR format is correct ... " << std::endl;
+    std::cout << "\n>> Checking if CSR format is correct ... " << std::endl;
     sparse_checker_error_values check_err_val;
     sparse_struct pt;
     int error = 0;
@@ -282,25 +311,20 @@ int main(int argc, char *argv[]) {
     pt.print_style = MKL_C_STYLE;
     pt.message_level = MKL_PRINT;
     check_err_val = sparse_matrix_checker(&pt);
-    printf(">>>> Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
-    if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
-    if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
-    if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
-    if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
-    error = 1;
+    if (sparse_mode == "Sparse Block Diagonal System"){
+        printf(">>>> Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+        if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+        if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+        if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+        if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+        error = 1;
+    }
     // Pardiso variables
     void *pardiso_pt[64] = {};   // Internal solver memory pointer
     MKL_INT pardiso_mtype = 13; // Real Complex Unsymmetric Matrix
     MKL_INT pardiso_nrhs = 1;   // Number of RHS
     MKL_Complex16 pardiso_ddum; // Complex dummy
     MKL_INT pardiso_idum;   // Integer dummy
-    // Matrix descriptor
-    struct matrix_descr descrA;
-    descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
-    descrA.mode = SPARSE_FILL_MODE_UPPER;
-    descrA.diag = SPARSE_DIAG_NON_UNIT;
-    sparse_matrix_t csrA;
-    sparse_operation_t transA = SPARSE_OPERATION_NON_TRANSPOSE;
     // Pardiso control parameters
     MKL_INT pardiso_iparm[64] = {};
     MKL_INT pardiso_maxfct, pardiso_mnum, pardiso_phase, pardiso_error, pardiso_msglvl;
@@ -323,6 +347,8 @@ int main(int argc, char *argv[]) {
     pardiso_iparm[17] = -1;         // Output: Number of nonzeros in the factor LU
     pardiso_iparm[18] = -1;         // Output: Mflops for LU factorization
     pardiso_iparm[19] = 0;          // Output: Numbers of CG Iterations
+    pardiso_iparm[23] = 1;          // 2-level factorisation
+    pardiso_iparm[36] = -99;        // VBSR format
     pardiso_iparm[34] = 1;          // Zero based indexing
     pardiso_maxfct = 1;             // Maximum number of numerical factorizations
     pardiso_mnum = 1;               // Which factorization to use
@@ -333,67 +359,124 @@ int main(int argc, char *argv[]) {
     int sol_shift = 0;
     int last_sol_shift = 0;
     int mat_shift = 0;
-    std::cout << "\n" << ">> Frequency loop started" << std::endl;
-    timerLoop.start();
-#pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift, pardiso_error)
-    {
-        omp_set_dynamic(true);
-        omp_set_nested(true);
-        //mkl_set_threading_layer(MKL_THREADING_INTEL);
-        // Get thread number
-        tid = omp_get_thread_num();
-        // Compute matrix shift
-        mat_shift = tid*nnz;
-        // Compute solution shift
-        sol_shift = last_sol_shift + tid*row;
-        #pragma omp for
-        for (int it = (int)freq_min; it <= (int)freq_max; it++) {
-            // Compute scaling
-            freq = (double)it;
-            freq_square = -(freq*freq);
+    std::cout << "\n" << ">> Frequency loop started (" << sparse_mode << ")" << std::endl;
 
-            // Assemble global matrix ( A = K - f^2*M_tilde)
-            cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
-            cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
-            cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
-            /*-----
-            PARDISO
-            -----*/
-            // Symbolic factorization
-            pardiso_phase = 11;
-            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
-                    csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-                    pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+    /*--------------------------
+    Sparse Block Diagonal System
+    --------------------------*/
+    if (sparse_mode == "Sparse Block Diagonal System"){
+        timerLoop.start();
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift, pardiso_error)
+        {
+            // Get thread number
+            tid = omp_get_thread_num();
+            // Compute matrix shift
+            mat_shift = tid*nnz;
+            // Compute solution shift
+            sol_shift = last_sol_shift + tid*row;
 
-            // Numerical factorization
-            pardiso_phase = 22;
-            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
-                    csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-                    pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
-            // Backward substitution
-            pardiso_phase = 33;
-            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
-                    csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-                    pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
+            #pragma omp for
+            for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+                // Compute scaling
+                freq = (double)it;
+                freq_square = -(freq*freq);
 
-            if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
+                // Assemble global matrix ( A = K - f^2*M_tilde)
+                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
 
-        } // frequency loop
-    } // omp parallel
+                /*-----
+                PARDISO
+                -----*/
+                // Symbolic factorization
+                pardiso_phase = 11;
+                pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+                        csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                        pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+                if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+
+                // Numerical factorization
+                pardiso_phase = 22;
+                pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+                        csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                        pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+                if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+                // Backward substitution
+                pardiso_phase = 33;
+                pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+                        csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                        pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
+                if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
+
+                //if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
+            } // frequency loop
+        } // omp parallel
+    } // dense mode
+
+    /*---------------------
+    Multiple Dense Matrices
+    ---------------------*/
+    else if (sparse_mode == "Multiple Dense Matrices"){
+        // Pivots for LU Decomposition
+        std::vector<lapack_int> pivot(nnz);
+
+        timerLoop.start();
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift)
+        {
+            // Get thread number
+            tid = omp_get_thread_num();
+            // Compute matrix shift
+            mat_shift = tid*nnz;
+
+            #pragma omp for
+            for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+                // Compute scaling
+                freq = (double)it;
+                freq_square = -(freq*freq);
+
+                // Assemble global matrix ( A = K - f^2*M_tilde)
+                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+
+                /*-----
+                LAPACKE
+                -----*/
+                array_shift = 0;
+                size_t row_shift = 0;
+                for (size_t j = 0; j < mat_repetition; j++){
+                    for (size_t i = 0; i < 12; i++){
+                        // LU Decomposition
+                        LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + array_shift, row_sub[i], pivot.data());
+                        // Solve system
+                        LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+                        array_shift += size_sub[i];
+                        row_shift += row_sub[i];
+                    }
+                }
+                // Copy solution to solution vector
+                cblas_zcopy(row, rhs.data(), 1, sol.data() + sol_shift, 1);
+                sol_shift += row;
+                // Reset RHS values
+                std::fill(rhs.begin(), rhs.end(), one);
+            } // frequency loop
+        } // omp parallel
+    } // sparse mode
     timerLoop.stop();
     timerTotal.stop();
 
     // Output messages
-    std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
-    std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << "\n" << ">> Frequency loop finished" << std::endl;
+    std::cout << ">>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
     // Pardiso termination and release of memory
-    pardiso_phase = -1;
-    pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, &pardiso_ddum, csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-            pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+    if (sparse_mode == "Sparse Block Diagonal System"){
+        pardiso_phase = -1;
+        pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, &pardiso_ddum, csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+        std::cout << ">> PARDISO internal memory freed\n" << std::endl;
+    }
 
     // Output solutions
     io::writeSolVecComplex(sol, filepath_sol, filename_sol);

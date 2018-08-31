@@ -379,8 +379,7 @@ int main(int argc, char *argv[]) {
                     pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
             if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
-            if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
-
+            if (tid == nt-1) last_sol_shift = sol_shift + nnz;
         } // frequency loop
     } // omp parallel
     timerLoop.stop();

@@ -3,11 +3,11 @@
 #include <numeric>
 
 // Header Files
-#include "math.hpp"
+#include "dataStructure.hpp"
 
 using namespace std;
 
-void generateCSR(vector<int> &csrRowPtr, vector<int> &csrColInd, vector<int> &row_sub, vector<int> &size_sub, int row, int nnz, int num_matrix){
+void dataStructure::generateCSR(vector<int> &csrRowPtr, vector<int> &csrColInd, vector<int> &row_sub, vector<int> &size_sub, int row, int nnz, int num_matrix){
 	size_t initVal = 0;
 	size_t arrayShift, matShift, rowShift, idx;
 	// First matrix (loop unrolled)

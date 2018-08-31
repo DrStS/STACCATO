@@ -67,7 +67,8 @@
 // Header Files
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
-#include "helper/dataStructure.hpp"
+#include "data/dataStructure.hpp"
+#include "solver/assembly.hpp"
 
 // Definitions
 #define	PI	3.14159265359
@@ -252,8 +253,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    std::cout << row << std::endl;
-
     // Combine matrices into a single array
     std::vector<MKL_Complex16> K(nnz);
     std::vector<MKL_Complex16> M(nnz);
@@ -385,9 +384,7 @@ int main(int argc, char *argv[]) {
                 freq_square = -(freq*freq);
 
                 // Assemble global matrix ( A = K - f^2*M_tilde)
-                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
-                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
-                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+                assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
 
                 /*-----
                 PARDISO
@@ -405,6 +402,7 @@ int main(int argc, char *argv[]) {
                         csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                         pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
                 if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+
                 // Backward substitution
                 pardiso_phase = 33;
                 pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
@@ -423,9 +421,9 @@ int main(int argc, char *argv[]) {
     Multiple Dense Matrices
     ---------------------*/
     else if (sparse_mode == "Multiple Dense Matrices"){
+        int row_shift;
         // Pivots for LU Decomposition
         std::vector<lapack_int> pivot(nnz);
-        std::cout << "sol_shift = " << sol_shift << std::endl;
         timerLoop.start();
         #pragma omp parallel private(tid, freq, freq_square, mat_shift)
         {
@@ -441,15 +439,13 @@ int main(int argc, char *argv[]) {
                 freq_square = -(freq*freq);
 
                 // Assemble global matrix ( A = K - f^2*M_tilde)
-                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
-                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
-                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+                assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
 
                 /*-----
                 LAPACKE
                 -----*/
                 array_shift = 0;
-                size_t row_shift = 0;
+                row_shift = 0;
                 for (size_t j = 0; j < mat_repetition; j++){
                     for (size_t i = 0; i < 12; i++){
                         // LU Decomposition

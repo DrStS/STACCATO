@@ -369,14 +369,14 @@ int main(int argc, char *argv[]) {
     --------------------------*/
     if (sparse_mode == "Sparse Block Diagonal System"){
         timerLoop.start();
-        #pragma omp parallel private(tid, freq, freq_square, mat_shift, sol_shift, pardiso_error)
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, pardiso_error)
         {
             // Get thread number
             tid = omp_get_thread_num();
             // Compute matrix shift
             mat_shift = tid*nnz;
             // Compute solution shift
-            sol_shift = last_sol_shift + tid*row;
+            //sol_shift = last_sol_shift + tid*row;
 
             #pragma omp for
             for (int it = (int)freq_min; it <= (int)freq_max; it++) {
@@ -412,6 +412,8 @@ int main(int argc, char *argv[]) {
                         pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
                 if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
+                sol_shift += row;
+
                 //if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
             } // frequency loop
         } // omp parallel
@@ -427,7 +429,6 @@ int main(int argc, char *argv[]) {
         timerLoop.start();
         #pragma omp parallel private(tid, freq, freq_square, mat_shift)
         {
-            std::cout << sol_shift << std::endl;
             // Get thread number
             tid = omp_get_thread_num();
             // Compute matrix shift
@@ -460,7 +461,6 @@ int main(int argc, char *argv[]) {
                     }
                 }
                 // Copy solution to solution vector
-                std::cout << sol_shift << std::endl;
                 cblas_zcopy(row, rhs.data(), 1, sol.data() + sol_shift, 1);
                 sol_shift += row;
                 // Reset RHS values

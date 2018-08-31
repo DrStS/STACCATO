@@ -364,20 +364,20 @@ int main(int argc, char *argv[]) {
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+            if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
 
             // Numerical factorization
             pardiso_phase = 22;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+            if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
             // Backward substitution
             pardiso_phase = 33;
             pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
                     csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
                     pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
-            //if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
+            if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
             if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
 

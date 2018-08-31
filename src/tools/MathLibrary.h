@@ -1334,7 +1334,7 @@ namespace MathLibrary {
 		void writeMtxMat(std::false_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			std::map<size_t, T>::iterator jj_counter;
+			typename std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);

@@ -358,11 +358,12 @@ int main(int argc, char *argv[]) {
     ---------------------*/
     else if (sparse_mode == "Multiple Dense Matrices"){
         int row_shift, prev_row_shift;
+        int row_mat;
         size_t i;
         // Pivots for LU Decomposition
-        std::vector<lapack_int> pivot(nnz);
+        std::vector<lapack_int> pivot(nnz*nt);
         timerLoop.start();
-        #pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, sol_shift, prev_row_shift)
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, sol_shift, prev_row_shift, row_mat)
         {
             // Get thread number
             tid = omp_get_thread_num();
@@ -387,19 +388,21 @@ int main(int argc, char *argv[]) {
                 LAPACKE
                 -----*/
                 array_shift = 0;
-                row_shift = tid*row + prev_row_shift;
+                row_shift = tid*row;
                 for (i = 0; i < num_matrix; i++){
+                    row_mat = row_sub[i];
                     // LU Decomposition
-                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
+                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mat, row_mat, A.data()+mat_shift+array_shift, row_mat, pivot.data());
                     // Solve system
-                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mat, 1, A.data()+mat_shift+array_shift, row_mat, pivot.data()+array_shift, rhs.data()+prev_row_shift+row_shift, row_mat);
                     // Update array and row shifts
                     array_shift += size_sub[i];
                     row_shift += row_sub[i];
                 }
                 // Move onto next batch of frequency arrays
-                prev_row_shift = nt*row;
+                prev_row_shift += nt*row;
             } // frequency loop
+        #pragma omp barrier
         } // omp parallel
     } // dense mode
     timerLoop.stop();
@@ -416,6 +419,8 @@ int main(int argc, char *argv[]) {
                 pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
         std::cout << ">> PARDISO internal memory freed\n" << std::endl;
     }
+
+    //io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
     // Output solutions
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

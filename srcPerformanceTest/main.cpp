@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
             ptr_mat_shift[idx] = nnz;
             ptr_vec_shift[idx] = row;
             nnz += size_sub[idx];
-            row  += row_sub[idx];
+            row += row_sub[idx];
         }
     }
 
@@ -358,11 +358,11 @@ int main(int argc, char *argv[]) {
     ---------------------*/
     else if (sparse_mode == "Multiple Dense Matrices"){
         int row_shift, prev_row_shift;
-        size_t i, j;
+        size_t i;
         // Pivots for LU Decomposition
         std::vector<lapack_int> pivot(nnz);
         timerLoop.start();
-        #pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, j, sol_shift, prev_row_shift)
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, sol_shift, prev_row_shift)
         {
             // Get thread number
             tid = omp_get_thread_num();
@@ -388,16 +388,14 @@ int main(int argc, char *argv[]) {
                 -----*/
                 array_shift = 0;
                 row_shift = tid*row + prev_row_shift;
-                for (j = 0; j < mat_repetition; j++){
-                    for (i = 0; i < 12; i++){
-                        // LU Decomposition
-                        LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
-                        // Solve system
-                        LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
-                        // Update array and row shifts
-                        array_shift += size_sub[i];
-                        row_shift += row_sub[i];
-                    }
+                for (i = 0; i < num_matrix; i++){
+                    // LU Decomposition
+                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
+                    // Solve system
+                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+                    // Update array and row shifts
+                    array_shift += size_sub[i];
+                    row_shift += row_sub[i];
                 }
                 // Move onto next batch of frequency arrays
                 prev_row_shift = nt*row;

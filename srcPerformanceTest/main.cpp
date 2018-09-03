@@ -391,9 +391,9 @@ int main(int argc, char *argv[]) {
                 for (j = 0; j < mat_repetition; j++){
                     for (i = 0; i < 12; i++){
                         // LU Decomposition
-                        LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
+                        LAPACKE_zgetrf(LAPACK_ROW_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
                         // Solve system
-                        LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+                        LAPACKE_zgetrs(LAPACK_ROW_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
                         // Update array and row shifts
                         array_shift += size_sub[i];
                         row_shift += row_sub[i];

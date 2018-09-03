@@ -404,7 +404,6 @@ int main(int argc, char *argv[]) {
                 // Move onto next batch of frequency arrays
                 prev_row_shift += nt*row;
             } // frequency loop
-        #pragma omp barrier
         } // omp parallel
     } // dense mode
     timerLoop.stop();

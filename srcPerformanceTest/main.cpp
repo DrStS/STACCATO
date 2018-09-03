@@ -320,7 +320,10 @@ int main(int argc, char *argv[]) {
                 freq_square = -(freq*freq);
 
                 // Assemble global matrix ( A = K - f^2*M_tilde)
-                assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+                //assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
 
                 /*-----
                 PARDISO
@@ -357,8 +360,7 @@ int main(int argc, char *argv[]) {
     Multiple Dense Matrices
     ---------------------*/
     else if (sparse_mode == "Multiple Dense Matrices"){
-        int row_shift, prev_row_shift;
-        int row_mat;
+        int row_shift, prev_row_shift, row_mat;
         size_t i;
         // Pivots for LU Decomposition
         std::vector<lapack_int> pivot(nnz*nt);
@@ -392,9 +394,9 @@ int main(int argc, char *argv[]) {
                 for (i = 0; i < num_matrix; i++){
                     row_mat = row_sub[i];
                     // LU Decomposition
-                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mat, row_mat, A.data()+mat_shift+array_shift, row_mat, pivot.data());
+                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mat, row_mat, A.data()+mat_shift+array_shift, row_mat, pivot.data()+mat_shift);
                     // Solve system
-                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mat, 1, A.data()+mat_shift+array_shift, row_mat, pivot.data()+array_shift, rhs.data()+prev_row_shift+row_shift, row_mat);
+                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mat, 1, A.data()+mat_shift+array_shift, row_mat, pivot.data()+mat_shift, rhs.data()+prev_row_shift+row_shift, row_mat);
                     // Update array and row shifts
                     array_shift += size_sub[i];
                     row_shift += row_sub[i];

@@ -65,6 +65,7 @@
 #include <mkl.h>
 
 // Header Files
+#include "config/config.hpp"
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
 #include "data/dataStructure.hpp"
@@ -78,79 +79,14 @@
 int main(int argc, char *argv[]) {
 
     /*--------------------
-    Command line arguments
+    COMMAND LINE ARGUMENTS
     --------------------*/
-    // Usage
-    if (argc < 5){
-        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -parallel=<yes/no> -sparse=<yes/no> -mkl <mkl threads> -openmp <OpenMP threads>" << std::endl;
-        std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
-        std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
-        std::cerr << "         '-parallel=yes' parallelises frequency loop and '-parallel=no' executes it with default master thread. Default is sequential" << std::endl;
-        std::cerr << "         '-sparse=yes' calls PARDISO for block-diagonal matrix system and '-sparse=no' calls LAPACKE for multiple dense matrices. Default is dense" << std::endl;
-        std::cerr << "         Default number of MKL threads is mkl_get_max_threads()" << std::endl;
-        std::cerr << "         Default number of OpenMP threads is 1" << std::endl;
-        return 1;
-    }
-    // Frequency & Matrix repetition
-    double freq_max = atof(argv[2]);
-    int mat_repetition = atoi(argv[4]);
-    int num_matrix = mat_repetition*12;
-    std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
-    std::cout << ">> Total number of matrices: " << num_matrix << "\n" << std::endl;
-    // Parallel & sparse mode
+    double freq_max;
+    int mat_repetition, num_matrix;
+    int tid, nt_mkl, nt;
     std::string parallel_mode, sparse_mode, arg_parallel, arg_sparse;
-    parallel_mode = "Sequential";
-    sparse_mode = "Multiple Dense Matrices";
-    if (argc > 5) {
-        arg_parallel=argv[5];
-        if (arg_parallel == "-parallel=yes") parallel_mode = "Parallel";
-        else if (arg_parallel == "-parallel=no") parallel_mode = "Sequential";
-    }
-    if (argc > 6) {
-        arg_parallel=argv[5];
-        arg_sparse=argv[6];
-        if (arg_parallel == "-parallel=yes") parallel_mode = "Parallel";
-        else if (arg_parallel == "-parallel=no") parallel_mode = "Sequential";
-        if (arg_sparse == "-sparse=yes") sparse_mode = "Sparse Block Diagonal System";
-        else if (arg_sparse == "-sparse=no") sparse_mode = "Multiple Dense Matrices";
-    }
-    std::cout << ">> Matrix system: " << sparse_mode << std::endl;
-    std::cout << ">> Frequency Loop: " << parallel_mode << std::endl;
-    // OpenMP
-    int tid;
-    int nt_mkl = mkl_get_max_threads();
-    int nt = 1;
-    if (argc > 8) nt_mkl = atoi(argv[8]);
-    if (argc > 10){
-        nt_mkl = atoi(argv[8]);
-        nt = atoi(argv[10]);
-    }
-    omp_set_num_threads(nt);
-    mkl_set_num_threads(nt_mkl);
-    std::cout << "\n>> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
-    if ((int)freq_max % nt != 0) {
-        std::cerr << ">> ERROR: Invalid number of OpenMP threads" << std::endl;
-        std::cerr << ">>        The ratio of OpenMP threads to maximum frequency must be an integer" << std::endl;
-        return 1;
-    }
-    if (parallel_mode == "Parallel"){
-        omp_set_nested(true);
-        mkl_set_dynamic(false);
-        //mkl_set_threading_layer(MKL_THREADING_INTEL);
-    }
-    if (parallel_mode == "Sequential" && nt > 1){
-        std::cerr << ">> ERROR: Incompatible number of OpenMP threads: " << nt << " with " << parallel_mode << " mode" << std::endl;
-        return 1;
-    }
-
-    /*---------------
-    Print MKL Version
-    ---------------*/
-    int len = 198;
-    char buf[198];
-    mkl_get_version_string(buf, len);
-    printf("%s\n", buf);
-    printf("\n");
+    // Configure test environment with command line arguments
+    config::configureTest(argc, argv, freq_max, mat_repetition, num_matrix, tid, nt_mkl, nt, parallel_mode, sparse_mode, arg_parallel, arg_sparse);
 
 #if defined(_WIN32) || defined(__WIN32__)
     std::string filePathPrefix = "C:/software/examples/";
@@ -249,7 +185,7 @@ int main(int argc, char *argv[]) {
             ptr_mat_shift[idx] = nnz;
             ptr_vec_shift[idx] = row;
             nnz += size_sub[idx];
-            row  += row_sub[idx];
+            row += row_sub[idx];
         }
     }
 
@@ -290,7 +226,7 @@ int main(int argc, char *argv[]) {
     std::vector<MKL_Complex16> A(nnz*nt);
 
     // Initialise RHS vectors
-    std::vector<MKL_Complex16> rhs(row, rhs_val);
+    std::vector<MKL_Complex16> rhs(row*freq_max, rhs_val);
 
     // Initialise solution vectors
     std::vector<MKL_Complex16> sol(row*freq_max);
@@ -421,16 +357,19 @@ int main(int argc, char *argv[]) {
     Multiple Dense Matrices
     ---------------------*/
     else if (sparse_mode == "Multiple Dense Matrices"){
-        int row_shift;
+        int row_shift, prev_row_shift;
+        size_t i;
         // Pivots for LU Decomposition
         std::vector<lapack_int> pivot(nnz);
         timerLoop.start();
-        #pragma omp parallel private(tid, freq, freq_square, mat_shift)
+        #pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, sol_shift, prev_row_shift)
         {
             // Get thread number
             tid = omp_get_thread_num();
             // Compute matrix shift
             mat_shift = tid*nnz;
+            // Previous row shift
+            prev_row_shift = 0;
 
             #pragma omp for
             for (int it = (int)freq_min; it <= (int)freq_max; it++) {
@@ -439,31 +378,30 @@ int main(int argc, char *argv[]) {
                 freq_square = -(freq*freq);
 
                 // Assemble global matrix ( A = K - f^2*M_tilde)
-                assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+                //assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
 
                 /*-----
                 LAPACKE
                 -----*/
                 array_shift = 0;
-                row_shift = 0;
-                for (size_t j = 0; j < mat_repetition; j++){
-                    for (size_t i = 0; i < 12; i++){
-                        // LU Decomposition
-                        LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + array_shift, row_sub[i], pivot.data());
-                        // Solve system
-                        LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
-                        array_shift += size_sub[i];
-                        row_shift += row_sub[i];
-                    }
+                row_shift = tid*row + prev_row_shift;
+                for (i = 0; i < num_matrix; i++){
+                    // LU Decomposition
+                    LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_sub[i], row_sub[i], A.data() + mat_shift + array_shift, row_sub[i], pivot.data());
+                    // Solve system
+                    LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_sub[i], 1, A.data() + mat_shift + array_shift, row_sub[i], pivot.data(), rhs.data() + row_shift, row_sub[i]);
+                    // Update array and row shifts
+                    array_shift += size_sub[i];
+                    row_shift += row_sub[i];
                 }
-                // Copy solution to solution vector
-                cblas_zcopy(row, rhs.data(), 1, sol.data() + sol_shift, 1);
-                sol_shift += row;
-                // Reset RHS values
-                std::fill(rhs.begin(), rhs.end(), one);
+                // Move onto next batch of frequency arrays
+                prev_row_shift = nt*row;
             } // frequency loop
         } // omp parallel
-    } // sparse mode
+    } // dense mode
     timerLoop.stop();
     timerTotal.stop();
 
@@ -480,7 +418,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Output solutions
-    io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
     std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

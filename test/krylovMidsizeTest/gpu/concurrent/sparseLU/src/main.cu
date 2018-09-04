@@ -346,22 +346,26 @@ int main (int argc, char *argv[]){
             assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
         }
 
+/*
         for (size_t i = 0; i < num_streams; i++){
             // Sum A with K
             cublasSetStream(cublasHandle, streams[i]);
             cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A[i], 1);
             assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
         }
+*/
 
         /*--------------
         LU Decomposition
         --------------*/
+/*
         for (size_t i = 0; i < num_streams; i++){
             d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+i*bufferSize);
             cusparseSetStream(cusparseHandle, streams[i]);
             cusparseStatus = cusparseZcsrilu02(cusparseHandle, row, nnz, descr_A, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, policy_A, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
         }
+*/
 /*
         for (size_t i = 0; i < num_streams; i++){
             cusparseSetStream(cusparseHandle, streams[i]);
@@ -373,6 +377,7 @@ int main (int argc, char *argv[]){
         /*-----------
         Solve x = A\b
         -----------*/
+/*
         for (size_t i = 0; i < num_streams; i++){
             size_t freq_idx = freq[i]-1;
             // Solve z = L\b
@@ -388,6 +393,7 @@ int main (int argc, char *argv[]){
         }
         // Synchronize streams
         for (size_t i = 0; i < num_streams; i++) cudaStreamSynchronize(streams[i]);
+*/
     }
     timerLoop.stop();
 

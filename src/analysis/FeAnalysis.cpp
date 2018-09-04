@@ -78,8 +78,8 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	
 	/* -- Exporting ------------- */
 	bool exportSparseMatrix = false;
-	bool exportRHS = true;
-	bool exportSolution = true;
+	bool exportRHS = false;
+	bool exportSolution = false;
 	/* -------------------------- */
 	
 	// Build DataStructure

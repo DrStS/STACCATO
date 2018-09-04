@@ -14,7 +14,7 @@ CXX = g++
 #-----
 CFLAGS = -std=c++14
 MKLFLAGS = -m64 -I${MKLROOT}/include
-OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops
+OFLAGS = -O3 -march=native -fomit-frame-pointer -funroll-loops -fopenmp
 
 #Linker flags
 #------------

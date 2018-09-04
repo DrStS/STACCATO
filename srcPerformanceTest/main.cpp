@@ -43,15 +43,15 @@
  *
  *
  **************************************************************************************************/
-/***********************************************************************************************//**
- * \file main.cpp
- * This file holds the main function of STACCATO Performance Tests.
- * \author Stefan Sicklinger
- * \date 8/1/2018
- * \version
- **************************************************************************************************/
+ /***********************************************************************************************//**
+  * \file main.cpp
+  * This file holds the main function of STACCATO Performance Tests.
+  * \author Jiho Yang
+  * \date 8/21/2018
+  * \version
+  **************************************************************************************************/
 
-// Libraries
+  // Libraries
 #include <iostream>
 #include <vector>
 #include <string>
@@ -65,8 +65,11 @@
 #include <mkl.h>
 
 // Header Files
+#include "config/config.hpp"
 #include "io/io.hpp"
 #include "helper/Timer.hpp"
+#include "data/dataStructure.hpp"
+#include "solver/assembly.hpp"
 
 // Definitions
 #define	PI	3.14159265359
@@ -75,16 +78,15 @@
 
 int main(int argc, char *argv[]) {
 
-	// Command line arguments
-	if (argc < 3) {
-		std::cerr << ">> Usage: " << argv[0] << " -s <small/mid/large>" << std::endl;
-		return 1;
-	}
-	std::string SIZE = argv[2];
-	std::cout << ">> Matrix Size: " << SIZE << std::endl;
-
-	std::string filepath_input, filepath_sol;
-	std::string filename_K, filename_M, filename_D, filename_sol;
+	/*--------------------
+	COMMAND LINE ARGUMENTS
+	--------------------*/
+	double freq_max;
+	int mat_repetition, num_matrix;
+	int tid, nt_mkl, nt;
+	std::string parallel_mode, sparse_mode, arg_parallel, arg_sparse;
+	// Configure test environment with command line arguments
+	config::configureTest(argc, argv, freq_max, mat_repetition, num_matrix, tid, nt_mkl, nt, parallel_mode, sparse_mode, arg_parallel, arg_sparse);
 
 #if defined(_WIN32) || defined(__WIN32__)
 	std::string filePathPrefix = "C:/software/examples/";
@@ -93,154 +95,340 @@ int main(int argc, char *argv[]) {
 	std::string filePathPrefix = "/opt/software/examples/";
 #endif
 
-	if (SIZE == "small") {
-		// Filepaths
-		filepath_input = "MOR/small/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r21.mtx";
-		filename_M = "KSM_Mass_r21.mtx";
-		filename_D = "KSM_Damping_r21.mtx";
-		filename_sol = "solution_mkl_small.dat";
-	}
-	else if (SIZE == "mid") {
-		// Filepaths
-		filepath_input = "MOR/mid/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r189.mtx";
-		filename_M = "KSM_Mass_r189.mtx";
-		filename_D = "KSM_Damping_r189.mtx";
-		filename_sol = "solution_mkl_mid.dat";
-	}
+	/*----------------------
+	Filatpaths and Filenames
+	----------------------*/
+	// Vector of filepaths
+	std::string filepath[2];
+	filepath[0] = filePathPrefix + "MOR/r_approx_180/\0";
+	filepath[1] = filePathPrefix + "MOR/r_approx_300/\0";
+	// Solution filepath
+	std::string filepath_sol = "output/";
+	// Solution filename
+	std::string filename_sol = "solution.dat";
+	// Array of matrix sizes (row)
+	int row_baseline[] = { 126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312 };
+	// Array of filenames
+	std::string baseName_K = "KSM_Stiffness_r\0";
+	std::string baseName_M = "KSM_Mass_r\0";
+	std::string baseName_D = "KSM_Damping_r\0";
+	std::string base_format = ".mtx\0";
+	std::string filename_K[12];
+	std::string filename_M[12];
+	std::string filename_D[12];
 
-	else if (SIZE == "large") {
-		// Filepaths
-		filepath_input = "MOR/large/";
-		filepath_sol = "output/";
-		// Filenames
-		filename_K = "KSM_Stiffness_r2520.mtx";
-		filename_M = "KSM_Mass_r2520.mtx";
-		filename_D = "KSM_Damping_r2520.mtx";
-		filename_sol = "solution_mkl_large.dat";
-	}
-	else {
-		std::cerr << ">> Incorrect matrix size, please check commandline argument\n" << std::endl;
-		return 1;
-	}
-
-	// OpenMP Threads
-	int nt = 1;
-	int nt_mkl = 1;
-	mkl_set_num_threads(nt_mkl);
-	omp_set_num_threads(nt);
-	std::cout << "\n>> Software will use the following number of threads: " << nt << "(OpenMP), " << nt_mkl << "(MKL)\n" << std::endl;
-
-	// Parameters
-	bool isComplex = true;
+	/*--------
+	Parameters
+	--------*/
+	bool isComplex = 1;
 	double freq, freq_square;
 	double freq_min = 1;
-	double freq_max = 1000;
 	const double alpha = 4 * PI*PI;
-	MKL_Complex16 one;	// Dummy scaling factor for global matrix assembly
+	MKL_Complex16 one;				// Dummy scaling factor for global matrix assembly
 	one.real = 1;
 	one.imag = 0;
+	MKL_Complex16 zero;               // Dummy scaling factor for PARDISO
+	zero.real = 0;
+	zero.imag = 0;
 	MKL_Complex16 rhs_val;
-	rhs_val.real = 1;
-	rhs_val.imag = 0;
-
-	// Time measurement
-	std::vector<float> vec_time((size_t)freq_max);
+	rhs_val.real = 1.0;
+	rhs_val.imag = 0.0;
 
 	timerTotal.start();
 
-	// Matrices
-	std::vector<MKL_Complex16> K, M, D;
-
+	/*-----------
+	Read Matrices
+	-----------*/
+	// Define Matrices
+	std::vector<std::vector<MKL_Complex16>> K_sub(12);
+	std::vector<std::vector<MKL_Complex16>> M_sub(12);
+	std::vector<std::vector<MKL_Complex16>> D_sub(12);
 	// Read MTX files
-	io::readMtxDense(K, filePathPrefix + filepath_input, filename_K, isComplex);
-	io::readMtxDense(M, filePathPrefix + filepath_input, filename_M, isComplex);
-	io::readMtxDense(D, filePathPrefix + filepath_input, filename_D, isComplex);
+	for (size_t i = 0; i < 7; i++) {
+		filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
+		filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
+		filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
+		io::readMtxDense(K_sub[i], filepath[0], filename_K[i], isComplex);
+		io::readMtxDense(M_sub[i], filepath[0], filename_M[i], isComplex);
+		io::readMtxDense(D_sub[i], filepath[0], filename_D[i], isComplex);
+		K_sub[i].pop_back();
+		M_sub[i].pop_back();
+		D_sub[i].pop_back();
+	}
+	for (size_t i = 7; i < 12; i++) {
+		filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
+		filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
+		filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
+		io::readMtxDense(K_sub[i], filepath[1], filename_K[i], isComplex);
+		io::readMtxDense(M_sub[i], filepath[1], filename_M[i], isComplex);
+		io::readMtxDense(D_sub[i], filepath[1], filename_D[i], isComplex);
+		K_sub[i].pop_back();
+		M_sub[i].pop_back();
+		D_sub[i].pop_back();
+	}
+	std::cout << ">> Matrices imported" << std::endl;
 
-	// Readjust matrix size (matrix size initially increased by 1 due to segmentation fault. See also io.cpp)
-	K.pop_back();
-	M.pop_back();
-	D.pop_back();
+	// Get matrix sizes
+	std::vector<int> row_sub(num_matrix);
+	std::vector<int> size_sub(num_matrix);
+	std::vector<size_t> ptr_mat_shift(num_matrix);
+	std::vector<size_t> ptr_vec_shift(num_matrix);
+	int nnz = 0;
+	int row = 0;
+	size_t idx;
 
-	// Get matrix size
-	int size = K.size();
-	int row = sqrt(size);
-
-	// Allocate global matrices
-	std::vector<MKL_Complex16> A(size);
-
-	// Initialise RHS vectors
-	std::vector<MKL_Complex16> rhs(row, rhs_val);
-
-	// Initialise solution vectors
-	std::vector<MKL_Complex16> sol(row);
-
-	// M = 4*pi^2*M (Single computation suffices)
-	cblas_zdscal(size, alpha, M.data(), 1);
-	std::cout << ">> M_tilde (" << SIZE << ")" << " computed with Intel MKL" << std::endl;
-
-	// Pivots for LU Decomposition
-	std::vector<lapack_int> pivot(size);
-
-	int i = 0;
-	timerLoop.start();
-	// Loop over frequency
-#pragma omp parallel private(freq)
-	{
-#pragma omp critical (cout)
-		std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
-#pragma omp for
-		for (int it = (int)freq_min; it <= (int)freq_max; it++) {
-			timerIteration.start();
-			// Compute scaling
-			freq = (double)it;
-			freq_square = -(freq*freq);
-
-			timerMatrixComp.start();
-			// Assemble global matrix ( A = K - f^2*M_tilde)
-			cblas_zcopy(size, M.data(), 1, A.data(), 1);
-			cblas_zdscal(size, freq_square, A.data(), 1);
-			cblas_zaxpy(size, &one, K.data(), 1, A.data(), 1);
-			// LU Decomposition
-			LAPACKE_zgetrf(LAPACK_COL_MAJOR, row, row, A.data(), row, pivot.data());
-			// Solve system
-			LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row, 1, A.data(), row, pivot.data(), rhs.data(), row);
-			timerMatrixComp.stop();
-
-			// Copy solution to solution vector
-			cblas_zcopy(row, rhs.data(), 1, sol.data(), 1);
-
-			// Reset RHS values
-			std::fill(rhs.begin(), rhs.end(), one);
-
-			// Output messages
-			timerIteration.stop();
-			//std::cout << ">>>> Frequency = " << freq << " || " << "Time taken (" << SIZE << ") :" << timerMatrixComp.getDurationMicroSec()*1e-6 << std::endl;
-
-			// Accumulate time measurements
-			vec_time[i] = (float)timerMatrixComp.getDurationMicroSec()*1e-6;
-			i++;
+	for (size_t j = 0; j < mat_repetition; j++) {
+		for (size_t i = 0; i < 12; i++) {
+			idx = i + 12 * j;
+			row_sub[idx] = row_baseline[i];
+			size_sub[idx] = row_sub[i] * row_sub[i];
+			ptr_mat_shift[idx] = nnz;
+			ptr_vec_shift[idx] = row;
+			nnz += size_sub[idx];
+			row += row_sub[idx];
 		}
 	}
+
+	// Combine matrices into a single array
+	std::vector<MKL_Complex16> K(nnz);
+	std::vector<MKL_Complex16> M(nnz);
+	std::vector<MKL_Complex16> D(nnz);
+	auto K_sub_ptr = &K_sub[0];
+	auto M_sub_ptr = &M_sub[0];
+	auto D_sub_ptr = &D_sub[0];
+	size_t array_shift = 0;
+	for (size_t j = 0; j < mat_repetition; j++) {
+		for (size_t i = 0; i < 12; i++) {
+			K_sub_ptr = &K_sub[i];
+			M_sub_ptr = &M_sub[i];
+			D_sub_ptr = &D_sub[i];
+			std::copy(K_sub_ptr->begin(), K_sub_ptr->end(), K.begin() + array_shift);
+			std::copy(M_sub_ptr->begin(), M_sub_ptr->end(), M.begin() + array_shift);
+			std::copy(D_sub_ptr->begin(), D_sub_ptr->end(), D.begin() + array_shift);
+			array_shift += size_sub[i];
+		}
+	}
+
+	std::cout << ">> Matrices combined\n" << std::endl;
+
+	// Generate CSR format
+	timerAux.start();
+	std::vector<int> csrRowPtr(row + 1);
+	std::vector<int> csrColInd(nnz);
+	dataStructure::generateCSR(csrRowPtr, csrColInd, row_sub, size_sub, row, nnz, num_matrix);
+	timerAux.stop();
+	if (sparse_mode == "Sparse Block Diagonal System") {
+		std::cout << ">> CSR Format Generated" << std::endl;
+		std::cout << ">>>> Time taken = " << timerAux.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
+	}
+
+	// Allocate global matrices
+	std::vector<MKL_Complex16> A(nnz*nt);
+
+	// Initialise RHS vectors
+	std::vector<MKL_Complex16> rhs(row*freq_max, rhs_val);
+
+	// Initialise solution vectors
+	std::vector<MKL_Complex16> sol(row*freq_max);
+
+	// M = 4*pi^2*M (Single computation suffices)
+	cblas_zdscal(nnz, alpha, M.data(), 1);
+
+	/*--------------------
+	PARDISO Initialisation
+	--------------------*/
+	// Check if sparse matrix is good
+	sparse_checker_error_values check_err_val;
+	sparse_struct pt;
+	int error = 0;
+	sparse_matrix_checker_init(&pt);
+	pt.n = row;
+	pt.csr_ia = csrRowPtr.data();
+	pt.csr_ja = csrColInd.data();
+	pt.indexing = MKL_ZERO_BASED;
+	pt.print_style = MKL_C_STYLE;
+	pt.message_level = MKL_PRINT;
+	check_err_val = sparse_matrix_checker(&pt);
+	if (sparse_mode == "Sparse Block Diagonal System") {
+		printf(">>>> Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+		if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+		error = 1;
+	}
+	// Pardiso variables
+	void *pardiso_pt[64] = {};   // Internal solver memory pointer
+	MKL_INT pardiso_mtype = 13; // Real Complex Unsymmetric Matrix
+	MKL_INT pardiso_nrhs = 1;   // Number of RHS
+	MKL_Complex16 pardiso_ddum; // Complex dummy
+	MKL_INT pardiso_idum;   // Integer dummy
+	// Pardiso control parameters
+	MKL_INT pardiso_iparm[64] = {};
+	MKL_INT pardiso_maxfct, pardiso_mnum, pardiso_phase, pardiso_error, pardiso_msglvl;
+	pardiso_iparm[0] = 1;           // No solver default
+	pardiso_iparm[1] = 2;           // Fill-in reordering from METIS
+	pardiso_iparm[3] = 0;           // No iterative-direct algorithm
+	pardiso_iparm[4] = 0;           // No user fill-in reducing permutation
+	pardiso_iparm[5] = 0;           // Write solution into x
+	pardiso_iparm[6] = 0;           // Not in use
+	pardiso_iparm[7] = 2;           // Max numbers of iterative refinement steps
+	pardiso_iparm[8] = 0;           // Not in use
+	pardiso_iparm[9] = 13;          // Perturb the pivot elements with 1E-13
+	pardiso_iparm[10] = 1;          // Use nonsymmetric permutation and scaling MPS
+	pardiso_iparm[11] = 0;          // Conjugate transposed/transpose solve
+	pardiso_iparm[12] = 1;          // Maximum weighted matching algorithm is switched-on (default for non-symmetric)
+	pardiso_iparm[13] = 0;          // Output: Number of perturbed pivots
+	pardiso_iparm[14] = 0;          // Not in use
+	pardiso_iparm[15] = 0;          // Not in use
+	pardiso_iparm[16] = 0;          // Not in use
+	pardiso_iparm[17] = -1;         // Output: Number of nonzeros in the factor LU
+	pardiso_iparm[18] = -1;         // Output: Mflops for LU factorization
+	pardiso_iparm[19] = 0;          // Output: Numbers of CG Iterations
+	pardiso_iparm[23] = 1;          // 2-level factorisation
+	pardiso_iparm[36] = -99;        // VBSR format
+	pardiso_iparm[34] = 1;          // Zero based indexing
+	pardiso_maxfct = 1;             // Maximum number of numerical factorizations
+	pardiso_mnum = 1;               // Which factorization to use
+	pardiso_msglvl = 0;             // Print statistical information
+	pardiso_error = 1;              // Initialize error flag
+
+	// Loop over frequency
+	int sol_shift = 0;
+	int last_sol_shift = 0;
+	int mat_shift = 0;
+	std::cout << ">> Frequency loop started (" << sparse_mode << ")" << std::endl;
+
+	/*--------------------------
+	Sparse Block Diagonal System
+	--------------------------*/
+	if (sparse_mode == "Sparse Block Diagonal System") {
+		timerLoop.start();
+#pragma omp parallel private(tid, freq, freq_square, mat_shift, pardiso_error)
+		{
+			// Get thread number
+			tid = omp_get_thread_num();
+			// Compute matrix shift
+			mat_shift = tid * nnz;
+			// Compute solution shift
+			//sol_shift = last_sol_shift + tid*row;
+
+#pragma omp for
+			for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+				// Compute scaling
+				freq = (double)it;
+				freq_square = -(freq*freq);
+
+				// Assemble global matrix ( A = K - f^2*M_tilde)
+				//assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+				cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+				cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+				cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+
+				/*-----
+				PARDISO
+				-----*/
+				// Symbolic factorization
+				pardiso_phase = 11;
+				pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+					csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+					pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+				if (pardiso_error != 0) { std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1); }
+
+				// Numerical factorization
+				pardiso_phase = 22;
+				pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+					csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+					pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+				if (pardiso_error != 0) { std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2); }
+
+				// Backward substitution
+				pardiso_phase = 33;
+				pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data() + mat_shift,
+					csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+					pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data() + sol_shift, &pardiso_error);
+				if (pardiso_error != 0) { std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3); }
+
+				sol_shift += row;
+
+				//if (tid == omp_get_num_threads()-1) last_sol_shift = sol_shift + nnz;
+			} // frequency loop
+		} // omp parallel
+	} // dense mode
+
+	/*---------------------
+	Multiple Dense Matrices
+	---------------------*/
+	else if (sparse_mode == "Multiple Dense Matrices") {
+		int row_shift, prev_row_shift, row_mat;
+		size_t i;
+		// Pivots for LU Decomposition
+		std::vector<lapack_int> pivot(nnz*nt);
+		timerLoop.start();
+#pragma omp parallel private(tid, freq, freq_square, mat_shift, array_shift, row_shift, i, sol_shift, prev_row_shift, row_mat) num_threads(nt)
+		{
+			// Get thread number
+			tid = omp_get_thread_num();
+			// Compute matrix shift
+			mat_shift = tid * nnz;
+			// Previous row shift
+			prev_row_shift = 0;
+#pragma omp critical
+			std::cout << "This is thread " << tid + 1 << " out of " << omp_get_num_threads() << std::endl;
+#pragma omp for
+			for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+				// Compute scaling
+				freq = (double)it;
+				freq_square = -(freq*freq);
+
+//#pragma omp critical
+			//	std::cout << "This is thread " << tid + 1 << " out of " << omp_get_num_threads() << " working on freq " << freq << std::endl;
+
+				// Assemble global matrix ( A = K - f^2*M_tilde)
+				//assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
+				cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
+				cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
+				cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+
+				/*-----
+				LAPACKE
+				-----*/
+				array_shift = 0;
+				row_shift = tid * row;
+				for (i = 0; i < num_matrix; i++) {
+					row_mat = row_sub[i];
+					// LU Decomposition
+					LAPACKE_zgetrf(LAPACK_COL_MAJOR, row_mat, row_mat, A.data() + mat_shift + array_shift, row_mat, pivot.data() + mat_shift);
+					// Solve system
+					LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', row_mat, 1, A.data() + mat_shift + array_shift, row_mat, pivot.data() + mat_shift, rhs.data() + prev_row_shift + row_shift, row_mat);
+					// Update array and row shifts
+					array_shift += size_sub[i];
+					row_shift += row_sub[i];
+				}
+				// Move onto next batch of frequency arrays
+				prev_row_shift += nt * row;
+			} // frequency loop
+		} // omp parallel
+	} // dense mode
 	timerLoop.stop();
 	timerTotal.stop();
 
-	// Get average time
-	float time_avg = cblas_sasum((int)freq_max, vec_time.data(), 1); time_avg /= freq_max;
-
 	// Output messages
-	std::cout << "\n" << ">>>> Frequency loop finished" << std::endl;
-	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
-	std::cout << ">>>>>> Average time (s) for matrix computation (" << SIZE << ") : " << time_avg << "\n" << std::endl;
+	std::cout << "\n" << ">> Frequency loop finished" << std::endl;
+	std::cout << ">>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+
+	// Pardiso termination and release of memory
+	if (sparse_mode == "Sparse Block Diagonal System") {
+		pardiso_phase = -1;
+		pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, &pardiso_ddum, csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+			pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+		std::cout << ">> PARDISO internal memory freed\n" << std::endl;
+	}
+
+	//io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
 	// Output solutions
-	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }
-

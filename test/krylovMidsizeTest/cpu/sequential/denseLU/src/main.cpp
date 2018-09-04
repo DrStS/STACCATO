@@ -224,8 +224,6 @@ int main(int argc, char *argv[]) {
 
 	std::cout <<">> Matrices combined\n" << std::endl;
 
-
-
 	// Generate CSR format
 	timerAux.start();
 	std::vector<int> csrRowPtr(row+1);
@@ -298,7 +296,7 @@ int main(int argc, char *argv[]) {
 	std::cout << ">>>>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
 	// Output solutions
-	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

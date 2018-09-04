@@ -21,6 +21,7 @@
 #include "Material.h"
 #include "Message.h"
 #include "MathLibrary.h"
+#include <cstring>
 
 
 FeTetrahedron10NodeElement::FeTetrahedron10NodeElement(Material *_material) : FeElement(_material) {

@@ -61,8 +61,7 @@ void SimuliaUMA::openFile() {
 	bool printDetails = false;
 	bool printFile = false;
 	bool printMap = true;
-	std::vector<int> knowSomeNode = { 9603,     9604,  1601019,  1601024,  1601027,  1601029,  1601033,  1601039,  1601070,
-		1601072, 4020,4022,4024,4026,4028,4021, 4023, 4025, 4027, 4029
+	std::vector<int> knowSomeNode = { 
 	};
 #ifdef USE_SIMULIA_UMA_API
 	std::vector<std::string> mapTypeName;

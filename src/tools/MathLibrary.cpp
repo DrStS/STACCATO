@@ -66,6 +66,13 @@ namespace MathLibrary {
 #endif
 	}
 
+	void copyDenseVectorComplex(STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, const int elements) {
+#ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		cblas_zcopy(elements, vec2, 1, vec1, 1);
+#endif
+	}
+
 	double computeDenseEuclideanNorm(const double *vec1, const int elements){
 #ifdef USE_INTEL_MKL
 		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
@@ -239,6 +246,66 @@ namespace MathLibrary {
 		}
 	}
 
+	void computeDenseMatrixVectorMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_x, STACCATOComplexDouble *_y, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall, const bool _rowMajor) {
+#ifdef USE_INTEL_MKL_BLAS
+		CBLAS_LAYOUT layout = CblasRowMajor;
+		CBLAS_TRANSPOSE transposeA;
+		int lda, ldb, ldc;
+		STACCATOComplexDouble alpha;
+		if (!_multByScalar) {
+			alpha.real = 1.0;
+			alpha.imag = 0.0;
+		}
+		else {
+			alpha = _alpha;
+		}
+		STACCATOComplexDouble beta;
+		if (!_addPrevious) {
+			beta.real = 0.0;
+			beta.imag = 0.0;
+		}
+		else {
+			beta.real = 1.0;
+			beta.imag = 0.0;
+		}
+
+		if (_rowMajor && _transposeA) {
+			layout = CblasRowMajor;
+			transposeA = CblasConjTrans;
+			lda = _m;
+		}
+		else if (_rowMajor && !_transposeA) {
+			layout = CblasRowMajor;
+			transposeA = CblasNoTrans;
+			lda = _k;
+		}
+		else if (!_rowMajor && _transposeA) {
+			layout = CblasColMajor;
+			transposeA = CblasConjTrans;
+			lda = _k;
+		}
+		else if (!_rowMajor && !_transposeA) {
+			layout = CblasColMajor;
+			transposeA = CblasNoTrans;
+			lda = _m;
+		}
+
+		/*if (_rowMajor) {
+			ldb = _n;
+			ldc = _n;
+		}
+		else {
+			ldb = _k;
+			ldc = _m;
+		}*/
+
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		cblas_zgemv(layout, transposeA, _m, _n, &alpha, _A, lda, _x, 1, &beta, _y, 1);
+
+#endif // USE_INTEL_MKL_BLAS
+
+	}
+
 
 	std::vector<double> computeVectorCrossProduct(std::vector<double> &_v1, std::vector<double> &_v2) {
 		std::vector<double> crossProduct(3);
@@ -306,6 +373,74 @@ namespace MathLibrary {
 		LAPACKE_zgeqrfp(layout, _m, _n, _A, lda, &tau[0]);
 		// Generation of Orthogonal Q
 		LAPACKE_zungqr(layout, _m, _n, tau.size(), _A, lda, &tau[0]);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
+	void computeDenseMatrixQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau) {
+#ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		int lda;
+		int layout;
+		if (_rowMajor) {
+			lda = _n;
+			layout = LAPACK_ROW_MAJOR;
+		}
+		else {
+			lda = _m;
+			layout = LAPACK_COL_MAJOR;
+		}
+		//std::vector<STACCATOComplexDouble> tau;
+		_tau.resize(_m < _n ? _m : _n);
+		// QR Factorization
+		LAPACKE_zgeqrfp(layout, _m, _n, _A, lda, &_tau[0]);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
+	void computeDenseMatrixQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau) {
+#ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		int lda;
+		int layout;
+		if (_rowMajor) {
+			lda = _n;
+			layout = LAPACK_ROW_MAJOR;
+		}
+		else {
+			lda = _m;
+			layout = LAPACK_COL_MAJOR;
+		}
+		// Generation of Orthogonal Q
+		LAPACKE_zungqr(layout, _m, _n, _tau.size(), _A, lda, &_tau[0]);
+#endif
+#ifndef USE_INTEL_MKL
+		return 0;
+#endif
+	}
+
+	void computeDenseMatrixPivotedQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau) {
+#ifdef USE_INTEL_MKL
+		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
+		int lda;
+		int layout;
+		std::vector<int> jpvt(_n);
+		if (_rowMajor) {
+			lda = _n;
+			layout = LAPACK_ROW_MAJOR;
+		}
+		else {
+			lda = _m;
+			layout = LAPACK_COL_MAJOR;
+		}
+		//std::vector<STACCATOComplexDouble> tau;
+		_tau.resize(_m < _n ? _m : _n);
+		// QR Factorization
+		LAPACKE_zgeqp3(layout, _m, _n, _A, lda, &jpvt[0], &_tau[0]);
 #endif
 #ifndef USE_INTEL_MKL
 		return 0;

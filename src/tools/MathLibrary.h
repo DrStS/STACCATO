@@ -79,6 +79,13 @@ namespace MathLibrary {
 	***********/
 	void copyDenseVector(double *vec1, const double *vec2, const int elements);
 	/***********************************************************************************************
+	* \brief Copy dense vector vec1 <- vec2
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	void copyDenseVectorComplex(STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, const int elements);
+	/***********************************************************************************************
 	* \brief Compute Euclidean norm of vector
 	* \param[in] vec1 the 1st vector
 	* \param[in] elements number of elements in vec1
@@ -176,6 +183,16 @@ namespace MathLibrary {
 	***********/
 	void computeDenseMatrixVectorMultiplication(int _m, int _n, const double *_A, const double *_b, double *_c);
 	/***********************************************************************************************
+	* \brief Compute dense matrix-vector product
+	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in] _A m rows by _n columns
+	* \param[in] _b vector of length _n
+	* \param[in/out] _c vector of length _m
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixVectorMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_b, STACCATOComplexDouble *_c, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall, const bool _rowMajor);
+	/***********************************************************************************************
 	* \brief Computes the Cross Product of two vectors
 	* \param[in] Vector 1
 	* \param[in] Vector 2
@@ -266,6 +283,15 @@ namespace MathLibrary {
 	* \author Harikrishnan Sreekumar
 	***********/
 	void print_csr_sparse_z(sparse_matrix_t* _mat);
+
+	/*--- Tests ---*/
+	void computeDenseMatrixQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+	void computeDenseMatrixQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+
+	void computeDenseMatrixPivotedQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+	//void computeDenseMatrixPivotedQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+
+
 	/**********
 	* \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
 	*

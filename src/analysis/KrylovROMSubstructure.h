@@ -78,9 +78,10 @@ public:
 	* \brief Add krylov modes for second order Krylov subspaces for the expansion point
 	* \param[in] expansion point
 	* \param[in] krylov order
+	* \param[]
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder);
+	void addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder, int _projID);
 	/***********************************************************************************************
 	* \brief PARDISO factorization for sparse matrix
 	* \param[in] _mat sparse matrix
@@ -109,6 +110,7 @@ public:
 
 	void cleanPardiso();
 
+	int reveilRankQR_R(const STACCATOComplexDouble* _mat, int _m, int _n, double _tol);
 private:
 	/// HMesh object 
 	HMesh * myHMesh;
@@ -121,6 +123,8 @@ private:
 	MathLibrary::SparseMatrix<MKL_Complex16> *KComplex;
 	/// Mass Matrix
 	MathLibrary::SparseMatrix<MKL_Complex16> *MComplex;
+	/// Damping Matrix
+	MathLibrary::SparseMatrix<MKL_Complex16> *DComplex;
 	
 	/// Input Matrix
 	std::vector<MKL_Complex16> myB;
@@ -132,6 +136,8 @@ private:
 	std::vector<MKL_Complex16> myKComplexReduced;
 	/// Dense reduced mass matrix
 	std::vector<MKL_Complex16> myMComplexReduced;
+	/// Dense reduced damping matrix
+	std::vector<MKL_Complex16> myDComplexReduced;
 	/// Dense reduced Input matrix
 	std::vector<MKL_Complex16> myBReduced;
 	/// Dense reduced Output matrix
@@ -161,6 +167,7 @@ private:
 #ifdef USE_INTEL_MKL
 	sparse_matrix_t mySparseK;
 	sparse_matrix_t mySparseM;
+	sparse_matrix_t mySparseD;
 
 	MKL_INT m;
 	/// number of columns
@@ -193,5 +200,6 @@ private:
 	STACCATOComplexDouble* values;
 	std::string currentPart;
 	bool isMIMO;
+	bool enablePropDamping;
 #endif
 };

@@ -23,7 +23,7 @@ ENDIF()
 #------------------------------------------------------------------------------------#
 include_directories(${STACCATO_PerformanceTest_INCLUDES})
 LIST(REMOVE_ITEM STACCATO_PerformanceTest_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
-
+add_definitions(-DMKL_DIRECT_CALL)
 #------------------------------------------------------------------------------------#
 IF (CMAKE_SYSTEM_NAME MATCHES "Windows") 
 # WIN32

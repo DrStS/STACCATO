@@ -327,74 +327,65 @@ int main (int argc, char *argv[]){
     /*------------
     Frequency Loop
     ------------*/
+    size_t freq_idx;
     std::cout << ">>>> Frequency loop started" << std::endl;
     timerLoop.start();
-    for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it += num_streams){
+#pragma omp parallel private(tid, cublasStatus, d_ptr_buffer_stream, cusparseStatus, numerical_zero, freq_idx) num_threads(num_threads)
+    {
+        // Get thread number
+        tid = omp_get_thread_num();
 
-        /*--------------------------------------------
-        Assemble global matrix ( A = K - f^2*M_tilde )
-        --------------------------------------------*/
-        for (size_t i = 0; i < num_streams; i++){
+        //#pragma omp critical(cout)
+        //std::cout << "I'm Thread = " << tid+1 << " from " <<  omp_get_num_threads() << " threads" << std::endl;
+#pragma omp for
+        for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
+            /*--------------------------------------------
+            Assemble global matrix ( A = K - f^2*M_tilde )
+            --------------------------------------------*/
             // Compute scaling
-            freq[i] = (double)it + i;
-            freq_square[i] = -(freq[i]*freq[i]);
+            freq[tid] = (double)it;
+            freq_square[tid] = -(freq[tid]*freq[tid]);
             // Copy M to A
-            thrust::copy(d_M.begin(), d_M.end(), d_ptr_A[i]);
+            thrust::copy(d_M.begin(), d_M.end(), d_ptr_A[tid]);
             // Scale A with -f^2
-            cublasSetStream(cublasHandle, streams[i]);
-            cublasStatus = cublasZdscal(cublasHandle, nnz, &freq_square[i], d_ptr_A[i], 1);
+            cublasSetStream(cublasHandle, streams[tid]);
+            cublasStatus = cublasZdscal(cublasHandle, nnz, &freq_square[tid], d_ptr_A[tid], 1);
             assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
-        }
-
-/*
-        for (size_t i = 0; i < num_streams; i++){
             // Sum A with K
-            cublasSetStream(cublasHandle, streams[i]);
-            cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A[i], 1);
+            cublasSetStream(cublasHandle, streams[tid]);
+            cublasStatus = cublasZaxpy(cublasHandle, nnz, &one, d_ptr_K, 1, d_ptr_A[tid], 1);
             assert(CUBLAS_STATUS_SUCCESS == cublasStatus);
-        }
-*/
 
-        /*--------------
-        LU Decomposition
-        --------------*/
-/*
-        for (size_t i = 0; i < num_streams; i++){
-            d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+i*bufferSize);
-            cusparseSetStream(cusparseHandle, streams[i]);
-            cusparseStatus = cusparseZcsrilu02(cusparseHandle, row, nnz, descr_A, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, policy_A, d_ptr_buffer_stream);
+            /*--------------
+            LU Decomposition
+            --------------*/
+            d_ptr_buffer_stream = (void*)((int*)d_ptr_buffer+tid*bufferSize);
+            cusparseSetStream(cusparseHandle, streams[tid]);
+            cusparseStatus = cusparseZcsrilu02(cusparseHandle, row, nnz, descr_A, d_ptr_A[tid], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, policy_A, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
-        }
-*/
-/*
-        for (size_t i = 0; i < num_streams; i++){
-            cusparseSetStream(cusparseHandle, streams[i]);
+            cusparseSetStream(cusparseHandle, streams[tid]);
             cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
             if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
-        }
-*/
 
-        /*-----------
-        Solve x = A\b
-        -----------*/
-/*
-        for (size_t i = 0; i < num_streams; i++){
-            size_t freq_idx = freq[i]-1;
+            /*-----------
+            Solve x = A\b
+            -----------*/
+            freq_idx = freq[tid]-1;
             // Solve z = L\b
-            cusparseSetStream(cusparseHandle, streams[i]);
-            cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_L, row, nnz, &one, descr_L, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_L,
-                    d_ptr_rhs, d_ptr_z[i], policy_L, d_ptr_buffer_stream);
+            cusparseSetStream(cusparseHandle, streams[tid]);
+            cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_L, row, nnz, &one, descr_L, d_ptr_A[tid], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_L,
+                    d_ptr_rhs, d_ptr_z[tid], policy_L, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
             // Solve x = U\z
-            cusparseSetStream(cusparseHandle, streams[i]);
-            cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_U, row, nnz, &one, descr_U, d_ptr_A[i], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U,
-                    d_ptr_z[i], d_ptr_sol[freq_idx], policy_U, d_ptr_buffer_stream);
+            cusparseSetStream(cusparseHandle, streams[tid]);
+            cusparseStatus = cusparseZcsrsv2_solve(cusparseHandle, trans_U, row, nnz, &one, descr_U, d_ptr_A[tid], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U,
+                    d_ptr_z[tid], d_ptr_sol[freq_idx], policy_U, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
-        }
-        // Synchronize streams
-        for (size_t i = 0; i < num_streams; i++) cudaStreamSynchronize(streams[i]);
-*/
-    }
+
+            // Synchronize streams
+            //cudaStreamSynchronize(streams[tid]);
+        } // frequency loop
+    } // omp parallel
     timerLoop.stop();
 
     std::cout << ">>>> Frequency loop finished" << std::endl;
@@ -403,7 +394,7 @@ int main (int argc, char *argv[]){
     sol = d_sol;
 
     // Write out solution vectors
-    //io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+    //io::writeSolVecComplex(z, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSparse
     cublasDestroy(cublasHandle);

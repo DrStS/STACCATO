@@ -59,7 +59,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	bool exportSparseMatrix = false;
 	bool exportRHS = true;
 	bool exportSolution = true;
-	bool writeTransferFunctions = false;
+	bool writeTransferFunctions = true;
 	/* -------------------------- */
 
 	// Build DataStructure
@@ -844,7 +844,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 	std::cout << ">> Adding krylov modes for expansion points..."<< std::endl;
 
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	myV.reserve(FOM_DOF*ROM_DOF);
+	//myV.reserve(FOM_DOF*ROM_DOF);
 	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	
 	STACCATOComplexDouble ZeroComplex = {0,0};
@@ -1032,6 +1032,8 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 		for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 		{
+			double sigTol = 1e-8;
+			std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 			std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..."<<std::endl;
 			double progress = (iEP + 1) * 100 / _expPoint.size();
 			double omega = 2 * M_PI*_expPoint[iEP];
@@ -1127,7 +1129,6 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			// Algo for rank-reveiling
 			// ind=find(diag(abs(R))>sigTol);
 			//std::cout << "  > Reveiling Rank: " << std::endl;
-			double sigTol = 1e-12;
 			int RR = reveilRankQR_R(&QV[0], FOM_DOF, myInputDOFS.size(), sigTol);
 			//std::cout << "  > Rank reveiled: " << RR << std::endl;
 
@@ -1231,7 +1232,6 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		break;
 	default:
 		std::cout << "!! Invalid Projection Algorithm ID!." << std::endl;
-		break;
 	}
 	
 	std::cout << ">> Adding krylov modes for expansion points... Finished." << std::endl;

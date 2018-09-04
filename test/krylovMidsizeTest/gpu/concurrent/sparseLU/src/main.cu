@@ -363,9 +363,11 @@ int main (int argc, char *argv[]){
             cusparseSetStream(cusparseHandle, streams[tid]);
             cusparseStatus = cusparseZcsrilu02(cusparseHandle, row, nnz, descr_A, d_ptr_A[tid], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_A, policy_A, d_ptr_buffer_stream);
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
+/*
             cusparseSetStream(cusparseHandle, streams[tid]);
             cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
             if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
+*/
 
             /*-----------
             Solve x = A\b
@@ -383,7 +385,7 @@ int main (int argc, char *argv[]){
             assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
 
             // Synchronize streams
-            //cudaStreamSynchronize(streams[tid]);
+            cudaStreamSynchronize(streams[tid]);
         } // frequency loop
     } // omp parallel
     timerLoop.stop();
@@ -394,7 +396,7 @@ int main (int argc, char *argv[]){
     sol = d_sol;
 
     // Write out solution vectors
-    //io::writeSolVecComplex(z, filepath_sol, filename_sol);
+    io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSparse
     cublasDestroy(cublasHandle);

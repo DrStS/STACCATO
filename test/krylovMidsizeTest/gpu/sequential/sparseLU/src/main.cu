@@ -335,7 +335,7 @@ int main (int argc, char *argv[]){
 	sol = d_sol;
 
 	// Write out solution vectors
-	//io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+	io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
 	// Destroy cuBLAS & cuSparse
 	cublasDestroy(cublasHandle);

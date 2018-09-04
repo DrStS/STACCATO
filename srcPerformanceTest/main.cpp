@@ -376,6 +376,7 @@ int main(int argc, char *argv[]) {
 //#pragma omp critical
 //            std::cout << "This is thread " << tid + 1 << " out of " << omp_get_num_threads() << std::endl;
 #pragma omp for
+            // Frequency loop
             for (int it = (int)freq_min; it <= (int)freq_max; it++) {
                 // Compute scaling
                 freq = (double)it;
@@ -400,7 +401,7 @@ int main(int argc, char *argv[]) {
                     row_shift += row_sub[i];
                 }
                 // Move onto next batch of frequency arrays
-                prev_row_shift += nt * row;
+                prev_row_shift += nt*row;
             } // frequency loop
         } // omp parallel
     } // dense mode

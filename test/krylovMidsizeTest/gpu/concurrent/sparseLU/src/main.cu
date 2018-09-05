@@ -263,7 +263,10 @@ int main (int argc, char *argv[]){
 
     // Stream initialisation
     cudaStream_t streams[num_streams];
-    for (size_t i = 0; i < num_streams; i++) cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
+    for (size_t i = 0; i < num_streams; i++) {
+        cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
+        std::cout << ">> Stream " << i << " created" << std::endl;
+    }
 
     /*-----------------------------
     LU Decomposition initialisation
@@ -321,7 +324,7 @@ int main (int argc, char *argv[]){
     cusparseStatus = cusparseZcsrsv2_analysis(cusparseHandle, trans_U, row, nnz, descr_U, d_ptr_A[0], d_ptr_csrRowPtr, d_ptr_csrColInd, solverInfo_U, policy_U, d_ptr_buffer);
     assert(CUSPARSE_STATUS_SUCCESS == cusparseStatus);
     timerAux.stop();
-    std::cout << ">> LU decomposition initialised" << std::endl;
+    std::cout << "\n>> LU decomposition initialised" << std::endl;
     std::cout << ">>>> Time taken (s) = " << timerAux.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
     /*------------

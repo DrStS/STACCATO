@@ -51,7 +51,6 @@ SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHM
 	hasInternalDOF_K = false;
 	hasInternalDOF_M = false;
 	hasInternalDOF_SD = false;
-
 }
 
 SimuliaUMA::~SimuliaUMA() {
@@ -61,7 +60,7 @@ void SimuliaUMA::openFile() {
 	bool printDetails = false;
 	bool printFile = false;
 	bool printMap = true;
-	std::vector<int> knowSomeNode = { 
+	std::vector<int> knowSomeNode = {
 	};
 #ifdef USE_SIMULIA_UMA_API
 	std::vector<std::string> mapTypeName;

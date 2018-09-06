@@ -109,7 +109,14 @@ public:
 	void generateROM();
 
 	void cleanPardiso();
-
+	/***********************************************************************************************
+	* \brief Algorithm to reveil rank for the R matrix from QR decomposition
+	* \param[in] _mat R matrix
+	* \param[in] _m number of rows
+	* \param[in] _n number of columns
+	* \param[in] _tol threshold value
+	* \author Harikrishnan Sreekumar
+	***********/
 	int reveilRankQR_R(const STACCATOComplexDouble* _mat, int _m, int _n, double _tol);
 private:
 	/// HMesh object 
@@ -201,5 +208,8 @@ private:
 	std::string currentPart;
 	bool isMIMO;
 	bool enablePropDamping;
+
+	int FOM_DOF;
+	int ROM_DOF;
 #endif
 };

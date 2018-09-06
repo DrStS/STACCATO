@@ -378,30 +378,7 @@ namespace MathLibrary {
 		return 0;
 #endif
 	}
-
-	void computeDenseMatrixQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau) {
-#ifdef USE_INTEL_MKL
-		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
-		int lda;
-		int layout;
-		if (_rowMajor) {
-			lda = _n;
-			layout = LAPACK_ROW_MAJOR;
-		}
-		else {
-			lda = _m;
-			layout = LAPACK_COL_MAJOR;
-		}
-		//std::vector<STACCATOComplexDouble> tau;
-		_tau.resize(_m < _n ? _m : _n);
-		// QR Factorization
-		LAPACKE_zgeqrfp(layout, _m, _n, _A, lda, &_tau[0]);
-#endif
-#ifndef USE_INTEL_MKL
-		return 0;
-#endif
-	}
-
+	
 	void computeDenseMatrixQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau) {
 #ifdef USE_INTEL_MKL
 		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);

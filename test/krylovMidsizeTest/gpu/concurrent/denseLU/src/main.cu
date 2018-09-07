@@ -1,6 +1,7 @@
 // Libraries
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <cmath>
 
@@ -11,6 +12,8 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
+#include <thrust/extrema.h>
+#include <thrust/execution_policy.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>
@@ -38,7 +41,7 @@ int main (int argc, char *argv[]){
         std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
         std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
         std::cerr << "         Default number of CUDA streams is 1" << std::endl;
-        std::cerr << "         Ratio of number of matrices (12*matrix_repetition) to number of CUDA streams must be an integer" << std::endl;
+        std::cerr << "         Ratio of maximum frequency to number of CUDA streams must be an integer" << std::endl;
         return 1;
     }
 
@@ -53,7 +56,7 @@ int main (int argc, char *argv[]){
     std::cout << ">> Total number of matrices: " << num_matrix << std::endl;
     std::cout << ">> Number of CUDA streams: " << num_streams << "\n" << std::endl;
 
-    if ((num_matrix % num_streams) != 0) {
+    if (((int)freq_max % num_streams) != 0) {
         std::cerr << ">> ERROR: Invalid number of streams\n" << std::endl;
         return 1;
     }
@@ -187,8 +190,7 @@ int main (int argc, char *argv[]){
 
     // Create RHS directly on device
     timerMatrixCpy.start();
-    thrust::device_vector<cuDoubleComplex> d_rhs(row, rhs_val);
-    thrust::device_vector<cuDoubleComplex> d_rhs_buf = d_rhs;
+    thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
     timerMatrixCpy.stop();
     std::cout << ">> RHS copied to device " << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -200,15 +202,7 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_K = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D = thrust::raw_pointer_cast(d_D.data());
-
-    // Vector of raw pointers to assembled matrix
-    thrust::host_vector<cuDoubleComplex*> d_ptr_A(num_streams);
-    size_t mat_shift = 0;
-    cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-    for (size_t i = 0; i < num_streams; i++){
-        d_ptr_A[i] = d_ptr_A_base + mat_shift;
-        mat_shift += nnz;
-    }
+    cuDoubleComplex *d_ptr_A = thrust::raw_pointer_cast(d_A.data());
 
     // Get raw pointers to RHS vectors
     cuDoubleComplex *d_ptr_rhs = thrust::raw_pointer_cast(d_rhs.data());
@@ -235,24 +229,19 @@ int main (int argc, char *argv[]){
     for (size_t i = 0; i < num_threads; i++) d_ptr_solverInfo[i] = thrust::raw_pointer_cast(d_solverInfo.data()) + i;
 
     // Compute workspace size
-    int totalSizeWorkspace = 0;
-    thrust::host_vector<int> sizeWorkspace(num_matrix);
-    auto sizeWorkspace_ptr = &sizeWorkspace[0];
-    for (size_t i = 0; i < num_matrix; i++){
-        sizeWorkspace_ptr = &sizeWorkspace[i];
-        cusolverStatus = cusolverDnZgetrf_bufferSize(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A[i], row_sub[i], sizeWorkspace_ptr);
-        if (cusolverStatus != CUSOLVER_STATUS_SUCCESS) std::cout << ">> cuSolver workspace size computation failed\n" << std::endl;
-        totalSizeWorkspace += sizeWorkspace[i];
-    }
+    int sizeWorkspace;
+    cusolverStatus = cusolverDnZgetrf_bufferSize(cusolverHandle, row_sub[0], row_sub[0], d_ptr_A, row_sub[0], &sizeWorkspace);
+    assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
 
     // Create workspace
-    thrust::device_vector<cuDoubleComplex> d_workspace(totalSizeWorkspace*num_threads);
+    thrust::device_vector<cuDoubleComplex> d_workspace(sizeWorkspace*num_threads);
+
     // Create vector of raw pointers to workspace
     thrust::host_vector<cuDoubleComplex*> d_ptr_workspace(num_threads);
     size_t workspace_shift = 0;
     for (size_t i = 0; i < num_threads; i++){
         d_ptr_workspace[i] = thrust::raw_pointer_cast(d_workspace.data()) + workspace_shift;
-        workspace_shift += totalSizeWorkspace;
+        workspace_shift += sizeWorkspace;
     }
 
     // Stream initialisation
@@ -263,58 +252,59 @@ int main (int argc, char *argv[]){
     }
 
     timerLoop.start();
+
+    size_t prev_row_shift, row_shift, mat_shift;
     // Loop over frequency
-    int i;
-    int sol_shift = 0;
     std::cout << "\n>> Frequency loop started" << std::endl;
-#pragma omp parallel private(tid, freq, freq_square, cublasStatus, i, cusolverStatus, array_shift) num_threads(num_threads)
+#pragma omp parallel private(tid, freq, freq_square, cublasStatus, cusolverStatus, prev_row_shift, row_shift, mat_shift, array_shift) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
-        // Initialise shifts
-        array_shift = 0;
+        // Compute matrix shift
+        mat_shift = tid*nnz;
+        // Previous row shift
+        prev_row_shift = 0;
 
 #pragma omp for
         for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
-
             /*--------------------
             Assemble global matrix
             --------------------*/
             // Compute scaling
             freq = (double)it;
             freq_square = -(freq*freq);
-            assembly::assembleGlobalMatrix(tid, streams[tid], cublasStatus, cublasHandle, d_ptr_A[tid], d_ptr_K, d_ptr_M, nnz, one, freq_square);
+            assembly::assembleGlobalMatrix(tid, streams[tid], cublasStatus, cublasHandle, d_ptr_A, d_ptr_K, d_ptr_M, nnz, mat_shift, one, freq_square);
 
             /*--------------
             LU decomposition
             --------------*/
-            for (i = 0; i < num_matrix; i++){
-                #pragma omp critical
-                std::cout << "i = " << i << "   row_sub = " << row_sub[i] << "  array_shift = " << array_shift << "     d_ptr_A = " << d_ptr_A[tid] << std::endl;
-/*
-                // LU decomposition
-                cusolverDnSetStream(cusolverHandle, streams[tid]);
-                cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A[tid] + array_shift, row_sub[i], d_ptr_workspace[0], NULL, d_ptr_solverInfo[tid]);
-                assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
+            array_shift = 0;
+            row_shift = tid*row;
+            #pragma omp critical
+            {
+                for (size_t i = 0; i < num_matrix; i++){
+                    // LU decomposition
+                    cusolverDnSetStream(cusolverHandle, streams[tid]);
+                    cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + mat_shift + array_shift, row_sub[i], d_ptr_workspace[tid], NULL,
+                                                        d_ptr_solverInfo[tid]);
+                    assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
 
-/*
-                // Solve A\b
-                cusolverDnSetStream(cusolverHandle, streams[tid]);
-                cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[tid], 1, d_ptr_A_tmp[tid], row_sub[tid], NULL, d_ptr_rhs_tmp[tid], row_sub[tid], d_ptr_solverInfo[tid]);
-                assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
-*/
-
-                array_shift += size_sub[i];
+                    // Solve A\b
+                    cusolverDnSetStream(cusolverHandle, streams[tid]);
+                    cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + mat_shift + array_shift, row_sub[i], NULL,
+                                                        d_ptr_rhs + row_shift + prev_row_shift, row_sub[i], d_ptr_solverInfo[tid]);
+                    assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
+                    // Update row shift
+                    row_shift += row_sub[i];
+                    // Update array shift
+                    array_shift += size_sub[i];
+                }
             }
+            // Move onto next batch of frequency arrays
+            prev_row_shift += num_threads*row;
 
             // Synchronize streams
-            for (size_t st = 0; st < num_streams; st++) cudaStreamSynchronize(streams[st]);
-            // Copy the solution to solution vector
-            thrust::copy(d_rhs.begin(), d_rhs.end(), d_sol.begin() + sol_shift);
-            sol_shift += row;
-            // Reset RHS
-            d_rhs = d_rhs_buf;
-
+            cudaStreamSynchronize(streams[tid]);
         } // frequency loop
     } // omp parallel
     timerLoop.stop();
@@ -322,13 +312,8 @@ int main (int argc, char *argv[]){
     std::cout << ">> Frequency loop finished" << std::endl;
     std::cout << ">>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
-    sol = d_sol;
-
-    thrust::host_vector<cuDoubleComplex> A = d_A;
-    io::writeSolVecComplex(A, filepath_sol, "A.dat");
-
-    // Write out solution vectors
-    //io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+    // Copy solution from device to host
+    thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Destroy cuBLAS & cuSolver
     cublasDestroy(cublasHandle);

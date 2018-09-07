@@ -1,7 +1,5 @@
 // Libraries
 #include <iostream>
-#include <vector>
-#include <algorithm>
 #include <string>
 #include <cmath>
 
@@ -11,9 +9,6 @@
 // THRUST
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/reduce.h>
-#include <thrust/extrema.h>
-#include <thrust/execution_policy.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>
@@ -99,6 +94,8 @@ int main (int argc, char *argv[]){
     // OpenMP
     int tid;
     omp_set_num_threads(num_threads);
+    omp_set_dynamic(0);
+    omp_set_nested(0);
 
     timerTotal.start();
     // Library initialisation
@@ -253,6 +250,7 @@ int main (int argc, char *argv[]){
 
     timerLoop.start();
 
+    int tid_nested;
     size_t prev_row_shift, row_shift, mat_shift;
     // Loop over frequency
     std::cout << "\n>> Frequency loop started" << std::endl;
@@ -280,26 +278,33 @@ int main (int argc, char *argv[]){
             --------------*/
             array_shift = 0;
             row_shift = tid*row;
-            #pragma omp critical
-            {
-                for (size_t i = 0; i < num_matrix; i++){
+    #pragma omp parallel private(tid) num_threads(num_threads)
+        {
+            tid_nested = omp_get_thread_num();
+            #pragma omp for
+                for (int i = 0; i < num_matrix; i++){
+
+                    #pragma omp critical
+                    std::cout<< "I'm thread " << tid_nested << " of " << omp_get_num_threads() << " from " << tid << " inside nested loop dealing with i = " << i << std::endl;
+/*
                     // LU decomposition
                     cusolverDnSetStream(cusolverHandle, streams[tid]);
                     cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + mat_shift + array_shift, row_sub[i], d_ptr_workspace[tid], NULL,
-                                                        d_ptr_solverInfo[tid]);
+                                                      d_ptr_solverInfo[tid]);
                     assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
 
                     // Solve A\b
                     cusolverDnSetStream(cusolverHandle, streams[tid]);
                     cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + mat_shift + array_shift, row_sub[i], NULL,
-                                                        d_ptr_rhs + row_shift + prev_row_shift, row_sub[i], d_ptr_solverInfo[tid]);
+                                                      d_ptr_rhs + row_shift + prev_row_shift, row_sub[i], d_ptr_solverInfo[tid]);
                     assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
                     // Update row shift
                     row_shift += row_sub[i];
                     // Update array shift
                     array_shift += size_sub[i];
+*/
                 }
-            }
+        }
             // Move onto next batch of frequency arrays
             prev_row_shift += num_threads*row;
 
@@ -314,6 +319,9 @@ int main (int argc, char *argv[]){
 
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
+
+    // Write out solution vectors
+    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSolver
     cublasDestroy(cublasHandle);

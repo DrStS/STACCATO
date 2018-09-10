@@ -555,10 +555,10 @@ namespace MathLibrary {
 #endif
 	}
 
-	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries) {
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, int* _pointerB, int* _pointerE, int* _columns, STACCATOComplexDouble* _entries) {
 #ifdef USE_INTEL_MKL
 		mkl_set_num_threads(STACCATO::AuxiliaryParameters::denseVectorMatrixThreads);
-		sparse_status_t status = mkl_sparse_z_create_csr(_mat, SPARSE_INDEX_BASE_ONE, _m, _n, &_pointerB[0], &_pointerE[0], &_columns[0], &_entries[0]);
+		sparse_status_t status = mkl_sparse_z_create_csr(_mat, SPARSE_INDEX_BASE_ONE, _m, _n, _pointerB, _pointerE, _columns, _entries);
 #endif
 	}
 

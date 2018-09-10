@@ -276,7 +276,7 @@ namespace MathLibrary {
 	* \param[in] _entries Handle to complex entries
 	* \author Harikrishnan Sreekumar
 	***********/
-	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries);
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, int* _pointerB, int* _pointerE, int* _columns, STACCATOComplexDouble* _entries);
 	/***********************************************************************************************
 	* \brief Displays the CSR sparse data type
 	* \param[in] _mat Sparse matrix for displaying
@@ -1079,7 +1079,7 @@ namespace MathLibrary {
 		sparse_matrix_t convertToSparseDatatype() {
 			determineCSR();
 			sparse_matrix_t sparseMat;
-			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, pointerB, pointerE, columns, values);
+			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, &pointerB[0], &pointerE[0], &columns[0], &values[0]);
 			return sparseMat;
 		}
 	private:

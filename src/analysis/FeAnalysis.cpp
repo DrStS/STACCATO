@@ -100,7 +100,6 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 	std::vector<FeElement*> allElements(numElements);
-	std::vector<FeUmaElement*> allUMAElements(numElements);
 
 	// Build XML NodeSets and ElementSets
 	MetaDatabase::getInstance()->buildXML(*myHMesh);
@@ -148,17 +147,9 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					else
 						std::cerr << ">> Warning: Attempt to assign already assigned element is skipped. ******************" << std::endl;
 				}
-				else if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef USE_SIMULIA_UMA_API
-					allUMAElements[elemIndex] = new FeUmaElement(elasticMaterial);
-#endif
-				}
 				int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
 				double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-				if (myHMesh->isSIM)
-					allUMAElements[elemIndex]->computeElementMatrix(eleCoords);
-				else
-					allElements[elemIndex]->computeElementMatrix(eleCoords);
+				allElements[elemIndex]->computeElementMatrix(eleCoords);
 				lastIndex += numNodesPerElement * myHMesh->getDomainDimension();
 			}
 		}
@@ -342,83 +333,30 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 
 				double omegaSquare = omega * omega;
 
-				if (!myHMesh->isSIM) {
-					//Assembly routine symmetric stiffness
-					for (int i = 0; i < numDoFsPerElement; i++) {
-						if (eleDoFs[i] != -1) {
-							for (int j = 0; j < numDoFsPerElement; j++) {
-								if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
-									//K(1+eta*i)
-									if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-										(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-									}
-									else if (analysisType == "STEADYSTATE_DYNAMIC") {
-										(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-										(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
+				//Assembly routine symmetric stiffness
+				for (int i = 0; i < numDoFsPerElement; i++) {
+					if (eleDoFs[i] != -1) {
+						for (int j = 0; j < numDoFsPerElement; j++) {
+							if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
+								//K(1+eta*i)
+								if (analysisType == "STATIC" || analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+									(*AReal)(eleDoFs[i], eleDoFs[j]) += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+								}
+								else if (analysisType == "STEADYSTATE_DYNAMIC") {
+									(*AComplex)(eleDoFs[i], eleDoFs[j]).real += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+									(*AComplex)(eleDoFs[i], eleDoFs[j]).imag += allElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * allElements[iElement]->getMaterial()->getDampingParameter();
 
-									}
+								}
 
-									if (analysisType == "STEADYSTATE_DYNAMIC_REAL") {
-										(*AReal)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
-									}
-									else if (analysisType == "STEADYSTATE_DYNAMIC") {
-										(*AComplex)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
-									}
+								if (analysisType == "STEADYSTATE_DYNAMIC_REAL") {
+									(*AReal)(eleDoFs[i], eleDoFs[j]) -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
+								}
+								else if (analysisType == "STEADYSTATE_DYNAMIC") {
+									(*AComplex)(eleDoFs[i], eleDoFs[j]).real -= allElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
 								}
 							}
 						}
 					}
-				}
-				else {
-					//Assembly routine symmetric stiffness
-					int num_SparseK_row = allUMAElements[iElement]->myK_row.size();
-					int num_SparseK_col = allUMAElements[iElement]->myK_col.size();
-					int num_SparseM_row = allUMAElements[iElement]->myM_row.size();
-					int num_SparseM_col = allUMAElements[iElement]->myM_col.size();
-					int num_SparseSD_row = allUMAElements[iElement]->mySD_row.size();
-					int num_SparseSD_col = allUMAElements[iElement]->mySD_col.size();
-
-					std::cout << ">> \nSparse Info: " << std::endl;
-					std::cout << "Stiffness : row " << num_SparseK_row << " col: " << num_SparseK_col << std::endl;
-					std::cout << "     Mass : row " << num_SparseM_row << " col: " << num_SparseM_col << std::endl;
-
-					std::vector<int> internalDOFs;
-					for (std::map<int, std::vector<int>>::iterator it = allUMAElements[iElement]->nodeToGlobalMap.begin(); it != allUMAElements[iElement]->nodeToGlobalMap.end(); ++it) {
-						if(it->first>= 1000000000)
-							for (int j = 0; j < it->second.size(); j++)
-								internalDOFs.push_back(it->second[j]);
-					}
-
-					for (int i = 0; i < num_SparseK_row; i++) {
-						if (analysisType == "STEADYSTATE_DYNAMIC") {
-							(*AComplex)(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]).real = allUMAElements[iElement]->getSparseStiffnessMatrix()(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]);
-						}
-					}
-					for (int i = 0; i < num_SparseSD_row; i++) {
-						if (analysisType == "STEADYSTATE_DYNAMIC") {
-							(*AComplex)(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]).imag = allUMAElements[iElement]->getSparseStructuralDampingMatrix()(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]);
-						}
-					}
-					//K - omega*omega*M
-					//Assembly routine symmetric mass
-					if (analysisType == "STEADYSTATE_DYNAMIC_REAL" || analysisType == "STEADYSTATE_DYNAMIC")
-						for (int i = 0; i < num_SparseM_row; i++) {
-							if (analysisType == "STEADYSTATE_DYNAMIC") {
-								(*AComplex)(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i]).real -= allUMAElements[iElement]->getSparseMassMatrix()(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i])*omegaSquare;
-							}
-						}
-
-					
-					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-					std::cout << "clearing...\n";
-					delete allUMAElements[iElement]->mySparseKReal;
-					delete allUMAElements[iElement]->mySparseMReal;
-					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-					allUMAElements[iElement]->myK_row.clear();
-					allUMAElements[iElement]->myK_col.clear();
-					allUMAElements[iElement]->myM_row.clear();
-					allUMAElements[iElement]->myM_col.clear();
-					std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 				}
 				
 			}

@@ -53,7 +53,7 @@ void STACCATOComputeEngine::prepare(void) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
-		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE" || std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
+		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE" )
 		{
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
@@ -75,6 +75,30 @@ std::string filePath = "/opt/software/repos/STACCATO/model/";
 					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
 				}
 			}
+		}
+		else if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")  {
+			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
+			{
+				//Todo add global search path to xml file
+#if defined(_WIN32) || defined(__WIN32__) 
+				std::string filePath = "C:/software/repos/STACCATO/model/";
+#endif
+#if defined(__linux__) 
+				std::string filePath = "/opt/software/repos/STACCATO/model/";
+#endif
+				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
+				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
+					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
+				}
+				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
+					std::cout << " > SIM Reading for KMOR detached from STACCATOComputeEngine to KrylovROMSubstructure" << std::endl;
+					myHMesh = NULL;
+				}
+				else {
+					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
+				}
+			}
+
 		}
 		else
 			std::cerr << ">> XML Error: Unidentified Part Type: " << iterParts->PART()[iPart].TYPE()->data() << std::endl;
@@ -120,10 +144,6 @@ void STACCATOComputeEngine::compute(void) {
 		else
 			std::cerr << "Invalid Analysis type" <<std::endl;
 	}
-
-
-	
-
 }
 
 OutputDatabase* STACCATOComputeEngine::getOutputDatabase(void) {

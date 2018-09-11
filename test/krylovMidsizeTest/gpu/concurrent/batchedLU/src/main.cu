@@ -106,7 +106,6 @@ int main (int argc, char *argv[]){
 
     timerTotal.start();
     // Library initialisation
-    cublasStatus_t cublasStatus;
     cublasHandle_t cublasHandle;
     cublasCreate(&cublasHandle);
 
@@ -209,7 +208,7 @@ int main (int argc, char *argv[]){
 
     // Get array of raw pointers to A for batched LU
     cuDoubleComplex* d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-    cuDoubleComplex* d_ptr_A[batchCount];
+    thrust::device_vector<cuDoubleComplex*> d_ptr_A(batchCount);
 
     // Get array of raw pointers to RHS for batched LU
     cuDoubleComplex* d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
@@ -217,11 +216,10 @@ int main (int argc, char *argv[]){
 
     timerMatrixComp.start();
     // M = 4*pi^2*M (Single computation suffices)
-    cublasStatus = cublasZdscal(cublasHandle, nnz, &alpha, d_ptr_M, 1);
+    cublas_check(cublasZdscal(cublasHandle, nnz, &alpha, d_ptr_M, 1));
     timerMatrixComp.stop();
     std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
-    assert (cublasStatus == CUBLAS_STATUS_SUCCESS);
 
     // Solver Info for batched LU decomposition
     thrust::device_vector<int> d_solverInfo(batchCount);
@@ -252,7 +250,7 @@ int main (int argc, char *argv[]){
             freq = (i+1);
             freq_square = -freq*freq;
             // Assemble matrix
-            assembly::assembleGlobalMatrix4Batched(streams[0], cublasStatus, cublasHandle, d_ptr_A[j], d_ptr_K, d_ptr_M, size_sub[i], one, freq_square);
+            assembly::assembleGlobalMatrix4Batched(streams[0], cublasHandle, d_ptr_A[j], d_ptr_K + mat_shift, d_ptr_M + mat_shift, size_sub[i], one, freq_square);
             //d_ptr_rhs[j] = d_ptr_rhs_base + loop_shift + rhs_shift;
             array_shift += size_sub[i];
             //rhs_shift += row_sub[i];
@@ -261,15 +259,14 @@ int main (int argc, char *argv[]){
         /*--------------
         LU Decomposition
         --------------*/
-        cublasStatus = cublasZgetrfBatched(cublasHandle, row_sub[i], d_ptr_A.data(), row_sub[i], NULL, d_ptr_solverInfo, 1);
-        assert(cublasStatus == CUBLAS_STATUS_SUCCESS);
+        std::cout << "matrix = " << i << std::endl;
+        cublas_check(cublasZgetrfBatched(cublasHandle, row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchCount));
 
         /*-----------
         Solve x = A\b
         -----------*/
 /*
-        cublasStatus = cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A, row_sub[i], NULL, d_ptr_rhs, row_sub[i], d_ptr_solverInfo, batchCount);
-        assert(cublasStatus == CUBLAS_STATUS_SUCCESS);
+        cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A, row_sub[i], NULL, d_ptr_rhs, row_sub[i], d_ptr_solverInfo, batchCount));
 */
 
         // Update matrix shift

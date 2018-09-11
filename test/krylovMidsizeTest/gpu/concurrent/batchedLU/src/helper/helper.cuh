@@ -10,3 +10,17 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=t
       if (abort) exit(code);
    }
 }
+
+#define cublas_check(call)                                                                                      \
+    do                                                                                                          \
+    {                                                                                                           \
+        cublasStatus_t status = (call);                                                                         \
+        if(CUBLAS_STATUS_SUCCESS != status)                                                                     \
+        {                                                                                                       \
+            fprintf(stderr,"CUBLAS Error:\nFile = %s\nLine = %d\nCode = %d\n", __FILE__, __LINE__, status);     \
+            cudaDeviceReset();                                                                                  \
+            exit(EXIT_FAILURE);                                                                                 \
+        }                                                                                                       \
+                                                                                                                \
+    }                                                                                                           \
+    while(0)

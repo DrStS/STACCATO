@@ -126,17 +126,6 @@ public:
 	***********/
 	void ImportSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values);
 	/***********************************************************************************************
-    * \brief Extract data from UMA
-	* \param[in] UMA System with the valid matrix
-	* \param[in] Name of matrix
-	* \param[in] Flag for displaying imported matrices
-	* \param[in] Flag for exporitng imported matrices
-	* \author Harikrishnan Sreekumar
-	***********/
-#ifdef USE_SIMULIA_UMA_API
-	void extractData(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values);
-#endif
-	/***********************************************************************************************
 	* \brief Loads in the CSR Entries for SIM Matrix 
 	* \param[in] _matName name of matrix
 	* \param[out] _ia CSR row vector
@@ -195,7 +184,9 @@ private:
 	// Maps
 	std::map<int, std::vector<int>> nodeToDofMap;
 	std::map<int, std::vector<int>> nodeToGlobalMap;
-	
+
+	std::map<int, std::map<int, STACCATOComplexDouble>> prepMapCSR;
+
 public:
 	/// Total number of dofs
 	int totalDOFs;

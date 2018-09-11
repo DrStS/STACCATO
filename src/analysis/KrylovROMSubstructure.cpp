@@ -63,7 +63,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	writeROM = true;
 	exportRHS = true;
 	exportSolution = true;
-	writeTransferFunctions = true;
+	writeTransferFunctions = false;
 	writeProjectionmatrices = false;
 	/* -------------------------- */
 
@@ -73,6 +73,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	{
 
 		/* %%% Build FOM - Builds type sparse_matrix_t K, M, D %%% */
+		exportCSRTimer01.start();
 		if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB")
 		{
 			myModelType = "FOM_ODB";
@@ -86,6 +87,9 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			myModelType = "UNSUPPORTED";
 			FOM_DOF = -1;
 		}
+		std::cout << "Physical memory consumption after FOM build: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		exportCSRTimer01.stop();
+		std::cout << " --> Duration loading FOM: " << exportCSRTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 
 		if (enablePropDamping)		// Note Dev: Hack; Implement essential XML
 		{
@@ -360,7 +364,6 @@ void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubst
 	}
 	else
 		std::cout << " > Imporing " << _key << " SIM Matrix... Skipped." << std::endl;
-
 }
 
 void KrylovROMSubstructure::buildProjectionMatManual() {
@@ -389,7 +392,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-08;
+		double sigTol = 1e-09;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -590,6 +593,33 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 	rowIndex = pointerB;
 	rowIndex[m] = pointerE[m - 1];
 
+	sparse_checker_error_values check_err_val;
+	sparse_struct pt;
+	int error = 0;
+
+	sparse_matrix_checker_init(&pt);
+	pt.n = m;
+	pt.csr_ia = rowIndex;
+	pt.csr_ja = columns;
+	pt.indexing = MKL_ONE_BASED;
+	pt.matrix_structure = MKL_UPPER_TRIANGULAR;
+	pt.print_style = MKL_C_STYLE;
+	pt.message_level = MKL_PRINT;
+	check_err_val = sparse_matrix_checker(&pt);
+
+	printf("Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+	if (check_err_val == MKL_SPARSE_CHECKER_NONTRIANGULAR) {
+		printf("Matrix check result: MKL_SPARSE_CHECKER_NONTRIANGULAR\n");
+		error = 0;
+	}
+	else {
+		if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf("Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf("Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf("Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf("Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+		error = 1;
+	}
+
 	// Checks
 	if (_symmetric)
 		pardiso_mtype = 6;		// complex and symmetric 
@@ -789,16 +819,13 @@ void KrylovROMSubstructure::buildAbqODB() {
 	std::cout << ">> FOM Building from ODB .." << std::endl;
 	myHMesh->buildDataStructure();
 	debugOut << "SimuliaODB::openFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	std::cout << "Flag";
 	anaysisTimer01.start();
 	myHMesh->buildDoFGraph();
 	anaysisTimer01.stop();
 
 	infoOut << "Duration for building DoF graph: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	std::cout << "Flag";
 	FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-	std::cout << "Flag";
 	// Build XML NodeSets and ElementSets
 	MetaDatabase::getInstance()->buildXML(*myHMesh);
 

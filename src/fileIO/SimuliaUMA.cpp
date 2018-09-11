@@ -42,7 +42,6 @@
 SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHMesh(&_hMesh) {
 	myFileName = _fileName;
 	std::cout << ">> SIM Reader initialized for file " << myFileName << "[_X1][_X2][_X3].sim" << std::endl;
-	MetaDatabase::getInstance()->simFile = myFileName;
 	numNodes = 0;
 	numDoFperNode = 0;
 	openFile();
@@ -191,11 +190,6 @@ void SimuliaUMA::openFile() {
 	// Generate global map
 	generateGlobalMap(printDetails);
 
-	MetaDatabase::getInstance()->nodeToDofMapMeta = nodeToDofMap;
-	MetaDatabase::getInstance()->nodeToGlobalMapMeta = nodeToGlobalMap;
-	
-	std::cout << ">> Importing SIM to HMesh ..." << std::endl;
-
 	numNodes = nodeToGlobalMap.size();
 	totalDOFs = 0;
 	for (std::map<int, std::vector<int>>::iterator it = nodeToDofMap.begin(); it != nodeToDofMap.end(); ++it) {
@@ -297,7 +291,7 @@ void SimuliaUMA::extractDatastructure(const uma_System &system, char *matrixName
 	if (smtx.IsSymmetric())
 		printf("; symmetric");
 	printf("\n");
-	checkForInternalDofs(smtx, matrixName, _printToScreen);
+	//checkForInternalDofs(smtx, matrixName, _printToScreen);
 }
 #endif
 
@@ -351,7 +345,7 @@ void SimuliaUMA::checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrix
 		}
 	}
 
-	if (flagIDOF)
+	if (flagIDOF) 
 		std::cout << " ! Presence of Internal DOF." << std::endl;
 	else
 		std::cout << " > No Internal DOFs." << std::endl;
@@ -525,60 +519,54 @@ void SimuliaUMA::ImportSIM(const char* _matrixkey, const char* _fileName, bool _
 			std::cout << ">> Error: Not a Generic System.\n";
 		}
 
-		extractData(system, _matrixkey, _printToScreen, _printToFile, _ia, _ja, _values);
-	}
-#endif
-}
-
-#ifdef USE_SIMULIA_UMA_API
-void SimuliaUMA::extractData(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values) {
-	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
-	// Check for matrix existence
-	if (!system.HasMatrix(matrixName)) {
-		std::cout << " >> Sparse matrix " << matrixName << " not found\n";
-		exit(EXIT_FAILURE);
-	}
-
-	// Load the matrix
-	uma_SparseMatrix smtx;
-	system.SparseMatrix(smtx, matrixName);
-	if (!smtx) {
-		std::cout << " >> Sparse matrix " << matrixName << " cannot be accessed!\n";
-		exit(EXIT_FAILURE);
-	}
-
-	if (_printToScreen)
-	{
-		printf(" Matrix %s - sparse type\n", matrixName);
-		printf("  domain: rows %s, columns %s\n", mapTypeName[smtx.TypeRows()], mapTypeName[smtx.TypeColumns()]);
-		printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
-		if (smtx.IsSymmetric())
-			printf("; symmetric");
-		else {
-			std::cout << ";unsymmetric" << std::endl;
+		char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
+		// Check for matrix existence
+		if (!system.HasMatrix(_matrixkey)) {
+			std::cout << " >> Sparse matrix " << _matrixkey << " not found\n";
 			exit(EXIT_FAILURE);
 		}
-		printf("\n");
-	}
-	if (!smtx.IsSymmetric()) {
-		std::cout << " Error: System not Symmetric" << std::endl;
-		exit(EXIT_FAILURE);
-	}
 
-	if (std::string(matrixName) == std::string(stiffnessUMA_key)) {
-		std::cout << " > Importing Ke ..." << std::endl;
-		loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Stiffness", _ia, _ja, _values);
+		// Load the matrix
+		uma_SparseMatrix smtx;
+		system.SparseMatrix(smtx, _matrixkey);
+		if (!smtx) {
+			std::cout << " >> Sparse matrix " << _matrixkey << " cannot be accessed!\n";
+			exit(EXIT_FAILURE);
+		}
+
+		if (_printToScreen)
+		{
+			printf(" Matrix %s - sparse type\n", _matrixkey);
+			printf("  domain: rows %s, columns %s\n", mapTypeName[smtx.TypeRows()], mapTypeName[smtx.TypeColumns()]);
+			printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
+			if (smtx.IsSymmetric())
+				printf("; symmetric");
+			else {
+				std::cout << ";unsymmetric" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+			printf("\n");
+		}
+		if (!smtx.IsSymmetric()) {
+			std::cout << " Error: System not Symmetric" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+
+		if (std::string(_matrixkey) == std::string(stiffnessUMA_key)) {
+			std::cout << " > Importing Ke ..." << std::endl;
+			loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Stiffness", _ia, _ja, _values);
+		}
+		else if (std::string(_matrixkey) == std::string(massUMA_key)) {
+			std::cout << " > Importing Me ..." << std::endl;
+			loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Mass", _ia, _ja, _values);
+		}
+		else if (std::string(_matrixkey) == std::string(structuralDampingUMA_key)) {
+			std::cout << " > Importing SDe ..." << std::endl;
+			loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_StructuralDamping", _ia, _ja, _values);
+		}
 	}
-	else if (std::string(matrixName) == std::string(massUMA_key)) {
-		std::cout << " > Importing Me ..." << std::endl;
-		loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Mass", _ia, _ja, _values);
-	}
-	else if (std::string(matrixName) == std::string(structuralDampingUMA_key)) {
-		std::cout << " > Importing SDe ..." << std::endl;
-		loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_StructuralDamping", _ia, _ja, _values);
-	}
-}
 #endif
+}
 
 void SimuliaUMA::getSparseMatrixCSR(std::string _matName, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, bool _fileexp) {
 	bool matdisp = false;
@@ -599,6 +587,13 @@ void SimuliaUMA::getSparseMatrixCSR(std::string _matName, std::vector<int>& _ia,
 }
 
 void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFile, std::string _filePrefix, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values) {
+	prepMapCSR.clear();
+
+	// Pre-allocation
+	int nnz = _smtx.NumEntries();
+	_ia.reserve(totalDOFs + 1);
+	_ja.reserve(nnz);
+	_values.reserve(nnz);
 
 	uma_SparseIterator iter(_smtx);
 	int row, col; double val;
@@ -608,10 +603,6 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 
 	int rem_row = -22;
 	int nnz_row = 0;
-
-	_ia.clear();
-	_ja.clear();
-	_values.clear();
 
 	for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 		iter.Entry(row, col, val);
@@ -640,24 +631,24 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 			globalrow = globalcol;
 			globalcol = temp;
 		}
-
-		_ja.push_back(globalcol + 1);
-
-		if (rem_row == -22) {
-			rem_row = globalrow;
-			_ia.push_back(_values.size() + 1);
-		}
-		else if (rem_row != globalrow) {
-			// new row
-			rem_row = globalrow;
-			_ia.push_back(_values.size() + 1);
-		}
-		_values.push_back({ val,0 });
+		prepMapCSR[globalrow][globalcol + 1] = { val,0 };
 
 		if (globalrow == globalcol) {
 			if (val >= 1e36) {
 				std::cout << "Error: DBC pivot found!";
 				exit(EXIT_FAILURE);
+			}
+		}
+	}
+
+	for (size_t iTotalDof = 0; iTotalDof < totalDOFs; iTotalDof++)
+	{
+		_ia.push_back(_values.size() + 1);
+		auto search = prepMapCSR.find(iTotalDof);
+		if (search != prepMapCSR.end()) {
+			for (std::map<int, STACCATOComplexDouble>::iterator it2 = prepMapCSR[iTotalDof].begin(); it2 != prepMapCSR[iTotalDof].end(); ++it2) {
+				_ja.push_back(it2->first);
+				_values.push_back(it2->second);
 			}
 		}
 	}
@@ -670,4 +661,5 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 
 		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(_filePrefix + "_CSR_MAT.dat", _values);
 	}
+	prepMapCSR.clear();
 }

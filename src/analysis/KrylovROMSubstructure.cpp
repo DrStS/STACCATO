@@ -1437,16 +1437,18 @@ void KrylovROMSubstructure::cleanPardiso() {
 
 int KrylovROMSubstructure::reveilRankQR_R(const STACCATOComplexDouble* _mat, int _m, int _n, double _tol) {
 	int RR = 0;
-	//std::cout << "Diag entries: ";
+	std::cout << "Diag entries: ";
 	for (size_t iDiag = 0; iDiag < _n; iDiag++)
 	{
 		double abs = std::sqrt(_mat[iDiag*_m + iDiag].real*_mat[iDiag*_m + iDiag].real + _mat[iDiag*_m + iDiag].imag*_mat[iDiag*_m + iDiag].imag);
 		//std::cout << _mat[iDiag*_m + iDiag].real << "+1i*" << _mat[iDiag*_m + iDiag].imag << " < ";
+		std::cout << abs << " < ";
 		if (abs > _tol) {
 			RR++;
 		}
 		else
 			iDiag = _n;		// End loop
 	}
+	std::cout<<std::endl;
 	return RR;
 }

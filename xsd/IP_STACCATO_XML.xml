@@ -93,7 +93,7 @@
 				<LOAD Name = "LOAD-1" Instance="FCoupleFelgeDynamicODB"/>
 				<START_THETA>0</START_THETA>
 				<END_THETA>360</END_THETA>
-				<STEP_THETA>2000</STEP_THETA>
+				<STEP_THETA>10</STEP_THETA>
 			</LOADCASE> 
 		</LOADCASES>
 	</ANALYSIS>

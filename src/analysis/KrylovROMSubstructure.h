@@ -33,6 +33,7 @@
 class HMesh;
 class FeElement;
 class FeUmaElement;
+class SimuliaUMA;
 /**********
 * \brief Class KrylovROMSubstructure holds and builds the whole ROM Analysis
 * Input to this class is a FeMetaDatabase and a HMesh object
@@ -62,13 +63,13 @@ public:
 	* \param[in] Type of analysis
 	* \author Harikrishnan Sreekumar
 	***********/
-	void assembleGlobalMatrices(std::string _analysisType);
+	void getSystemMatricesODB();
 	/***********************************************************************************************
 	* \brief Assemble UMA stiffness and mass matrices
 	* \param[in] Type of analysis
 	* \author Harikrishnan Sreekumar
 	***********/
-	void assembleUmaMatrices(std::string _analysisType);
+	void getSystemMatricesSIM();
 	/***********************************************************************************************
 	* \brief Build projection basis for second order Krylov subspaces for manual settings
 	* \author Harikrishnan Sreekumar
@@ -78,10 +79,9 @@ public:
 	* \brief Add krylov modes for second order Krylov subspaces for the expansion point
 	* \param[in] expansion point
 	* \param[in] krylov order
-	* \param[]
 	* \author Harikrishnan Sreekumar
 	***********/
-	void addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder, int _projID);
+	void addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder);
 	/***********************************************************************************************
 	* \brief PARDISO factorization for sparse matrix
 	* \param[in] _mat sparse matrix
@@ -107,10 +107,66 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void generateROM();
-
+	/***********************************************************************************************
+	* \brief This function clean Pardiso
+	* \author Stefan Sicklinger
+	***********/
 	void cleanPardiso();
-
+	/***********************************************************************************************
+	* \brief Algorithm to reveil rank for the R matrix from QR decomposition
+	* \param[in] _mat R matrix
+	* \param[in] _m number of rows
+	* \param[in] _n number of columns
+	* \param[in] _tol threshold value
+	* \author Harikrishnan Sreekumar
+	***********/
 	int reveilRankQR_R(const STACCATOComplexDouble* _mat, int _m, int _n, double _tol);
+	/***********************************************************************************************
+	* \brief This function carries out the ODB import routine for already prepared SimuliaODB reader
+	* \author Harikrishnan Sreekumar
+	***********/
+	void buildAbqODB();
+	/***********************************************************************************************
+	* \brief This function carries out the SIM import routine by preparing the SimuliaUMA reader
+	* \param[in] _iPart XML Part ID to instantiate SimuliaUMA reader
+	* \author Harikrishnan Sreekumar
+	***********/
+	void buildAbqSIM(int _iPart);
+	/***********************************************************************************************
+	* \brief Function to display current FOM and ROM information
+	* \author Harikrishnan Sreekumar
+	***********/
+	void displayModelSize();
+	/***********************************************************************************************
+	* \brief Function to generate input and output matrix for KMOR
+	* \author Harikrishnan Sreekumar
+	***********/
+	void generateInputOutputMatricesForFOM();
+	/***********************************************************************************************
+	* \brief Function to export the reduced matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void exportROMToFiles();
+	/***********************************************************************************************
+	* \brief This function carries out the Substructuring analysis
+	* \author Harikrishnan Sreekumar
+	***********/
+	void performAnalysis();
+	/***********************************************************************************************
+	* \brief This function carries out the back transformation from Krylov subspace to original space
+	* \param[in] _analysisName Name of Current Analysis
+	* \param[in] _freq Fine frequency for interpolation
+	* \param[in] _inputLoad Input
+	* \param[in] _numLoadCase Number of loadcases
+	* \author Harikrishnan Sreekumar
+	***********/
+	void backTransformKMOR(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase);
+	/***********************************************************************************************
+	* \brief Function to get node set information from XML for SIM import routine
+	* \param[in] _iPart XML Part ID
+	* \author Harikrishnan Sreekumar
+	***********/
+	void buildXMLforSIM(int iPart);
 private:
 	/// HMesh object 
 	HMesh * myHMesh;
@@ -118,14 +174,7 @@ private:
 	std::vector<FeElement*> myAllElements;
 	std::vector<FeUmaElement*> allUMAElements;
 
-	// FOM Complex data
-	/// Stiffness Matrix
-	MathLibrary::SparseMatrix<MKL_Complex16> *KComplex;
-	/// Mass Matrix
-	MathLibrary::SparseMatrix<MKL_Complex16> *MComplex;
-	/// Damping Matrix
-	MathLibrary::SparseMatrix<MKL_Complex16> *DComplex;
-	
+	// FOM Complex data	
 	/// Input Matrix
 	std::vector<MKL_Complex16> myB;
 	/// Output matrix
@@ -201,5 +250,42 @@ private:
 	std::string currentPart;
 	bool isMIMO;
 	bool enablePropDamping;
+
+	int FOM_DOF;
+	int ROM_DOF;
+
+	std::string myModelType;
+
+	// UMA Reader
+	SimuliaUMA* myUMAReader;
+
+	/// Map holding NodeSets
+	std::map<std::string, std::vector<int>> nodeSetsMap;
+
+	/// Struct to hold CSR details of sparse matrices
+	struct csrStruct {
+		std::vector<int> csr_ia;
+		std::vector<int> csr_ja;
+		std::vector<STACCATOComplexDouble> csr_values;
+		std::vector<int> csrPointerB;
+		std::vector<int> csrPointerE;
+	}massCSR, stiffnessCSR, structdampingCSR;
+
+	// Export Flags
+	bool writeFOM;
+	bool writeROM;
+	bool writeProjectionmatrices;
+	bool exportRHS;
+	bool exportSolution;
+	bool writeTransferFunctions;
+
+public:
+	/***********************************************************************************************
+	* \brief Function to load a matrix from SimuliaUMA reader
+	* \param[in] _key Key for matrix [stiffness, mass, structuraldamping]
+	* \param[out] _struct Reference to CSR struct container
+	* \author Harikrishnan Sreekumar
+	***********/
+	void acquireSparseMatrix(std::string _key, csrStruct& _struct);
 #endif
 };

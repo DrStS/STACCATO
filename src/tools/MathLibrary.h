@@ -276,20 +276,33 @@ namespace MathLibrary {
 	* \param[in] _entries Handle to complex entries
 	* \author Harikrishnan Sreekumar
 	***********/
-	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries);
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, int* _pointerB, int* _pointerE, int* _columns, STACCATOComplexDouble* _entries);
 	/***********************************************************************************************
 	* \brief Displays the CSR sparse data type
 	* \param[in] _mat Sparse matrix for displaying
 	* \author Harikrishnan Sreekumar
 	***********/
 	void print_csr_sparse_z(sparse_matrix_t* _mat);
-
-	/*--- Tests ---*/
-	void computeDenseMatrixQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+	/***********************************************************************************************
+	* \brief Step 1 of QR: Computes the pivoted QR factorization of a complex mxn matrix and returns the R matrix and elmentory reflectors
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A m rows by _n columns, out-> the upper triangular matrix R
+	* \param[in] _rowMajor matrix format
+	* \param[out] _tau elementary reflectors
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixPivotedQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+	/***********************************************************************************************
+	* \brief Step 2 of QR: Extracts the orthogonal Q matrix after doing STEP 1 of QR
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A Upper triangular matrix R with _m rows by _n columns, out-> the orthogonal matrix Q
+	* \param[in] _rowMajor matrix format
+	* \param[in] _tau elementary reflectors
+	* \author Harikrishnan Sreekumar
+	***********/
 	void computeDenseMatrixQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
-
-	void computeDenseMatrixPivotedQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
-	//void computeDenseMatrixPivotedQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
 
 
 	/**********
@@ -1066,7 +1079,7 @@ namespace MathLibrary {
 		sparse_matrix_t convertToSparseDatatype() {
 			determineCSR();
 			sparse_matrix_t sparseMat;
-			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, pointerB, pointerE, columns, values);
+			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, &pointerB[0], &pointerE[0], &columns[0], &values[0]);
 			return sparseMat;
 		}
 	private:

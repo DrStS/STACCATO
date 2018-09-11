@@ -28,7 +28,7 @@
 #include "FePlainStress4NodeElement.h"
 #include "FeTetrahedron10NodeElement.h"
 
-#include "FeUmaElement.h"
+#include "SimuliaUMA.h"
 
 #include "Material.h"
 
@@ -53,46 +53,68 @@
 
 KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "=============== STACCATO ROM Analysis =============\n";
+	/* -- Properties of KMOR ---- */
 	isMIMO = false;
 	enablePropDamping = false;
+	/* -------------------------- */
+	
 	/* -- Exporting ------------- */
-	bool exportSparseMatrix = false;
-	bool exportRHS = true;
-	bool exportSolution = true;
-	bool writeTransferFunctions = false;
+	writeFOM = false;
+	writeROM = true;
+	exportRHS = true;
+	exportSolution = true;
+	writeTransferFunctions = false;
+	writeProjectionmatrices = false;
 	/* -------------------------- */
 
-	// Build DataStructure
-	myHMesh->buildDataStructure();
-	debugOut << "SimuliaODB || SimuliaUMA::openFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	// Build DoFGraph
-	anaysisTimer01.start();
-	myHMesh->buildDoFGraph();
-	anaysisTimer01.stop();
-
-	// Normal Routine is skipped if there is a detection of SIM Import
-	infoOut << "Duration for building DoF graph: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
-	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-
-	// Build XML NodeSets and ElementSets
-	MetaDatabase::getInstance()->buildXML(*myHMesh);
-
-	// Assign all elements with respective assigned material section
-	assignMaterialToElements();
-	
 	// Part Reduction
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
+
+		/* %%% Build FOM - Builds type sparse_matrix_t K, M, D %%% */
+		exportCSRTimer01.start();
+		if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB")
+		{
+			myModelType = "FOM_ODB";
+			buildAbqODB();
+		}
+		else if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqSIM") {
+			myModelType = "FOM_SIM";
+			buildAbqSIM(iPart);
+		}
+		else {
+			myModelType = "UNSUPPORTED";
+			FOM_DOF = -1;
+		}
+		std::cout << "Physical memory consumption after FOM build: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		exportCSRTimer01.stop();
+		std::cout << " --> Duration loading FOM: " << exportCSRTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+
+		if (enablePropDamping)		// Note Dev: Hack; Implement essential XML
+		{
+			STACCATOComplexDouble alpha = { 100,0 };
+			STACCATOComplexDouble beta = { 1e-5, 0 };
+			// Zero CSR
+			MathLibrary::SparseMatrix<STACCATOComplexDouble>* zeroMatrix = new MathLibrary::SparseMatrix<STACCATOComplexDouble>(FOM_DOF, true, false);
+			(*zeroMatrix)(0, 0).real = 0;
+			sparse_matrix_t zeroMat = (*zeroMatrix).convertToSparseDatatype();
+
+			sparse_matrix_t betaK;
+			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseK, &zeroMat, &betaK, false, true, beta);
+
+			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &betaK, &mySparseD, false, true, alpha);
+		}
+
+		/* %%% Execute Reduction %%% */
 		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
 		{
-			myHMesh->isKROM = true;
+			//myHMesh->isKROM = true;
 			std::cout << ">> KMOR procedure to be performed on FE part: " << std::string(iterParts->PART()[iPart].Name()->data()) << std::endl;
 			currentPart = std::string(iterParts->PART()[iPart].Name()->data());
 			// Getting ROM prerequisites
 			/// Exapansion points
-			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->EXP_POINTS().begin()->Type()->c_str()) == "MANUAL")	{
+			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->EXP_POINTS().begin()->Type()->c_str()) == "MANUAL") {
 				std::stringstream stream(std::string(iterParts->PART()[iPart].ROMDATA().begin()->EXP_POINTS().begin()->c_str()));
 				while (stream) {
 					double n;
@@ -108,226 +130,43 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			/// Inputs
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->Type()->c_str()) == "NODES") {
 				for (int iNodeSet = 0; iNodeSet < iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET().size(); iNodeSet++) {
-					std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET()[iNodeSet].Name()->c_str()));
-					// Insert nodeSet entries to DOFS
-					for (int jNodeSet = 0; jNodeSet < nodeSet.size(); jNodeSet++) {
-						std::vector<int> dofIndices = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[jNodeSet])];
-						myInputDOFS.insert(myInputDOFS.end(), dofIndices.begin(), dofIndices.end());
+					if (myModelType == "FOM_ODB")
+					{
+						std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET()[iNodeSet].Name()->c_str()));
+						// Insert nodeSet entries to DOFS
+						for (int jNodeSet = 0; jNodeSet < nodeSet.size(); jNodeSet++) {
+							std::vector<int> dofIndices = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[jNodeSet])];
+							myInputDOFS.insert(myInputDOFS.end(), dofIndices.begin(), dofIndices.end());
+						}
 					}
-					
+					else if (myModelType == "FOM_SIM") {
+						auto search = nodeSetsMap.find(std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET()[iNodeSet].Name()->c_str()));
+						if (search != nodeSetsMap.end())
+							myInputDOFS.insert(myInputDOFS.end(), search->second.begin(), search->second.end());
+						else
+							std::cout << "!! InputNodeSet not found!";
+					}
 				}
 			}
 
-			/*std::cout << ">> Recognized Inputs: ";
-			for (int i = 0; i < inputDOFS.size(); i++)
-			{
-				std::cout << " << " << inputDOFS[i];
-			}
-			std::cout << std::endl;*/
-
 			/// Outputs
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "NODES") {
-				/*for (int iNodeSet = 0; iNodeSet < iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->NODESET().size(); iNodeSet++) {
-					std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->NODESET()[iNodeSet].Name()->c_str()));
-					// Insert nodeSet entries to DOFS
-					for (int jNodeSet = 0; jNodeSet < nodeSet.size(); jNodeSet++) {
-						std::vector<int> dofIndices = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[jNodeSet])];
-						outputDOFS.insert(outputDOFS.end(), dofIndices.begin(), dofIndices.end());
-					}
-
-				}*/
+				std::cout << " !! Output DOFs found! Unsymmetric MIMO not yet supported." << std::endl;
+				exit(EXIT_FAILURE);
 			}
-			else if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "MIMO")	{
+			else if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "MIMO") {
 				myOutputDOFS = myInputDOFS;
 				isMIMO = true;
 			}
 
-			// Size determination
-			int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-			int ROM_DOF = myExpansionPoints.size()*myKrylovOrder*myInputDOFS.size();	// Assuming MIMO
+			// Size prediction
+			ROM_DOF = myExpansionPoints.size()*myKrylovOrder*myInputDOFS.size();	// Assuming MIMO
+			std::cout << ">> -- ROM Data WITHOUT Deflation --" << std::endl;
+			displayModelSize();
 
-			std::cout << ">> -- ROM Data Prediction Without Deflation --" << std::endl;
-			std::cout << " > Expansion Points: ";
-			for (int i = 0; i < myExpansionPoints.size(); i++)
-				std::cout << myExpansionPoints[i] << " . ";
-			std::cout << std::endl;
-			std::cout << " > Krylov order: " << myKrylovOrder << std::endl;
-			std::cout << " > #Inputs: " << myInputDOFS.size() << " #Outputs: " << myOutputDOFS.size()<< std::endl;
-			std::cout << " > FOM Dimensions: " << std::endl;
-			std::cout << "  > System: " << FOM_DOF << "x" << FOM_DOF << std::endl;
-			std::cout << "  >      B: " << FOM_DOF << "x" << myInputDOFS.size() << std::endl;
-			std::cout << "  >      C: " << myOutputDOFS.size() << "x" << FOM_DOF << std::endl;
-			std::cout << " > ROM Dimensions: " << std::endl;
-			std::cout << "  > System: " << ROM_DOF << "x" << ROM_DOF << std::endl;
-			std::cout << "  >    B_R: " << ROM_DOF << "x" << myInputDOFS.size() << std::endl;
-			std::cout << "  >    C_R: " << myOutputDOFS.size() << "x" << ROM_DOF << std::endl;
-			std::cout << " > Projection Matrices: " << std::endl;
-			std::cout << "  >      V: " << FOM_DOF << "x" << ROM_DOF << std::endl; 
-			std::cout << "  >      Z: " << FOM_DOF << "x" << ROM_DOF << std::endl;
-			/*
-			std::vector<STACCATOComplexDouble> DenseMat1;
-			std::vector<STACCATOComplexDouble> DenseMat2;
-			std::vector<STACCATOComplexDouble> DenseProduct;
+			generateInputOutputMatricesForFOM();
 
-			STACCATOComplexDouble zero;
-			zero.real = 0;
-			zero.imag = 0;
-			DenseMat1.resize(9);
-			DenseMat2.resize(9);
-			DenseProduct.resize(9, zero);
-
-			// Square Mat
-			DenseMat1[0].real = 2; DenseMat1[0].imag = 1;
-			DenseMat1[1].real = 1; DenseMat1[1].imag = 1;
-			DenseMat1[2].real = 4; DenseMat1[2].imag = 1;
-			DenseMat1[3].real = 5; DenseMat1[3].imag = 1;
-			DenseMat1[4].real = 6; DenseMat1[4].imag = 1;
-			DenseMat1[5].real = 11; DenseMat1[5].imag = 1;
-			DenseMat1[6].real = 12; DenseMat1[6].imag = 1;
-			DenseMat1[7].real = 13; DenseMat1[7].imag = 1;
-			DenseMat1[8].real = 4; DenseMat1[8].imag = 1;
-
-
-			std::vector<STACCATOComplexDouble> vecqrComplex;
-			vecqrComplex.resize(3);
-			vecqrComplex[0].real = 2; vecqrComplex[0].imag = 1;
-			vecqrComplex[1].real = 1; vecqrComplex[1].imag = 1;
-			vecqrComplex[2].real = 4; vecqrComplex[2].imag = 5;
-
-			std::vector<STACCATOComplexDouble> vecqrComplexRes;
-			vecqrComplexRes.resize(3);
-			vecqrComplexRes[0].real = 21; vecqrComplexRes[0].imag = 10;
-			vecqrComplexRes[1].real = 12; vecqrComplexRes[1].imag = 10;
-			vecqrComplexRes[2].real = 41; vecqrComplexRes[2].imag = 15;
-
-			STACCATOComplexDouble test = { 1,12 };
-			MathLibrary::computeDenseMatrixVectorMultiplicationComplex(3, 3, 3, &DenseMat1[0], &vecqrComplex[0], &vecqrComplexRes[0], true, true, test, false, false, true);
-
-			std::cout << "Test Out: \n";
-			for (size_t i = 0; i < 3; i++)
-			{
-				std::cout << vecqrComplexRes[i].real << "+1i*"<< vecqrComplexRes[i].imag << " < ";
-			}
-			std::cout << std::endl;
-			*/
-
-			/*std::vector<double> abcd1 = { 1,2,3,4 };
-			std::vector<double> abcd2 = { 10,20 };
-
-			//abcd1.swap(abcd2);
-			abcd1.resize(2);
-			std::cout << "Swap Out: \n";
-			for (size_t i = 0; i < abcd1.size(); i++)
-			{
-				std::cout << abcd1[i] << " < ";
-			}
-			std::cout << std::endl;
-
-			std::cout << "SR: " << std::sqrt(2) << std::endl;
-			std::vector<STACCATOComplexDouble> DenseMat1;
-			DenseMat1.resize(9);
-
-			// Square Mat
-			DenseMat1[0].real = 2; DenseMat1[0].imag = 1;
-			DenseMat1[1].real = 1; DenseMat1[1].imag = 1;
-			DenseMat1[2].real = 4; DenseMat1[2].imag = 1;
-			DenseMat1[3].real = 5; DenseMat1[3].imag = 1;
-			DenseMat1[4].real = 6; DenseMat1[4].imag = 1;
-			DenseMat1[5].real = 11; DenseMat1[5].imag = 1;
-			DenseMat1[6].real = 2; DenseMat1[6].imag = 1;
-			DenseMat1[7].real = 1; DenseMat1[7].imag = 1;
-			DenseMat1[8].real = 4; DenseMat1[8].imag = 1;
-
-			//MathLibrary::computeDenseMatrixQRDecompositionComplex(3, 3, &DenseMat1[0], true);
-			std::vector<STACCATOComplexDouble> tau;
-			MathLibrary::computeDenseMatrixPivotedQR_R_DecompositionComplex(3, 3, &DenseMat1[0], true, tau);
-			std::cout << "----R Matrix: " << std::endl;
-			for (size_t i = 0; i < 3; i++)
-			{
-				for (size_t j = 0; j < 3; j++)
-				{
-					std::cout << DenseMat1[i * 3 + j].real << "+1i" << DenseMat1[i * 3 + j].imag << " >> ";
-				}
-				std::cout << std::endl;
-			}
-			MathLibrary::computeDenseMatrixQR_Q_DecompositionComplex(3, 3, &DenseMat1[0], true, tau);
-
-			std::cout << "----Q Matrix: "<<std::endl;
-			for (size_t i = 0; i < 3; i++)
-			{
-				for (size_t j = 0; j < 3; j++)
-				{
-					std::cout << DenseMat1[i * 3 + j].real << "+1i" << DenseMat1[i * 3 + j].imag << " >> ";
-				}
-				std::cout << std::endl;
-			}
-
-			std::vector<STACCATOComplexDouble> vecorthoComplex;
-			vecorthoComplex.resize(3*3);
-
-			STACCATOComplexDouble alpha5;
-			alpha5.real = 1;
-
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(3, 3, 3, &DenseMat1[0], &DenseMat1[0], &vecorthoComplex[0], true, false, alpha5, false, false,true);
-			std::cout << "Check Orthogonality: " << std::endl;;
-			for (int i = 0; i < 3; i++)
-			{
-				for (int j = 0; j < 3; j++)
-				{
-					std::cout << std::setprecision(std::numeric_limits<double>::digits10 + 1) << vecorthoComplex[i * 3 + j].real << "+1i*" << vecorthoComplex[i * 3 + j].imag << " , ";
-				}
-				std::cout << std::endl;
-			}*/
-
-
-			myB.resize(FOM_DOF*myInputDOFS.size());
-			myC.resize(myOutputDOFS.size()*FOM_DOF);
-
-			// Generate Input and Output Matrices
-			for (int inpIter = 0; inpIter < myInputDOFS.size(); inpIter++) {
-				myB[myInputDOFS[inpIter] + inpIter*FOM_DOF].real = 1;
-			}
-			for (int outIter = 0; outIter < myOutputDOFS.size(); outIter++) {
-				myC[myOutputDOFS[outIter] * myOutputDOFS.size() + outIter].real = 1;
-			}
-
-
-			KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
-			MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
-
-			// Assemble global FOM system matrices
-			if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB") {
-				std::cout << ">> Assembling FOM system matrices from ODB... " << std::endl;
-				assembleGlobalMatrices(std::string(std::string(iterParts->PART()[iPart].TYPE()->data())));
-				std::cout << ">> Assembling FOM system matrices from ODB... Finished." << std::endl;
-			}
-			else if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqSIM") {
-				std::cout << ">> Assembling FOM system matrices from SIM... " << std::endl;
-				assembleUmaMatrices(std::string(std::string(iterParts->PART()[iPart].TYPE()->data())));
-				std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
-			}
-
-			if (enablePropDamping)
-			{
-				STACCATOComplexDouble alpha = { 100,0 };
-				STACCATOComplexDouble beta = { 1e-5, 0 };
-				// Zero CSR
-				MathLibrary::SparseMatrix<STACCATOComplexDouble>* zeroMatrix = new MathLibrary::SparseMatrix<STACCATOComplexDouble>(FOM_DOF, true, false);
-				(*zeroMatrix)(0, 0).real = 0;
-				sparse_matrix_t zeroMat = (*zeroMatrix).convertToSparseDatatype();
-				
-				sparse_matrix_t betaK;
-				MathLibrary::computeSparseMatrixAdditionComplex(&mySparseK, &zeroMat, &betaK, false, true, beta );
-
-				MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &betaK, &mySparseD, false, true, alpha);
-			}
-
-			if (exportSparseMatrix)
-			{
-				(*KComplex).writeSparseMatrixToFile(currentPart + "_KSparse", "dat");
-				(*MComplex).writeSparseMatrixToFile(currentPart + "_MSparse", "dat");
-			}
-
+			/* %%% Reduce FOM to ROM %%% */
 			anaysisTimer01.start();
 			anaysisTimer02.start();
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->EXP_POINTS().begin()->Type()->c_str()) == "MANUAL") {
@@ -341,30 +180,10 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer02.stop();
 			std::cout << " --> Duration building projection matrices: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 
+			// Size determination
 			ROM_DOF = myV.size() / FOM_DOF;
 			std::cout << ">> -- ROM Data With Deflation --" << std::endl;
-			std::cout << " > Krylov order: " << myKrylovOrder << std::endl;
-			std::cout << " > #Inputs: " << myInputDOFS.size() << " #Outputs: " << myOutputDOFS.size() << std::endl;
-			std::cout << " > FOM Dimensions: " << std::endl;
-			std::cout << "  > System: " << FOM_DOF << "x" << FOM_DOF << std::endl;
-			std::cout << "  >      B: " << FOM_DOF << "x" << myInputDOFS.size() << std::endl;
-			std::cout << "  >      C: " << myOutputDOFS.size() << "x" << FOM_DOF << std::endl;
-			std::cout << " > ROM Dimensions: " << std::endl;
-			std::cout << "  > System: " << ROM_DOF << "x" << ROM_DOF << std::endl;
-			std::cout << "  >    B_R: " << ROM_DOF << "x" << myInputDOFS.size() << std::endl;
-			std::cout << "  >    C_R: " << myOutputDOFS.size() << "x" << ROM_DOF << std::endl;
-			std::cout << " > Projection Matrices: " << std::endl;
-			std::cout << "  >      V: " << FOM_DOF << "x" << ROM_DOF << std::endl;
-			std::cout << "  >      Z: " << FOM_DOF << "x" << ROM_DOF << std::endl;
-
-
-			std::vector<STACCATOComplexDouble> vecortho;
-			vecortho.resize(ROM_DOF*ROM_DOF);
-
-			STACCATOComplexDouble x1 = { 1,0 };
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &myV[0], &vecortho[0], true, false, x1, false, false, false);
-
-			AuxiliaryFunctions::writeMKLComplexVectorDatFormat("test.dat", vecortho);
+			displayModelSize();
 
 			anaysisTimer02.start();
 			generateROM();
@@ -372,256 +191,16 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer01.stop();
 			std::cout << " --> Duration generating MOR: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 			std::cout << " --> Duration for krylov reduced model generation of model " << std::string(iterParts->PART()[iPart].Name()->c_str()) << " : " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
+
+			/* %%% Output ROM %%% */
+			if (writeROM)
+				exportROMToFiles();
 		}
 	}
 
-	STACCATOComplexDouble ZeroComplex = { 0,0 };
-	STACCATOComplexDouble OneComplex = { 1,0 };
-
-	// Reading in the frequency range
-	std::vector<double> freq;
-	for (STACCATO_XML::ANALYSIS_const_iterator iAnalysis(MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin());
-		iAnalysis != MetaDatabase::getInstance()->xmlHandle->ANALYSIS().end();
-		++iAnalysis)
-	{
-		std::cout << std::endl << "==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
-		//OutputDatabase::Analysis analysisData;
-		int frameTrack = 0;
-
-		//STACCATO_Analysis_type currentAnalysisType;
-		//currentAnalysisType = STACCATO_Analysis_Dynamic;
-
-		//VectorFieldResults* displacementVector;
-		//displacementVector = new VectorFieldResults();
-		//displacementVector->setResultsType(STACCATO_Result_Displacement);
-		//displacementVector->setAnalysisType(currentAnalysisType);
-
-		// Routine to accomodate Step Distribution
-		double start_freq = std::atof(iAnalysis->FREQUENCY().begin()->START_FREQ()->c_str());
-		freq.push_back(start_freq);		// Push back starting frequency in any case
-
-		if (std::string(iAnalysis->FREQUENCY().begin()->Type()->data()) == "STEP") {		// Step Distribute
-			double end_freq = std::atof(iAnalysis->FREQUENCY().begin()->END_FREQ()->c_str());
-			double step_freq = std::atof(iAnalysis->FREQUENCY().begin()->STEP_FREQ()->c_str());
-			double push_freq = start_freq + step_freq;
-
-			while (push_freq <= end_freq) {
-				freq.push_back(push_freq);
-				push_freq += step_freq;
-			}
-		}
-
-		// Size determination
-		int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-		int ROM_DOF = std::sqrt(myKComplexReduced.size());	// Assuming MIMO
-		std::vector<STACCATOComplexDouble> results;
-
-		// Determine right hand side
-		std::cout << ">> Building RHS Matrix for Neumann...\n";
-		int sizeofRHS = 0;
-		OutputDatabase::TimeStep timeStep;
-		timeStep.startIndex = frameTrack;
-		std::vector<MKL_Complex16> bComplex;
-		for (int iLoadCase = 0; iLoadCase < iAnalysis->LOADCASES().begin()->LOADCASE().size(); iLoadCase++) {
-
-			BoundaryCondition<double> neumannBoundaryConditionReal(*myHMesh);
-			BoundaryCondition<STACCATOComplexDouble> neumannBoundaryConditionComplex(*myHMesh);
-
-			std::string loadCaseType = iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).Type()->data();
-
-
-			for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().size(); m++)
-			{
-				std::vector<std::string> loadNameToPartLocal;
-
-				// Search for Load Description
-				for (int jPart = 0; jPart < iterParts->PART().size(); jPart++)
-				{
-					if (std::string(iterParts->PART()[jPart].Name()->c_str()) == std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].LOAD()[m].Instance()->c_str()))		// Part Instance Matching
-					{
-						for (int jPartLoad = 0; jPartLoad < iterParts->PART()[jPart].LOADS().begin()->LOAD().size(); jPartLoad++)
-						{
-							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Name()->data()));
-							{
-
-								if (loadCaseType == "ConcentratedLoadCase" && std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data()) == "ConcentratedForce") {
-
-									OutputDatabase::LoadCase loadCaseData;
-									loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data());
-									loadCaseData.startIndex = frameTrack;
-
-									std::string loadCaseTypePart = iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data();
-
-									std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].NODESET().begin()->Name()->c_str()));
-
-									// Get Load
-									std::vector<STACCATOComplexDouble> loadVector(3);
-									loadVector[0] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->X()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->X()->data()) };
-									loadVector[1] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Y()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Y()->data()) };
-									loadVector[2] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Z()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Z()->data()) };
-
-									neumannBoundaryConditionComplex.addConcentratedForceContribution(nodeSet, loadVector, bComplex);
-									loadCaseData.type = neumannBoundaryConditionComplex.myCaseType;
-
-									frameTrack++;
-									sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
-
-									/*loadCaseData.unit = myHMesh->myOutputDatabase->getSyntaxForSubLoadCase(loadCaseData.type);
-									timeStep.caseList.push_back(loadCaseData);*/
-
-								}
-								else if (loadCaseType == "RotateGenerate" && std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data()) == "DistributingCouplingForce") {
-
-									// Routine to accomodate Step Distribution
-									double start_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).START_THETA()->c_str());
-									neumannBoundaryConditionReal.addBCCaseDescription(start_theta);			// Push back starting angle
-									neumannBoundaryConditionComplex.addBCCaseDescription(start_theta);		// Push back starting angle
-																											// Step Distribute
-									double end_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).END_THETA()->c_str());
-									double step_theta = std::atof(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).STEP_THETA()->c_str());
-									double push_theta = start_theta + step_theta;
-
-									while (push_theta <= end_theta) {
-										neumannBoundaryConditionReal.addBCCaseDescription(push_theta);
-										neumannBoundaryConditionComplex.addBCCaseDescription(push_theta);
-										push_theta += step_theta;
-									}
-
-									std::vector<int> refNode = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REFERENCENODESET().begin()->Name()->c_str()));
-									std::vector<int> couplingNodes = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].COUPLINGNODESET().begin()->Name()->c_str()));
-
-									
-									// Get Load
-									std::vector<STACCATOComplexDouble> loadVector(3);
-									loadVector[0] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->X()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->X()->data()) };
-									loadVector[1] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Y()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Y()->data()) };
-									loadVector[2] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Z()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Z()->data()) };
-
-									neumannBoundaryConditionComplex.addRotatingForceContribution(refNode, couplingNodes, loadVector, bComplex);
-
-									for (int it = 0; it < neumannBoundaryConditionComplex.getNumberOfTotalCases(); it++)
-									{
-										/*OutputDatabase::LoadCase loadCaseData;
-										loadCaseData.type = neumannBoundaryConditionComplex.myCaseType;
-										loadCaseData.unit = myHMesh->myOutputDatabase->getSyntaxForSubLoadCase(loadCaseData.type);
-										loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data()) + "_" + std::to_string(static_cast<int>(neumannBoundaryConditionComplex.getBCCaseDescription()[it])) + loadCaseData.unit;
-										loadCaseData.startIndex = frameTrack;
-										timeStep.caseList.push_back(loadCaseData);*/
-
-										frameTrack++;
-									}
-									sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		if (exportRHS) {
-			std::cout << ">> Writing RHS ...\n";
-			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
-		}
-
-		std::vector<STACCATOComplexDouble> inputLoad;
-		for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
-		{
-			std::vector<STACCATOComplexDouble> temp;
-			temp.resize(myInputDOFS.size(), {0,0});
-			for (int iInputDof = 0; iInputDof < myInputDOFS.size(); iInputDof++)
-			{
-				temp[iInputDof].real = bComplex[myInputDOFS[iInputDof]].real;
-				temp[iInputDof].imag = bComplex[myInputDOFS[iInputDof]].imag;
-			}
-			inputLoad.insert(inputLoad.end(), temp.begin(), temp.end());
-		}
-
-		std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
-		
-		// Solving for each frequency
-		anaysisTimer01.start();
-#ifdef USE_INTEL_MKL		
-		std::vector<lapack_int> pivot(ROM_DOF);	// Pivots for LU Decomposition
-		for (int iFreqCounter = 0; iFreqCounter < freq.size(); iFreqCounter++) {
-			std::vector<double> sampleResultRe(1, 0);
-			std::vector<double> sampleResultIm(1, 0);
-
-			//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ..." << std::endl;
-			double omega = 2 * M_PI*freq[iFreqCounter];
-			STACCATOComplexDouble NegOmegaSquare = { -omega * omega,0 };
-
-			// K_krylov_dyn = obj.K_R 
-			std::vector<STACCATOComplexDouble> StiffnessAssembled;
-			StiffnessAssembled.resize(ROM_DOF*ROM_DOF, ZeroComplex);
-			MathLibrary::computeDenseVectorAdditionComplex(&myKComplexReduced[0], &StiffnessAssembled[0], &OneComplex, ROM_DOF*ROM_DOF);
-			// K_krylov_dyn += -omega^2*obj.M_R 
-			MathLibrary::computeDenseVectorAdditionComplex(&myMComplexReduced[0], &StiffnessAssembled[0], &NegOmegaSquare, ROM_DOF*ROM_DOF);
-			if (enablePropDamping)
-			{
-				// K_krylov_dyn += 1i*2*pi*freqs_fine(i)*obj.D_R
-				STACCATOComplexDouble complexOmega = { 0,omega };
-				MathLibrary::computeDenseVectorAdditionComplex(&myDComplexReduced[0], &StiffnessAssembled[0], &complexOmega, ROM_DOF*ROM_DOF);
-			}
-
-
-			// obj.B_R*obj.F
-			std::vector<STACCATOComplexDouble> inputLoad_krylov(ROM_DOF*sizeofRHS, {0,0});
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, sizeofRHS, myInputDOFS.size(), &myBReduced[0], &inputLoad[0], &inputLoad_krylov[0], false, false, OneComplex, false, false, false);
-
-			// z_krylov_freq = K_krylov_dyn\(obj.B_R*obj.F);
-			// Factorize StiffnessAssembled
-			LAPACKE_zgetrf(LAPACK_COL_MAJOR, ROM_DOF, ROM_DOF, &StiffnessAssembled[0], ROM_DOF, &pivot[0]);
-			// Solve system
-			LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', ROM_DOF, sizeofRHS, &StiffnessAssembled[0], ROM_DOF, &pivot[0], &inputLoad_krylov[0], ROM_DOF);
-
-			
-			if (writeTransferFunctions) {
-				// obj.H_R(:,:,i) = obj.C_R*(K_krylov_dyn\obj.B_R);
-				std::vector<STACCATOComplexDouble> H_R(myInputDOFS.size()*myOutputDOFS.size(), { 0,0 });
-				std::vector<STACCATOComplexDouble> temp;
-				temp.insert(temp.end(), myBReduced.begin(), myBReduced.end());
-				// temp = (K_krylov_dyn\obj.B_R)
-				LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', ROM_DOF, myInputDOFS.size(), &StiffnessAssembled[0], ROM_DOF, &pivot[0], &temp[0], ROM_DOF);
-				// H_R = obj.C_R*temp
-				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), myInputDOFS.size(), ROM_DOF, &myCReduced[0], &temp[0], &H_R[0], false, false, OneComplex, false, false, false);
-
-				std::string filename = "C://software//repos//staccato//scratch//";
-				AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + std::string(iAnalysis->NAME()->data())+"_HR_freq"+ std::to_string(freq[iFreqCounter])+ ".mtx", H_R, myOutputDOFS.size(), myInputDOFS.size(), false);
-			}
-
-			// z_freq = obj.C_R*z_krylov_freq;
-			std::vector<STACCATOComplexDouble> backprojected_sol(myOutputDOFS.size()*sizeofRHS, ZeroComplex);
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), sizeofRHS, ROM_DOF, &myCReduced[0], &inputLoad_krylov[0], &backprojected_sol[0], false, false, OneComplex, false, false, false);
-
-			results.insert(results.end(), backprojected_sol.begin(), backprojected_sol.end());
-			//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ... Finished." << std::endl;
-
-			/*sampleResultRe[0] = backprojected_sol[0].real;
-			sampleResultIm[0] = backprojected_sol[0].imag;
-			timeStep.timeDescription = std::to_string(static_cast<int>(freq[iFreqCounter]));
-			displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Re, sampleResultRe);
-			displacementVector->addResultScalarFieldAtNodes(STACCATO_x_Im, sampleResultIm);
-
-			timeStep.unit = myHMesh->myOutputDatabase->getSyntaxForTime(currentAnalysisType);
-			analysisData.timeSteps.push_back(timeStep);*/
-
-		}
-		anaysisTimer01.stop();
-		std::cout << " --> Duration for backtransformation: " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
-
-		// Add Result to OutputDataBase
-		/*analysisData.name = myHMesh->myOutputDatabase->getSyntaxAnalysisDescription(std::string(iAnalysis->NAME()->data()), currentAnalysisType);
-		analysisData.type = currentAnalysisType;
-		analysisData.startIndex = myHMesh->myOutputDatabase->getStartIndexForNewAnalysis();
-		myHMesh->myOutputDatabase->addNewAnalysisVectorField(analysisData, displacementVector);*/
-#endif // USE_INTEL_MKL
-
-		if (exportSolution)
-			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_KMOR_Results.dat", results);
-		
-		std::cout << "==== Anaylsis Completed: " << iAnalysis->NAME()->data() << " ====" << std::endl;
-	}
-	std::cout << ">> All Analyses Completed." << std::endl;
+	// The following is will have to be separeted from above reduction
+	/* %% Performing Anaylsis (Back-Transformation) %%% */
+	performAnalysis();
 }
 
 KrylovROMSubstructure::~KrylovROMSubstructure() {
@@ -677,17 +256,10 @@ void KrylovROMSubstructure::assignMaterialToElements() {
 					else
 						std::cerr << ">> Warning: Attempt to assign already assigned element is skipped. ******************" << std::endl;
 				}
-				else if (myHMesh->getElementTypes()[elemIndex] == STACCATO_UmaElement) {
-#ifdef USE_SIMULIA_UMA_API
-					allUMAElements[elemIndex] = new FeUmaElement(elasticMaterial);
-#endif
-				}
 				int numNodesPerElement = myHMesh->getNumNodesPerElement()[elemIndex];
 				double*  eleCoords = &myHMesh->getNodeCoordsSortElement()[lastIndex];
-				if (myHMesh->isSIM)
-					allUMAElements[elemIndex]->computeElementMatrix(eleCoords);
-				else
-					myAllElements[elemIndex]->computeElementMatrix(eleCoords);
+
+				myAllElements[elemIndex]->computeElementMatrix(eleCoords);
 				lastIndex += numNodesPerElement * myHMesh->getDomainDimension();
 			}
 		}
@@ -701,10 +273,10 @@ void KrylovROMSubstructure::assignMaterialToElements() {
 	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
-void KrylovROMSubstructure::assembleGlobalMatrices(std::string _type) {
+void KrylovROMSubstructure::getSystemMatricesODB() {
+	MathLibrary::SparseMatrix<MKL_Complex16> *KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
+	MathLibrary::SparseMatrix<MKL_Complex16> *MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
 
-
-	int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
 	unsigned int numElements = myHMesh->getNumElements();
 	unsigned int numNodes = myHMesh->getNumNodes();
 	int lastIndex = 0;
@@ -716,119 +288,90 @@ void KrylovROMSubstructure::assembleGlobalMatrices(std::string _type) {
 		int*  eleDoFs = &myHMesh->getElementDoFListRestricted()[lastIndex];
 		lastIndex += numDoFsPerElement;
 		
-		if (!myHMesh->isSIM) {
-			//Assembly routine symmetric stiffness
-			for (int i = 0; i < numDoFsPerElement; i++) {
-				if (eleDoFs[i] != -1) {
-					for (int j = 0; j < numDoFsPerElement; j++) {
-						if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
-							//K(1+eta*i)
-							if (_type == "FE_KMOR_REAL") {
-								//(*KReal)(eleDoFs[i], eleDoFs[j]) += myAllElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-							}
-							else if (_type == "FE_KMOR") {
-								(*KComplex)(eleDoFs[i], eleDoFs[j]).real += myAllElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
-								(*KComplex)(eleDoFs[i], eleDoFs[j]).imag += myAllElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * myAllElements[iElement]->getMaterial()->getDampingParameter();
-							}
-							//K(1+eta*i) - omega*omega*M
-							if (_type == "FE_KMOR_REAL") {
-								//(*MReal)(eleDoFs[i], eleDoFs[j]) -= myAllElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] * omega*omega;
-							}
-							else if (_type == "FE_KMOR") {
-								(*MComplex)(eleDoFs[i], eleDoFs[j]).real += myAllElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j];
-								//std::cout << ">" << myAllElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j] << " \n";
-							}
-						}
+		//Assembly routine symmetric stiffness
+		for (int i = 0; i < numDoFsPerElement; i++) {
+			if (eleDoFs[i] != -1) {
+				for (int j = 0; j < numDoFsPerElement; j++) {
+					if (eleDoFs[j] >= eleDoFs[i] && eleDoFs[j] != -1) {
+						//K(1+eta*i)
+						(*KComplex)(eleDoFs[i], eleDoFs[j]).real += myAllElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j];
+						(*KComplex)(eleDoFs[i], eleDoFs[j]).imag += myAllElements[iElement]->getStiffnessMatrix()[i*numDoFsPerElement + j] * myAllElements[iElement]->getMaterial()->getDampingParameter();
+
+						(*MComplex)(eleDoFs[i], eleDoFs[j]).real += myAllElements[iElement]->getMassMatrix()[i*numDoFsPerElement + j];
+
 					}
 				}
 			}
 		}
 	}
 
+	if (writeFOM)	{
+		(*KComplex).writeSparseMatrixToFile("Staccato_Sparse_Stiffness_ODB", "dat");
+		(*MComplex).writeSparseMatrixToFile("Staccato_Sparse_Mass_ODB", "dat");
+	}
+
 	/// new CSR
 	mySparseK = (*KComplex).convertToSparseDatatype();
 	mySparseM = (*MComplex).convertToSparseDatatype();
 }
 
-void KrylovROMSubstructure::assembleUmaMatrices(std::string _type) {
-	bool exportCSR = true;
-	//Assembly routine symmetric stiffness
-	int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-	unsigned int numElements = myHMesh->getNumElements();
-	unsigned int numNodes = myHMesh->getNumNodes();
-	for (int iElement = 0; iElement < numElements; iElement++)
+void KrylovROMSubstructure::getSystemMatricesSIM() {
+
+	std::vector<std::string> importSIMMatrices;
+	importSIMMatrices.push_back("stiffness");
+	importSIMMatrices.push_back("mass");
+	importSIMMatrices.push_back("structuraldamping");
+
+	for (size_t i = 0; i < importSIMMatrices.size(); i++)
 	{
-		int num_SparseK_row = allUMAElements[iElement]->myK_row.size();
-		int num_SparseK_col = allUMAElements[iElement]->myK_col.size();
-		int num_SparseM_row = allUMAElements[iElement]->myM_row.size();
-		int num_SparseM_col = allUMAElements[iElement]->myM_col.size();
-		int num_SparseSD_row = allUMAElements[iElement]->mySD_row.size();
-		int num_SparseSD_col = allUMAElements[iElement]->mySD_col.size();
-
-		std::cout << ">> Sparse Info: " << std::endl;
-		std::cout << "    Stiffness : row " << num_SparseK_row << " col: " << num_SparseK_col << std::endl;
-		std::cout << "         Mass : row " << num_SparseM_row << " col: " << num_SparseM_col << std::endl;
-		std::cout << "Struc Damping : row " << num_SparseSD_row << " col: " << num_SparseSD_col << std::endl;
-
-		std::vector<int> internalDOFs;
-		for (std::map<int, std::vector<int>>::iterator it = allUMAElements[iElement]->nodeToGlobalMap.begin(); it != allUMAElements[iElement]->nodeToGlobalMap.end(); ++it) {
-			if (it->first >= 1000000000)
-				for (int j = 0; j < it->second.size(); j++)
-					internalDOFs.push_back(it->second[j]);
+		std::cout << " > Imporing " << importSIMMatrices[i] << " SIM Matrix..." << std::endl;
+		if (importSIMMatrices[i] == "stiffness") {
+			acquireSparseMatrix(importSIMMatrices[i] , stiffnessCSR);
 		}
-
-		for (int i = 0; i < num_SparseK_row; i++) {
-			if (_type == "FE_KMOR") {
-				(*KComplex)(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]).real = allUMAElements[iElement]->getSparseStiffnessMatrix()(allUMAElements[iElement]->myK_row[i], allUMAElements[iElement]->myK_col[i]);
-			}
+		else if (importSIMMatrices[i] == "mass") {
+			acquireSparseMatrix(importSIMMatrices[i], massCSR);
 		}
-		for (int i = 0; i < num_SparseSD_row; i++) {
-			if (_type == "FE_KMOR") {
-				(*KComplex)(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]).imag = allUMAElements[iElement]->getSparseStructuralDampingMatrix()(allUMAElements[iElement]->mySD_row[i], allUMAElements[iElement]->mySD_col[i]);
-			}
+		else if (importSIMMatrices[i] == "structuraldamping") {
+			acquireSparseMatrix(importSIMMatrices[i], structdampingCSR);
 		}
-		//K - omega*omega*M
-		//Assembly routine symmetric mass
-		if (_type == "FE_KMOR")
-			for (int i = 0; i < num_SparseM_row; i++) {
-				(*MComplex)(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i]).real = allUMAElements[iElement]->getSparseMassMatrix()(allUMAElements[iElement]->myM_row[i], allUMAElements[iElement]->myM_col[i]);
-			}
-
-
-		std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-		std::cout << "clearing...\n";
-		delete allUMAElements[iElement]->mySparseKReal;
-		delete allUMAElements[iElement]->mySparseMReal;
-		delete allUMAElements[iElement]->mySparseSDReal;
-		std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-		allUMAElements[iElement]->myK_row.clear();
-		allUMAElements[iElement]->myK_col.clear();
-		allUMAElements[iElement]->myM_row.clear();
-		allUMAElements[iElement]->myM_col.clear();
-		allUMAElements[iElement]->mySD_row.clear();
-		allUMAElements[iElement]->mySD_col.clear();
-		allUMAElements.clear();
-		std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-		std::cout << " Finished." << std::endl;
-
 	}
-	/// new CSR
-	mySparseK = (*KComplex).convertToSparseDatatype();
-	mySparseM = (*MComplex).convertToSparseDatatype();
+}
 
-	//delete KComplex;
-	//delete MComplex;
+void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubstructure::csrStruct& _struct) {
+	myUMAReader->getSparseMatrixCSR(_key, _struct.csr_ia, _struct.csr_ja, _struct.csr_values, writeFOM);
+
+	if (_struct.csr_values.size() != 0) {
+		std::cout << ">> Sparse Info " << _key << ": nnz = " << _struct.csr_values.size() << ". Size: " << _struct.csr_ia.size() - 1 << "x" << _struct.csr_ia.size() - 1 << std::endl;
+		for (int i = 0; i < _struct.csr_ia.size() - 1; i++)
+		{
+			_struct.csrPointerB.push_back(_struct.csr_ia[i]);
+			_struct.csrPointerE.push_back(_struct.csr_ia[i + 1]);
+		}
+
+		if (_key == "stiffness") {
+			MathLibrary::createSparseCSRComplex(&mySparseK, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+		}
+		else if (_key == "mass") {
+			MathLibrary::createSparseCSRComplex(&mySparseM, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+		}
+		else if (_key == "structuraldamping") {
+			sparse_matrix_t sparseSD;
+			MathLibrary::createSparseCSRComplex(&sparseSD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+			STACCATOComplexDouble ComplexOne = { 0,1 };
+			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
+		}
+		std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
+	}
+	else
+		std::cout << " > Imporing " << _key << " SIM Matrix... Skipped." << std::endl;
 }
 
 void KrylovROMSubstructure::buildProjectionMatManual() {
-	bool writeProjectionmatrices = false;
-
-	int solverID = 33;
-	addKrylovModesForExpansionPoint(myExpansionPoints, myKrylovOrder, solverID);
+	addKrylovModesForExpansionPoint(myExpansionPoints, myKrylovOrder);
 
 	if (writeProjectionmatrices) {
-		int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-		int ROM_DOF = myV.size()/ FOM_DOF;
+
+		ROM_DOF = myV.size()/ FOM_DOF;
 
 		std::string filename = "C://software//repos//staccato//scratch//";
 		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myV, FOM_DOF, ROM_DOF, false); 
@@ -838,401 +381,206 @@ void KrylovROMSubstructure::buildProjectionMatManual() {
 	}
 }
 
-void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder, int _projID) {
-	int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-	int ROM_DOF = myExpansionPoints.size()*myKrylovOrder*myInputDOFS.size();
+void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>& _expPoint, int _krylovOrder) {
 	std::cout << ">> Adding krylov modes for expansion points..."<< std::endl;
-
-	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	myV.reserve(FOM_DOF*ROM_DOF);
-	std::cout << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	
+		
 	STACCATOComplexDouble ZeroComplex = {0,0};
 	STACCATOComplexDouble OneComplex = { 1,0 };
 	STACCATOComplexDouble NegOneComplex = { -1,0 };
 
-	switch (_projID)
+	std::cout << " >> Block Arnoldi Algorithm with BLOCK-wise Gram-Schmidt and WITH deflation strategy..." << std::endl;
+
+	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-	case 1:
-		std::cout << " >> Block Arnoldi Algorithm with vector-wise Gram-Schmidt and NO deflation strategy..." << std::endl;
-		for (int iEP = 0; iEP < _expPoint.size(); iEP++)
+		double sigTol = 1e-09;
+		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
+		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
+		double progress = (iEP + 1) * 100 / _expPoint.size();
+		double omega = 2 * M_PI*_expPoint[iEP];
+
+		// Zero CSR
+		MathLibrary::SparseMatrix<STACCATOComplexDouble>* zeroMatrix = new MathLibrary::SparseMatrix<STACCATOComplexDouble>(FOM_DOF, true, false);
+		(*zeroMatrix)(0, 0).real = 0;
+		sparse_matrix_t zeroMat = (*zeroMatrix).convertToSparseDatatype();
+
+		sparse_matrix_t K_tilde;
+		STACCATOComplexDouble negativeOmegaSquare = { -omega * omega ,0 };
+		STACCATOComplexDouble complexOmega = { 0, omega };
+
+		// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
+		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
+		if (enablePropDamping)
+			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
+
+		// K_tilde = - K_tilde
+		STACCATOComplexDouble negativeOne;
+		negativeOne.real = -1;
+		negativeOne.imag = 0;
+		MathLibrary::computeSparseMatrixAdditionComplex(&K_tilde, &zeroMat, &K_tilde, false, true, negativeOne);
+		//MathLibrary::print_csr_sparse_z(&K_tilde);
+		// QV = - K_tilde\obj.B;               % Initial Search Direction
+		std::vector<STACCATOComplexDouble> QV;
+		QV.resize(FOM_DOF*myInputDOFS.size());
+
+		factorizeSparseMatrixComplex(&K_tilde, true, true, myInputDOFS.size());
+		solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &QV[0], &myB[0]);
+
+		// Orthogonalization of first set of vectors : iterative
+		// procedure
+		// Modification : if k >1 : also orthogonalize to all previous
+		// vectors from V
+		if (iEP > 0)
 		{
-			double progress = (iEP + 1) * 100 / _expPoint.size();
-			double omega = 2 * M_PI*_expPoint[iEP];
-			int lastIndexV = myV.size();
-			int lastIndexZ = myZ.size();
-			//myV.resize(lastIndexV + FOM_DOF*myInputDOFS.size()*_krylovOrder);
-			//myZ.resize(lastIndexZ + FOM_DOF*myOutputDOFS.size()*_krylovOrder);
+			// q0 = QV;
+			std::vector<STACCATOComplexDouble> q0;
+			q0.insert(q0.end(), QV.begin(), QV.end());
 
-			// Zero CSR
-			MathLibrary::SparseMatrix<STACCATOComplexDouble>* zeroMatrix = new MathLibrary::SparseMatrix<STACCATOComplexDouble>(FOM_DOF, true, false);
-			(*zeroMatrix)(0, 0).real = 0;
-			sparse_matrix_t zeroMat = (*zeroMatrix).convertToSparseDatatype();
+			// eta = 1/sqrt(2);
+			STACCATOComplexDouble eta = { 1 / std::sqrt(2),0 };
 
-			sparse_matrix_t K_tilde;
-			STACCATOComplexDouble negativeOmegaSquare;
-			negativeOmegaSquare.real = -omega * omega;
-			negativeOmegaSquare.imag = 0;
+			STACCATOComplexDouble lim = { 0,0 };
 
-			std::cout << " > flag2";
-			// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
-			std::cout << " > flag3";
-			// K_tilde = - K_tilde
-			STACCATOComplexDouble negativeOne;
-			negativeOne.real = -1;
-			negativeOne.imag = 0;
-			MathLibrary::computeSparseMatrixAdditionComplex(&K_tilde, &zeroMat, &K_tilde, false, true, negativeOne);
-			//MathLibrary::print_csr_sparse_z(&K_tilde);
-			// D_tilde = 2i*2*pi*obj.exp_points(k)*obj.M + obj.D;
-			sparse_matrix_t D_tilde;
-			STACCATOComplexDouble complexTwoOmega;
-			complexTwoOmega.real = 0;
-			complexTwoOmega.imag = 2 * omega;
-			std::cout << " > flag4";
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &zeroMat, &D_tilde, false, true, complexTwoOmega);
-			// QV = - K_tilde\obj.B;               % Initial Search Direction
-			std::vector<STACCATOComplexDouble> QV;
-			QV.resize(FOM_DOF*myInputDOFS.size());
-			std::cout << " > flag5";
+			// qk_ = q0;
+			std::vector<STACCATOComplexDouble> qk_;
+			qk_.insert(qk_.end(), q0.begin(), q0.end());
 
-			factorizeSparseMatrixComplex(&K_tilde, true, true, myInputDOFS.size());
-			solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &QV[0], &myB[0]);
-			std::cout << " > flag6";
+			std::vector<STACCATOComplexDouble> qk;
+			qk.resize(FOM_DOF*myInputDOFS.size());
 
-			if (iEP == 0)
+			while (lim.real <= eta.real)
 			{
-				// QV = QV / norm(QV, 'fro');
-				STACCATOComplexDouble inv_normQV;
-				inv_normQV.real = 1 / (MathLibrary::computeDenseMatrixFrobeniusNormComplex(&QV[0], FOM_DOF, myInputDOFS.size()));
-				inv_normQV.imag = 0;
+				// sk = V'*qk_;
+				std::vector<STACCATOComplexDouble> sk;
+				sk.resize((myV.size() / FOM_DOF)*myInputDOFS.size());
+				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myV.size() / FOM_DOF, myInputDOFS.size(), FOM_DOF, &myV[0], &qk_[0], &sk[0], true, false, OneComplex, false, false, false);
 
-				std::vector<STACCATOComplexDouble> y;
-				STACCATOComplexDouble zero; zero.real = 0; zero.imag = 0;
-				y.resize(FOM_DOF*myInputDOFS.size(), zero);
+				// uk = -V*sk;
+				std::vector<STACCATOComplexDouble> uk;
+				uk.resize(FOM_DOF*myInputDOFS.size());
+				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, myInputDOFS.size(), myV.size() / FOM_DOF, &myV[0], &sk[0], &uk[0], false, true, NegOneComplex, false, false, false);
 
-				MathLibrary::computeDenseVectorAdditionComplex(&QV[0], &y[0], &inv_normQV, QV.size());
-				std::cout << " > flag7";
+				// qk = qk_ + uk;
+				MathLibrary::computeDenseVectorAdditionComplex(&qk_[0], &uk[0], &OneComplex, qk_.size());
+				MathLibrary::copyDenseVectorComplex(&qk[0], &uk[0], qk.size());
 
-				QV.swap(y);
-				std::cout << " > flag8";
+				// lim = norm(qk, 'fro')/norm(qk_, 'fro');
+				lim.real = MathLibrary::computeDenseMatrixFrobeniusNormComplex(&uk[0], FOM_DOF, myInputDOFS.size()) / MathLibrary::computeDenseMatrixFrobeniusNormComplex(&qk_[0], FOM_DOF, myInputDOFS.size());
+
+				// qk_ = qk;
+				MathLibrary::copyDenseVectorComplex(&qk_[0], &qk[0], qk_.size());
 			}
-			else {
-				for (int jQV = 0; jQV < myInputDOFS.size(); jQV++)
-				{
-					std::cout << " > flag9";
-					for (int j = 0; j < myV.size() / FOM_DOF; j++)
-					{
-						// h = QV(:, jQV)'*V(:,j);
-						STACCATOComplexDouble h;
-						MathLibrary::computeDenseDotProductComplex(&QV[jQV*FOM_DOF], &myV[j*FOM_DOF], &h, FOM_DOF, true);
-						// QV(:,j)'*V(:,j)
-						STACCATOComplexDouble hV = { 0,0 };
-						MathLibrary::computeDenseDotProductComplex(&myV[j*FOM_DOF], &myV[j*FOM_DOF], &hV, FOM_DOF, true);
-						STACCATOComplexDouble h_by_hV;
-						h_by_hV.real = -(h.real * hV.real + h.imag*hV.imag) / (hV.real*hV.real + hV.imag*hV.imag);
-						h_by_hV.imag = -(h.imag*hV.real - h.real * hV.imag) / (hV.real*hV.real + hV.imag*hV.imag);
-						// WQ(:, jWQ, i) = WQ(:, jWQ, i) - h * V(:, j) / (V(:, j)'*V(:,j));
-						MathLibrary::computeDenseVectorAdditionComplex(&myV[j*FOM_DOF], &QV[jQV*FOM_DOF], &h_by_hV, FOM_DOF);
-					}
-					std::cout << " > flag10";
-				}
-			}
+			q0.clear();
+			qk_.clear();
+			// Q = qk;
+			MathLibrary::copyDenseVectorComplex(&QV[0], &qk[0], QV.size());
+			qk.clear();
 
-			std::cout << " > flag11";
-			// WQ(:,:,1) = QV;
-			std::vector<STACCATOComplexDouble> WQ;
-			WQ.resize(QV.size());
-			MathLibrary::copyDenseVectorComplex(&WQ[0], &QV[0], QV.size());
-			//WQ.swap(QV);
-			// V = [V WQ(:, : , 1)];
-			myV.insert(myV.end(), WQ.begin(), WQ.end());
-			std::cout << " > flag12";
-
-			for (int i = 1; i < _krylovOrder; i++)
-			{
-				// D_tilde*WQ(:,:,i-1)
-				std::vector<STACCATOComplexDouble> WQ_i_D;
-				WQ_i_D.resize(FOM_DOF*myInputDOFS.size());
-				MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(myInputDOFS.size(), FOM_DOF, FOM_DOF, &D_tilde, &WQ[(i - 1)*FOM_DOF*myInputDOFS.size()], &WQ_i_D[0], false, false, ZeroComplex, true, false);
-				std::cout << " > flag13";
-				// obj.M*WQ(:,:,i-1))
-				std::vector<STACCATOComplexDouble> WQ_i_K;
-				WQ_i_K.resize(FOM_DOF*myInputDOFS.size());
-				MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(myInputDOFS.size(), FOM_DOF, FOM_DOF, &mySparseM, &WQ[(i - 1)*FOM_DOF*myInputDOFS.size()], &WQ_i_K[0], false, false, ZeroComplex, true, false);
-
-				std::cout << " > flag13a";
-				// (D_tilde*WQ(:,:,i-1)+ obj.M*WQ(:,:,i-1));
-				MathLibrary::computeDenseVectorAdditionComplex(&WQ_i_D[0], &WQ_i_K[0], &OneComplex, FOM_DOF*myInputDOFS.size());
-
-				// WQ(:,:,i) = -K_tilde\(D_tilde*WQ(:,:,i-1)+ obj.M*WQ(:,:,i-1));
-				std::vector<STACCATOComplexDouble> WQ_i;
-				WQ_i.resize(FOM_DOF*myInputDOFS.size(), ZeroComplex);
-				solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &WQ_i[0], &WQ_i_K[0]);
-				WQ.insert(WQ.end(), WQ_i.begin(), WQ_i.end());
-				std::cout << " > flag14";
-
-				// Gram-Schmidt orthogonalization to all previous WQ
-				for (int j = 0; j <= i - 1; j++)
-				{
-					// h = WQ(:,:,i)'*WQ(:,:,j);
-					std::vector<STACCATOComplexDouble> hMat;
-					hMat.resize(FOM_DOF*myInputDOFS.size(), ZeroComplex);
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myInputDOFS.size(), myInputDOFS.size(), FOM_DOF, &WQ[i*FOM_DOF*myInputDOFS.size()], &WQ[j*FOM_DOF*myInputDOFS.size()], &hMat[0], true, false, OneComplex, false, false, false);
-					// WQ(:,:,i) = WQ(:,:,i) - WQ(:,:,j)*h;
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, myInputDOFS.size(), myInputDOFS.size(), &WQ[(j)*FOM_DOF*myInputDOFS.size()], &hMat[0], &WQ[(i)*FOM_DOF*myInputDOFS.size()], false, true, negativeOne, true, false, false);
-
-					std::cout << " > flag15";
-				}
-				// Gram - Schmidt orthogonalization of WQ_i against V
-				mklTimer01.start();
-				for (int jWQ = 0; jWQ < myInputDOFS.size(); jWQ++)
-				{
-					std::cout << " > flag16";
-					for (int j = 0; j < myV.size() / FOM_DOF; j++)
-					{
-						// h = WQ(:,jWQ,i)'*V(:,j);
-						STACCATOComplexDouble h = { 0,0 };
-						MathLibrary::computeDenseDotProductComplex(&WQ[(i)*FOM_DOF*myInputDOFS.size() + jWQ * FOM_DOF], &myV[j*FOM_DOF], &h, FOM_DOF, true);
-						// V(:,j)'*V(:,j)
-						STACCATOComplexDouble hV = { 0,0 };
-						MathLibrary::computeDenseDotProductComplex(&myV[j*FOM_DOF], &myV[j*FOM_DOF], &hV, FOM_DOF, true);
-						STACCATOComplexDouble h_by_hV;
-						h_by_hV.real = -(h.real * hV.real + h.imag*hV.imag) / (hV.real*hV.real + hV.imag*hV.imag);
-						h_by_hV.imag = -(h.imag*hV.real - h.real * hV.imag) / (hV.real*hV.real + hV.imag*hV.imag);
-						// WQ(:, jWQ, i) = WQ(:, jWQ, i) - h * V(:, j) / (V(:, j)'*V(:,j));
-						MathLibrary::computeDenseVectorAdditionComplex(&myV[j*FOM_DOF], &WQ[(i)*FOM_DOF*myInputDOFS.size() + jWQ * FOM_DOF], &h_by_hV, FOM_DOF);
-					}
-					std::cout << " > flag17";
-				}
-				mklTimer01.stop();
-				std::cout << "Gram - Schmidt orthogonalization of WQ_i against V completed: " << mklTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
-				// V = [V WQ(:,:,i)];
-				std::cout << " > flag18";
-				myV.insert(myV.end(), std::next(WQ.begin() + i * FOM_DOF*myInputDOFS.size() - 1), std::next(WQ.begin() + (i + 1)*FOM_DOF*myInputDOFS.size() - 1));
-
-				std::cout << " > flag19";
-				// [V,~]=qr(V,0);
-				mklTimer01.start();
-				MathLibrary::computeDenseMatrixQRDecompositionComplex(FOM_DOF, myV.size() / FOM_DOF, &myV[0], false);
-				mklTimer01.stop();
-				std::cout << "QR factorization completed: " << mklTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
-				std::cout << " > flag20";
-			}
-			cleanPardiso();
-			std::cout << (int)progress << "% completed; Performed " << iEP + 1 << " of " << _expPoint.size() << "." << std::endl;
-			std::cout << " > flag21";
 		}
-		// MIMO
-		if (!isMIMO)
-			myZ.assign(myV.begin(), myV.end());
-		break;
-	case 33:
-		std::cout << " >> Block Arnoldi Algorithm with BLOCK-wise Gram-Schmidt and WITH deflation strategy..." << std::endl;
+		std::cout << "  -------------------------------------------------------> Processing krylov order 1" << std::endl;
+		// [Q,R,~]=qr(QV,0); 
 
-		for (int iEP = 0; iEP < _expPoint.size(); iEP++)
+		std::vector<STACCATOComplexDouble> tempTAU;
+		MathLibrary::computeDenseMatrixPivotedQR_R_DecompositionComplex(FOM_DOF, myInputDOFS.size(), &QV[0], false, tempTAU);
+
+		// Algo for rank-reveiling
+		// ind=find(diag(abs(R))>sigTol);
+		//std::cout << "  > Reveiling Rank: " << std::endl;
+		int RR = reveilRankQR_R(&QV[0], FOM_DOF, myInputDOFS.size(), sigTol);
+		//std::cout << "  > Rank reveiled: " << RR << std::endl;
+
+		MathLibrary::computeDenseMatrixQR_Q_DecompositionComplex(FOM_DOF, myInputDOFS.size(), &QV[0], false, tempTAU);
+
+		// Algo to eliminate dependent rows and columns
+		QV.resize(FOM_DOF*RR);
+
+		if (RR == 0) {
+			std::cout << "  -------------------------------------------------------> RRQR: NO modes added: " << std::endl;
+			continue;
+		}
+		else
+			std::cout << "  -------------------------------------------------------> RRQR: Number of modes added: " << RR << std::endl;
+
+		// V=[V Q(:,ind)];
+		myV.insert(myV.end(), QV.begin(), QV.end());
+
+		for (size_t iKr = 1; iKr < _krylovOrder; iKr++)
 		{
-			std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..."<<std::endl;
-			double progress = (iEP + 1) * 100 / _expPoint.size();
-			double omega = 2 * M_PI*_expPoint[iEP];
+			std::cout << "  -------------------------------------------------------> Processing krylov order " << iKr + 1 << std::endl;
+			// obj.M*QV
+			std::vector<STACCATOComplexDouble> WQ_i_K;
+			WQ_i_K.resize(FOM_DOF*RR);
+			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &mySparseM, &QV[0], &WQ_i_K[0], false, false, ZeroComplex, true, false);
 
-			// Zero CSR
-			MathLibrary::SparseMatrix<STACCATOComplexDouble>* zeroMatrix = new MathLibrary::SparseMatrix<STACCATOComplexDouble>(FOM_DOF, true, false);
-			(*zeroMatrix)(0, 0).real = 0;
-			sparse_matrix_t zeroMat = (*zeroMatrix).convertToSparseDatatype();
+			// Q = -K_tilde\(obj.M*Q);
+			solveDirectSparseComplex(&K_tilde, true, true, RR, &QV[0], &WQ_i_K[0]);
+			WQ_i_K.clear();
 
-			sparse_matrix_t K_tilde;
-			STACCATOComplexDouble negativeOmegaSquare = { -omega * omega ,0};
-			STACCATOComplexDouble complexOmega = { 0, omega };
+			// w0 = Q; eta = 1/sqrt(2); lim = 0; wk_=w0;
+			std::vector<STACCATOComplexDouble> w0;
+			w0.insert(w0.end(), QV.begin(), QV.end());
+			STACCATOComplexDouble eta = { 1 / std::sqrt(2),0 };
 
-			// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
-			if (enablePropDamping)
-				MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
+			STACCATOComplexDouble lim = { 0,0 };
+			std::vector<STACCATOComplexDouble> wk_;
+			wk_.insert(wk_.end(), w0.begin(), w0.end());
 
-			// K_tilde = - K_tilde
-			STACCATOComplexDouble negativeOne;
-			negativeOne.real = -1;
-			negativeOne.imag = 0;
-			MathLibrary::computeSparseMatrixAdditionComplex(&K_tilde, &zeroMat, &K_tilde, false, true, negativeOne);
-			//MathLibrary::print_csr_sparse_z(&K_tilde);
-			// D_tilde = 2i*2*pi*obj.exp_points(k)*obj.M + obj.D;
-			/*sparse_matrix_t D_tilde;
-			STACCATOComplexDouble complexTwoOmega;
-			complexTwoOmega.real = 0;
-			complexTwoOmega.imag = 2 * omega;
-			std::cout << " > flag4";
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &zeroMat, &D_tilde, false, true, complexTwoOmega);*/
-			// QV = - K_tilde\obj.B;               % Initial Search Direction
-			std::vector<STACCATOComplexDouble> QV;
-			QV.resize(FOM_DOF*myInputDOFS.size());
+			std::vector<STACCATOComplexDouble> wk;
+			wk.resize(FOM_DOF*RR);
 
-			factorizeSparseMatrixComplex(&K_tilde, true, true, myInputDOFS.size());
-			solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &QV[0], &myB[0]);
-
-			// Orthogonalization of first set of vectors : iterative
-			// procedure
-			// Modification : if k >1 : also orthogonalize to all previous
-			// vectors from V
-			if (iEP > 0)
+			while (lim.real <= eta.real)
 			{
-				// q0 = QV;
-				std::vector<STACCATOComplexDouble> q0;
-				q0.insert(q0.end(), QV.begin(), QV.end());
+				// sk = V'*wk_;
+				std::vector<STACCATOComplexDouble> sk;
+				sk.resize((myV.size() / FOM_DOF)*RR);
+				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myV.size() / FOM_DOF, RR, FOM_DOF, &myV[0], &wk_[0], &sk[0], true, false, OneComplex, false, false, false);
 
-				// eta = 1/sqrt(2);
-				STACCATOComplexDouble eta = {1/std::sqrt(2),0};
+				// uk = -V*sk;
+				std::vector<STACCATOComplexDouble> uk;
+				uk.resize(FOM_DOF*RR);
+				MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, RR, myV.size() / FOM_DOF, &myV[0], &sk[0], &uk[0], false, true, NegOneComplex, false, false, false);
 
-				STACCATOComplexDouble lim = { 0,0 };
+				// wk = wk_ + uk;
+				MathLibrary::computeDenseVectorAdditionComplex(&wk_[0], &uk[0], &OneComplex, wk_.size());
+				MathLibrary::copyDenseVectorComplex(&wk[0], &uk[0], wk.size());
 
-				// qk_ = q0;
-				std::vector<STACCATOComplexDouble> qk_;
-				qk_.insert(qk_.end(), q0.begin(), q0.end());
+				// lim = norm(wk, 'fro')/norm(wk_, 'fro');
+				lim.real = MathLibrary::computeDenseMatrixFrobeniusNormComplex(&uk[0], FOM_DOF, RR) / MathLibrary::computeDenseMatrixFrobeniusNormComplex(&wk_[0], FOM_DOF, RR);
 
-				std::vector<STACCATOComplexDouble> qk;
-				qk.resize(FOM_DOF*myInputDOFS.size());
-
-				while (lim.real <= eta.real)
-				{
-					// sk = V'*qk_;
-					std::vector<STACCATOComplexDouble> sk;
-					sk.resize((myV.size() / FOM_DOF)*myInputDOFS.size());
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myV.size() / FOM_DOF, myInputDOFS.size(), FOM_DOF, &myV[0], &qk_[0], &sk[0], true, false, OneComplex, false, false, false);
-
-					// uk = -V*sk;
-					std::vector<STACCATOComplexDouble> uk;
-					uk.resize(FOM_DOF*myInputDOFS.size());
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, myInputDOFS.size(), myV.size()/FOM_DOF, &myV[0], &sk[0], &uk[0], false, true, NegOneComplex, false, false, false);
-
-					// qk = qk_ + uk;
-					MathLibrary::computeDenseVectorAdditionComplex(&qk_[0], &uk[0], &OneComplex, qk_.size());
-					MathLibrary::copyDenseVectorComplex(&qk[0], &uk[0], qk.size());
-
-					// lim = norm(qk, 'fro')/norm(qk_, 'fro');
-					lim.real = MathLibrary::computeDenseMatrixFrobeniusNormComplex(&uk[0], FOM_DOF, myInputDOFS.size()) / MathLibrary::computeDenseMatrixFrobeniusNormComplex(&qk_[0], FOM_DOF, myInputDOFS.size());
-
-					// qk_ = qk;
-					MathLibrary::copyDenseVectorComplex(&qk_[0], &qk[0], qk_.size());
-				}
-				// Q = qk;
-				MathLibrary::copyDenseVectorComplex(&QV[0], &qk[0], QV.size());
-
+				// wk_ = wk;
+				MathLibrary::copyDenseVectorComplex(&wk_[0], &wk[0], wk_.size());
 			}
-			std::cout << "  -------------------------------------------------------> Processing krylov order 1" << std::endl;
-			// [Q,R,~]=qr(QV,0); 
+			// Q = wk;
+			w0.clear();
+			wk_.clear();
+			MathLibrary::copyDenseVectorComplex(&QV[0], &wk[0], QV.size());
+			wk.clear();
 
-			std::vector<STACCATOComplexDouble> tempTAU;
-			MathLibrary::computeDenseMatrixPivotedQR_R_DecompositionComplex(FOM_DOF, myInputDOFS.size(), &QV[0], false, tempTAU);
+			// [Q,R,~]=qr(Q,0);
+			std::vector<STACCATOComplexDouble> tau;
+			MathLibrary::computeDenseMatrixPivotedQR_R_DecompositionComplex(FOM_DOF, QV.size() / FOM_DOF, &QV[0], false, tau);
 
-			// Algo for rank-reveiling
 			// ind=find(diag(abs(R))>sigTol);
-			//std::cout << "  > Reveiling Rank: " << std::endl;
-			double sigTol = 1e-12;
-			int RR = reveilRankQR_R(&QV[0], FOM_DOF, myInputDOFS.size(), sigTol);
-			//std::cout << "  > Rank reveiled: " << RR << std::endl;
+			RR = reveilRankQR_R(&QV[0], FOM_DOF, RR, sigTol);
+			MathLibrary::computeDenseMatrixQR_Q_DecompositionComplex(FOM_DOF, QV.size() / FOM_DOF, &QV[0], false, tau);
 
-			MathLibrary::computeDenseMatrixQR_Q_DecompositionComplex(FOM_DOF, myInputDOFS.size(), &QV[0], false, tempTAU);
-
-			// Algo to eliminate dependent rows and columns
-			QV.resize(FOM_DOF*RR);
 
 			if (RR == 0) {
 				std::cout << "  -------------------------------------------------------> RRQR: NO modes added: " << std::endl;
-				continue;
+				iKr = _krylovOrder;		// Break further iterations
 			}
-			else
+			else {
 				std::cout << "  -------------------------------------------------------> RRQR: Number of modes added: " << RR << std::endl;
-
-			// V=[V Q(:,ind)];
-			myV.insert(myV.end(), QV.begin(), QV.end());
-
-			for (size_t iKr = 1; iKr < _krylovOrder; iKr++)
-			{
-				std::cout << "  -------------------------------------------------------> Processing krylov order " << iKr + 1 << std::endl;
-				/*// D_tilde*QV
-				std::vector<STACCATOComplexDouble> WQ_i_D;
-				WQ_i_D.resize(FOM_DOF*RR);
-				MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &D_tilde, &QV[0], &WQ_i_D[0], false, false, ZeroComplex, true, false);
-				std::cout << " > flag13";*/
-				// obj.M*QV
-				std::vector<STACCATOComplexDouble> WQ_i_K;
-				WQ_i_K.resize(FOM_DOF*RR);
-				MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &mySparseM, &QV[0], &WQ_i_K[0], false, false, ZeroComplex, true, false);
-
-				/*// (D_tilde*Q +  obj.M*Q);
-				MathLibrary::computeDenseVectorAdditionComplex(&WQ_i_D[0], &WQ_i_K[0], &OneComplex, FOM_DOF*RR);*/
-
-				// Q = -K_tilde\(obj.M*Q);
-				solveDirectSparseComplex(&K_tilde, true, true, RR, &QV[0], &WQ_i_K[0]);
-
-				// w0 = Q; eta = 1/sqrt(2); lim = 0; wk_=w0;
-				std::vector<STACCATOComplexDouble> w0;
-				w0.insert(w0.end(), QV.begin(), QV.end());
-				STACCATOComplexDouble eta = { 1 / std::sqrt(2),0 };
-
-				STACCATOComplexDouble lim = { 0,0 };
-				std::vector<STACCATOComplexDouble> wk_;
-				wk_.insert(wk_.end(), w0.begin(), w0.end());
-
-				std::vector<STACCATOComplexDouble> wk;
-				wk.resize(FOM_DOF*RR);
-
-				while (lim.real <= eta.real)
-				{
-					// sk = V'*wk_;
-					std::vector<STACCATOComplexDouble> sk;
-					sk.resize((myV.size() / FOM_DOF)*RR);
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myV.size() / FOM_DOF, RR, FOM_DOF, &myV[0], &wk_[0], &sk[0], true, false, OneComplex, false, false, false);
-
-					// uk = -V*sk;
-					std::vector<STACCATOComplexDouble> uk;
-					uk.resize(FOM_DOF*RR);
-					MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(FOM_DOF, RR, myV.size() / FOM_DOF, &myV[0], &sk[0], &uk[0], false, true, NegOneComplex, false, false, false);
-
-					// wk = wk_ + uk;
-					MathLibrary::computeDenseVectorAdditionComplex(&wk_[0], &uk[0], &OneComplex, wk_.size());
-					MathLibrary::copyDenseVectorComplex(&wk[0], &uk[0], wk.size());
-
-					// lim = norm(wk, 'fro')/norm(wk_, 'fro');
-					lim.real = MathLibrary::computeDenseMatrixFrobeniusNormComplex(&uk[0], FOM_DOF, RR)/MathLibrary::computeDenseMatrixFrobeniusNormComplex(&wk_[0], FOM_DOF, RR) ;
-
-					// wk_ = wk;
-					MathLibrary::copyDenseVectorComplex(&wk_[0], &wk[0], wk_.size());
-				}
-				// Q = wk;
-				MathLibrary::copyDenseVectorComplex(&QV[0], &wk[0], QV.size());
-
-				// [Q,R,~]=qr(Q,0);
-				std::vector<STACCATOComplexDouble> tau;
-				MathLibrary::computeDenseMatrixPivotedQR_R_DecompositionComplex(FOM_DOF, QV.size()/FOM_DOF, &QV[0], false, tau);
-
-				// ind=find(diag(abs(R))>sigTol);
-				RR = reveilRankQR_R(&QV[0], FOM_DOF, RR, sigTol);
-				MathLibrary::computeDenseMatrixQR_Q_DecompositionComplex(FOM_DOF, QV.size()/FOM_DOF, &QV[0], false, tau);
-				
-
-				if (RR == 0) {
-					std::cout << "  -------------------------------------------------------> RRQR: NO modes added: " << std::endl;
-					iKr = _krylovOrder;		// Break further iterations
-				}
-				else {
-					std::cout << "  -------------------------------------------------------> RRQR: Number of modes added: " << RR << std::endl;
-					QV.resize(FOM_DOF*RR);
-					myV.insert(myV.end(), QV.begin(), QV.end());
-				}
+				QV.resize(FOM_DOF*RR);
+				myV.insert(myV.end(), QV.begin(), QV.end());
 			}
-
-			cleanPardiso();
-			std::cout << (int)progress << "% completed; Performed " << iEP + 1 << " of " << _expPoint.size() << "." << std::endl;
 		}
-		// MIMO
-		if (!isMIMO)
-			myZ.assign(myV.begin(), myV.end());
-		break;
-	default:
-		std::cout << "!! Invalid Projection Algorithm ID!." << std::endl;
-		break;
+
+		cleanPardiso();
+		std::cout << (int)progress << "% completed; Performed " << iEP + 1 << " of " << _expPoint.size() << "." << std::endl;
 	}
+	// MIMO
+	if (!isMIMO)
+		myZ.assign(myV.begin(), myV.end());
 	
 	std::cout << ">> Adding krylov modes for expansion points... Finished." << std::endl;
 }
@@ -1244,6 +592,33 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 
 	rowIndex = pointerB;
 	rowIndex[m] = pointerE[m - 1];
+
+	sparse_checker_error_values check_err_val;
+	sparse_struct pt;
+	int error = 0;
+
+	sparse_matrix_checker_init(&pt);
+	pt.n = m;
+	pt.csr_ia = rowIndex;
+	pt.csr_ja = columns;
+	pt.indexing = MKL_ONE_BASED;
+	pt.matrix_structure = MKL_UPPER_TRIANGULAR;
+	pt.print_style = MKL_C_STYLE;
+	pt.message_level = MKL_PRINT;
+	check_err_val = sparse_matrix_checker(&pt);
+
+	printf("Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+	if (check_err_val == MKL_SPARSE_CHECKER_NONTRIANGULAR) {
+		printf("Matrix check result: MKL_SPARSE_CHECKER_NONTRIANGULAR\n");
+		error = 0;
+	}
+	else {
+		if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf("Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf("Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf("Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf("Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+		error = 1;
+	}
 
 	// Checks
 	if (_symmetric)
@@ -1350,11 +725,8 @@ void KrylovROMSubstructure::solveDirectSparseComplex(const sparse_matrix_t* _mat
 
 void KrylovROMSubstructure::generateROM() {
 #ifdef USE_INTEL_MKL
-	bool writeROM = true;
-
 	std::cout << ">> Generating ROM..." << std::endl;
-	int FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
-	int ROM_DOF = myV.size() / FOM_DOF;
+
 	STACCATOComplexDouble ZeroComplex = { 0,0 };
 	STACCATOComplexDouble OneComplex = { 1,0 };
 	myKComplexReduced.resize(ROM_DOF*ROM_DOF);
@@ -1405,14 +777,6 @@ void KrylovROMSubstructure::generateROM() {
 	// obj.C_R = obj.C*obj.V;
 	MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), ROM_DOF, FOM_DOF, &myC[0], &myV[0], &myCReduced[0], false, false, OneComplex, false, false, false);
 	myV.clear();
-	if (writeROM)
-	{
-		std::string filename = "C://software//repos//staccato//scratch//";
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myKR.dat", myKComplexReduced,ROM_DOF, ROM_DOF, false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myMR.dat", myMComplexReduced, ROM_DOF, ROM_DOF, false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myBR.dat", myBReduced, ROM_DOF, myInputDOFS.size(), false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myCR.dat", myCReduced, myOutputDOFS.size(), ROM_DOF, false);
-	}
 	std::cout << ">> Generating ROM... Finished." << std::endl;
 
 #endif // USE_INTEL_MKL
@@ -1451,4 +815,318 @@ int KrylovROMSubstructure::reveilRankQR_R(const STACCATOComplexDouble* _mat, int
 	}
 	std::cout<<std::endl;
 	return RR;
+}
+
+void KrylovROMSubstructure::buildAbqODB() {
+	std::cout << ">> FOM Building from ODB .." << std::endl;
+	myHMesh->buildDataStructure();
+	debugOut << "SimuliaODB::openFile: " << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	anaysisTimer01.start();
+	myHMesh->buildDoFGraph();
+	anaysisTimer01.stop();
+
+	infoOut << "Duration for building DoF graph: " << anaysisTimer01.getDurationMilliSec() << " milliSec" << std::endl;
+	debugOut << "Current physical memory consumption: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	FOM_DOF = myHMesh->getTotalNumOfDoFsRaw();
+	// Build XML NodeSets and ElementSets
+	MetaDatabase::getInstance()->buildXML(*myHMesh);
+
+	// Assign all elements with respective assigned material section
+	assignMaterialToElements();
+
+	std::cout << ">> Assembling FOM system matrices from ODB... " << std::endl;
+	getSystemMatricesODB();
+	std::cout << ">> Assembling FOM system matrices from ODB... Finished." << std::endl;
+}
+
+void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
+
+	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+
+	/* -- Prepare Reader -- */
+#if defined(_WIN32) || defined(__WIN32__) 
+	std::string filePath = "C:/software/repos/STACCATO/model/";
+#endif
+#if defined(__linux__) 
+	std::string filePath = "/opt/software/repos/STACCATO/model/";
+#endif
+	filePath += std::string(iterParts->PART()[_iPart].FILEIMPORT().begin()->FILE()->data());
+	myUMAReader = new SimuliaUMA(filePath, *myHMesh, _iPart);
+	myHMesh = NULL;
+	buildXMLforSIM(_iPart);
+
+	std::cout << ">> Assembling FOM system matrices from SIM... " << std::endl;
+	getSystemMatricesSIM();
+	std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
+
+	FOM_DOF = myUMAReader->totalDOFs;
+}
+
+void KrylovROMSubstructure::displayModelSize() {
+	// Size determination
+	std::cout << ">> -- Model Size --" << std::endl;
+	std::cout << " > Expansion Points: ";
+	for (int i = 0; i < myExpansionPoints.size(); i++)
+		std::cout << myExpansionPoints[i] << " . ";
+	std::cout << std::endl;
+	std::cout << " > Krylov order: " << myKrylovOrder << std::endl;
+	std::cout << " > #Inputs: " << myInputDOFS.size() << " #Outputs: " << myOutputDOFS.size() << std::endl;
+	std::cout << " > FOM Dimensions: " << std::endl;
+	std::cout << "  > System: " << FOM_DOF << "x" << FOM_DOF << std::endl;
+	std::cout << "  >      B: " << FOM_DOF << "x" << myInputDOFS.size() << std::endl;
+	std::cout << "  >      C: " << myOutputDOFS.size() << "x" << FOM_DOF << std::endl;
+	std::cout << " > ROM Dimensions: " << std::endl;
+	std::cout << "  > System: " << ROM_DOF << "x" << ROM_DOF << std::endl;
+	std::cout << "  >    B_R: " << ROM_DOF << "x" << myInputDOFS.size() << std::endl;
+	std::cout << "  >    C_R: " << myOutputDOFS.size() << "x" << ROM_DOF << std::endl;
+	std::cout << " > Projection Matrices: " << std::endl;
+	std::cout << "  >      V: " << FOM_DOF << "x" << ROM_DOF << std::endl;
+	std::cout << "  >      Z: " << FOM_DOF << "x" << ROM_DOF << std::endl;
+}
+
+void KrylovROMSubstructure::generateInputOutputMatricesForFOM() {
+	myB.resize(FOM_DOF*myInputDOFS.size());
+	myC.resize(myOutputDOFS.size()*FOM_DOF);
+
+	// Generate Input and Output Matrices
+	for (int inpIter = 0; inpIter < myInputDOFS.size(); inpIter++) {
+		myB[myInputDOFS[inpIter] + inpIter * FOM_DOF].real = 1;
+	}
+	for (int outIter = 0; outIter < myOutputDOFS.size(); outIter++) {
+		myC[myOutputDOFS[outIter] * myOutputDOFS.size() + outIter].real = 1;
+	}
+}
+
+void KrylovROMSubstructure::exportROMToFiles() {
+		std::string filename = "C://software//repos//staccato//scratch//";
+		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myKR.dat", myKComplexReduced, ROM_DOF, ROM_DOF, false);
+		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myMR.dat", myMComplexReduced, ROM_DOF, ROM_DOF, false);
+		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myBR.dat", myBReduced, ROM_DOF, myInputDOFS.size(), false);
+		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myCR.dat", myCReduced, myOutputDOFS.size(), ROM_DOF, false);
+}
+
+void KrylovROMSubstructure::performAnalysis() {
+	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+
+	STACCATOComplexDouble ZeroComplex = { 0,0 };
+	STACCATOComplexDouble OneComplex = { 1,0 };
+
+	// Reading in the frequency range
+	std::vector<double> freq;
+	for (STACCATO_XML::ANALYSIS_const_iterator iAnalysis(MetaDatabase::getInstance()->xmlHandle->ANALYSIS().begin());
+		iAnalysis != MetaDatabase::getInstance()->xmlHandle->ANALYSIS().end();
+		++iAnalysis)
+	{
+		std::cout << std::endl << "==== Starting Anaylsis: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+		int frameTrack = 0;
+
+		// Routine to accomodate Step Distribution
+		double start_freq = std::atof(iAnalysis->FREQUENCY().begin()->START_FREQ()->c_str());
+		freq.push_back(start_freq);		// Push back starting frequency in any case
+
+		if (std::string(iAnalysis->FREQUENCY().begin()->Type()->data()) == "STEP") {		// Step Distribute
+			double end_freq = std::atof(iAnalysis->FREQUENCY().begin()->END_FREQ()->c_str());
+			double step_freq = std::atof(iAnalysis->FREQUENCY().begin()->STEP_FREQ()->c_str());
+			double push_freq = start_freq + step_freq;
+
+			while (push_freq <= end_freq) {
+				freq.push_back(push_freq);
+				push_freq += step_freq;
+			}
+		}
+
+		// Determine right hand side
+		std::cout << ">> Building RHS Matrix for Neumann...\n";
+		int sizeofRHS = 0;
+		OutputDatabase::TimeStep timeStep;
+		timeStep.startIndex = frameTrack;
+		std::vector<MKL_Complex16> bComplex;
+		for (int iLoadCase = 0; iLoadCase < iAnalysis->LOADCASES().begin()->LOADCASE().size(); iLoadCase++) {
+
+			std::string loadCaseType = iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).Type()->data();
+
+
+			for (int m = 0; m < iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().size(); m++)
+			{
+				std::vector<std::string> loadNameToPartLocal;
+
+				// Search for Load Description
+				for (int jPart = 0; jPart < iterParts->PART().size(); jPart++)
+				{
+					if (std::string(iterParts->PART()[jPart].Name()->c_str()) == std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].LOAD()[m].Instance()->c_str()))		// Part Instance Matching
+					{
+						for (int jPartLoad = 0; jPartLoad < iterParts->PART()[jPart].LOADS().begin()->LOAD().size(); jPartLoad++)
+						{
+							if (std::string(iAnalysis->LOADCASES().begin()->LOADCASE().at(iLoadCase).LOAD().at(m).Name()->data()) == std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Name()->data()));
+							{
+
+								if (loadCaseType == "ConcentratedLoadCase" && std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data()) == "ConcentratedForce") {
+
+									OutputDatabase::LoadCase loadCaseData;
+									loadCaseData.name = std::string(iAnalysis->LOADCASES().begin()->LOADCASE()[iLoadCase].NamePrefix()->data());
+									loadCaseData.startIndex = frameTrack;
+
+									std::string loadCaseTypePart = iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].Type()->data();
+
+									// Get Load
+									std::vector<STACCATOComplexDouble> loadVector(3);
+									loadVector[0] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->X()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->X()->data()) };
+									loadVector[1] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Y()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Y()->data()) };
+									loadVector[2] = { std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].REAL().begin()->Z()->data()), std::atof(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].IMAGINARY().begin()->Z()->data()) };
+									if (myModelType=="FOM_ODB")
+									{
+										BoundaryCondition<STACCATOComplexDouble> neumannBoundaryConditionComplex(*myHMesh);
+
+										std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].NODESET().begin()->Name()->c_str()));
+										neumannBoundaryConditionComplex.addConcentratedForceContribution(nodeSet, loadVector, bComplex);
+										loadCaseData.type = neumannBoundaryConditionComplex.myCaseType;
+
+										frameTrack++;
+										sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
+									}
+									else if (myModelType == "FOM_SIM") {
+										bComplex.resize(FOM_DOF);
+										std::vector<int> nodeSet;
+										auto search = nodeSetsMap.find(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].NODESET().begin()->Name()->c_str()));
+										if (search != nodeSetsMap.end())
+											nodeSet.insert(nodeSet.end(), search->second.begin(), search->second.end());
+										else
+											std::cout << "!! LoadNodeSet not found!";
+
+										for (size_t iLoadAss = 0; iLoadAss < nodeSet.size(); iLoadAss++)
+										{
+											bComplex[nodeSet[iLoadAss]] = loadVector[0];
+										}
+										sizeofRHS += 1;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		if (exportRHS) {
+			std::cout << ">> Writing RHS ...\n";
+			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
+		}
+
+		std::vector<STACCATOComplexDouble> inputLoad;
+		for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
+		{
+			std::vector<STACCATOComplexDouble> temp;
+			temp.resize(myInputDOFS.size(), { 0,0 });
+			for (int iInputDof = 0; iInputDof < myInputDOFS.size(); iInputDof++)
+			{
+				temp[iInputDof].real = bComplex[myInputDOFS[iInputDof]].real;
+				temp[iInputDof].imag = bComplex[myInputDOFS[iInputDof]].imag;
+			}
+			inputLoad.insert(inputLoad.end(), temp.begin(), temp.end());
+		}
+
+		std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
+
+		backTransformKMOR(std::string(iAnalysis->NAME()->data()), &freq, &inputLoad[0], sizeofRHS);
+
+		std::cout << "==== Anaylsis Completed: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+	}
+	std::cout << ">> All Analyses Completed." << std::endl;
+}
+
+void KrylovROMSubstructure::backTransformKMOR(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase ){
+	STACCATOComplexDouble ZeroComplex = { 0,0 };
+	STACCATOComplexDouble OneComplex = { 1,0 };
+
+	std::vector<STACCATOComplexDouble> results;
+
+	// Solving for each frequency
+	anaysisTimer01.start();
+#ifdef USE_INTEL_MKL		
+	std::vector<lapack_int> pivot(ROM_DOF);	// Pivots for LU Decomposition
+	for (int iFreqCounter = 0; iFreqCounter < _freq->size(); iFreqCounter++) {
+		std::vector<double> sampleResultRe(1, 0);
+		std::vector<double> sampleResultIm(1, 0);
+
+		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ..." << std::endl;
+		double omega = 2 * M_PI*_freq->at(iFreqCounter);
+		STACCATOComplexDouble NegOmegaSquare = { -omega * omega,0 };
+
+		// K_krylov_dyn = obj.K_R 
+		std::vector<STACCATOComplexDouble> StiffnessAssembled;
+		StiffnessAssembled.resize(ROM_DOF*ROM_DOF, ZeroComplex);
+		MathLibrary::computeDenseVectorAdditionComplex(&myKComplexReduced[0], &StiffnessAssembled[0], &OneComplex, ROM_DOF*ROM_DOF);
+		// K_krylov_dyn += -omega^2*obj.M_R 
+		MathLibrary::computeDenseVectorAdditionComplex(&myMComplexReduced[0], &StiffnessAssembled[0], &NegOmegaSquare, ROM_DOF*ROM_DOF);
+		if (enablePropDamping)
+		{
+			// K_krylov_dyn += 1i*2*pi*freqs_fine(i)*obj.D_R
+			STACCATOComplexDouble complexOmega = { 0,omega };
+			MathLibrary::computeDenseVectorAdditionComplex(&myDComplexReduced[0], &StiffnessAssembled[0], &complexOmega, ROM_DOF*ROM_DOF);
+		}
+
+		// obj.B_R*obj.F
+		std::vector<STACCATOComplexDouble> inputLoad_krylov(ROM_DOF*_numLoadCase, { 0,0 });
+		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, _numLoadCase, myInputDOFS.size(), &myBReduced[0], _inputLoad, &inputLoad_krylov[0], false, false, OneComplex, false, false, false);
+
+
+		// z_krylov_freq = K_krylov_dyn\(obj.B_R*obj.F);
+		// Factorize StiffnessAssembled
+		LAPACKE_zgetrf(LAPACK_COL_MAJOR, ROM_DOF, ROM_DOF, &StiffnessAssembled[0], ROM_DOF, &pivot[0]);
+		// Solve system
+		LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', ROM_DOF, _numLoadCase, &StiffnessAssembled[0], ROM_DOF, &pivot[0], &inputLoad_krylov[0], ROM_DOF);
+
+
+		if (writeTransferFunctions) {
+			// obj.H_R(:,:,i) = obj.C_R*(K_krylov_dyn\obj.B_R);
+			std::vector<STACCATOComplexDouble> H_R(myInputDOFS.size()*myOutputDOFS.size(), { 0,0 });
+			std::vector<STACCATOComplexDouble> temp;
+			temp.insert(temp.end(), myBReduced.begin(), myBReduced.end());
+			// temp = (K_krylov_dyn\obj.B_R)
+			LAPACKE_zgetrs(LAPACK_COL_MAJOR, 'N', ROM_DOF, myInputDOFS.size(), &StiffnessAssembled[0], ROM_DOF, &pivot[0], &temp[0], ROM_DOF);
+			// H_R = obj.C_R*temp
+			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), myInputDOFS.size(), ROM_DOF, &myCReduced[0], &temp[0], &H_R[0], false, false, OneComplex, false, false, false);
+
+			std::string filename = "C://software//repos//staccato//scratch//";
+			AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + _analysisName + "_HR_freq" + std::to_string(_freq->at(iFreqCounter)) + ".mtx", H_R, myOutputDOFS.size(), myInputDOFS.size(), false);
+		}
+
+		// z_freq = obj.C_R*z_krylov_freq;
+		std::vector<STACCATOComplexDouble> backprojected_sol(myOutputDOFS.size()*_numLoadCase, ZeroComplex);
+		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), _numLoadCase, ROM_DOF, &myCReduced[0], &inputLoad_krylov[0], &backprojected_sol[0], false, false, OneComplex, false, false, false);
+
+		results.insert(results.end(), backprojected_sol.begin(), backprojected_sol.end());
+		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ... Finished." << std::endl;
+	}
+	anaysisTimer01.stop();
+	std::cout << " --> Duration for backtransformation: " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
+
+	if (exportSolution)
+		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(_analysisName + "_KMOR_Results.dat", results);
+#endif // USE_INTEL_MKL
+}
+
+void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
+	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
+	// Node Sets
+	for (int k = 0; k < iterParts->PART()[_iPart].SETS().begin()->NODESET().size(); k++) {
+		// Recognize List for ALL or a List of IDs
+		std::vector<int> idList;
+		// Keyword: ALL
+		if (std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].LIST()->c_str()) == "ALL") {
+			int alldof = myUMAReader->totalDOFs;
+			for (size_t i = 0; i < alldof; i++)
+				idList.push_back(i);
+		}
+		else {	// ID List
+				// filter
+			std::stringstream stream(std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].LIST()->c_str()));
+			while (stream) {
+				int n;
+				stream >> n;
+				if (stream)
+					idList.push_back(n-1);
+			}
+		}
+		nodeSetsMap[std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].Name()->c_str())] =  idList;
+	}
 }

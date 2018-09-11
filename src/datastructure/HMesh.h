@@ -249,8 +249,8 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::vector<int> convertElementSetNameToLabels(std::string _elemSetName);
+
 	bool hasParts;
-	bool isSIM;
 	bool isKROM;
 	std::vector<int> referenceNodeLabel;
 	int numUMADofs;

@@ -30,10 +30,11 @@
 #include <vector>
 #include <map>
 
+#include "AuxiliaryParameters.h"
+
 #ifdef USE_SIMULIA_UMA_API
 class uma_System;
 class uma_SparseMatrix;
-//#include <uma_SparseMatrix.h>
 #endif
 
 class HMesh;
@@ -115,6 +116,39 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void addEntryToNodeDofMap(int _node, int _dof);
+	/***********************************************************************************************
+	* \brief Import routine to load data from SIM
+	* \param[in] Matrix key
+	* \param[in] SIM file name
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void ImportSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values);
+	/***********************************************************************************************
+	* \brief Loads in the CSR Entries for SIM Matrix 
+	* \param[in] _matName name of matrix
+	* \param[out] _ia CSR row vector
+	* \param[out] _ja CSR column vector
+	* \param[out] _values CSR value vector
+	* \param[in] _fileexp Flag for exporitng imported matrices in CSR format
+	* \author Harikrishnan Sreekumar
+	***********/
+	void getSparseMatrixCSR(std::string _matName, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, bool _fileexp);
+	/***********************************************************************************************
+	* \brief Subroutine function Loads in data from SIM
+	* \param[in] _smtx UMA Sparse Matrix
+	* \param[in] _printToFile Flag for exporitng imported matrices in CSR format
+	* \param[in] _filePrefix File prefix name to export
+	* \param[out] _ia CSR row vector
+	* \param[out] _ja CSR column vector
+	* \param[out] _values CSR value vector
+	* \author Harikrishnan Sreekumar
+	***********/
+#ifdef USE_SIMULIA_UMA_API
+	void loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFile, std::string _filePrefix, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values);
+#endif
+
 private:
 	std::string myFileName;
 	/// HMesh object 
@@ -123,8 +157,6 @@ private:
 	std::vector<std::vector<int>> simNodeMap;
 	/// Number of nodes
 	int numNodes;
-	/// Total number of dofs
-	int totalDOFs;
 	/// Number of DoFs per Node
 	int numDoFperNode;
 
@@ -132,7 +164,7 @@ private:
 	bool hasInternalDOF_K;
 	bool hasInternalDOF_M;
 	bool hasInternalDOF_SD;
-	bool flag_SD;
+	bool noStructuralDamping;
 
 	// vectors with local dof of internaldofs
 	std::vector<int> internalDOF_K;
@@ -153,4 +185,11 @@ private:
 	std::map<int, std::vector<int>> nodeToDofMap;
 	std::map<int, std::vector<int>> nodeToGlobalMap;
 
+	std::map<int, std::map<int, STACCATOComplexDouble>> prepMapCSR;
+
+public:
+	/// Total number of dofs
+	int totalDOFs;
+
 };
+

@@ -19,7 +19,8 @@
 */
 #include "STACCATOComputeEngine.h"
 #include "HMesh.h"
-#include "Reader.h"
+
+#include "ReadWriteFile.h"
 #include "Timer.h"
 #include "MemWatcher.h"
 #include "SimuliaODB.h"
@@ -66,10 +67,10 @@ std::string filePath = "/opt/software/repos/STACCATO/model/";
 #endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
-					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
-					Reader* fileReader = new SimuliaUMA(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaUMA(filePath, *myHMesh, iPart);
 				}
 				else {
 					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
@@ -88,7 +89,7 @@ std::string filePath = "/opt/software/repos/STACCATO/model/";
 #endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
-					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
 					std::cout << " > SIM Reading for KMOR detached from STACCATOComputeEngine to KrylovROMSubstructure" << std::endl;

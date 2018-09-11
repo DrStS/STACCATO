@@ -27,13 +27,14 @@
 
 #include <string>
 #include <assert.h>
-#include "Reader.h"
+
+#include "ReadWriteFile.h"
 
 class HMesh;
 /********//**
  * \brief This handles the output handling with Abaqus ODB
  **************************************************************************************************/
-class SimuliaODB :public Reader {
+class SimuliaODB :public ReadWriteFile {
 public:
     /***********************************************************************************************
      * \brief Constructor

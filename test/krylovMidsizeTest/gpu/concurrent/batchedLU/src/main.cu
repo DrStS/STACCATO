@@ -245,6 +245,7 @@ int main (int argc, char *argv[]){
         ---------------------------------------------------------------*/
         array_shift = 0;
         int rhs_shift = 0;
+        // Parallelise this loop
         for (size_t j = 0; j < batchSize; j++){
             // Update matrix A pointer
             d_ptr_A[j] = d_ptr_A_base + array_shift;
@@ -252,7 +253,7 @@ int main (int argc, char *argv[]){
             freq = (i+1);
             freq_square = -freq*freq;
             // Assemble matrix
-            assembly::assembleGlobalMatrix4Batched(streams[0], cublasHandle, d_ptr_A[j], d_ptr_K + mat_shift, d_ptr_M + mat_shift, size_sub[i], one, freq_square);
+            assembly::assembleGlobalMatrix4Batched(cublasHandle, d_ptr_A[j], d_ptr_K + mat_shift, d_ptr_M + mat_shift, size_sub[i], one, freq_square);
             // Update rhs pointer
             d_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift;
             // Update shifts
@@ -268,10 +269,11 @@ int main (int argc, char *argv[]){
         /*-----------
         Solve x = A\b
         -----------*/
-        cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+        cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
+                                         thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
 
         // Update matrix shift
-        mat_shift += size_sub[i];
+        mat_shift  += size_sub[i];
         loop_shift += row_sub[i];
     } // matrix loop
 
@@ -285,6 +287,9 @@ int main (int argc, char *argv[]){
 
     // Write out solution vectors
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+
+    thrust::host_vector<cuDoubleComplex> A = d_A;
+    io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
     // Destroy cuBLAS
     cublasDestroy(cublasHandle);

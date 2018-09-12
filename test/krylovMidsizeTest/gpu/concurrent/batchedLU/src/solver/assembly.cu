@@ -31,16 +31,13 @@ void assembly::assembleGlobalMatrix(cudaStream_t stream, cublasStatus_t cublasSt
 }
 
 // Assembles global matrix for batched execution
-void assembly::assembleGlobalMatrix4Batched(cudaStream_t stream, cublasHandle_t cublasHandle, cuDoubleComplex *d_ptr_A,
+void assembly::assembleGlobalMatrix4Batched(cublasHandle_t cublasHandle, cuDoubleComplex *d_ptr_A,
                                             cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
                                             int nnz_sub, cuDoubleComplex one, double freq_square){
     // Copy M to A
-    cublasSetStream(cublasHandle, stream);
     cublas_check(cublasZcopy(cublasHandle, nnz_sub, d_ptr_M, 1, d_ptr_A, 1));
     // Scale M by f^2
-    cublasSetStream(cublasHandle, stream);
     cublas_check(cublasZdscal(cublasHandle, nnz_sub, &freq_square, d_ptr_A, 1));
     // Sum A with K
-    cublasSetStream(cublasHandle, stream);
     cublas_check(cublasZaxpy(cublasHandle, nnz_sub, &one, d_ptr_K, 1, d_ptr_A, 1));
 }

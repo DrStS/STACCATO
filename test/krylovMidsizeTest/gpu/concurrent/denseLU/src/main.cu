@@ -250,7 +250,6 @@ int main (int argc, char *argv[]){
 
     timerLoop.start();
 
-    int tid_nested;
     size_t prev_row_shift, row_shift, mat_shift;
     // Loop over frequency
     std::cout << "\n>> Frequency loop started" << std::endl;
@@ -278,33 +277,27 @@ int main (int argc, char *argv[]){
             --------------*/
             array_shift = 0;
             row_shift = tid*row;
-    #pragma omp parallel private(tid) num_threads(num_threads)
-        {
-            tid_nested = omp_get_thread_num();
-            #pragma omp for
-                for (int i = 0; i < num_matrix; i++){
+    #pragma omp critical
+    {
+            for (int i = 0; i < num_matrix; i++){
+                //std::cout<< "I'm thread " << tid_nested << " of " << omp_get_num_threads() << " from " << tid << " inside nested loop dealing with i = " << i << std::endl;
+                // LU decomposition
+                cusolverDnSetStream(cusolverHandle, streams[tid]);
+                cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + mat_shift + array_shift, row_sub[i], d_ptr_workspace[tid], NULL,
+                                                  d_ptr_solverInfo[tid]);
+                assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
 
-                    #pragma omp critical
-                    std::cout<< "I'm thread " << tid_nested << " of " << omp_get_num_threads() << " from " << tid << " inside nested loop dealing with i = " << i << std::endl;
-/*
-                    // LU decomposition
-                    cusolverDnSetStream(cusolverHandle, streams[tid]);
-                    cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + mat_shift + array_shift, row_sub[i], d_ptr_workspace[tid], NULL,
-                                                      d_ptr_solverInfo[tid]);
-                    assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
-
-                    // Solve A\b
-                    cusolverDnSetStream(cusolverHandle, streams[tid]);
-                    cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + mat_shift + array_shift, row_sub[i], NULL,
-                                                      d_ptr_rhs + row_shift + prev_row_shift, row_sub[i], d_ptr_solverInfo[tid]);
-                    assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
-                    // Update row shift
-                    row_shift += row_sub[i];
-                    // Update array shift
-                    array_shift += size_sub[i];
-*/
-                }
-        }
+                // Solve A\b
+                cusolverDnSetStream(cusolverHandle, streams[tid]);
+                cusolverStatus = cusolverDnZgetrs(cusolverHandle, CUBLAS_OP_N, row_sub[i], 1, d_ptr_A + mat_shift + array_shift, row_sub[i], NULL,
+                                                  d_ptr_rhs + row_shift + prev_row_shift, row_sub[i], d_ptr_solverInfo[tid]);
+                assert(cusolverStatus == CUSOLVER_STATUS_SUCCESS);
+                // Update row shift
+                row_shift += row_sub[i];
+                // Update array shift
+                array_shift += size_sub[i];
+            }
+    }
             // Move onto next batch of frequency arrays
             prev_row_shift += num_threads*row;
 

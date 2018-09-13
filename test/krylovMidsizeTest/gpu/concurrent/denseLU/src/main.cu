@@ -314,7 +314,7 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSolver
     cublasDestroy(cublasHandle);

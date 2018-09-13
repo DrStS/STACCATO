@@ -200,7 +200,7 @@ int main (int argc, char *argv[]){
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 
     // Create matrix device_vectors
-    thrust::device_vector<cuDoubleComplex> d_A(freq_max*nnz_max, one);
+    thrust::device_vector<cuDoubleComplex> d_A(freq_max*nnz_max);
 
     // Get raw pointers to matrices
     cuDoubleComplex *d_ptr_K = thrust::raw_pointer_cast(d_K.data());
@@ -239,6 +239,7 @@ int main (int argc, char *argv[]){
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
     int mat_shift = 0;
     int loop_shift = 0;
+    // Parallelise this loop
     for (size_t i = 0; i < num_matrix; i++){
         /*---------------------------------------------------------------
         Assemble Global Matrix & Update pointers to each matrix A and RHS
@@ -246,12 +247,13 @@ int main (int argc, char *argv[]){
         array_shift = 0;
         int rhs_shift = 0;
         // Parallelise this loop
+        // Assume batchSize = freq_max
         for (size_t j = 0; j < batchSize; j++){
             // Update matrix A pointer
             d_ptr_A[j] = d_ptr_A_base + array_shift;
             // Compute frequency (assume batchSize = freq_max)
-            freq = (i+1);
-            freq_square = -freq*freq;
+            freq = (j+1);
+            freq_square = -(freq*freq);
             // Assemble matrix
             assembly::assembleGlobalMatrix4Batched(cublasHandle, d_ptr_A[j], d_ptr_K + mat_shift, d_ptr_M + mat_shift, size_sub[i], one, freq_square);
             // Update rhs pointer
@@ -287,9 +289,6 @@ int main (int argc, char *argv[]){
 
     // Write out solution vectors
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
-
-    thrust::host_vector<cuDoubleComplex> A = d_A;
-    io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
     // Destroy cuBLAS
     cublasDestroy(cublasHandle);

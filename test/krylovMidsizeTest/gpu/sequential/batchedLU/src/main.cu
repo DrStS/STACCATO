@@ -253,8 +253,10 @@ int main (int argc, char *argv[]){
         /*-----------
         Solve x = A\b
         -----------*/
+
         cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                          thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+
 
         // Update matrix shift
         mat_shift  += size_sub[i];

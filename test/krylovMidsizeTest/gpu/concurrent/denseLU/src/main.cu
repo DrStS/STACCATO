@@ -261,9 +261,11 @@ int main (int argc, char *argv[]){
         mat_shift = tid*nnz;
         // Previous row shift
         prev_row_shift = 0;
+        // Indices
+        int it, i;
 
 #pragma omp for
-        for (size_t it = (size_t)freq_min; it <= (size_t)freq_max; it++){
+        for (it = (size_t)freq_min; it <= (size_t)freq_max; it++){
             /*--------------------
             Assemble global matrix
             --------------------*/
@@ -279,8 +281,7 @@ int main (int argc, char *argv[]){
             row_shift = tid*row;
     #pragma omp critical
     {
-            for (int i = 0; i < num_matrix; i++){
-                //std::cout<< "I'm thread " << tid_nested << " of " << omp_get_num_threads() << " from " << tid << " inside nested loop dealing with i = " << i << std::endl;
+            for (i = 0; i < num_matrix; i++){
                 // LU decomposition
                 cusolverDnSetStream(cusolverHandle, streams[tid]);
                 cusolverStatus = cusolverDnZgetrf(cusolverHandle, row_sub[i], row_sub[i], d_ptr_A + mat_shift + array_shift, row_sub[i], d_ptr_workspace[tid], NULL,
@@ -314,7 +315,7 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
     // Destroy cuBLAS & cuSolver
     cublasDestroy(cublasHandle);

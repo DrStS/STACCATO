@@ -55,7 +55,7 @@ int main (int argc, char *argv[]){
     std::cout << ">> Number of CUDA streams: " << num_streams << std::endl;
     std::cout << ">> Number of batched matrices: " << batchSize << "\n" << std::endl;
 
-    if (((int)freq_max % num_streams) != 0) {
+    if (((int)num_matrix % num_streams) != 0) {
         std::cerr << ">> ERROR: Invalid number of streams\n" << std::endl;
         return 1;
     }
@@ -98,12 +98,10 @@ int main (int argc, char *argv[]){
     rhs_val.y = (double)0.0;
 
     // OpenMP
-/*
     int tid;
     omp_set_num_threads(num_threads);
-    omp_set_dynamic(0);
-    omp_set_nested(0);
-*/
+    //omp_set_dynamic(0);
+    //omp_set_nested(0);
 
     timerTotal.start();
     // Library initialisation
@@ -200,22 +198,34 @@ int main (int argc, char *argv[]){
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
 
     // Create matrix device_vectors
-    //thrust::device_vector<cuDoubleComplex> d_A(freq_max*nnz_max);
+    thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max);
 
-    // Get raw pointers to matrices
-    cuDoubleComplex *d_ptr_K = thrust::raw_pointer_cast(d_K.data());
-    cuDoubleComplex *d_ptr_M = thrust::raw_pointer_cast(d_M.data());
-    cuDoubleComplex *d_ptr_D = thrust::raw_pointer_cast(d_D.data());
+    // Get vector of raw pointers to matrices
+    cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
+    cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
+    cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
+    thrust::host_vector<cuDoubleComplex*> d_ptr_K(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> d_ptr_M(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> d_ptr_D(num_matrix);
+    size_t mat_shift = 0;
+    size_t sol_shift = 0;
+    thrust::host_vector<int> loop_shift(num_matrix);
+    for (size_t i = 0; i < num_matrix; i++){
+        d_ptr_K[i] = d_ptr_K_base + mat_shift;
+        d_ptr_M[i] = d_ptr_M_base + mat_shift;
+        d_ptr_D[i] = d_ptr_D_base + mat_shift;
+        loop_shift[i] = sol_shift;
+        mat_shift += size_sub[i];
+        sol_shift += row_sub[i];
+    }
 
-    // Get array of raw pointers to A for batched LU
-    //cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-
-    // Get array of raw pointers to RHS for batched LU
-    //cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
+    // Get raw pointers to matrix A and rhs
+    cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
+    cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
 
     timerMatrixComp.start();
     // M = 4*pi^2*M (Single computation suffices)
-    cublas_check(cublasZdscal(cublasHandle, nnz, &alpha, d_ptr_M, 1));
+    cublas_check(cublasZdscal(cublasHandle, nnz, &alpha, d_ptr_M_base, 1));
     timerMatrixComp.stop();
     std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
@@ -237,22 +247,21 @@ int main (int argc, char *argv[]){
     --------------------*/
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
-    // Shifts
 #pragma omp parallel private(tid, array_shift, freq, freq_square) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
-        // Allocate private arrays of A in each thread
-        thrust::device_vector<cuDoubleComplex> d_A(freq_max*nnz_max);
-        // Get raw pointers to A and RHS in each thread
-        cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-        cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
-        // Allocate private arrays of pointers in each thread
+        // Indices
+        size_t j;
+        // Allocate vector of array pointers to A in each thread
         thrust::device_vector<cuDoubleComplex*> d_ptr_A(batchSize);
         thrust::device_vector<cuDoubleComplex*> d_ptr_rhs(batchSize);
         // Initialise shifts
-        int mat_shift, loop_shift, rhs_shift;
-        mat_shift = 0; array_shift = 0; loop_shift = 0; rhs_shift = 0;
+        int thread_shift, rhs_shift;
+        rhs_shift = 0;
+        thread_shift = tid*freq_max*nnz_max;
+        // Set cuBLAS stream
+        cublasSetStream(cublasHandle, streams[tid]);
 
     // Loop over each matrix size
     #pragma omp for
@@ -261,26 +270,24 @@ int main (int argc, char *argv[]){
             Assemble Global Matrix & Update pointers to each matrix A and RHS
             ---------------------------------------------------------------*/
             // Initialise Shifts
-            loop_shift = 0;
             array_shift = 0;
             rhs_shift = 0;
-            #pragma omp critical
-            {
-                // Loop over batch (assume batchSize = freq_max)
-                for (size_t j = 0; j < batchSize; j++){
-                    // Update matrix A pointer
-                    d_ptr_A[j] = d_ptr_A_base + array_shift;
-                    // Compute frequency (assume batchSize = freq_max)
-                    freq = (j+1);
-                    freq_square = -(freq*freq);
-                    // Assemble matrix
-                    assembly::assembleGlobalMatrix4Batched(streams[tid], cublasHandle, d_ptr_A[j], d_ptr_K + mat_shift, d_ptr_M + mat_shift, size_sub[i], one, freq_square);
-                    // Update rhs pointer
-                    d_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift;
-                    // Update shifts
-                    array_shift += size_sub[i];
-                    rhs_shift += row;
-                }
+            // Loop over batch (assume batchSize = freq_max)
+            for (j = 0; j < batchSize; j++){
+                // Update matrix A pointer
+                d_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;
+                // Compute frequency (assume batchSize = freq_max)
+                freq = (j+1);
+                freq_square = -(freq*freq);
+                // Assemble matrix
+                cublasSetStream(cublasHandle, streams[tid]);
+                assembly::assembleGlobalMatrix4Batched(cublasHandle, d_ptr_A[j], d_ptr_K[i], d_ptr_M[i], size_sub[i], one, freq_square);
+                // Update rhs pointer
+                d_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
+                //if (tid == 0) std::cout << "Thread = " << tid << "  mat = " << i << "  freq = " << j << "   shift = " << rhs_shift + loop_shift[i] << "   Size = " << row_sub[i] << std::endl;
+                // Update shifts
+                array_shift += size_sub[i];
+                rhs_shift += row;
             }
             /*--------------
             LU Decomposition
@@ -293,9 +300,6 @@ int main (int argc, char *argv[]){
             cublasSetStream(cublasHandle, streams[tid]);
             cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
-            // Update matrix shift
-            mat_shift  += size_sub[i];
-            loop_shift += row_sub[i];
         } // matrix loop
     } // omp parallel
 
@@ -309,6 +313,11 @@ int main (int argc, char *argv[]){
 
     // Write out solution vectors
     //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+
+/*
+    thrust::host_vector<cuDoubleComplex> A = d_A;
+    io::writeSolVecComplex(A, filepath_sol, "A.dat");
+*/
 
     // Destroy cuBLAS
     cublasDestroy(cublasHandle);

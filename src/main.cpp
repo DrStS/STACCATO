@@ -76,7 +76,12 @@
 #endif // STACCATO_COMMANDLINE_ON
 
 
+#include "FileROM.h"
+
 int main(int argc, char **argv) {
+
+
+	FileROM myFileROM("fileName", "fielPath");
 
 #ifdef STACCATO_COMMANDLINE_ON
 	std::cout << "Hello STACCATO is fired up!" << std::endl;
@@ -92,6 +97,8 @@ int main(int argc, char **argv) {
 		myComputeEngine->compute();
 		myComputeEngine->clean();
 	}
+
+
 
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON

@@ -20,12 +20,15 @@
 #include "FileROM.h"
 #include "AuxiliaryParameters.h"
 //HDF5
+#ifdef USE_HDF5
 #include "H5Cpp.h"
 #include "Timer.h"
+#endif
 
 const int   LENGTH = 80000000;
 
 FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fileName), myFilePath(_filePath) {
+#ifdef USE_HDF5
 
 
 	try
@@ -106,9 +109,11 @@ anaysisTimer01.stop();
 
 
 	}
+#endif
 }
 
 void FileROM::test() {
+#ifdef USE_HDF5
 	try
 	{
 		/*
@@ -154,6 +159,7 @@ std::cout << "Time for stream: " << anaysisTimer01.getDurationMilliSec() << std:
 
 
 	}
+#endif
 }
 
 FileROM::~FileROM() {

@@ -212,6 +212,7 @@ ENDIF()
 # 
 # Try to find HDF5
 IF (${USE_HDF5})
+  add_definitions(-DUSE_HDF5)
   find_package(HDF5 REQUIRED)
   MESSAGE("HDF5 status: ${HDF5_FOUND}")
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})

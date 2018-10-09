@@ -26,6 +26,9 @@
 #include "ReadWriteFile.h"
 #include <string>
 
+namespace H5 {
+	class H5File;
+}
 class ReadWriteFile;
 /********//**
  * \brief This handles the file IO of reduced roder models
@@ -47,13 +50,16 @@ public:
 	virtual ~FileROM(void);
 	/***********************************************************************************************
 	 * \brief tmp
-	* \author Stefan Sicklinger
+	 * \author Stefan Sicklinger
+	 * \param[in] _forceWrite is true will wipe out any per existing data in the container 
 	 ***********/
-	void test();
+	void createContainer(bool _forceWrite);
 
 private:
 	/// my file name;
 	std::string myFileName;
 	/// my file path;
 	std::string myFilePath;
+	/// my file handle
+	H5::H5File* myHDF5FileHandle;
 };

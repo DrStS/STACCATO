@@ -24,6 +24,7 @@
  **************************************************************************************************/
 #pragma once
 #include "ReadWriteFile.h"
+#include "AuxiliaryParameters.h"
 #include <string>
 #include <vector>
 
@@ -56,11 +57,18 @@ public:
 	 ***********/
 	void createContainer(bool _forceWrite);
 	/***********************************************************************************************
+    * \brief Open binary container
+    * \author Stefan Sicklinger
+    * \param[in] _writePermission true will enable write access to container
+    ***********/
+	void openContainer(bool _writePermission);
+	/***********************************************************************************************
 	* \brief Add complex dense matrix
 	* \author Stefan Sicklinger
-	* \param[in] _forceWrite is true will wipe out any per existing data in the container
+	* \param[in] _matrixName
+	* \param[in] _values
 	***********/
-	void addComplexDenseMarix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values);
+	void addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values);
 
 private:
 	/// my file name;

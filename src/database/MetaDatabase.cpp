@@ -89,6 +89,7 @@ void MetaDatabase::printXML() {
 	std::cout << "\n==================================\n";*/
 }
 
+/// we need to move that
 void MetaDatabase::buildXML(HMesh& _hMesh) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
@@ -342,3 +343,13 @@ void MetaDatabase::outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string 
 	delete formatTarget;
 	output->release();
 }
+
+std::string MetaDatabase::getWorkingPath(){
+#if defined(_WIN32) || defined(__WIN32__) 
+	myWorkingPath = "C:/software/repos/STACCATO/model/";
+#endif
+#if defined(__linux__) 
+	myWorkingPath = "/opt/software/repos/STACCATO/model/";
+#endif
+	return myWorkingPath;
+};

@@ -76,16 +76,9 @@
 #endif // STACCATO_COMMANDLINE_ON
 
 
-#include "FileROM.h"
+
 
 int main(int argc, char **argv) {
-
-	
-	FileROM myFileROM("fileName", "fielPath");
-	myFileROM.createContainer(false);
-	//myFileROM.test();
-
-
 #ifdef STACCATO_COMMANDLINE_ON
 	std::cout << "Hello STACCATO is fired up!" << std::endl;
 	std::cout << "GIT: " << STACCATO::AuxiliaryParameters::gitSHA1 << std::endl;

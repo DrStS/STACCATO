@@ -87,7 +87,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			myModelType = "UNSUPPORTED";
 			FOM_DOF = -1;
 		}
-		std::cout << "Physical memory consumption after FOM build: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+		std::cout << "|| Physical memory consumption after FOM build: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 		exportCSRTimer01.stop();
 		std::cout << " --> Duration loading FOM: " << exportCSRTimer01.getDurationMilliSec() << " milliSec" << std::endl;
 
@@ -165,6 +165,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			displayModelSize();
 
 			generateInputOutputMatricesForFOM();
+			std::cout << "|| Physical memory consumption after Generation of Input-Output Matrix: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			/* %%% Reduce FOM to ROM %%% */
 			anaysisTimer01.start();
@@ -179,6 +180,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			}
 			anaysisTimer02.stop();
 			std::cout << " --> Duration building projection matrices: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
+			std::cout << "|| Physical memory consumption after Generation of Projection Basis: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			// Size determination
 			ROM_DOF = myV.size() / FOM_DOF;
@@ -191,6 +193,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			anaysisTimer01.stop();
 			std::cout << " --> Duration generating MOR: " << anaysisTimer02.getDurationMilliSec() << " milliSec" << std::endl;
 			std::cout << " --> Duration for krylov reduced model generation of model " << std::string(iterParts->PART()[iPart].Name()->c_str()) << " : " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
+			std::cout << "|| Physical memory consumption after Generation of ROM: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			/* %%% Output ROM %%% */
 			if (writeROM)
@@ -392,7 +395,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-09;
+		double sigTol = 1e-08;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -851,7 +854,9 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::string filePath = "/opt/software/repos/STACCATO/model/";
 #endif
 	filePath += std::string(iterParts->PART()[_iPart].FILEIMPORT().begin()->FILE()->data());
+	std::cout << "|| Physical memory consumption before UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	myUMAReader = new SimuliaUMA(filePath, *myHMesh, _iPart);
+	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	myHMesh = NULL;
 	buildXMLforSIM(_iPart);
 
@@ -860,6 +865,9 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
 
 	FOM_DOF = myUMAReader->totalDOFs;
+	std::cout << "|| Physical memory consumption after UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	delete myUMAReader;
+	std::cout << "|| Physical memory consumption after UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
 void KrylovROMSubstructure::displayModelSize() {

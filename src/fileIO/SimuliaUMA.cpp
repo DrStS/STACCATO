@@ -45,10 +45,6 @@ SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHM
 	numNodes = 0;
 	numDoFperNode = 0;
 	openFile();
-
-	hasInternalDOF_K = false;
-	hasInternalDOF_M = false;
-	hasInternalDOF_SD = false;
 }
 
 SimuliaUMA::~SimuliaUMA() {
@@ -291,82 +287,8 @@ void SimuliaUMA::extractDatastructure(const uma_System &system, char *matrixName
 	if (smtx.IsSymmetric())
 		printf("; symmetric");
 	printf("\n");
-	//checkForInternalDofs(smtx, matrixName, _printToScreen);
 }
 #endif
-
-#ifdef USE_SIMULIA_UMA_API
-void SimuliaUMA::checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrixName, bool _printToScreen) {
-
-	uma_SparseIterator iter(smtx);
-	int row, col; double val;
-
-	if (_printToScreen) {
-		int count = 0;
-		int lastRow = 0;
-		for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
-			iter.Entry(row, col, val);
-			if (row != lastRow)
-				printf("\n");
-			if (row != col)
-				printf("  %2i,%-2i:%g", row, col, val);
-			else
-				printf(" *%2i,%-2i:%g", row, col, val);
-
-			lastRow = row;
-		}
-		printf("\n");
-
-		// Map column DOFS to user nodes and dofs
-		if (smtx.TypeColumns() != uma_Enum::DOFS)
-			exit(EXIT_FAILURE);
-		printf("\n  map columns [column: node-dof]:");
-		uma_ArrayInt     nodes; smtx.MapColumns(nodes, uma_Enum::NODES); // test array
-		uma_ArrayInt ldofs; smtx.MapColumns(ldofs, uma_Enum::DOFS);  // test vector
-		for (int col = 0; col < nodes.Size(); col++) {
-			if (col % 10 == 0)
-				printf("\n");
-			printf(" %3i:%3i-%1i", col, nodes[col], ldofs[col]);
-		}
-		printf("\n");
-	}
-
-	if (smtx.TypeColumns() != uma_Enum::DOFS)
-		return;
-
-	// Sensing internal dofs
-	bool flagIDOF = false;
-	uma_ArrayInt     nodes; smtx.MapColumns(nodes, uma_Enum::NODES); // test array
-	uma_ArrayInt ldofs; smtx.MapColumns(ldofs, uma_Enum::DOFS);  // test vector
-	for (int col = 0; col < nodes.Size(); col++) {
-		if (nodes[col] >= 1000000000) {
-			addInternalDof(matrixName, col, true);
-			flagIDOF = true;
-		}
-	}
-
-	if (flagIDOF) 
-		std::cout << " ! Presence of Internal DOF." << std::endl;
-	else
-		std::cout << " > No Internal DOFs." << std::endl;
-}
-#endif
-
-void SimuliaUMA::addInternalDof(char *matrixName, int _index, bool _flag) {
-
-	if (std::string(matrixName) == std::string(stiffnessUMA_key)) {
-		hasInternalDOF_K = _flag;
-		internalDOF_K.push_back(_index);
-	}
-	else if (std::string(matrixName) == std::string(massUMA_key)) {
-		hasInternalDOF_M = _flag;
-		internalDOF_M.push_back(_index);
-	}
-	else if (std::string(matrixName) == std::string(structuralDampingUMA_key)) {
-		hasInternalDOF_SD = _flag;
-		internalDOF_SD.push_back(_index);
-	}
-}
 
 void SimuliaUMA::generateGlobalMap(bool _printToScreen) {
 	std::cout << ">> Generating global map..." << std::endl;
@@ -631,7 +553,7 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 			globalrow = globalcol;
 			globalcol = temp;
 		}
-		prepMapCSR[globalrow][globalcol + 1] = { val,0 };
+		prepMapCSR[globalrow][globalcol + 1] = val;
 
 		if (globalrow == globalcol) {
 			if (val >= 1e36) {
@@ -646,9 +568,9 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 		_ia.push_back(_values.size() + 1);
 		auto search = prepMapCSR.find(iTotalDof);
 		if (search != prepMapCSR.end()) {
-			for (std::map<int, STACCATOComplexDouble>::iterator it2 = prepMapCSR[iTotalDof].begin(); it2 != prepMapCSR[iTotalDof].end(); ++it2) {
+			for (std::map<int, double>::iterator it2 = prepMapCSR[iTotalDof].begin(); it2 != prepMapCSR[iTotalDof].end(); ++it2) {
 				_ja.push_back(it2->first);
-				_values.push_back(it2->second);
+				_values.push_back({ it2->second,0 });
 			}
 		}
 	}

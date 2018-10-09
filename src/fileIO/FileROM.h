@@ -25,6 +25,7 @@
 #pragma once
 #include "ReadWriteFile.h"
 #include <string>
+#include <vector>
 
 namespace H5 {
 	class H5File;
@@ -49,11 +50,17 @@ public:
      ***********/
 	virtual ~FileROM(void);
 	/***********************************************************************************************
-	 * \brief tmp
+	 * \brief Create binary container
 	 * \author Stefan Sicklinger
 	 * \param[in] _forceWrite is true will wipe out any per existing data in the container 
 	 ***********/
 	void createContainer(bool _forceWrite);
+	/***********************************************************************************************
+	* \brief Add complex dense matrix
+	* \author Stefan Sicklinger
+	* \param[in] _forceWrite is true will wipe out any per existing data in the container
+	***********/
+	void addComplexDenseMarix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values);
 
 private:
 	/// my file name;

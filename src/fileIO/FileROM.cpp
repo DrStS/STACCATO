@@ -146,18 +146,20 @@ FileROM::~FileROM() {
 }
 
 void FileROM::createContainer(bool _forceWrite) {
-	if(_forceWrite){
+
 	try
 	{
-		H5::H5File* file = new H5::H5File("Kdyn.h5", H5F_ACC_EXCL);
+		if (_forceWrite) {
+			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_TRUNC);
+		}
+		else {
+			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_EXCL);
+		}
 	}
 		catch (H5::FileIException error)
 	{
-			std::cout << "SERVUS" << std::endl;
-			if(myHDF5FileHandle==NULL)
-				std::cout << "SERVUS2" << std::endl;
-		
-	}
+			std::cout << "Error: Cannot create file" << std::endl;
+			std::cout << "File already exists!" << std::endl;
 	}
 }
 

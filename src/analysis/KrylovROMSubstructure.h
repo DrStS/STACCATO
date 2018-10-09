@@ -176,21 +176,21 @@ private:
 
 	// FOM Complex data	
 	/// Input Matrix
-	std::vector<MKL_Complex16> myB;
+	std::vector<STACCATOComplexDouble> myB;
 	/// Output matrix
-	std::vector<MKL_Complex16> myC;
+	std::vector<STACCATOComplexDouble> myC;
 
 	// ROM Complex data
 	/// Dense reduced stiffness matrix
-	std::vector<MKL_Complex16> myKComplexReduced;
+	std::vector<STACCATOComplexDouble> myKComplexReduced;
 	/// Dense reduced mass matrix
-	std::vector<MKL_Complex16> myMComplexReduced;
+	std::vector<STACCATOComplexDouble> myMComplexReduced;
 	/// Dense reduced damping matrix
-	std::vector<MKL_Complex16> myDComplexReduced;
+	std::vector<STACCATOComplexDouble> myDComplexReduced;
 	/// Dense reduced Input matrix
-	std::vector<MKL_Complex16> myBReduced;
+	std::vector<STACCATOComplexDouble> myBReduced;
 	/// Dense reduced Output matrix
-	std::vector<MKL_Complex16> myCReduced;
+	std::vector<STACCATOComplexDouble> myCReduced;
 
 	// KMOR Data
 	/// Expansion points
@@ -198,9 +198,9 @@ private:
 	/// Krylov order
 	int myKrylovOrder;
 	/// Projection matrix spanning input subspace
-	std::vector<MKL_Complex16> myV;
+	std::vector<STACCATOComplexDouble> myV;
 	/// Projection matrix spanning output subspace
-	std::vector<MKL_Complex16> myZ;
+	std::vector<STACCATOComplexDouble> myZ;
 	/// inputDOFS
 	std::vector<int> myInputDOFS;
 	/// outputDOFS

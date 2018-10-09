@@ -45,7 +45,11 @@ public:
      * \author Stefan Sicklinger
      ***********/
 	virtual ~FileROM(void);
-
+	/***********************************************************************************************
+	 * \brief tmp
+	* \author Stefan Sicklinger
+	 ***********/
+	void test();
 
 private:
 	/// my file name;

@@ -80,8 +80,10 @@
 
 int main(int argc, char **argv) {
 
+	
+	//FileROM myFileROM("fileName", "fielPath");
+	//myFileROM.test();
 
-	FileROM myFileROM("fileName", "fielPath");
 
 #ifdef STACCATO_COMMANDLINE_ON
 	std::cout << "Hello STACCATO is fired up!" << std::endl;

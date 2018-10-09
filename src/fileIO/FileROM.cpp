@@ -21,8 +21,9 @@
 #include "AuxiliaryParameters.h"
 //HDF5
 #include "H5Cpp.h"
+#include "Timer.h"
 
-const int   LENGTH = 1000;
+const int   LENGTH = 80000000;
 
 FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fileName), myFilePath(_filePath) {
 
@@ -33,7 +34,10 @@ FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fil
 		 * Initialize the data
 		 */
 		int  i;
-		STACCATOComplexDouble kdyn[LENGTH];
+		std::cout << "TEST" << std::endl;
+		STACCATOComplexDouble *kdyn = new STACCATOComplexDouble[LENGTH];
+
+		std::cout << "TEST2" << std::endl;
 		for (i = 0; i < LENGTH; i++)
 		{
 			kdyn[i].real = (double)std::rand() / RAND_MAX;
@@ -43,6 +47,7 @@ FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fil
 		 * Turn off the auto-printing when failure occurs so that we can
 		 * handle the errors appropriately
 		 */
+anaysisTimer01.start();
 		H5::Exception::dontPrint();
 		/*
 		 * Create the data space.
@@ -72,6 +77,8 @@ FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fil
 		/*
 		 * Release resources
 		 */
+anaysisTimer01.stop();
+        std::cout << "Time for complex: " << anaysisTimer01.getDurationMilliSec() << std::endl;
 		delete dataset;
 		delete file;
 	}  // end of try block
@@ -95,6 +102,54 @@ FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fil
 	}
 	// catch failure caused by the DataSpace operations
 	catch (H5::DataTypeIException error)
+	{
+
+
+	}
+}
+
+void FileROM::test() {
+	try
+	{
+		/*
+		 * Initialize the data
+		 */
+		int  i;
+
+		double *kdyn = new double[LENGTH*2];
+		for (i = 0; i < LENGTH*2; i++)
+		{
+			kdyn[i] = (double)std::rand() / RAND_MAX;
+		}
+		/*
+		 * Turn off the auto-printing when failure occurs so that we can
+		 * handle the errors appropriately
+		 */
+anaysisTimer01.start();
+		H5::Exception::dontPrint();
+		/*
+		 * Create the data space.
+		 */
+		hsize_t dim[] = { LENGTH*2 };   /* Dataspace dimensions */
+		H5::DataSpace space(1, dim);
+		/*
+		 * Create the file.
+		 */
+		H5::H5File* file = new H5::H5File("KdynStream.h5", H5F_ACC_TRUNC);
+		H5::Group* group = new H5::Group(file->createGroup("/Data"));
+		/*
+		 * Create the memory datatype.
+		 */
+		H5::FloatType mtype(H5::PredType::NATIVE_DOUBLE);
+
+		H5::DataSet dataset = file->createDataSet("Data/K_dyn", mtype, space);
+
+		dataset.write(kdyn, H5::PredType::NATIVE_DOUBLE);
+anaysisTimer01.stop();
+std::cout << "Time for stream: " << anaysisTimer01.getDurationMilliSec() << std::endl;
+	}  // end of try block
+
+	catch (H5::FileIException error)
 	{
 
 

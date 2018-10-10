@@ -371,7 +371,6 @@ int main (int argc, char *argv[]){
             cusparseStatus = cusparseXcsrilu02_zeroPivot(cusparseHandle, solverInfo_A, &numerical_zero);
             if (CUSPARSE_STATUS_ZERO_PIVOT == cusparseStatus) printf("U(%d,%d) is zero\n", numerical_zero, numerical_zero);
 */
-
             /*-----------
             Solve x = A\b
             -----------*/

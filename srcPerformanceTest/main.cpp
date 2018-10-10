@@ -320,10 +320,7 @@ int main(int argc, char *argv[]) {
                 freq_square = -(freq*freq);
 
                 // Assemble global matrix ( A = K - f^2*M_tilde)
-                //assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
-                cblas_zcopy(nnz, M.data(), 1, A.data() + mat_shift, 1);
-                cblas_zdscal(nnz, freq_square, A.data() + mat_shift, 1);
-                cblas_zaxpy(nnz, &one, K.data(), 1, A.data() + mat_shift, 1);
+                assembly::assembleGlobalMatrix(A.data(), K.data(), M.data(), mat_shift, nnz, one, freq_square);
 
                 /*-----
                 PARDISO

@@ -55,6 +55,7 @@ FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fil
 
 FileROM::~FileROM() {
 	delete myHDF5FileHandle;
+	delete myHDF5groupOperators;
 }
 
 void FileROM::createContainer(bool _forceWrite) {
@@ -63,11 +64,11 @@ void FileROM::createContainer(bool _forceWrite) {
 	{
 		if (_forceWrite) {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_TRUNC);
-			H5::Group* group = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
+			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
 		}
 		else {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_EXCL);
-			H5::Group* group = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
+			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
 		}
 	}
 		catch (H5::FileIException error)
@@ -125,3 +126,6 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 }
 
 
+void FileROM::closeContainer(void) {
+	myHDF5FileHandle->close();
+}

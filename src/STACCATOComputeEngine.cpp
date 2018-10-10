@@ -28,7 +28,7 @@
 #include "KrylovROMSubstructure.h"
 #include "HMesh.h"
 #include "MetaDatabase.h"
-#include "FileROM.h"
+
 
 STACCATOComputeEngine::STACCATOComputeEngine(std::string _xmlFileName){
 	// Intialize XML metadatabase singelton 
@@ -44,9 +44,6 @@ STACCATOComputeEngine::~STACCATOComputeEngine(){
 void STACCATOComputeEngine::prepare(void) {
 
 	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
-	FileROM myFile("reducedOrderModel.h5", filePath);
-	myFile.createContainer(true);
-
 
 	int numParts = MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART().size();
 	std::cout << "There are " << numParts << " models.\n";

@@ -30,6 +30,7 @@
 
 namespace H5 {
 	class H5File;
+	class Group;
 }
 class ReadWriteFile;
 /********//**
@@ -69,6 +70,11 @@ public:
 	* \param[in] _values
 	***********/
 	void addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values);
+	/***********************************************************************************************
+     * \brief Close binary container
+     * \author Stefan Sicklinger
+     ***********/
+	void closeContainer(void);
 
 private:
 	/// my file name;
@@ -77,4 +83,6 @@ private:
 	std::string myFilePath;
 	/// my file handle
 	H5::H5File* myHDF5FileHandle;
+	/// my group handle
+	H5::Group* myHDF5groupOperators;
 };

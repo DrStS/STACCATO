@@ -18,7 +18,7 @@ void config::configureTest(int argc, char *argv[], double &freq_max, int &mat_re
         std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
         std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
         std::cerr << "         '-parallel=yes' parallelises frequency loop and '-parallel=no' executes it with default master thread. Default is sequential" << std::endl;
-        std::cerr << "         '-sparse=yes' calls PARDISO for block-diagonal matrix system and '-sparse=no' calls LAPACKE for multiple dense matrices. Default is dense" << std::endl;
+        std::cerr << "         '-sparse=yes' calls PARDISO for block-diagonal matrix system (currently only supports sequential version) and '-sparse=no' calls LAPACKE for multiple dense matrices. Default is dense" << std::endl;
         std::cerr << "         Default number of MKL threads is mkl_get_max_threads()" << std::endl;
         std::cerr << "         Default number of OpenMP threads is 1" << std::endl;
         std::exit(1);

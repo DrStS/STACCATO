@@ -81,25 +81,6 @@ public:
 	void extractDatastructure(const uma_System &system, char *matrixName, bool _printToScreen);
 #endif
 	/***********************************************************************************************
-	* \brief Routine to check for internal dofs (Can be disabled if not required)
-	* \param[in] UMA System with the valid matrix
-	* \param[in] Name of matrix
-	* \param[in] Flag for displaying imported matrices
-	* \param[in] Flag for exporitng imported matrices
-	* \author Harikrishnan Sreekumar
-	***********/
-#ifdef USE_SIMULIA_UMA_API
-	void checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrixName, bool _printToScreen);
-#endif
-	/***********************************************************************************************
-	* \brief Adds an internal dof to the datastructure
-	* \param[in] Name of matrix
-	* \param[in] GlobalIndex
-	* \param[in] Flag to mark detection of internal dof
-	* \author Harikrishnan Sreekumar
-	***********/
-	void addInternalDof(char *matrixName, int _index, bool _flag);
-	/***********************************************************************************************
 	* \brief Generates global map
 	* \author Harikrishnan Sreekumar
 	***********/
@@ -161,15 +142,7 @@ private:
 	int numDoFperNode;
 
 	// Flags
-	bool hasInternalDOF_K;
-	bool hasInternalDOF_M;
-	bool hasInternalDOF_SD;
 	bool noStructuralDamping;
-
-	// vectors with local dof of internaldofs
-	std::vector<int> internalDOF_K;
-	std::vector<int> internalDOF_M;
-	std::vector<int> internalDOF_SD;
 
 	// SIM File Names
 	std::string stiffnessFileName;
@@ -185,7 +158,7 @@ private:
 	std::map<int, std::vector<int>> nodeToDofMap;
 	std::map<int, std::vector<int>> nodeToGlobalMap;
 
-	std::map<int, std::map<int, STACCATOComplexDouble>> prepMapCSR;
+	std::map<int, std::map<int, double>> prepMapCSR;
 
 public:
 	/// Total number of dofs

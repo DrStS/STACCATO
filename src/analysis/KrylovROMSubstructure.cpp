@@ -917,6 +917,8 @@ void KrylovROMSubstructure::exportROMToFiles() {
 	myFile.addComplexDenseMatrix("M", myMComplexReduced);
 	myFile.addComplexDenseMatrix("D", myDComplexReduced);
 	myFile.addComplexDenseMatrix("K", myKComplexReduced);
+	myFile.addComplexDenseMatrix("B", myBReduced);
+	myFile.addComplexDenseMatrix("C", myCReduced);
 	myFile.closeContainer();
 #endif //USE_HDF5
 }

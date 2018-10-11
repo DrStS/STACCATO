@@ -585,3 +585,11 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 	}
 	prepMapCSR.clear();
 }
+
+std::map<int, std::vector<int>> SimuliaUMA::getNodeToDofMap() {
+	return nodeToDofMap;
+}
+
+std::map<int, std::vector<int>> SimuliaUMA::getNodeToGlobalMap() {
+	return nodeToGlobalMap;
+}

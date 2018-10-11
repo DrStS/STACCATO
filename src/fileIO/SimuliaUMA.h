@@ -129,7 +129,18 @@ public:
 #ifdef USE_SIMULIA_UMA_API
 	void loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFile, std::string _filePrefix, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values);
 #endif
-
+	/***********************************************************************************************
+	* \brief Return the class property nodeToDofMap
+	* \param[out] nodeToDofMap
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::map<int, std::vector<int>> getNodeToDofMap();
+	/***********************************************************************************************
+	* \brief Return the class property nodeToGlobalMap
+	* \param[out] nodeToGlobalMap
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::map<int, std::vector<int>> getNodeToGlobalMap();
 private:
 	std::string myFileName;
 	/// HMesh object 
@@ -163,6 +174,5 @@ private:
 public:
 	/// Total number of dofs
 	int totalDOFs;
-
 };
 

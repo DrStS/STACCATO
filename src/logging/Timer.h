@@ -94,3 +94,4 @@ extern Timer linearSolverTimer01;
 extern Timer linearSolverTimer02;
 extern Timer exportCSRTimer01;
 extern Timer mklTimer01;
+extern Timer mklSparseTimer01;

@@ -19,16 +19,16 @@
 */
 #include "STACCATOComputeEngine.h"
 #include "HMesh.h"
-#include "Reader.h"
-#include "Timer.h"
-#include "MemWatcher.h"
 #include "SimuliaODB.h"
 #include "SimuliaUMA.h"
+#include "Timer.h"
+#include "MemWatcher.h"
 
 #include "FeAnalysis.h"
 #include "KrylovROMSubstructure.h"
 #include "HMesh.h"
 #include "MetaDatabase.h"
+
 
 STACCATOComputeEngine::STACCATOComputeEngine(std::string _xmlFileName){
 	// Intialize XML metadatabase singelton 
@@ -43,6 +43,7 @@ STACCATOComputeEngine::~STACCATOComputeEngine(){
 
 void STACCATOComputeEngine::prepare(void) {
 
+	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
 
 	int numParts = MetaDatabase::getInstance()->xmlHandle->PARTS().begin()->PART().size();
 	std::cout << "There are " << numParts << " models.\n";
@@ -57,19 +58,12 @@ void STACCATOComputeEngine::prepare(void) {
 		{
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
-                //Todo add global search path to xml file
-#if defined(_WIN32) || defined(__WIN32__) 
-std::string filePath = "C:/software/repos/STACCATO/model/";
-#endif
-#if defined(__linux__) 
-std::string filePath = "/opt/software/repos/STACCATO/model/";
-#endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
-					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
-					Reader* fileReader = new SimuliaUMA(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaUMA(filePath, *myHMesh, iPart);
 				}
 				else {
 					std::cerr << ">> XML Error: Unidentified FileImport type " << iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data() << std::endl;
@@ -80,15 +74,9 @@ std::string filePath = "/opt/software/repos/STACCATO/model/";
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
 				//Todo add global search path to xml file
-#if defined(_WIN32) || defined(__WIN32__) 
-				std::string filePath = "C:/software/repos/STACCATO/model/";
-#endif
-#if defined(__linux__) 
-				std::string filePath = "/opt/software/repos/STACCATO/model/";
-#endif
 				filePath += std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].FILE()->data());
 				if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqODB") {
-					Reader* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
+					ReadWriteFile* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
 					std::cout << " > SIM Reading for KMOR detached from STACCATOComputeEngine to KrylovROMSubstructure" << std::endl;

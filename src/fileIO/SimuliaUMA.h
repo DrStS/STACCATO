@@ -26,10 +26,10 @@
 
 #include <string>
 #include <assert.h>
-#include <Reader.h>
 #include <vector>
 #include <map>
 
+#include "ReadWriteFile.h"
 #include "AuxiliaryParameters.h"
 
 #ifdef USE_SIMULIA_UMA_API
@@ -41,7 +41,7 @@ class HMesh;
 /********//**
 * \brief This handles the output handling with Abaqus SIM
 **************************************************************************************************/
-class SimuliaUMA :public Reader {
+class SimuliaUMA :public ReadWriteFile {
 public:
 	/***********************************************************************************************
 	* \brief Constructor

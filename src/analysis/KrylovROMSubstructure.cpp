@@ -27,23 +27,19 @@
 #include "FeElement.h"
 #include "FePlainStress4NodeElement.h"
 #include "FeTetrahedron10NodeElement.h"
-
 #include "SimuliaUMA.h"
-
 #include "Material.h"
-
 #include "MathLibrary.h"
 #include "Timer.h"
 #include "MemWatcher.h"
-
 #include "MetaDatabase.h"
 #include "VectorFieldResults.h"
+#include "FileROM.h"
+#include "OutputDatabase.h"
+#include "AuxiliaryFunctions.h"
+
 #include <string.h>
-
 #include <complex>
-
-#include <OutputDatabase.h>
-#include <AuxiliaryFunctions.h>
 #include <iomanip>
 
 #ifdef USE_INTEL_MKL
@@ -951,12 +947,28 @@ void KrylovROMSubstructure::generateInputOutputMatricesForFOM() {
 }
 
 void KrylovROMSubstructure::exportROMToFiles() {
-		std::string filename = "C://software//repos//staccato//scratch//";
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myKR.dat", myKComplexReduced, ROM_DOF, ROM_DOF, false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myMR.dat", myMComplexReduced, ROM_DOF, ROM_DOF, false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myDR.dat", myDComplexReduced, ROM_DOF, ROM_DOF, false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myBR.dat", myBReduced, ROM_DOF, myInputDOFS.size(), false);
-		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myCR.dat", myCReduced, myOutputDOFS.size(), ROM_DOF, false);
+#ifndef USE_HDF5
+	std::string filename = "C://software//repos//staccato//scratch//";
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myKR.dat", myKComplexReduced, ROM_DOF, ROM_DOF, false);
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myMR.dat", myMComplexReduced, ROM_DOF, ROM_DOF, false);
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myDR.dat", myDComplexReduced, ROM_DOF, ROM_DOF, false);
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myBR.dat", myBReduced, ROM_DOF, myInputDOFS.size(), false);
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myCR.dat", myCReduced, myOutputDOFS.size(), ROM_DOF, false);
+#endif // !USE_HDF5
+
+#ifdef USE_HDF5
+	std::cout << " >> Exporting ROM to HDF5...";
+	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
+	FileROM myFile("reducedOrderModel.h5", filePath);
+	myFile.createContainer(true);
+	myFile.addComplexDenseMatrix("M", myMComplexReduced);
+	myFile.addComplexDenseMatrix("D", myDComplexReduced);
+	myFile.addComplexDenseMatrix("K", myKComplexReduced);
+	myFile.addComplexDenseMatrix("B", myBReduced);
+	myFile.addComplexDenseMatrix("C", myCReduced);
+	myFile.closeContainer();
+	std::cout << " Finished." << std::endl;
+#endif //USE_HDF5
 }
 
 void KrylovROMSubstructure::performAnalysis() {
@@ -1049,12 +1061,6 @@ void KrylovROMSubstructure::performAnalysis() {
 												nodeDofSet.clear();
 												auto searchInStaccatoMap = nodeToGlobalMap.find(search->second[jNodeSet]);
 												nodeDofSet.insert(nodeDofSet.end(), searchInStaccatoMap->second.begin(), searchInStaccatoMap->second.end());
-
-												for (int i = 0; i < nodeDofSet.size(); i++)
-												{
-													std::cout << nodeDofSet[i] << " < ";
-												}
-												std::cout << std::endl;
 
 												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++)
 													bComplex[nodeDofSet[iLoadAss]] = loadVector[iLoadAss];

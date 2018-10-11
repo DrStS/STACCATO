@@ -23,8 +23,8 @@
 #define GIT_TAG  "@GIT_TAG@"  //Cmake will set this value
 
 namespace STACCATO {
-const int AuxiliaryParameters::solverMKLThreads= 4;
-const int AuxiliaryParameters::denseVectorMatrixThreads= 4;
+const int AuxiliaryParameters::solverMKLThreads= 15;
+const int AuxiliaryParameters::denseVectorMatrixThreads= 15;
 const double AuxiliaryParameters::machineEpsilon= std::numeric_limits<double>::epsilon();
 const std::string AuxiliaryParameters::gitSHA1(GIT_SHA1);
 const std::string AuxiliaryParameters::gitTAG(GIT_TAG);

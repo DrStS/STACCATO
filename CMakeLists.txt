@@ -22,7 +22,7 @@ project (STACCATO)
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(VERSION 3.2)
 set( CMAKE_VERBOSE_MAKEFILE off )
-cmake_policy(SET CMP0074 NEW)
+#cmake_policy(SET CMP0074 NEW)
 #------------------------------------------------------------------------------------#
 # Check OS and host system
 IF( (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")) 
@@ -121,8 +121,9 @@ ENDIF()
 # Try to find VTK
 IF (${USE_VTK})
  add_definitions(-DUSE_VTK)
+ SET(VTK_BASE_DIR "C:/software/libs/VTK-8.1.1")
  IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-   SET(VTK_DIR "C:/software/libs/VTK-8.1.1/build")
+   SET(VTK_DIR "${VTK_BASE_DIR}/build")
  ENDIF()
  IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
      SET(VTK_DIR "/opt/software/libs/VTK-8.1.1/gcc/lib/cmake/vtk-8.1")
@@ -130,12 +131,15 @@ IF (${USE_VTK})
   MESSAGE("VTK_DIR: ${VTK_DIR}")
   find_package(VTK REQUIRED)
   INCLUDE(${VTK_USE_FILE})
-  MESSAGE("VTK status: ${VTK_FOUND}")
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/build/ThirdParty/hdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/build/ThirdParty/hdf5/vtkhdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5/vtkhdf5/hl/src)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5/vtkhdf5/src)
+  MESSAGE("VTK status: ${VTK_FOUND} ")#${VTK_INCLUDE_DIRS}
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
-
   ENDIF()
   IF (${USE_GCC_COMPILERS_LINUX})
-    
   ENDIF()
 ENDIF()
 # Try to find Intel MKL 
@@ -208,6 +212,7 @@ ENDIF()
 # 
 # Try to find HDF5
 IF (${USE_HDF5})
+  add_definitions(-DUSE_HDF5)
   find_package(HDF5 REQUIRED)
   MESSAGE("HDF5 status: ${HDF5_FOUND}")
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})

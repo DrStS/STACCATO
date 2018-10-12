@@ -273,7 +273,7 @@ private:
 		std::vector<STACCATOComplexDouble> csr_values;
 		std::vector<int> csrPointerB;
 		std::vector<int> csrPointerE;
-	}*massCSR, *stiffnessCSR, *structdampingCSR;
+	}*massCSR, *stiffnessCSR, *structdampingCSR, *viscdampingCSR;
 
 	// Export Flags
 	bool writeFOM;

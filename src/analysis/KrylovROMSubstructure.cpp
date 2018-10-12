@@ -223,6 +223,12 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// The following is will have to be separeted from above reduction
 	/* %% Performing Anaylsis (Back-Transformation) %%% */
 	performAnalysis();
+
+	std::cout << "-- MAP KMOR Results -- " << std::endl;
+	for (size_t i = 0; i < myAbaqusInputDofList.size(); i++)
+	{
+		std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDofList[i] << std::endl;
+	}
 }
 
 KrylovROMSubstructure::~KrylovROMSubstructure() {
@@ -343,6 +349,7 @@ void KrylovROMSubstructure::getSystemMatricesSIM() {
 	importSIMMatrices.push_back("stiffness");
 	importSIMMatrices.push_back("mass");
 	importSIMMatrices.push_back("structuraldamping");
+	importSIMMatrices.push_back("viscousdamping");
 
 	for (size_t i = 0; i < importSIMMatrices.size(); i++)
 	{
@@ -358,6 +365,10 @@ void KrylovROMSubstructure::getSystemMatricesSIM() {
 		else if (importSIMMatrices[i] == "structuraldamping") {
 			structdampingCSR = new csrStruct;
 			acquireSparseMatrix(importSIMMatrices[i], *structdampingCSR);
+		}
+		else if (importSIMMatrices[i] == "viscousdamping") {
+			viscdampingCSR = new csrStruct;
+			acquireSparseMatrix(importSIMMatrices[i], *viscdampingCSR);
 		}
 	}
 }
@@ -384,6 +395,9 @@ void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubst
 			MathLibrary::createSparseCSRComplex(&sparseSD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
 			STACCATOComplexDouble ComplexOne = { 0,1 };
 			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
+		}
+		else if (_key == "viscousdamping") {
+			MathLibrary::createSparseCSRComplex(&mySparseD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
 		}
 		std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
 	}
@@ -417,7 +431,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-08;
+		double sigTol = 1e-14;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -434,8 +448,8 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 		// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
-		if (enablePropDamping)
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
+
+		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
 
 		// K_tilde = - K_tilde
 		STACCATOComplexDouble negativeOne;
@@ -1051,7 +1065,7 @@ void KrylovROMSubstructure::performAnalysis() {
 										sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
 									}
 									else if (myModelType == "FOM_SIM") {
-										bComplex.resize(FOM_DOF);
+										bComplex.resize(FOM_DOF, {0,0});
 										std::vector<int> nodeDofSet;
 										auto search = nodeSetsMap.find(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].NODESET().begin()->Name()->c_str()));
 										if (search != nodeSetsMap.end()) {

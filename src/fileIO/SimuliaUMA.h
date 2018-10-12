@@ -141,6 +141,17 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	std::map<int, std::vector<int>> getNodeToGlobalMap();
+	/***********************************************************************************************
+	* \brief Prints the UMA imported matrix
+	* \param[in] UMA System with the valid matrix
+	* \param[in] Name of matrix
+	* \param[in] Flag for displaying imported matrices
+	* \param[in] Flag for exporitng imported matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+#ifdef USE_SIMULIA_UMA_API
+	void PrintMatrix(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile);
+#endif
 private:
 	std::string myFileName;
 	/// HMesh object 
@@ -154,16 +165,19 @@ private:
 
 	// Flags
 	bool noStructuralDamping;
+	bool noDamping;
 
 	// SIM File Names
 	std::string stiffnessFileName;
 	std::string massFileName ;
 	std::string structDampingFileName;
+	std::string dampingFileName;
 
 	// Definition of matrix keys
 	char* stiffnessUMA_key ;
 	char* massUMA_key;
 	char* structuralDampingUMA_key;
+	char* dampingUMA_key;
 
 	// Maps
 	std::map<int, std::vector<int>> nodeToDofMap;

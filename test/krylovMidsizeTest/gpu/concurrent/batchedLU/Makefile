@@ -19,7 +19,7 @@ ARCH = -arch=sm_70
 
 #Linker flags
 #------------
-LDFLAGS= -lm -Xlinker -lgomp
+LDFLAGS= -lm -Xlinker -lgomp -lnvToolsExt
 
 OBJECTS=$(SOURCES:.cu=.o)
 EXECUTABLE=krylovGPU

@@ -5,7 +5,7 @@ namespace assembly{
                                 cuDoubleComplex *d_ptr_A, cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
                                 int nnz, int mat_shift, cuDoubleComplex one, double freq_square);
 
-    void assembleGlobalMatrix4Batched(cublasHandle_t cublasHandle, cuDoubleComplex *d_ptr_A,
+    void assembleGlobalMatrix4Batched(cudaStream_t stream, cuDoubleComplex *d_ptr_A,
                                       cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
-                                      int nnz_sub, cuDoubleComplex one, double freq_square);
+                                      int nnz_sub, double freq_square);
 }

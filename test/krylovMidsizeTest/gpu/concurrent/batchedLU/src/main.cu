@@ -22,6 +22,7 @@
 #include <nvToolsExt.h>
 
 // Header files
+#include "config/config.cuh"
 #include "io/io.cuh"
 #include "solver/assembly.cuh"
 #include "helper/Timer.cuh"
@@ -37,55 +38,25 @@ typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> p
 
 int main (int argc, char *argv[]){
 
-    // Command line arguments
-    if (argc < 5){
-        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -stream <number of CUDA streams> -batch <batch size>" << std::endl;
-        std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
-        std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
-        std::cerr << "         Default number of CUDA streams is 1" << std::endl;
-        std::cerr << "         Ratio of number of matrix sizes to number of CUDA streams must be an integer" << std::endl;
-        std::cerr << "         Default number of batch size is freq max (currently only supports batchSize = freq_max)" << std::endl;
-        return 1;
-    }
+    /*--------------------
+    COMMAND LINE ARGUMENTS
+    --------------------*/
+    double freq_max;
+    int mat_repetition, num_matrix, num_streams, num_threads, batchSize;
+    // Configure test environment with command line arguments
+    config::configureTest(argc, argv, freq_max, mat_repetition, num_matrix, num_streams, num_threads, batchSize);
 
-    double freq_max = atof(argv[2]);
-    int mat_repetition = atoi(argv[4]);
-    int num_matrix = mat_repetition*12;
-    int num_streams = 1;
-
-    if (argc > 6) num_streams = atoi(argv[6]);
-    int num_threads = num_streams;
-
-    int batchSize = freq_max;
-    if (argc > 8) batchSize = atoi(argv[8]);
-
-    std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
-    std::cout << ">> Total number of matrices: " << num_matrix << std::endl;
-    std::cout << ">> Number of CUDA streams: " << num_streams << std::endl;
-    std::cout << ">> Number of batched matrices: " << batchSize << "\n" << std::endl;
-
-    if (((int)num_matrix % num_streams) != 0) {
-        std::cerr << ">> ERROR: Invalid number of streams\n" << std::endl;
-        return 1;
-    }
-
+    /*---------------------
+    FILEPATHS AND FILENAMES
+    ---------------------*/
     // Vector of filepaths
     std::string filepath[2];
     filepath[0] = "/opt/software/examples/MOR/r_approx_180/\0";
     filepath[1] = "/opt/software/examples/MOR/r_approx_300/\0";
-
     // Solution filepath
     std::string filepath_sol = "output/";
-
     // Solution filename
     std::string filename_sol = "solution.dat";
-
-    // Array of matrix sizes (row)
-    int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
-
-    // Sort the array row_baseline
-    //std::sort(row_baseline.begin(), row_baseline.end());
-
     // Array of filenames
     std::string baseName_K = "KSM_Stiffness_r\0";
     std::string baseName_M = "KSM_Mass_r\0";
@@ -95,23 +66,34 @@ int main (int argc, char *argv[]){
     std::string filename_M[12];
     std::string filename_D[12];
 
-    // Parameters
+    /*--------
+    PARAMETERS
+    --------*/
     bool isComplex = 1;
     double freq, freq_square;
     const double alpha = 4*PI*PI;
     cuDoubleComplex rhs_val;
     rhs_val.x = (double)1.0;
     rhs_val.y = (double)0.0;
+    // Array of matrix sizes (row)
+    int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
+    // Sort the array row_baseline
+    //std::sort(row_baseline.begin(), row_baseline.end());
 
+    /*----------------------------
+    OPENMP & CUBLAS INITIALIZATION
+    ----------------------------*/
     // OpenMP
     int tid;
     omp_set_num_threads(num_threads);
-
+    // cuBLAS
     timerTotal.start();
-    // Library initialisation
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
 
+    /*-------------
+    DATA STRUCTURES
+    --------------*/
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
@@ -323,8 +305,8 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 /*
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */

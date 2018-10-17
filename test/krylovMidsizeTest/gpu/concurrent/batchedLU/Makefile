@@ -1,6 +1,6 @@
 #Include files
 #-------------
-SOURCES=src/main.cu src/io/io.cu src/helper/Timer.cu src/solver/assembly.cu
+SOURCES=src/main.cu src/config/config.cu src/io/io.cu src/helper/Timer.cu src/solver/assembly.cu
 
 #Compiler
 #--------

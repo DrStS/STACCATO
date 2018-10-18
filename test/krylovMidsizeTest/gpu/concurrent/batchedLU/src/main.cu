@@ -190,16 +190,16 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-    thrust::host_vector<cuDoubleComplex*> d_ptr_K(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> d_ptr_M(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> d_ptr_D(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_K(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_M(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_D(num_matrix);
     size_t mat_shift = 0;
     size_t sol_shift = 0;
     thrust::host_vector<int> loop_shift(num_matrix);
     for (size_t i = 0; i < num_matrix; ++i){
-        d_ptr_K[i] = d_ptr_K_base + mat_shift;
-        d_ptr_M[i] = d_ptr_M_base + mat_shift;
-        d_ptr_D[i] = d_ptr_D_base + mat_shift;
+        h_ptr_K[i] = d_ptr_K_base + mat_shift;
+        h_ptr_M[i] = d_ptr_M_base + mat_shift;
+        h_ptr_D[i] = d_ptr_D_base + mat_shift;
         loop_shift[i] = sol_shift;
         mat_shift += size_sub[i];
         sol_shift += row_sub[i];
@@ -223,7 +223,7 @@ int main (int argc, char *argv[]){
 
     // Stream initialisation
     cudaStream_t streams[num_streams];
-    for (size_t i = 0; i < num_streams; ++i) {
+    for (size_t i = 0; i < num_streams; ++i){
         cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
@@ -270,7 +270,7 @@ int main (int argc, char *argv[]){
                 freq = (j+1);
                 freq_square = -(freq*freq);
                 // Assemble matrix
-                assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], d_ptr_K[i], d_ptr_M[i], size_sub[i], freq_square);
+                assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
                 // Update shifts

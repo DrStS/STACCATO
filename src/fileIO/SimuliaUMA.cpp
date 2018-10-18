@@ -289,6 +289,8 @@ void SimuliaUMA::extractDatastructure(const uma_System &system, char *matrixName
 	printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
 	if (smtx.IsSymmetric())
 		printf("; symmetric");
+	else
+		printf("; non-symmetric");
 	printf("\n");
 }
 #endif
@@ -481,7 +483,7 @@ void SimuliaUMA::ImportSIM(const char* _matrixkey, const char* _fileName, bool _
 
 		if (!smtx.IsSymmetric()) {
 			std::cout << " Error: System not Symmetric" << std::endl;
-			exit(EXIT_FAILURE);
+			//exit(EXIT_FAILURE);
 		}
 
 		if (std::string(_matrixkey) == std::string(stiffnessUMA_key)) {
@@ -567,7 +569,8 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 				globalcol = nodeToGlobalMap[fnode_col][i];
 		}
 
-		if (globalrow > globalcol) {
+		// Exception for Internal DOFs. Exchange Row and Column Index
+		if (globalrow > globalcol && fnode_row >= 1000000000) {
 			int temp = globalrow;
 			globalrow = globalcol;
 			globalcol = temp;
@@ -634,6 +637,8 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 	printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
 	if (smtx.IsSymmetric())
 		printf("; symmetric");
+	else
+		printf("; non-symmetric");
 	printf("\n");
 	uma_SparseIterator iter(smtx);
 	int row, col; double val;

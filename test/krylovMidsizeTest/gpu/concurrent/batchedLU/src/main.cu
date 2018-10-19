@@ -37,7 +37,7 @@ typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex> pi
 typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> pinnedAllocPtr;
 
 int main (int argc, char *argv[]){
-
+    nvtxRangePushA("Initial Configuration");
     /*--------------------
     COMMAND LINE ARGUMENTS
     --------------------*/
@@ -79,6 +79,8 @@ int main (int argc, char *argv[]){
     int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
     // Sort the array row_baseline
     //std::sort(row_baseline.begin(), row_baseline.end());
+    // Array of number of inputs
+    int num_input_baseline[] = {6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72};
 
     /*----------------------------
     OPENMP & CUBLAS INITIALIZATION
@@ -90,10 +92,12 @@ int main (int argc, char *argv[]){
     timerTotal.start();
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
+    nvtxRangePop();
 
     /*-------------
     DATA STRUCTURES
     --------------*/
+    nvtxRangePushA("Data Structures (Host)");
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
@@ -128,22 +132,28 @@ int main (int argc, char *argv[]){
     // Get matrix sizes
     thrust::host_vector<int> row_sub(num_matrix);
     thrust::host_vector<int> size_sub(num_matrix);
+    thrust::host_vector<int> num_input_sub(num_matrix);
     int nnz = 0;
     int row = 0;
+    int num_input = 0;
     size_t idx;
     for (size_t j = 0; j < mat_repetition; ++j){
         for (size_t i = 0; i < 12; ++i){
             idx = i + 12*j;
             row_sub[idx] = row_baseline[i];
             size_sub[idx] = row_sub[i]*row_sub[i];
+            num_input_sub[idx] = num_input_baseline[i];
             nnz += size_sub[idx];
             row  += row_sub[idx];
+            num_input += num_input_baseline[i];
         }
     }
 
-    // Get maximum matrix size
+    // Get maximum matrix size & number of inputs
     auto nnz_max_it = thrust::max_element(size_sub.begin(), size_sub.end());
+    auto num_input_max_it = thrust::max_element(num_input_sub.begin(), num_input_sub.end());
     int nnz_max = *nnz_max_it;
+    int num_input_max = *num_input_max_it;
 
     // Combine matrices into a single array on host (to make use of GPU's high bandwidth. We could also import the matrices directly like this)
     thrust::host_vector<cuDoubleComplex> K(nnz);
@@ -166,7 +176,12 @@ int main (int argc, char *argv[]){
     }
 
     std::cout <<">> Matrices combined" << std::endl;
+    nvtxRangePop();
 
+    /*----------------------
+    DATA STRUCTURES (DEVICE)
+    ----------------------*/
+    nvtxRangePushA("Data Structures (Device)");
     // Send matrices to device
     timerMatrixCpy.start();
     thrust::device_vector<cuDoubleComplex> d_K = K;
@@ -208,6 +223,7 @@ int main (int argc, char *argv[]){
     // Get raw pointers to matrix A and rhs
     cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
     cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
+    nvtxRangePop();
 
     timerMatrixComp.start();
     // M = 4*pi^2*M (Single computation suffices)

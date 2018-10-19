@@ -260,7 +260,8 @@ int main (int argc, char *argv[]){
 
     // Loop over each matrix size
     #pragma omp for
-        for (size_t i = 0; i < num_matrix; ++i){
+        //for (size_t i = 0; i < num_matrix; ++i){
+        for (size_t i = 0; i < 1; ++i){
             /*--------------------------------------
             Update pointers to each matrix A and RHS
             --------------------------------------*/
@@ -280,7 +281,8 @@ int main (int argc, char *argv[]){
             /*------------------------
             ASSEMBLE MATRICES IN BATCH
             ------------------------*/
-            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(h_ptr_A.data()), h_ptr_K[i], h_ptr_M[i],
+            d_ptr_A = h_ptr_A;
+            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(d_ptr_A.data()), h_ptr_K[i], h_ptr_M[i],
                                                   size_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max, num_matrix);
 
             /*--------------
@@ -315,8 +317,8 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    thrust::host_vector<cuDoubleComplex> A = d_A;
-    io::writeSolVecComplex(A, filepath_sol, "A.dat");
+    //thrust::host_vector<cuDoubleComplex> A = d_A;
+    //io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

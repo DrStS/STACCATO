@@ -317,8 +317,8 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    //thrust::host_vector<cuDoubleComplex> A = d_A;
-    //io::writeSolVecComplex(A, filepath_sol, "A.dat");
+    thrust::host_vector<cuDoubleComplex> P = d_M;
+    io::writeSolVecComplex(P, filepath_sol, "P.dat");
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

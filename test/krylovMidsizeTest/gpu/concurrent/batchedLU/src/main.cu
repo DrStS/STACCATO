@@ -287,7 +287,7 @@ int main (int argc, char *argv[]){
                 freq = (j+1);
                 freq_square = -(freq*freq);
                 // Assemble matrix
-                //assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
+                assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
                 // Update shifts

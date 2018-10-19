@@ -9,7 +9,6 @@
 // THRUST
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
-#include <thrust/extrema.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 // CUCOMPLEX
@@ -33,6 +32,7 @@
 #define MAX_NUM_THREADS 32
 
 // Pinned Allocators
+typedef thrust::system::cuda::experimental::pinned_allocator<int> pinnedAllocInt;
 typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex> pinnedAlloc;
 typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> pinnedAllocPtr;
 
@@ -70,7 +70,6 @@ int main (int argc, char *argv[]){
     PARAMETERS
     --------*/
     bool isComplex = 1;
-    double freq, freq_square;
     const double alpha = 4*PI*PI;
     cuDoubleComplex rhs_val;
     rhs_val.x = (double)1.0;
@@ -79,6 +78,12 @@ int main (int argc, char *argv[]){
     int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
     // Sort the array row_baseline
     //std::sort(row_baseline.begin(), row_baseline.end());
+    // Frequency vector
+    thrust::host_vector<int, pinnedAllocInt> freq(batchSize);
+    thrust::host_vector<int, pinnedAllocInt> freq_square(batchSize);
+    // Fill in frequency vectors
+    thrust::sequence(freq.begin(), freq.end(), 1);
+    thrust::transform(freq.begin(), freq.end(), freq.begin(), freq_square.begin(), thrust::multiplies<int>());
 
     /*----------------------------
     OPENMP & CUBLAS INITIALIZATION
@@ -179,7 +184,7 @@ int main (int argc, char *argv[]){
 
     // Create RHS directly on device
     timerMatrixCpy.start();
-    thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
+    thrust::device_vector<cuDoubleComplex> d_rhs(dofReduced, rhs_val);
     timerMatrixCpy.stop();
     std::cout << ">> RHS copied to device " << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -235,7 +240,7 @@ int main (int argc, char *argv[]){
     nvtxRangePushA("Krylov Subspace Method");
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
-#pragma omp parallel private(tid, array_shift, freq, freq_square) num_threads(num_threads)
+#pragma omp parallel private(tid, array_shift) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
@@ -246,7 +251,6 @@ int main (int argc, char *argv[]){
         thrust::device_vector<cuDoubleComplex*> d_ptr_rhs(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_rhs(batchSize);
-
         // Initialise shifts
         int thread_shift, rhs_shift;
         rhs_shift = 0;
@@ -257,38 +261,43 @@ int main (int argc, char *argv[]){
     // Loop over each matrix size
     #pragma omp for
         for (size_t i = 0; i < num_matrix; ++i){
-            /*---------------------------------------------------------------
-            Assemble Global Matrix & Update pointers to each matrix A and RHS
-            ---------------------------------------------------------------*/
+            /*--------------------------------------
+            Update pointers to each matrix A and RHS
+            --------------------------------------*/
             // Initialise Shifts
             array_shift = 0;
             rhs_shift = 0;
-            // Loop over batch (assume batchSize = freq_max) - DO THIS IN BATCH?
-            for (j = 0; j < batchSize; ++j){
+            // Loop over frequency points
+            for (j = 0; j < freq_max; ++j){
                 // Update matrix A pointer
                 h_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;
-                // Compute frequency (assume batchSize = freq_max)
-                freq = (j+1);
-                freq_square = -(freq*freq);
-                // Assemble matrix
-                assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
                 // Update shifts
                 array_shift += size_sub[i];
                 rhs_shift += row;
             }
+            /*------------------------
+            ASSEMBLE MATRICES IN BATCH
+            ------------------------*/
+            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(h_ptr_A.data()), h_ptr_K[i], h_ptr_M[i],
+                                                  size_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max, num_matrix);
+
             /*--------------
             LU Decomposition
             --------------*/
+/*
             d_ptr_A = h_ptr_A;
             cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
+*/
             /*-----------
             Solve x = A\b
             -----------*/
+/*
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+*/
             /*-----------------
             Synchronize Streams
             -----------------*/
@@ -306,11 +315,12 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-/*
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
-*/
+
+/*
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    */
 
     // Destroy cuBLAS & streams
     for (size_t i = 0; i < num_threads; ++i){

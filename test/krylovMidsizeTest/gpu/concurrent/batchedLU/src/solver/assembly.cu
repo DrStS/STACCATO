@@ -1,6 +1,7 @@
 // Libraries
 #include <iostream>
 #include <cassert>
+#include <stdio.h>
 
 // cuComplex
 #include <cuComplex.h>
@@ -21,13 +22,13 @@ __global__ void assembleGlobalMatrix4Batched_kernel(
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if ( idx < nnz_sub )
     {
-        const cuDoubleComplex k = d_ptr_K[idx];
-        cuDoubleComplex A = d_ptr_M[idx];
-        A.x *= freq_square;
-        A.y *= freq_square;
-        A.x += k.x;
-        A.y += k.y;
-        d_ptr_A[idx] = A;
+            const cuDoubleComplex k = d_ptr_K[idx];
+            cuDoubleComplex A = d_ptr_M[idx];
+            A.x *= freq_square;
+            A.y *= freq_square;
+            A.x += k.x;
+            A.y += k.y;
+            d_ptr_A[idx] = A;
     }
 }
 

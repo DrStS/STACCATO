@@ -140,6 +140,7 @@ int main (int argc, char *argv[]){
             row  += row_sub[idx];
         }
     }
+    int dofReduced = row*freq_max;
 
     // Get maximum matrix size
     auto nnz_max_it = thrust::max_element(size_sub.begin(), size_sub.end());
@@ -190,9 +191,9 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-    thrust::host_vector<cuDoubleComplex*> h_ptr_K(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_M(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_D(num_matrix);
+    thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_K(num_matrix);
+    thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_M(num_matrix);
+    thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_D(num_matrix);
     size_t mat_shift = 0;
     size_t sol_shift = 0;
     thrust::host_vector<int> loop_shift(num_matrix);
@@ -262,7 +263,7 @@ int main (int argc, char *argv[]){
             // Initialise Shifts
             array_shift = 0;
             rhs_shift = 0;
-            // Loop over batch (assume batchSize = freq_max)
+            // Loop over batch (assume batchSize = freq_max) - DO THIS IN BATCH?
             for (j = 0; j < batchSize; ++j){
                 // Update matrix A pointer
                 h_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;

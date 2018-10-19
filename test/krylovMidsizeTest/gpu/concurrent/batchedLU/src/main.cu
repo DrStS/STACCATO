@@ -181,6 +181,7 @@ int main (int argc, char *argv[]){
     /*----------------------
     DATA STRUCTURES (DEVICE)
     ----------------------*/
+    int dofReduced = row*freq_max;
     nvtxRangePushA("Data Structures (Device)");
     // Send matrices to device
     timerMatrixCpy.start();
@@ -193,7 +194,7 @@ int main (int argc, char *argv[]){
 
     // Create RHS directly on device
     timerMatrixCpy.start();
-    thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
+    thrust::device_vector<cuDoubleComplex> d_rhs(dofReduced, rhs_val);
     timerMatrixCpy.stop();
     std::cout << ">> RHS copied to device " << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -286,7 +287,7 @@ int main (int argc, char *argv[]){
                 freq = (j+1);
                 freq_square = -(freq*freq);
                 // Assemble matrix
-                assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
+                //assembly::assembleGlobalMatrix4Batched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
                 // Update shifts
@@ -296,14 +297,18 @@ int main (int argc, char *argv[]){
             /*--------------
             LU Decomposition
             --------------*/
+/*
             d_ptr_A = h_ptr_A;
             cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
+*/
             /*-----------
             Solve x = A\b
             -----------*/
+/*
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+*/
             /*-----------------
             Synchronize Streams
             -----------------*/

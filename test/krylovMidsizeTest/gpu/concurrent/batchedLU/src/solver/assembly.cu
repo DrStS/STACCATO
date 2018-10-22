@@ -15,7 +15,7 @@
 #include "../helper/helper.cuh"
 
 __global__ void assembleGlobalMatrixBatched_kernel(cuDoubleComplex ** __restrict__ const d_ptr_A, const cuDoubleComplex * __restrict__ const d_ptr_K,
-                                                   cuDoubleComplex * __restrict__ const d_ptr_M, const int nnz_sub, const int *freq_square,
+                                                   cuDoubleComplex * __restrict__ const d_ptr_M, const int nnz_sub, int * __restrict__ const freq_square,
                                                    const int batchSize, const int num_matrix, const int num_blocks){
     int idx = threadIdx.x + blockDim.x * blockIdx.x;
     int idx_thread_local = threadIdx.x;
@@ -24,15 +24,20 @@ __global__ void assembleGlobalMatrixBatched_kernel(cuDoubleComplex ** __restrict
     cuDoubleComplex *targetPtr;
 
     if (idx_thread_local < nnz_sub){
-        for (size_t i = 0; i < 1; ++i){
+        for (size_t i = 0; i < 5; ++i){
             const cuDoubleComplex k = d_ptr_K[idx_thread_local];
             cuDoubleComplex A = d_ptr_M[idx_thread_local];
             A.x *= freq_square[idx_block + freq_shift];
             A.y *= freq_square[idx_block + freq_shift];
             A.x += k.x;
             A.y += k.y;
-            freq_shift += num_blocks;
-            d_ptr_M[idx_thread_local] = A;
+            if (idx == 1) printf("%p\n", d_ptr_A[1]);
+            targetPtr = d_ptr_A[1];
+            if (idx == 1) printf("%p\n", targetPtr);
+            if (idx == 1) printf("Value at targetPtr = %d\n", *targetPtr);
+
+            //freq_shift += num_blocks;
+            //d_ptr_M[idx_thread_local] = A;
             //d_ptr_A[idx_block+freq_shift][idx_thread_local] = A;
         }
     }

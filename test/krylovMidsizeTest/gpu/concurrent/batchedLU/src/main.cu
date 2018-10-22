@@ -192,6 +192,12 @@ int main (int argc, char *argv[]){
     // Create matrix device_vectors
     thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max);
 
+    // remove later
+    cuDoubleComplex eleven;
+    eleven.x = 11;
+    eleven.y = 11;
+    thrust::fill(d_A.begin(), d_A.end(), eleven);
+
     // Get vector of raw pointers to matrices
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
@@ -260,8 +266,8 @@ int main (int argc, char *argv[]){
 
     // Loop over each matrix size
     #pragma omp for
-        //for (size_t i = 0; i < num_matrix; ++i){
-        for (size_t i = 0; i < 1; ++i){
+        for (size_t i = 0; i < num_matrix; ++i){
+        //for (size_t i = 0; i < 1; ++i){
             /*--------------------------------------
             Update pointers to each matrix A and RHS
             --------------------------------------*/
@@ -284,6 +290,8 @@ int main (int argc, char *argv[]){
             d_ptr_A = h_ptr_A;
             assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(d_ptr_A.data()), h_ptr_K[i], h_ptr_M[i],
                                                   size_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max, num_matrix);
+
+            std::cout << "from main = " << d_ptr_A[1];
 
             /*--------------
             LU Decomposition
@@ -317,8 +325,8 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
     // Write out solution vectors
-    thrust::host_vector<cuDoubleComplex> P = d_M;
-    io::writeSolVecComplex(P, filepath_sol, "P.dat");
+    thrust::host_vector<cuDoubleComplex> A = d_A;
+    io::writeSolVecComplex(A, filepath_sol, "A.dat");
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

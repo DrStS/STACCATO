@@ -257,7 +257,7 @@ int main (int argc, char *argv[]){
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_rhs(batchSize);
         // Initialise shifts
-        int shift_global_A, shift_global_rhs;
+        int shift_global_A, shift_batch_A, shift_global_rhs;
         shift_global_A = tid*freq_max*nnz_max;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
@@ -270,16 +270,12 @@ int main (int argc, char *argv[]){
             Assemble Global Matrix & Update pointers to each matrix A and RHS
             ---------------------------------------------------------------*/
             // Initialise Shifts
-            shift_global_A   = 0;
             shift_global_rhs = 0;
-
-
-        int tmp_shift = 0;
+            shift_batch_A = 0;
             // Loop over batch (assume batchSize = freq_max)
             for (size_t j = 0; j < batchSize; ++j){
                 // Update matrix A pointer
-                //h_ptr_A[j] = d_ptr_A_base + shift_local_A[i] + shift_global_A;
-                h_ptr_A[j] = d_ptr_A_base + tmp_shift + shift_global_A;
+                h_ptr_A[j] = d_ptr_A_base + shift_batch_A + shift_global_A;
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
                 // Compute frequency (assume batchSize = freq_max)
@@ -290,8 +286,8 @@ int main (int argc, char *argv[]){
                 assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square);
                 nvtxRangePop();
                 // Update shifts
+                shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
-                tmp_shift += nnz_sub[i];
             }
             nvtxRangePushA("Linear System");
             /*--------------

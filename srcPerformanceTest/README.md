@@ -23,8 +23,8 @@ Currently the following combinations are implemented:
 | Functional Parallelism | Dense LU | Sparse LU | Batched LU |
 |---|---|---|---|
 |Sequential| yes | yes | yes | yes |
-|Parallel| Partially | yes | Partially |
-|Side Notes| Nested parallelism not supported |  | Generates wrong results, yet run-time should be representative |
+|Parallel| Partially | yes | yes |
+|Side Notes| Nested parallelism not supported |  | |
 
 ## MATLAB Script
 

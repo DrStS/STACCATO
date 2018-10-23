@@ -9,7 +9,10 @@
 // THRUST
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
+#include <thrust/copy.h>
 #include <thrust/extrema.h>
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 // CUCOMPLEX
 #include <cuComplex.h>
@@ -17,7 +20,11 @@
 // CUBLAS
 #include <cublas_v2.h>
 
+// NVTX: https://devblogs.nvidia.com/cuda-pro-tip-generate-custom-application-profile-timelines-nvtx/
+#include <nvToolsExt.h>
+
 // Header files
+#include "config/config.cuh"
 #include "io/io.cuh"
 #include "solver/assembly.cuh"
 #include "helper/Timer.cuh"
@@ -25,58 +32,34 @@
 
 // Definitions
 #define	PI	3.14159265359
+#define MAX_NUM_THREADS 32
+
+// Pinned Allocators
+typedef thrust::system::cuda::experimental::pinned_allocator<int> pinnedAllocInt;
+typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex> pinnedAlloc;
+typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> pinnedAllocPtr;
 
 int main (int argc, char *argv[]){
 
-    // Command line arguments
-    if (argc < 5){
-        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -stream <number of CUDA streams> -batch <batch size>" << std::endl;
-        std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
-        std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
-        std::cerr << "         Default number of CUDA streams is 1" << std::endl;
-        std::cerr << "         Ratio of number of matrix sizes to number of CUDA streams must be an integer" << std::endl;
-        std::cerr << "         Default number of batch size is freq max (currently only supports batchSize = freq_max)" << std::endl;
-        return 1;
-    }
+    /*--------------------
+    COMMAND LINE ARGUMENTS
+    --------------------*/
+    double freq_max;
+    int mat_repetition, num_matrix, num_streams, num_threads, batchSize;
+    // Configure test environment with command line arguments
+    config::configureTest(argc, argv, freq_max, mat_repetition, num_matrix, num_streams, num_threads, batchSize);
 
-    double freq_max = atof(argv[2]);
-    int mat_repetition = atoi(argv[4]);
-    int num_matrix = mat_repetition*12;
-    int num_streams = 1;
-
-    if (argc > 6) num_streams = atoi(argv[6]);
-    int num_threads = num_streams;
-
-    int batchSize = freq_max;
-    if (argc > 8) batchSize = atoi(argv[8]);
-
-    std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
-    std::cout << ">> Total number of matrices: " << num_matrix << std::endl;
-    std::cout << ">> Number of CUDA streams: " << num_streams << std::endl;
-    std::cout << ">> Number of batched matrices: " << batchSize << "\n" << std::endl;
-
-    if (((int)num_matrix % num_streams) != 0) {
-        std::cerr << ">> ERROR: Invalid number of streams\n" << std::endl;
-        return 1;
-    }
-
+    /*---------------------
+    FILEPATHS AND FILENAMES
+    ---------------------*/
     // Vector of filepaths
     std::string filepath[2];
     filepath[0] = "/opt/software/examples/MOR/r_approx_180/\0";
     filepath[1] = "/opt/software/examples/MOR/r_approx_300/\0";
-
     // Solution filepath
     std::string filepath_sol = "output/";
-
     // Solution filename
     std::string filename_sol = "solution.dat";
-
-    // Array of matrix sizes (row)
-    int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
-
-    // Sort the array row_baseline
-    //std::sort(row_baseline.begin(), row_baseline.end());
-
     // Array of filenames
     std::string baseName_K = "KSM_Stiffness_r\0";
     std::string baseName_M = "KSM_Mass_r\0";
@@ -85,36 +68,43 @@ int main (int argc, char *argv[]){
     std::string filename_K[12];
     std::string filename_M[12];
     std::string filename_D[12];
+    std::string filename_input[12];
 
-    // Parameters
+    /*--------
+    PARAMETERS
+    --------*/
     bool isComplex = 1;
     double freq, freq_square;
     const double alpha = 4*PI*PI;
-    cuDoubleComplex one;	// Dummy scailing factor for global matrix assembly
-    one.x = 1;
-    one.y = 0;
     cuDoubleComplex rhs_val;
     rhs_val.x = (double)1.0;
     rhs_val.y = (double)0.0;
+    // Array of matrix sizes (row)
+    int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
+    // Sort the array row_baseline
+    //std::sort(row_baseline.begin(), row_baseline.end());
 
+    /*----------------------------
+    OPENMP & CUBLAS INITIALIZATION
+    ----------------------------*/
     // OpenMP
     int tid;
     omp_set_num_threads(num_threads);
-    //omp_set_dynamic(0);
-    //omp_set_nested(0);
-
+    // cuBLAS
     timerTotal.start();
-    // Library initialisation
-    cublasHandle_t cublasHandle;
-    cublasCreate(&cublasHandle);
+    cublasHandle_t cublasHandle[MAX_NUM_THREADS];
+    for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
 
+    /*-------------
+    DATA STRUCTURES
+    --------------*/
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> D_sub(12);
 
     // Read and process MTX file
-    for (size_t i = 0; i < 7; i++){
+    for (size_t i = 0; i < 7; ++i){
         filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
         filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
         filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
@@ -126,7 +116,7 @@ int main (int argc, char *argv[]){
         D_sub[i].pop_back();
     }
 
-    for (size_t i = 7; i < 12; i++){
+    for (size_t i = 7; i < 12; ++i){
         filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
         filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
         filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
@@ -145,8 +135,8 @@ int main (int argc, char *argv[]){
     int nnz = 0;
     int row = 0;
     size_t idx;
-    for (size_t j = 0; j < mat_repetition; j++){
-        for (size_t i = 0; i < 12; i++){
+    for (size_t j = 0; j < mat_repetition; ++j){
+        for (size_t i = 0; i < 12; ++i){
             idx = i + 12*j;
             row_sub[idx] = row_baseline[i];
             size_sub[idx] = row_sub[i]*row_sub[i];
@@ -167,8 +157,8 @@ int main (int argc, char *argv[]){
     auto M_sub_ptr = &M_sub[0];
     auto D_sub_ptr = &D_sub[0];
     size_t array_shift = 0;
-    for (size_t j = 0; j < mat_repetition; j++){
-        for (size_t i = 0; i < 12; i++){
+    for (size_t j = 0; j < mat_repetition; ++j){
+        for (size_t i = 0; i < 12; ++i){
             K_sub_ptr = &K_sub[i];
             M_sub_ptr = &M_sub[i];
             D_sub_ptr = &D_sub[i];
@@ -181,6 +171,11 @@ int main (int argc, char *argv[]){
 
     std::cout <<">> Matrices combined" << std::endl;
 
+    /*----------------------
+    DATA STRUCTURES (DEVICE)
+    ----------------------*/
+    int dofReduced = row*freq_max;
+    nvtxRangePushA("Data Structures (Device)");
     // Send matrices to device
     timerMatrixCpy.start();
     thrust::device_vector<cuDoubleComplex> d_K = K;
@@ -192,7 +187,7 @@ int main (int argc, char *argv[]){
 
     // Create RHS directly on device
     timerMatrixCpy.start();
-    thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
+    thrust::device_vector<cuDoubleComplex> d_rhs(dofReduced, rhs_val);
     timerMatrixCpy.stop();
     std::cout << ">> RHS copied to device " << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -204,16 +199,16 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-    thrust::host_vector<cuDoubleComplex*> d_ptr_K(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> d_ptr_M(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> d_ptr_D(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_K(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_M(num_matrix);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_D(num_matrix);
     size_t mat_shift = 0;
     size_t sol_shift = 0;
     thrust::host_vector<int> loop_shift(num_matrix);
-    for (size_t i = 0; i < num_matrix; i++){
-        d_ptr_K[i] = d_ptr_K_base + mat_shift;
-        d_ptr_M[i] = d_ptr_M_base + mat_shift;
-        d_ptr_D[i] = d_ptr_D_base + mat_shift;
+    for (size_t i = 0; i < num_matrix; ++i){
+        h_ptr_K[i] = d_ptr_K_base + mat_shift;
+        h_ptr_M[i] = d_ptr_M_base + mat_shift;
+        h_ptr_D[i] = d_ptr_D_base + mat_shift;
         loop_shift[i] = sol_shift;
         mat_shift += size_sub[i];
         sol_shift += row_sub[i];
@@ -222,10 +217,11 @@ int main (int argc, char *argv[]){
     // Get raw pointers to matrix A and rhs
     cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
     cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
+    nvtxRangePop();
 
     timerMatrixComp.start();
     // M = 4*pi^2*M (Single computation suffices)
-    cublas_check(cublasZdscal(cublasHandle, nnz, &alpha, d_ptr_M_base, 1));
+    cublas_check(cublasZdscal(cublasHandle[0], nnz, &alpha, d_ptr_M_base, 1));
     timerMatrixComp.stop();
     std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
@@ -237,7 +233,7 @@ int main (int argc, char *argv[]){
 
     // Stream initialisation
     cudaStream_t streams[num_streams];
-    for (size_t i = 0; i < num_streams; i++) {
+    for (size_t i = 0; i < num_streams; ++i){
         cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
@@ -245,6 +241,7 @@ int main (int argc, char *argv[]){
     /*--------------------
     Krylov Subspace Method
     --------------------*/
+    nvtxRangePushA("Krylov Subspace Method");
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
 #pragma omp parallel private(tid, array_shift, freq, freq_square) num_threads(num_threads)
@@ -256,16 +253,18 @@ int main (int argc, char *argv[]){
         // Allocate vector of array pointers to A in each thread
         thrust::device_vector<cuDoubleComplex*> d_ptr_A(batchSize);
         thrust::device_vector<cuDoubleComplex*> d_ptr_rhs(batchSize);
+        thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A(batchSize);
+        thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_rhs(batchSize);
+
         // Initialise shifts
         int thread_shift, rhs_shift;
-        rhs_shift = 0;
         thread_shift = tid*freq_max*nnz_max;
         // Set cuBLAS stream
-        cublasSetStream(cublasHandle, streams[tid]);
+        cublasSetStream(cublasHandle[tid], streams[tid]);
 
     // Loop over each matrix size
     #pragma omp for
-        for (size_t i = 0; i < num_matrix; i++){
+        for (size_t i = 0; i < num_matrix; ++i){
             /*---------------------------------------------------------------
             Assemble Global Matrix & Update pointers to each matrix A and RHS
             ---------------------------------------------------------------*/
@@ -273,37 +272,44 @@ int main (int argc, char *argv[]){
             array_shift = 0;
             rhs_shift = 0;
             // Loop over batch (assume batchSize = freq_max)
-            for (j = 0; j < batchSize; j++){
+            for (j = 0; j < batchSize; ++j){
                 // Update matrix A pointer
-                d_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;
+                h_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;
+                // Update rhs pointer
+                h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
                 // Compute frequency (assume batchSize = freq_max)
                 freq = (j+1);
                 freq_square = -(freq*freq);
                 // Assemble matrix
-                cublasSetStream(cublasHandle, streams[tid]);
-                assembly::assembleGlobalMatrix4Batched(cublasHandle, d_ptr_A[j], d_ptr_K[i], d_ptr_M[i], size_sub[i], one, freq_square);
-                // Update rhs pointer
-                d_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
-                //if (tid == 0) std::cout << "Thread = " << tid << "  mat = " << i << "  freq = " << j << "   shift = " << rhs_shift + loop_shift[i] << "   Size = " << row_sub[i] << std::endl;
+                nvtxRangePushA("Matrix Assembly");
+                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
+                nvtxRangePop();
                 // Update shifts
                 array_shift += size_sub[i];
                 rhs_shift += row;
             }
+            nvtxRangePushA("Linear System");
             /*--------------
             LU Decomposition
             --------------*/
-            cublasSetStream(cublasHandle, streams[tid]);
-            cublas_check(cublasZgetrfBatched(cublasHandle, row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
+            d_ptr_A = h_ptr_A;
+            cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
             /*-----------
             Solve x = A\b
             -----------*/
-            cublasSetStream(cublasHandle, streams[tid]);
-            cublas_check(cublasZgetrsBatched(cublasHandle, CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
+            d_ptr_rhs = h_ptr_rhs;
+            cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+            /*-----------------
+            Synchronize Streams
+            -----------------*/
+            cudaStreamSynchronize(streams[tid]);
         } // matrix loop
     } // omp parallel
+    nvtxRangePop();
 
     timerLoop.stop();
+    nvtxRangePop();
 
     std::cout << ">> Matrix loop finished" << std::endl;
     std::cout << ">>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
@@ -311,19 +317,17 @@ int main (int argc, char *argv[]){
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
-    // Write out solution vectors
-    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
-
 /*
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */
 
-    // Destroy cuBLAS
-    cublasDestroy(cublasHandle);
-
-    // Destroy streams
-    for (size_t i = 0; i < num_streams; i++) cudaStreamDestroy(streams[i]);
+    // Destroy cuBLAS & streams
+    for (size_t i = 0; i < num_threads; ++i){
+        cublasDestroy(cublasHandle[i]);
+        cudaStreamDestroy(streams[i]);
+    }
 
     timerTotal.stop();
     std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;

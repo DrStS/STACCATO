@@ -167,7 +167,13 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void buildXMLforSIM(int iPart);
+	/***********************************************************************************************
+	* \brief Function to clear memory by removing the FOM data
+	* \author Harikrishnan Sreekumar
+	***********/
+	void clearDataFOM();
 private:
+#ifdef USE_INTEL_MKL
 	/// HMesh object 
 	HMesh * myHMesh;
 	/// All Elements
@@ -179,6 +185,10 @@ private:
 	std::vector<STACCATOComplexDouble> myB;
 	/// Output matrix
 	std::vector<STACCATOComplexDouble> myC;
+	// FOM Sparse
+	sparse_matrix_t mySparseK;
+	sparse_matrix_t mySparseM;
+	sparse_matrix_t mySparseD;
 
 	// ROM Complex data
 	/// Dense reduced stiffness matrix
@@ -211,13 +221,7 @@ private:
 	int* pointerB;
 	int* columns;
 	int* rowIndex;
-
-	// FOM Sparse
-#ifdef USE_INTEL_MKL
-	sparse_matrix_t mySparseK;
-	sparse_matrix_t mySparseM;
-	sparse_matrix_t mySparseD;
-
+	
 	MKL_INT m;
 	/// number of columns
 	MKL_INT n;
@@ -248,7 +252,7 @@ private:
 
 	STACCATOComplexDouble* values;
 	std::string currentPart;
-	bool isMIMO;
+	bool isSymMIMO;
 	bool enablePropDamping;
 
 	int FOM_DOF;
@@ -269,7 +273,7 @@ private:
 		std::vector<STACCATOComplexDouble> csr_values;
 		std::vector<int> csrPointerB;
 		std::vector<int> csrPointerE;
-	}massCSR, stiffnessCSR, structdampingCSR;
+	}*massCSR, *stiffnessCSR, *structdampingCSR, *viscdampingCSR;
 
 	// Export Flags
 	bool writeFOM;
@@ -278,6 +282,21 @@ private:
 	bool exportRHS;
 	bool exportSolution;
 	bool writeTransferFunctions;
+
+	// Maps
+	std::map<int, std::vector<int>> nodeToDofMap;
+	std::map<int, std::vector<int>> nodeToGlobalMap;
+
+	// StaccatoAbaqusInputOutputInfoMap
+	/// Sets with same index info
+	/// List of node numbers for input
+	std::vector<int> myAbaqusInputNodeList;
+	/// List of corresponding dof numbers for input
+	std::vector<int> myAbaqusInputDofList;
+	/// List of node numbers for output
+	std::vector<int> myAbaqusOutputNodeList;
+	/// List of corresponding dof numbers for output
+	std::vector<int> myAbaqusOutputDofList;
 
 public:
 	/***********************************************************************************************

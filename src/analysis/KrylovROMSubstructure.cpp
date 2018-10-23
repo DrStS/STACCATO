@@ -50,7 +50,7 @@
 KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "=============== STACCATO ROM Analysis =============\n";
 	/* -- Properties of KMOR ---- */
-	isMIMO = false;
+	isSymMIMO = false;
 	enablePropDamping = false;
 	/* -------------------------- */
 	
@@ -105,7 +105,6 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		/* %%% Execute Reduction %%% */
 		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
 		{
-			//myHMesh->isKROM = true;
 			std::cout << ">> KMOR procedure to be performed on FE part: " << std::string(iterParts->PART()[iPart].Name()->data()) << std::endl;
 			currentPart = std::string(iterParts->PART()[iPart].Name()->data());
 			// Getting ROM prerequisites
@@ -124,7 +123,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				myKrylovOrder = std::atoi(iterParts->PART()[iPart].ROMDATA().begin()->KRYLOV_ORDER().begin()->c_str());
 			}
 			/// Inputs
-			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->Type()->c_str()) == "NODES") {
+			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->Type()->c_str()) == "NODES") {	// Currently nodes are dof indices
 				for (int iNodeSet = 0; iNodeSet < iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET().size(); iNodeSet++) {
 					if (myModelType == "FOM_ODB")
 					{
@@ -137,14 +136,33 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 					else if (myModelType == "FOM_SIM") {
 						auto search = nodeSetsMap.find(std::string(iterParts->PART()[iPart].ROMDATA().begin()->INPUTS().begin()->NODESET()[iNodeSet].Name()->c_str()));
-						if (search != nodeSetsMap.end())
-							myInputDOFS.insert(myInputDOFS.end(), search->second.begin(), search->second.end());
+						if (search != nodeSetsMap.end()) {
+							// Iterate inside the list of node list
+							for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
+							{
+								auto searchInStaccatoLocalDofMapSIM = nodeToDofMap.find(search->second[jNodeSet]);
+								auto searchInStaccatoGlobalDofMapSIM = nodeToGlobalMap.find(search->second[jNodeSet]);
+
+								if (searchInStaccatoLocalDofMapSIM != nodeToDofMap.end() && searchInStaccatoGlobalDofMapSIM != nodeToGlobalMap.end()) {
+
+									myInputDOFS.insert(myInputDOFS.end(), searchInStaccatoGlobalDofMapSIM->second.begin(), searchInStaccatoGlobalDofMapSIM->second.end());
+									// for every dof, add the same node label
+									for (int jInfoIter = 0; jInfoIter < searchInStaccatoLocalDofMapSIM->second.size(); jInfoIter++)
+										myAbaqusInputNodeList.push_back(searchInStaccatoLocalDofMapSIM->first);
+
+									myAbaqusInputDofList.insert(myAbaqusInputDofList.end(), searchInStaccatoLocalDofMapSIM->second.begin(), searchInStaccatoLocalDofMapSIM->second.end());
+								}
+								else {
+									std::cerr << "!! Unexpected Detection error! Exiting Staccato!" << std:: endl;
+									exit(EXIT_FAILURE);
+								}
+							}
+						}
 						else
 							std::cout << "!! InputNodeSet not found!";
 					}
 				}
 			}
-
 			/// Outputs
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "NODES") {
 				std::cout << " !! Output DOFs found! Unsymmetric MIMO not yet supported." << std::endl;
@@ -152,7 +170,11 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			}
 			else if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "MIMO") {
 				myOutputDOFS = myInputDOFS;
-				isMIMO = true;
+
+				myAbaqusOutputNodeList = myAbaqusInputDofList;
+				myAbaqusOutputDofList = myAbaqusOutputDofList;
+
+				isSymMIMO = true;
 			}
 
 			// Size prediction
@@ -161,6 +183,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			displayModelSize();
 
 			generateInputOutputMatricesForFOM();
+
 			std::cout << "|| Physical memory consumption after Generation of Input-Output Matrix: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 			/* %%% Reduce FOM to ROM %%% */
@@ -200,6 +223,12 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	// The following is will have to be separeted from above reduction
 	/* %% Performing Anaylsis (Back-Transformation) %%% */
 	performAnalysis();
+
+	std::cout << "-- MAP KMOR Results -- " << std::endl;
+	for (size_t i = 0; i < myAbaqusInputDofList.size(); i++)
+	{
+		std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDofList[i] << std::endl;
+	}
 }
 
 KrylovROMSubstructure::~KrylovROMSubstructure() {
@@ -320,18 +349,26 @@ void KrylovROMSubstructure::getSystemMatricesSIM() {
 	importSIMMatrices.push_back("stiffness");
 	importSIMMatrices.push_back("mass");
 	importSIMMatrices.push_back("structuraldamping");
+	importSIMMatrices.push_back("viscousdamping");
 
 	for (size_t i = 0; i < importSIMMatrices.size(); i++)
 	{
 		std::cout << " > Imporing " << importSIMMatrices[i] << " SIM Matrix..." << std::endl;
 		if (importSIMMatrices[i] == "stiffness") {
-			acquireSparseMatrix(importSIMMatrices[i] , stiffnessCSR);
+			stiffnessCSR = new csrStruct;
+			acquireSparseMatrix(importSIMMatrices[i] , *stiffnessCSR);
 		}
 		else if (importSIMMatrices[i] == "mass") {
-			acquireSparseMatrix(importSIMMatrices[i], massCSR);
+			massCSR = new csrStruct;
+			acquireSparseMatrix(importSIMMatrices[i], *massCSR);
 		}
 		else if (importSIMMatrices[i] == "structuraldamping") {
-			acquireSparseMatrix(importSIMMatrices[i], structdampingCSR);
+			structdampingCSR = new csrStruct;
+			acquireSparseMatrix(importSIMMatrices[i], *structdampingCSR);
+		}
+		else if (importSIMMatrices[i] == "viscousdamping") {
+			viscdampingCSR = new csrStruct;
+			acquireSparseMatrix(importSIMMatrices[i], *viscdampingCSR);
 		}
 	}
 }
@@ -359,6 +396,9 @@ void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubst
 			STACCATOComplexDouble ComplexOne = { 0,1 };
 			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
 		}
+		else if (_key == "viscousdamping") {
+			MathLibrary::createSparseCSRComplex(&mySparseD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+		}
 		std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
 	}
 	else
@@ -374,7 +414,7 @@ void KrylovROMSubstructure::buildProjectionMatManual() {
 
 		std::string filename = "C://software//repos//staccato//scratch//";
 		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myV, FOM_DOF, ROM_DOF, false); 
-		if(!isMIMO)
+		if(!isSymMIMO)
 			AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myZ, FOM_DOF, ROM_DOF, false);
 
 	}
@@ -391,7 +431,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-08;
+		double sigTol = 1e-14;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -408,8 +448,8 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 		// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_tilde, false, true, negativeOmegaSquare);
-		if (enablePropDamping)
-			MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
+
+		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_tilde, &K_tilde, false, true, complexOmega);
 
 		// K_tilde = - K_tilde
 		STACCATOComplexDouble negativeOne;
@@ -578,7 +618,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		std::cout << (int)progress << "% completed; Performed " << iEP + 1 << " of " << _expPoint.size() << "." << std::endl;
 	}
 	// MIMO
-	if (!isMIMO)
+	if (!isSymMIMO)
 		myZ.assign(myV.begin(), myV.end());
 	
 	std::cout << ">> Adding krylov modes for expansion points... Finished." << std::endl;
@@ -738,8 +778,9 @@ void KrylovROMSubstructure::generateROM() {
 	y.resize(FOM_DOF*ROM_DOF, ZeroComplex);
 	MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(ROM_DOF, FOM_DOF, FOM_DOF, &mySparseK, &myV[0], &y[0], false, false, OneComplex, true, false);
 	// obj.K_R = obj.Z'*y
-	if (isMIMO)
+	if (isSymMIMO) {
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &y[0], &myKComplexReduced[0], true, false, OneComplex, false, false, false);
+	}
 	else
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myKComplexReduced[0], true, false, OneComplex, false, false, false);
 	// obj.M_R = obj.Z'*obj.M*obj.V;
@@ -748,7 +789,7 @@ void KrylovROMSubstructure::generateROM() {
 	y.resize(FOM_DOF*ROM_DOF, ZeroComplex);
 	MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(ROM_DOF, FOM_DOF, FOM_DOF, &mySparseM, &myV[0], &y[0], false, false, OneComplex, true, false);
 	// obj.M_R = obj.Z'*y
-	if (isMIMO)
+	if (isSymMIMO)
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &y[0], &myMComplexReduced[0], true, false, OneComplex, false, false, false);
 	else
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myMComplexReduced[0], true, false, OneComplex, false, false, false);
@@ -761,25 +802,40 @@ void KrylovROMSubstructure::generateROM() {
 		y.resize(FOM_DOF*ROM_DOF, ZeroComplex);
 		MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(ROM_DOF, FOM_DOF, FOM_DOF, &mySparseD, &myV[0], &y[0], false, false, OneComplex, true, false);
 		// obj.D_R = obj.Z'*y
-		if (isMIMO)
+		if (isSymMIMO)
 			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
 		else
 			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
 	}
 
 	// obj.B_R = obj.Z'*obj.B;
-	if (isMIMO)
+	if (isSymMIMO)
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, myInputDOFS.size(), FOM_DOF, &myV[0], &myB[0], &myBReduced[0], true, false, OneComplex, false, false, false);
 	else
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, myInputDOFS.size(), FOM_DOF, &myZ[0], &myB[0], &myBReduced[0], true, false, OneComplex, false, false, false);
 
 	// obj.C_R = obj.C*obj.V;
 	MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(myOutputDOFS.size(), ROM_DOF, FOM_DOF, &myC[0], &myV[0], &myCReduced[0], false, false, OneComplex, false, false, false);
-	myV.clear();
+	
 	std::cout << ">> Generating ROM... Finished." << std::endl;
-
+	clearDataFOM();
 #endif // USE_INTEL_MKL
 
+}
+
+void KrylovROMSubstructure::clearDataFOM() {
+	std::cout << "|| Physical memory consumption before FOM memory clearing: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	// clear Projection matrices
+	myV.clear();
+	myZ.clear();
+	// clear FOM Data
+	delete stiffnessCSR;
+	delete massCSR;
+	delete structdampingCSR;
+	myB.clear();
+	myC.clear();
+
+	std::cout << "|| Physical memory consumption after FOM memory clearing: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
 
 void KrylovROMSubstructure::cleanPardiso() {
@@ -854,6 +910,8 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	myUMAReader = new SimuliaUMA(filePath, *myHMesh, _iPart);
 	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	myHMesh = NULL;
+	nodeToDofMap = myUMAReader->getNodeToDofMap();
+	nodeToGlobalMap = myUMAReader->getNodeToGlobalMap();
 	buildXMLforSIM(_iPart);
 
 	std::cout << ">> Assembling FOM system matrices from SIM... " << std::endl;
@@ -861,7 +919,8 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
 
 	FOM_DOF = myUMAReader->totalDOFs;
-	std::cout << "|| Physical memory consumption after UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
+	std::cout << "|| Physical memory consumption before UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	delete myUMAReader;
 	std::cout << "|| Physical memory consumption after UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 }
@@ -906,11 +965,13 @@ void KrylovROMSubstructure::exportROMToFiles() {
 	std::string filename = "C://software//repos//staccato//scratch//";
 	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myKR.dat", myKComplexReduced, ROM_DOF, ROM_DOF, false);
 	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myMR.dat", myMComplexReduced, ROM_DOF, ROM_DOF, false);
+	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myDR.dat", myDComplexReduced, ROM_DOF, ROM_DOF, false);
 	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myBR.dat", myBReduced, ROM_DOF, myInputDOFS.size(), false);
 	AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myCR.dat", myCReduced, myOutputDOFS.size(), ROM_DOF, false);
 #endif // !USE_HDF5
 
 #ifdef USE_HDF5
+	std::cout << " >> Exporting ROM to HDF5...";
 	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
 	FileROM myFile("reducedOrderModel.h5", filePath);
 	myFile.createContainer(true);
@@ -920,6 +981,7 @@ void KrylovROMSubstructure::exportROMToFiles() {
 	myFile.addComplexDenseMatrix("B", myBReduced, myInputDOFS.size(), ROM_DOF);
 	myFile.addComplexDenseMatrix("C", myCReduced, ROM_DOF, myOutputDOFS.size());
 	myFile.closeContainer();
+	std::cout << " Finished." << std::endl;
 #endif //USE_HDF5
 }
 
@@ -1003,18 +1065,24 @@ void KrylovROMSubstructure::performAnalysis() {
 										sizeofRHS += neumannBoundaryConditionComplex.getNumberOfTotalCases();
 									}
 									else if (myModelType == "FOM_SIM") {
-										bComplex.resize(FOM_DOF);
-										std::vector<int> nodeSet;
+										bComplex.resize(FOM_DOF, {0,0});
+										std::vector<int> nodeDofSet;
 										auto search = nodeSetsMap.find(std::string(iterParts->PART()[jPart].LOADS().begin()->LOAD()[jPartLoad].NODESET().begin()->Name()->c_str()));
-										if (search != nodeSetsMap.end())
-											nodeSet.insert(nodeSet.end(), search->second.begin(), search->second.end());
+										if (search != nodeSetsMap.end()) {
+
+											for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
+											{
+												nodeDofSet.clear();
+												auto searchInStaccatoMap = nodeToGlobalMap.find(search->second[jNodeSet]);
+												nodeDofSet.insert(nodeDofSet.end(), searchInStaccatoMap->second.begin(), searchInStaccatoMap->second.end());
+
+												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++)
+													bComplex[nodeDofSet[iLoadAss]] = loadVector[iLoadAss];
+											} 
+										}
 										else
 											std::cout << "!! LoadNodeSet not found!";
 
-										for (size_t iLoadAss = 0; iLoadAss < nodeSet.size(); iLoadAss++)
-										{
-											bComplex[nodeSet[iLoadAss]] = loadVector[0];
-										}
 										sizeofRHS += 1;
 									}
 								}
@@ -1028,7 +1096,6 @@ void KrylovROMSubstructure::performAnalysis() {
 			std::cout << ">> Writing RHS ...\n";
 			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
 		}
-
 		std::vector<STACCATOComplexDouble> inputLoad;
 		for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
 		{
@@ -1142,7 +1209,7 @@ void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
 				int n;
 				stream >> n;
 				if (stream)
-					idList.push_back(n-1);
+					idList.push_back(n);
 			}
 		}
 		nodeSetsMap[std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].Name()->c_str())] =  idList;

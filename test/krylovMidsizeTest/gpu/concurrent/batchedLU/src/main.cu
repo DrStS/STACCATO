@@ -45,9 +45,9 @@ int main (int argc, char *argv[]){
     COMMAND LINE ARGUMENTS
     --------------------*/
     double freq_max;
-    int mat_repetition, num_matrix, num_streams, num_threads, batchSize;
+    int mat_repetition, subComponents, num_streams, num_threads, batchSize;
     // Configure test environment with command line arguments
-    config::configureTest(argc, argv, freq_max, mat_repetition, num_matrix, num_streams, num_threads, batchSize);
+    config::configureTest(argc, argv, freq_max, mat_repetition, subComponents, num_streams, num_threads, batchSize);
 
     /*---------------------
     FILEPATHS AND FILENAMES
@@ -130,8 +130,8 @@ int main (int argc, char *argv[]){
     std::cout << ">> Matrices imported" << std::endl;
 
     // Get matrix sizes
-    thrust::host_vector<int> row_sub(num_matrix);
-    thrust::host_vector<int> size_sub(num_matrix);
+    thrust::host_vector<int> row_sub(subComponents);
+    thrust::host_vector<int> nnz_sub(subComponents);
     int nnz = 0;
     int row = 0;
     size_t idx;
@@ -139,14 +139,14 @@ int main (int argc, char *argv[]){
         for (size_t i = 0; i < 12; ++i){
             idx = i + 12*j;
             row_sub[idx] = row_baseline[i];
-            size_sub[idx] = row_sub[i]*row_sub[i];
-            nnz += size_sub[idx];
-            row  += row_sub[idx];
+            nnz_sub[idx] = row_sub[i]*row_sub[i];
+            nnz += nnz_sub[idx];
+            row += row_sub[idx];
         }
     }
 
     // Get maximum matrix size
-    auto nnz_max_it = thrust::max_element(size_sub.begin(), size_sub.end());
+    auto nnz_max_it = thrust::max_element(nnz_sub.begin(), nnz_sub.end());
     int nnz_max = *nnz_max_it;
 
     // Combine matrices into a single array on host (to make use of GPU's high bandwidth. We could also import the matrices directly like this)
@@ -165,7 +165,7 @@ int main (int argc, char *argv[]){
             thrust::copy(K_sub_ptr->begin(), K_sub_ptr->end(), K.begin() + array_shift);
             thrust::copy(M_sub_ptr->begin(), M_sub_ptr->end(), M.begin() + array_shift);
             thrust::copy(D_sub_ptr->begin(), D_sub_ptr->end(), D.begin() + array_shift);
-            array_shift += size_sub[i];
+            array_shift += nnz_sub[i];
         }
     }
 
@@ -174,7 +174,6 @@ int main (int argc, char *argv[]){
     /*----------------------
     DATA STRUCTURES (DEVICE)
     ----------------------*/
-    int dofReduced = row*freq_max;
     nvtxRangePushA("Data Structures (Device)");
     // Send matrices to device
     timerMatrixCpy.start();
@@ -187,7 +186,7 @@ int main (int argc, char *argv[]){
 
     // Create RHS directly on device
     timerMatrixCpy.start();
-    thrust::device_vector<cuDoubleComplex> d_rhs(dofReduced, rhs_val);
+    thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
     timerMatrixCpy.stop();
     std::cout << ">> RHS copied to device " << std::endl;
     std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
@@ -199,18 +198,22 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-    thrust::host_vector<cuDoubleComplex*> h_ptr_K(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_M(num_matrix);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_D(num_matrix);
+
+    // Get local shifts
+    thrust::host_vector<cuDoubleComplex*> h_ptr_K(subComponents);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_M(subComponents);
+    thrust::host_vector<cuDoubleComplex*> h_ptr_D(subComponents);
     size_t mat_shift = 0;
     size_t sol_shift = 0;
-    thrust::host_vector<int> loop_shift(num_matrix);
-    for (size_t i = 0; i < num_matrix; ++i){
+    thrust::host_vector<int> shift_local_rhs(subComponents);
+    thrust::host_vector<int> shift_local_A(subComponents);
+    for (size_t i = 0; i < subComponents; ++i){
         h_ptr_K[i] = d_ptr_K_base + mat_shift;
         h_ptr_M[i] = d_ptr_M_base + mat_shift;
         h_ptr_D[i] = d_ptr_D_base + mat_shift;
-        loop_shift[i] = sol_shift;
-        mat_shift += size_sub[i];
+        shift_local_rhs[i] = sol_shift;
+        shift_local_A[i]   = mat_shift;
+        mat_shift += nnz_sub[i];
         sol_shift += row_sub[i];
     }
 
@@ -244,62 +247,63 @@ int main (int argc, char *argv[]){
     nvtxRangePushA("Krylov Subspace Method");
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
-#pragma omp parallel private(tid, array_shift, freq, freq_square) num_threads(num_threads)
+#pragma omp parallel private(tid, freq, freq_square) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
-        // Indices
-        size_t j;
         // Allocate vector of array pointers to A in each thread
         thrust::device_vector<cuDoubleComplex*> d_ptr_A(batchSize);
         thrust::device_vector<cuDoubleComplex*> d_ptr_rhs(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_rhs(batchSize);
-
         // Initialise shifts
-        int thread_shift, rhs_shift;
-        thread_shift = tid*freq_max*nnz_max;
+        int shift_global_A, shift_global_rhs;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
 
     // Loop over each matrix size
     #pragma omp for
-        for (size_t i = 0; i < num_matrix; ++i){
+        for (size_t i = 0; i < subComponents; ++i){
             /*---------------------------------------------------------------
             Assemble Global Matrix & Update pointers to each matrix A and RHS
             ---------------------------------------------------------------*/
             // Initialise Shifts
-            array_shift = 0;
-            rhs_shift = 0;
+            shift_global_A   = 0;
+            shift_global_rhs = 0;
             // Loop over batch (assume batchSize = freq_max)
-            for (j = 0; j < batchSize; ++j){
+            for (size_t j = 0; j < batchSize; ++j){
                 // Update matrix A pointer
-                h_ptr_A[j] = d_ptr_A_base + thread_shift + array_shift;
+                h_ptr_A[j] = d_ptr_A_base + shift_local_A[i] + shift_global_A;
                 // Update rhs pointer
-                h_ptr_rhs[j] = d_ptr_rhs_base + rhs_shift + loop_shift[i];
+                h_ptr_rhs[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
                 // Compute frequency (assume batchSize = freq_max)
                 freq = (j+1);
                 freq_square = -(freq*freq);
                 // Assemble matrix
                 nvtxRangePushA("Matrix Assembly");
-                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], size_sub[i], freq_square);
+                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square);
                 nvtxRangePop();
                 // Update shifts
-                array_shift += size_sub[i];
-                rhs_shift += row;
+                shift_global_A += nnz;
+                shift_global_rhs += row;
+
             }
             nvtxRangePushA("Linear System");
             /*--------------
             LU Decomposition
             --------------*/
+/*
             d_ptr_A = h_ptr_A;
             cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
+*/
             /*-----------
             Solve x = A\b
             -----------*/
+/*
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+*/
             /*-----------------
             Synchronize Streams
             -----------------*/
@@ -316,6 +320,8 @@ int main (int argc, char *argv[]){
 
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
+
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

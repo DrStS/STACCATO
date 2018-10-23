@@ -136,7 +136,7 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 
 void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values) {
 	_values.size();
-	addComplexDenseMatrix(_matrixName, _values, _values.size(), _values.size());
+	addComplexDenseMatrix(_matrixName, _values, sqrt(_values.size()), sqrt(_values.size()));
 }
 
 void FileROM::closeContainer(void) {

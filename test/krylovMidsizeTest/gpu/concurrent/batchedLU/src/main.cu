@@ -95,6 +95,11 @@ int main (int argc, char *argv[]){
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
 
+    /*-----------------------
+    CHECK MEMORY REQUIREMENTS
+    -----------------------*/
+    config::check_memory(mat_repetition, freq_max, num_threads);
+
     /*-------------
     DATA STRUCTURES
     --------------*/
@@ -261,8 +266,6 @@ int main (int argc, char *argv[]){
         shift_global_A = tid*freq_max*nnz_max;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
-
-
     // Loop over each matrix size
     #pragma omp for
         for (size_t i = 0; i < subComponents; ++i){
@@ -317,8 +320,6 @@ int main (int argc, char *argv[]){
 
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
-
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

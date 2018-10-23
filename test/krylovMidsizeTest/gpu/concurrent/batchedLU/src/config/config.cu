@@ -1,5 +1,6 @@
 //Libraries
 #include <iostream>
+#include <cuComplex.h>
 
 //Header Files
 #include "config.cuh"
@@ -28,4 +29,29 @@ void config::configureTest(int argc, char *argv[], double &freq_max, int &mat_re
     std::cout << ">> Total number of sub-components: " << subComponents << std::endl;
     std::cout << ">> Number of CUDA streams: " << num_streams << std::endl;
     std::cout << ">> Number of batched matrices: " << batchSize << "\n" << std::endl;
+}
+
+void config::check_memory(int mat_repetition, double freq_max, int num_threads){
+    /*-----------------
+    MEMORY REQUIREMENTS
+    -----------------*/
+    /*
+    1. K, M, D = nnz * 2 * mat_repetition (ignore D)
+    2. rhs (sol) = row * freq_max
+    3. A = nt * freq_max * nnz_max
+    4. d_ptr_A, d_ptr_rhs = freq_max * 2
+    */
+    unsigned int memory_nnz, memory_row, memory_nnz_max, memory_ptr_batch;
+    memory_nnz = sizeof(cuDoubleComplex) * 611424;             // 1
+    memory_row = sizeof(cuDoubleComplex) * 2658;               // 2
+    memory_nnz_max = sizeof(cuDoubleComplex) * 97344;          // 3
+    memory_ptr_batch = sizeof(cuDoubleComplex*) * freq_max;    // 4
+    unsigned int memory_required = (memory_nnz*2*mat_repetition + memory_row*freq_max + num_threads*freq_max*memory_nnz_max + memory_ptr_batch*2)*1E-9;
+    if (memory_required > 32){
+        std::cerr << ">> NOT ENOUGH MEMORY ON GPU" << std::endl;
+        std::cerr << ">>>> Memory Required = " << memory_required << "GB" << std::endl;
+        std::cerr << ">>>> Hardware Limit = 32GB" << std::endl;
+        std::exit(1);
+    }
+    else std::cout << ">> Memory Required = " << memory_required << "GB\n" << std::endl;
 }

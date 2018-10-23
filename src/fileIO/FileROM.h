@@ -71,6 +71,15 @@ public:
 	***********/
 	void addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values);
 	/***********************************************************************************************
+    * \brief Add complex dense matrix
+    * \author Stefan Sicklinger
+    * \param[in] _matrixName
+    * \param[in] _values
+	* \param[in] _numColumns
+	* \param[in] _numRows
+    ***********/
+	void addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values, unsigned int _numColumns, unsigned int _numRows);
+	/***********************************************************************************************
      * \brief Close binary container
      * \author Stefan Sicklinger
      ***********/

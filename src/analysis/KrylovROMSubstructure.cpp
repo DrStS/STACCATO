@@ -635,19 +635,19 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 	pardiso_iparm[0] = 1;    // No solver defaults
 	pardiso_iparm[1] = 3;    // Fill-in reordering from METIS 
 	pardiso_iparm[9] = 13;   // Perturb the pivot elements with 1E-13
-							 //pardiso_iparm[23] = 1;   // 2-level factorization
-							 //pardiso_iparm[36] = -99; // VBSR format
+							 // pardiso_iparm[23] = 1;   // 2-level factorization
+							 // pardiso_iparm[36] = -99; // VBSR format
 	pardiso_iparm[17] = -1;	 // Output: Number of nonzeros in the factor LU
 	pardiso_iparm[18] = -1;	 // Output: Report Mflops
 	pardiso_iparm[19] = 0;	 // Output: Number of CG iterations
 							 // pardiso_iparm[27] = 1;   // PARDISO checks integer arrays ia and ja. In particular, PARDISO checks whether column indices are sorted in increasing order within each row.
-	pardiso_maxfct = 1;	    // max number of factorizations
-	pardiso_mnum = 1;		// which factorization to use
-	pardiso_msglvl = 0;		// do NOT print statistical information
-	pardiso_neq = m;		// number of rows of 
-	pardiso_error = 1;		// Initialize error flag 
-	pardiso_nrhs = _nRHS;	// number of right hand side
-	pardiso_iparm[12] = 1;   //Improved accuracy using (non-) symmetric weighted matching.
+	pardiso_maxfct = 1;	     // max number of factorizations
+	pardiso_mnum = 1;		 // which factorization to use
+	pardiso_msglvl = 0;		 // do NOT print statistical information
+	pardiso_neq = m;		 // number of rows of 
+	pardiso_error = 1;		 // Initialize error flag 
+	pardiso_nrhs = _nRHS;	 // number of right hand side
+	pardiso_iparm[12] = 1;   // improved accuracy using (non-) symmetric weighted matching.
 	int len = 198;
 	char buf[198];
 	mkl_get_version_string(buf, len);
@@ -917,8 +917,8 @@ void KrylovROMSubstructure::exportROMToFiles() {
 	myFile.addComplexDenseMatrix("M", myMComplexReduced);
 	myFile.addComplexDenseMatrix("D", myDComplexReduced);
 	myFile.addComplexDenseMatrix("K", myKComplexReduced);
-	myFile.addComplexDenseMatrix("B", myBReduced);
-	myFile.addComplexDenseMatrix("C", myCReduced);
+	myFile.addComplexDenseMatrix("B", myBReduced, myInputDOFS.size(), ROM_DOF);
+	myFile.addComplexDenseMatrix("C", myCReduced, ROM_DOF, myOutputDOFS.size());
 	myFile.closeContainer();
 #endif //USE_HDF5
 }

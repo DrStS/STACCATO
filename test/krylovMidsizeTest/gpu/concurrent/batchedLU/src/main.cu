@@ -45,7 +45,7 @@ using namespace staccato;
 
 int main (int argc, char *argv[]){
 
-    nvtxRangePushA("Initial Configuration (Host)");
+    PUSH_RANGE("Initial Configuration (Host)", 1)
     /*--------------------
     COMMAND LINE ARGUMENTS
     --------------------*/
@@ -109,7 +109,7 @@ int main (int argc, char *argv[]){
     /*--------------------
     DATA STRUCTURES (HOST)
     --------------------*/
-    nvtxRangePushA("Data Structures (Host)");
+    PUSH_RANGE("Data Structures (Host)", 1)
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
@@ -127,12 +127,12 @@ int main (int argc, char *argv[]){
     data::constructHostDataStructure(filename_K, filename_M, filename_D, filepath, baseName_K, baseName_M, baseName_D, base_format, row_baseline,
                                      K_sub, M_sub, D_sub, shift_local_A, shift_local_rhs, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, K, M, D);
 
-    nvtxRangePop(); // Data Structures (Host)
+    POP_RANGE // Data Structures (Host)
 
     /*----------------------
     DATA STRUCTURES (DEVICE)
     ----------------------*/
-    nvtxRangePushA("Data Structures (Device)");
+    PUSH_RANGE("Data Structures (Device)", 2)
     // Send matrices to device
     thrust::device_vector<cuDoubleComplex> d_K = K;
     thrust::device_vector<cuDoubleComplex> d_M = M;
@@ -154,13 +154,13 @@ int main (int argc, char *argv[]){
     // Get information from device data structures
     data::getInfoDeviceDataStructure(h_ptr_K, h_ptr_M, h_ptr_D, d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, nnz_sub, subComponents);
 
-    nvtxRangePop(); // Data Structures (Device)
+    POP_RANGE // Data Structures (Device)
 
 
     /*--------------------------------
     Krylov Subspace Method Preparation
     --------------------------------*/
-    nvtxRangePushA("Krylov Subspace Method Preparation");
+    PUSH_RANGE("Krylov Subspace Method Preparation", 2)
     // M = 4*pi^2*M
     cublas_check(cublasZdscal(cublasHandle[0], nnz, &alpha, d_ptr_M_base, 1));
     // Solver Info for batched LU decomposition
@@ -174,12 +174,12 @@ int main (int argc, char *argv[]){
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
 
-    nvtxRangePop(); // Krylov Subspace Method Preparation
+    POP_RANGE // Krylov Subspace Method Preparation
 
     /*--------------------
     Krylov Subspace Method
     --------------------*/
-    nvtxRangePushA("Krylov Subspace Method");
+    PUSH_RANGE("Krylov Subspace Method", 3)
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
 #pragma omp parallel private(tid) num_threads(num_threads)
@@ -215,14 +215,14 @@ int main (int argc, char *argv[]){
                 freq[j] = (j+1);
                 freq_square[j] = -(freq[j]*freq[j]);
                 // Assemble matrix
-                nvtxRangePushA("Matrix Assembly");
+                PUSH_RANGE("Matrix Assembly", 4)
                 assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square[j]);
-                nvtxRangePop();
+                POP_RANGE
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
             }
-            nvtxRangePushA("Linear System");
+            PUSH_RANGE("Linear System", 5)
             /*--------------
             LU Decomposition
             --------------*/
@@ -234,13 +234,14 @@ int main (int argc, char *argv[]){
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
+            POP_RANGE
             /*-----------------
             Synchronize Streams
             -----------------*/
             cudaStreamSynchronize(streams[tid]);
         } // matrix loop
     } // omp parallel
-    nvtxRangePop();
+    POP_RANGE // Krylov Subspace Method
 
     timerLoop.stop();
     nvtxRangePop();

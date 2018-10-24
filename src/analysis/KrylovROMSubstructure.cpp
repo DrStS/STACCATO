@@ -103,7 +103,8 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		}
 
 		/* %%% Execute Reduction %%% */
-		if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")
+		myAnalysisType = std::string(iterParts->PART()[iPart].TYPE()->data());
+		if (myAnalysisType == "FE_KMOR")
 		{
 			std::cout << ">> KMOR procedure to be performed on FE part: " << std::string(iterParts->PART()[iPart].Name()->data()) << std::endl;
 			currentPart = std::string(iterParts->PART()[iPart].Name()->data());
@@ -217,18 +218,18 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 			/* %%% Output ROM %%% */
 			if (writeROM)
 				exportROMToFiles();
+
+			std::cout << "-- MAP KMOR Results -- " << std::endl;
+			for (size_t i = 0; i < myAbaqusInputDofList.size(); i++)
+			{
+				std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDofList[i] << std::endl;
+			}
 		}
 	}
 
 	// The following is will have to be separeted from above reduction
 	/* %% Performing Anaylsis (Back-Transformation) %%% */
 	performAnalysis();
-
-	std::cout << "-- MAP KMOR Results -- " << std::endl;
-	for (size_t i = 0; i < myAbaqusInputDofList.size(); i++)
-	{
-		std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDofList[i] << std::endl;
-	}
 }
 
 KrylovROMSubstructure::~KrylovROMSubstructure() {
@@ -302,6 +303,7 @@ void KrylovROMSubstructure::assignMaterialToElements() {
 }
 
 void KrylovROMSubstructure::getSystemMatricesODB() {
+	isSymmetricSystem = true;
 	MathLibrary::SparseMatrix<MKL_Complex16> *KComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
 	MathLibrary::SparseMatrix<MKL_Complex16> *MComplex = new MathLibrary::SparseMatrix<MKL_Complex16>(FOM_DOF, true, true);
 
@@ -415,7 +417,7 @@ void KrylovROMSubstructure::buildProjectionMatManual() {
 		std::string filename = "C://software//repos//staccato//scratch//";
 		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myV, FOM_DOF, ROM_DOF, false); 
 		if(!isSymMIMO)
-			AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myZ, FOM_DOF, ROM_DOF, false);
+			AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myZ.dat", myZ, FOM_DOF, ROM_DOF, false);
 
 	}
 }
@@ -431,7 +433,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-14;
+		double sigTol = 1e-8;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -919,6 +921,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
 
 	FOM_DOF = myUMAReader->totalDOFs;
+	isSymmetricSystem = myUMAReader->isSymmetricSystem;
 
 	std::cout << "|| Physical memory consumption before UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 	delete myUMAReader;
@@ -1096,26 +1099,71 @@ void KrylovROMSubstructure::performAnalysis() {
 			std::cout << ">> Writing RHS ...\n";
 			AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_RHS.dat", bComplex);
 		}
-		std::vector<STACCATOComplexDouble> inputLoad;
-		for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
-		{
-			std::vector<STACCATOComplexDouble> temp;
-			temp.resize(myInputDOFS.size(), { 0,0 });
-			for (int iInputDof = 0; iInputDof < myInputDOFS.size(); iInputDof++)
-			{
-				temp[iInputDof].real = bComplex[myInputDOFS[iInputDof]].real;
-				temp[iInputDof].imag = bComplex[myInputDOFS[iInputDof]].imag;
-			}
-			inputLoad.insert(inputLoad.end(), temp.begin(), temp.end());
-		}
-
 		std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
 
-		backTransformKMOR(std::string(iAnalysis->NAME()->data()), &freq, &inputLoad[0], sizeofRHS);
+		if (myAnalysisType == "FE_KMOR") {
+			std::vector<STACCATOComplexDouble> inputLoad;
+			for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
+			{
+				std::vector<STACCATOComplexDouble> temp;
+				temp.resize(myInputDOFS.size(), { 0,0 });
+				for (int iInputDof = 0; iInputDof < myInputDOFS.size(); iInputDof++)
+				{
+					temp[iInputDof].real = bComplex[myInputDOFS[iInputDof]].real;
+					temp[iInputDof].imag = bComplex[myInputDOFS[iInputDof]].imag;
+				}
+				inputLoad.insert(inputLoad.end(), temp.begin(), temp.end());
+			}
+			backTransformKMOR(std::string(iAnalysis->NAME()->data()), &freq, &inputLoad[0], sizeofRHS);
+		}
+		else if (myAnalysisType == "FE_SUBSTRUCT_DIRECT") {
+			performSolveFOM(std::string(iAnalysis->NAME()->data()), &freq, &bComplex[0], sizeofRHS);
+		}
 
 		std::cout << "==== Anaylsis Completed: " << iAnalysis->NAME()->data() << " ====" << std::endl;
 	}
 	std::cout << ">> All Analyses Completed." << std::endl;
+}
+
+void KrylovROMSubstructure::performSolveFOM(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase) {
+	STACCATOComplexDouble ZeroComplex = { 0,0 };
+	STACCATOComplexDouble OneComplex = { 1,0 };
+
+	std::vector<STACCATOComplexDouble> results;
+
+	// Solving for each frequency
+	anaysisTimer01.start();
+#ifdef USE_INTEL_MKL		
+	for (int iFreqCounter = 0; iFreqCounter < _freq->size(); iFreqCounter++) {
+
+		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ..." << std::endl;
+		double omega = 2 * M_PI*_freq->at(iFreqCounter);
+
+		sparse_matrix_t K_Dynamic;
+		STACCATOComplexDouble negativeOmegaSquare = { -omega * omega ,0 };
+		STACCATOComplexDouble complexOmega = { 0, omega };
+
+		// K_tilde = -(2*pi*obj.exp_points(k))^2*obj.M + 1i*2*pi*obj.exp_points(k)*obj.D + obj.K;
+		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_Dynamic, false, true, negativeOmegaSquare);
+
+		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_Dynamic, &K_Dynamic, false, true, complexOmega);
+
+		// result = K_tilde\f;               % Initial Search Direction
+		std::vector<STACCATOComplexDouble> resultFreq;
+		resultFreq.resize(FOM_DOF, { 0,0 });
+		factorizeSparseMatrixComplex(&K_Dynamic, isSymmetricSystem, false, _numLoadCase);
+		solveDirectSparseComplex(&K_Dynamic, isSymmetricSystem, false, _numLoadCase, &resultFreq[0], &_inputLoad[0]);
+
+		results.insert(results.end(), resultFreq.begin(), resultFreq.end());
+		cleanPardiso();
+		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ... Finished." << std::endl;
+	}
+	anaysisTimer01.stop();
+	std::cout << " --> Duration for direct FOM Solve: " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
+
+	if (exportSolution)
+		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(_analysisName + "_SUBSTRUCT_DIRECT_Results.dat", results);
+#endif // USE_INTEL_MKL
 }
 
 void KrylovROMSubstructure::backTransformKMOR(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase ){

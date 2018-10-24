@@ -45,6 +45,7 @@ using namespace staccato;
 
 int main (int argc, char *argv[]){
 
+    nvtxRangePushA("Initial Configuration (Host)");
     /*--------------------
     COMMAND LINE ARGUMENTS
     --------------------*/
@@ -102,10 +103,12 @@ int main (int argc, char *argv[]){
     CHECK MEMORY REQUIREMENTS
     -----------------------*/
     config::check_memory(mat_repetition, freq_max, num_threads);
+    nvtxRangePop();
 
     /*--------------------
     DATA STRUCTURES (HOST)
     --------------------*/
+    nvtxRangePushA("Data Structures (Host)");
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
@@ -117,9 +120,12 @@ int main (int argc, char *argv[]){
     thrust::host_vector<int> row_sub(subComponents);
     thrust::host_vector<int> nnz_sub(subComponents);
     int nnz, row, nnz_max;
+    thrust::host_vector<int> shift_local_A(subComponents);
+    thrust::host_vector<int> shift_local_rhs(subComponents);
     // Set up host data structures
     data::constructHostDataStructure(filename_K, filename_M, filename_D, filepath, baseName_K, baseName_M, baseName_D, base_format, row_baseline,
-                                     K_sub, M_sub, D_sub, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, K, M, D);
+                                     K_sub, M_sub, D_sub, shift_local_A, shift_local_rhs, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, K, M, D);
+    nvtxRangePop();
 
     /*----------------------
     DATA STRUCTURES (DEVICE)
@@ -155,14 +161,12 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex*> h_ptr_D(subComponents);
     size_t mat_shift = 0;
     size_t sol_shift = 0;
-    thrust::host_vector<int> shift_local_rhs(subComponents);
-    thrust::host_vector<int> shift_local_A(subComponents);
     for (size_t i = 0; i < subComponents; ++i){
         h_ptr_K[i] = d_ptr_K_base + mat_shift;
         h_ptr_M[i] = d_ptr_M_base + mat_shift;
         h_ptr_D[i] = d_ptr_D_base + mat_shift;
-        shift_local_rhs[i] = sol_shift;
-        shift_local_A[i]   = mat_shift;
+        //shift_local_rhs[i] = sol_shift;
+        //shift_local_A[i]   = mat_shift;
         mat_shift += nnz_sub[i];
         sol_shift += row_sub[i];
     }

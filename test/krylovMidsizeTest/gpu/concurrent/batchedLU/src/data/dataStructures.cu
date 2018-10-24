@@ -9,18 +9,33 @@
 // Namespace
 using namespace staccato;
 
-void data::getInfoHostDataStructure(thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, int &nnz, int &row, int &nnz_max, int mat_repetition, int row_baseline[]){
-    // Get matrix sizes
+void data::getInfoHostDataStructure(
+                                    thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs,
+                                    thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, int &nnz, int &row, int &nnz_max, int mat_repetition, int row_baseline[]
+                                   )
+{
+    // Get matrix sizes and local shifts
     nnz = 0;
     row = 0;
     size_t idx;
+    int mat_shift = 0;
+    int sol_shift = 0;
     for (size_t j = 0; j < mat_repetition; ++j){
         for (size_t i = 0; i < 12; ++i){
+            // Index for combined matrix
             idx = i + 12*j;
+            // Sub-component matrix & vector sizes
             row_sub[idx] = row_baseline[i];
             nnz_sub[idx] = row_sub[i]*row_sub[i];
+            // Accumulate total matrix & vector sizes
             nnz += nnz_sub[idx];
             row += row_sub[idx];
+            // (Local) shifts for each sub-components from combined matrix
+            shift_local_A[idx]   = mat_shift;
+            shift_local_rhs[idx] = sol_shift;
+            // Update shifts
+            mat_shift += nnz_sub[idx];
+            sol_shift += row_sub[idx];
         }
     }
     // Get maximum matrix size
@@ -65,6 +80,7 @@ void data::constructHostDataStructure(
                                       thrust::host_vector<thrust::host_vector<cuDoubleComplex>> &K_sub,
                                       thrust::host_vector<thrust::host_vector<cuDoubleComplex>> &M_sub,
                                       thrust::host_vector<thrust::host_vector<cuDoubleComplex>> &D_sub,
+                                      thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs,
                                       thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub,
                                       int &nnz, int &row, int &nnz_max, int mat_repetition,
                                       thrust::host_vector<cuDoubleComplex> &K, thrust::host_vector<cuDoubleComplex> &M, thrust::host_vector<cuDoubleComplex> &D
@@ -100,7 +116,7 @@ void data::constructHostDataStructure(
     /*-------------
     GET MATRIX INFO
     -------------*/
-    data::getInfoHostDataStructure(row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, row_baseline);
+    data::getInfoHostDataStructure(shift_local_A, shift_local_rhs, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, row_baseline);
 
     /*----------------------------------
     COMBINE MATRICES INTO A SINGLE ARRAY

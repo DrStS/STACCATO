@@ -34,7 +34,11 @@
 #include "MemWatcher.h"
 #include "MetaDatabase.h"
 #include "VectorFieldResults.h"
+
+#ifdef USE_HDF5
 #include "FileROM.h"
+#endif //USE_HDF5
+
 #include "OutputDatabase.h"
 #include "AuxiliaryFunctions.h"
 
@@ -378,33 +382,40 @@ void KrylovROMSubstructure::getSystemMatricesSIM() {
 void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubstructure::csrStruct& _struct) {
 	myUMAReader->getSparseMatrixCSR(_key, _struct.csr_ia, _struct.csr_ja, _struct.csr_values, writeFOM);
 
-	if (_struct.csr_values.size() != 0) {
-		std::cout << ">> Sparse Info " << _key << ": nnz = " << _struct.csr_values.size() << ". Size: " << _struct.csr_ia.size() - 1 << "x" << _struct.csr_ia.size() - 1 << std::endl;
-		for (int i = 0; i < _struct.csr_ia.size() - 1; i++)
-		{
-			_struct.csrPointerB.push_back(_struct.csr_ia[i]);
-			_struct.csrPointerE.push_back(_struct.csr_ia[i + 1]);
-		}
-
-		if (_key == "stiffness") {
-			MathLibrary::createSparseCSRComplex(&mySparseK, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-		}
-		else if (_key == "mass") {
-			MathLibrary::createSparseCSRComplex(&mySparseM, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-		}
-		else if (_key == "structuraldamping") {
-			sparse_matrix_t sparseSD;
-			MathLibrary::createSparseCSRComplex(&sparseSD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-			STACCATOComplexDouble ComplexOne = { 0,1 };
-			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
-		}
-		else if (_key == "viscousdamping") {
-			MathLibrary::createSparseCSRComplex(&mySparseD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-		}
-		std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
+	if (_struct.csr_values.size() == 0) {
+		// Make a zero CSR - Case if the viscous damping sim or structural damping sim file is not found
+		int m = stiffnessCSR->csr_ia.size() - 1;
+		int n = m;	// Square matrix
+		_struct.csr_ia.push_back(1);
+		_struct.csr_ja.push_back(1);
+		_struct.csr_values.push_back({ 0,0 });
+		for (int i = 0; i < m; i++)
+			_struct.csr_ia.push_back(2);
 	}
-	else
-		std::cout << " > Imporing " << _key << " SIM Matrix... Skipped." << std::endl;
+
+	std::cout << ">> Sparse Info " << _key << ": nnz = " << _struct.csr_values.size() << ". Size: " << _struct.csr_ia.size() - 1 << "x" << _struct.csr_ia.size() - 1 << std::endl;
+	for (int i = 0; i < _struct.csr_ia.size() - 1; i++)
+	{
+		_struct.csrPointerB.push_back(_struct.csr_ia[i]);
+		_struct.csrPointerE.push_back(_struct.csr_ia[i + 1]);
+	}
+
+	if (_key == "stiffness") {
+		MathLibrary::createSparseCSRComplex(&mySparseK, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+	}
+	else if (_key == "mass") {
+		MathLibrary::createSparseCSRComplex(&mySparseM, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+	}
+	else if (_key == "structuraldamping") {
+		sparse_matrix_t sparseSD;
+		MathLibrary::createSparseCSRComplex(&sparseSD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+		STACCATOComplexDouble ComplexOne = { 0,1 };
+		MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
+	}
+	else if (_key == "viscousdamping") {
+		MathLibrary::createSparseCSRComplex(&mySparseD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
+	}
+	std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
 }
 
 void KrylovROMSubstructure::buildProjectionMatManual() {

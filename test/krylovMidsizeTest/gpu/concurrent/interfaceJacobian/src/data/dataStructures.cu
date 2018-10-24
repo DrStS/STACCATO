@@ -11,14 +11,16 @@ using namespace staccato;
 
 void data::getInfoHostDataStructure(
                                     thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs, thrust::host_vector<int> &shift_local_B,
-                                    thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B, thrust::host_vector<int> &num_input_sub,
-                                    int &nnz, int &nnz_B, int &row, int &nnz_max, int &nnz_max_B, int mat_repetition, int row_baseline[], int num_input_baseline[]
+                                    thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B, thrust::host_vector<int> &nnz_sub_H,
+                                    thrust::host_vector<int> &num_input_sub, int &nnz, int &nnz_B, int &nnz_H, int &row, int &nnz_max, int &nnz_max_B,
+                                    int mat_repetition, int row_baseline[], int num_input_baseline[]
                                    )
 {
     // Get matrix sizes and local shifts
     nnz = 0;
     row = 0;
     nnz_B = 0;
+    nnz_H = 0;
     size_t idx;
     int mat_shift   = 0;
     int sol_shift   = 0;
@@ -28,13 +30,16 @@ void data::getInfoHostDataStructure(
             // Index for combined matrix
             idx = i + 12*j;
             // Sub-component matrix & vector sizes
-            row_sub[idx]   = row_baseline[i];
-            nnz_sub[idx]   = row_sub[i]*row_sub[i];
-            nnz_sub_B[idx] = row_sub[i]*num_input_baseline[i];
+            row_sub[idx]       = row_baseline[i];
+            nnz_sub[idx]       = row_sub[i]*row_sub[i];
+            nnz_sub_B[idx]     = row_sub[i]*num_input_baseline[i];
+            nnz_sub_H[idx]     = num_input_baseline[i]*num_input_baseline[i];
+            num_input_sub[idx] = num_input_baseline[i];
             // Accumulate total matrix & vector sizes
             nnz   += nnz_sub[idx];
             row   += row_sub[idx];
             nnz_B += nnz_sub_B[idx];
+            nnz_H += nnz_sub_H[idx];
             // (Local) shifts for each sub-components from combined matrix
             shift_local_A[idx]   = mat_shift;
             shift_local_rhs[idx] = sol_shift;
@@ -61,8 +66,8 @@ void data::getInfoDeviceDataStructure(
                                       cuDoubleComplex *d_ptr_K_base,
                                       cuDoubleComplex *d_ptr_M_base,
                                       cuDoubleComplex *d_ptr_D_base,
-                                      cuDoubleComplex *d_ptr_B_base,
-                                      cuDoubleComplex *d_ptr_C_base,
+                                      cuDoubleComplex *h_ptr_B_base,
+                                      cuDoubleComplex *h_ptr_C_base,
                                       thrust::host_vector<int> nnz_sub, thrust::host_vector<int> nnz_sub_B,
                                       int subComponents
                                      )
@@ -74,8 +79,8 @@ void data::getInfoDeviceDataStructure(
         h_ptr_K[i] = d_ptr_K_base + mat_shift;
         h_ptr_M[i] = d_ptr_M_base + mat_shift;
         h_ptr_D[i] = d_ptr_D_base + mat_shift;
-        h_ptr_B[i] = d_ptr_B_base + mat_B_shift;
-        h_ptr_C[i] = d_ptr_C_base + mat_B_shift;
+        h_ptr_B[i] = h_ptr_B_base + mat_B_shift;
+        h_ptr_C[i] = h_ptr_C_base + mat_B_shift;
         mat_shift   += nnz_sub[i];
         mat_B_shift += nnz_sub_B[i];
     }

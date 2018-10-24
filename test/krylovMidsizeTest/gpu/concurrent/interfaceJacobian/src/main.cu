@@ -43,9 +43,20 @@ typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> p
 // Namespace
 using namespace staccato;
 
+/*
+TODO:
+    1. Interface Jacobian
+    2. Batched assembly
+    3. Batched construction of B and C
+*/
+
 int main (int argc, char *argv[]){
 
+    timerTotal.start();
+
     PUSH_RANGE("Initial Configuration (Host)", 1)
+    timerInit.start();
+
     /*--------------------
     COMMAND LINE ARGUMENTS
     --------------------*/
@@ -71,13 +82,9 @@ int main (int argc, char *argv[]){
     std::string baseName_M = "KSM_Mass_r\0";
     std::string baseName_D = "KSM_Damping_r\0";
     std::string baseName_B = "B\0";
-    std::string baseName_C = "B\0";
+    std::string baseName_C = "C\0";
     std::string base_format = ".mtx\0";
-    std::string filename_K[12];
-    std::string filename_M[12];
-    std::string filename_D[12];
-    std::string filename_B[12];
-    std::string filename_C[12];
+    std::string filename_K[12], filename_M[12], filename_D[12], filename_B[12], filename_C[12];
 
     /*--------
     PARAMETERS
@@ -95,8 +102,7 @@ int main (int argc, char *argv[]){
     // Array of number of inputs
     int num_input_baseline[] = {6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72};
     // Frequency vector
-    thrust::host_vector<int, pinnedAllocInt> freq(batchSize);
-    thrust::host_vector<int, pinnedAllocInt> freq_square(batchSize);
+    thrust::host_vector<int, pinnedAllocInt> freq(batchSize), freq_square(batchSize);
 
     /*----------------------------
     OPENMP & CUBLAS INITIALIZATION
@@ -105,7 +111,6 @@ int main (int argc, char *argv[]){
     int tid;
     omp_set_num_threads(num_threads);
     // cuBLAS
-    timerTotal.start();
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
 
@@ -114,47 +119,40 @@ int main (int argc, char *argv[]){
     -----------------------*/
     config::check_memory(mat_repetition, freq_max, num_threads);
 
-    nvtxRangePop(); // Initial Configuration
+    timerInit.stop();
+    std::cout << ">>>> Initial Configuration Time (s) = " << timerInit.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    POP_RANGE; // Initial Configuration
 
     /*--------------------
     DATA STRUCTURES (HOST)
     --------------------*/
     PUSH_RANGE("Data Structures (Host)", 1)
+    timerDataHost.start();
     // Create matrix host_vectors
-    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
-    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
-    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> D_sub(12);
-    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> B_sub(12);
-    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> C_sub(12);
-    thrust::host_vector<cuDoubleComplex> K;
-    thrust::host_vector<cuDoubleComplex> M;
-    thrust::host_vector<cuDoubleComplex> D;
-    thrust::host_vector<cuDoubleComplex> B;
-    thrust::host_vector<cuDoubleComplex> C;
+    thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12), M_sub(12), D_sub(12), B_sub(12), C_sub(12);
+    thrust::host_vector<cuDoubleComplex> K, M, D, B, C;
 
     // Array information
-    thrust::host_vector<int> row_sub(subComponents);
-    thrust::host_vector<int> nnz_sub(subComponents);
-    thrust::host_vector<int> nnz_sub_B(subComponents);
-    thrust::host_vector<int> num_input_sub(subComponents);
-    int nnz, nnz_B, row, nnz_max, nnz_max_B;
-    thrust::host_vector<int> shift_local_A(subComponents);
-    thrust::host_vector<int> shift_local_rhs(subComponents);
-    thrust::host_vector<int> shift_local_B(subComponents);
+    thrust::host_vector<int> row_sub(subComponents), nnz_sub(subComponents), nnz_sub_B(subComponents), nnz_sub_H(subComponents), num_input_sub(subComponents);
+    thrust::host_vector<int> shift_local_A(subComponents), shift_local_rhs(subComponents), shift_local_B(subComponents);
+    int nnz, nnz_B, nnz_H, row, nnz_max, nnz_max_B;
     // Set up host data structures
     data::constructHostDataStructure(filename_K, filename_M, filename_D, filename_B, filename_C, filepath, input_filepath,
                                      baseName_K, baseName_M, baseName_D, baseName_B, baseName_C, base_format, row_baseline, num_input_baseline,
                                      K_sub, M_sub, D_sub, B_sub, C_sub);
-    data::getInfoHostDataStructure(shift_local_A, shift_local_rhs, shift_local_B, row_sub, nnz_sub, nnz_sub_B, num_input_sub, nnz, nnz_B, row, nnz_max, nnz_max_B,
+    data::getInfoHostDataStructure(shift_local_A, shift_local_rhs, shift_local_B, row_sub, nnz_sub, nnz_sub_B, nnz_sub_H, num_input_sub, nnz, nnz_B, nnz_H, row, nnz_max, nnz_max_B,
                                    mat_repetition, row_baseline, num_input_baseline);
     data::combineHostMatrices(K_sub, M_sub, D_sub, B_sub, C_sub, K, M, D, B, C, nnz, nnz_B, mat_repetition, nnz_sub, nnz_sub_B);
 
+    timerDataHost.stop();
+    std::cout << ">>>> Data Structure Construction Time (Host) (s) = " << timerDataHost.getDurationMicroSec()*1e-6 << "\n" << std::endl;
     POP_RANGE // Data Structures (Host)
 
     /*----------------------
     DATA STRUCTURES (DEVICE)
     ----------------------*/
     PUSH_RANGE("Data Structures (Device)", 2)
+    timerDataDevice.start();
     // Send matrices to device
     thrust::device_vector<cuDoubleComplex> d_K = K;
     thrust::device_vector<cuDoubleComplex> d_M = M;
@@ -162,9 +160,7 @@ int main (int argc, char *argv[]){
     // Create RHS vector directly on device (will be replaced with send operation)
     thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
     // Create matrix device_vectors
-    thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max);
-    thrust::device_vector<cuDoubleComplex> d_B(num_threads*freq_max*nnz_max_B);
-    thrust::device_vector<cuDoubleComplex> d_C(num_threads*freq_max*nnz_max_B);
+    thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max), d_B(num_threads*freq_max*nnz_max_B), d_C(num_threads*freq_max*nnz_max_B), d_H(freq_max*nnz_B);
     // Get raw pointers to device matrices & vectors
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
@@ -173,22 +169,23 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_C_base = thrust::raw_pointer_cast(d_C.data());
     cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
     cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
-    // Create array of pointers for each sub-components from combined matrices on device
-    thrust::host_vector<cuDoubleComplex*> h_ptr_K(subComponents);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_M(subComponents);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_D(subComponents);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_B(subComponents);
-    thrust::host_vector<cuDoubleComplex*> h_ptr_C(subComponents);
+    // Get raw pointers to host matrices
+    cuDoubleComplex *h_ptr_B_base = thrust::raw_pointer_cast(B.data());
+    cuDoubleComplex *h_ptr_C_base = thrust::raw_pointer_cast(C.data());
+    // Create host vectors of pointers for each sub-components from combined matrices on device
+    thrust::host_vector<cuDoubleComplex*> h_ptr_K(subComponents), h_ptr_M(subComponents), h_ptr_D(subComponents), h_ptr_B(subComponents), h_ptr_C(subComponents);
     // Get information from device data structures
-    data::getInfoDeviceDataStructure(h_ptr_K, h_ptr_M, h_ptr_D, h_ptr_B, h_ptr_C, d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, d_ptr_B_base, d_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
+    data::getInfoDeviceDataStructure(h_ptr_K, h_ptr_M, h_ptr_D, h_ptr_B, h_ptr_C, d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, h_ptr_B_base, h_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
 
+    timerDataDevice.stop();
+    std::cout << ">>>> Data Structure Construction Time (Device) (s) = " << timerDataDevice.getDurationMicroSec()*1e-6 << "\n" << std::endl;
     POP_RANGE // Data Structures (Device)
-
 
     /*--------------------------------
     Krylov Subspace Method Preparation
     --------------------------------*/
     PUSH_RANGE("Krylov Subspace Method Preparation", 2)
+    timerMORprep.start();
     // M = 4*pi^2*M
     cublas_check(cublasZdscal(cublasHandle[0], nnz, &alpha, d_ptr_M_base, 1));
     // Solver Info for batched LU decomposition
@@ -201,27 +198,27 @@ int main (int argc, char *argv[]){
         cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
-
+    timerMORprep.stop();
+    std::cout << ">>>> Krylov Subspace Method Preparation Time (s) = " << timerMORprep.getDurationMicroSec()*1e-6 << "\n" << std::endl;
     POP_RANGE // Krylov Subspace Method Preparation
 
     /*--------------------
     Krylov Subspace Method
     --------------------*/
     PUSH_RANGE("Krylov Subspace Method", 3)
-    timerLoop.start();
+    timerMOR.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
 #pragma omp parallel private(tid) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
         // Allocate vector of array pointers to A in each thread
-        thrust::device_vector<cuDoubleComplex*> d_ptr_A_batch(batchSize);
-        thrust::device_vector<cuDoubleComplex*> d_ptr_rhs_batch(batchSize);
-        thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A_batch(batchSize);
-        thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_rhs_batch(batchSize);
+        thrust::device_vector<cuDoubleComplex*> d_ptr_A_batch(batchSize), d_ptr_rhs_batch(batchSize), d_ptr_B_batch(batchSize), d_ptr_C_batch(batchSize), d_ptr_H_batch(batchSize);
+        thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A_batch(batchSize), h_ptr_rhs_batch(batchSize), h_ptr_B_batch(batchSize), h_ptr_C_batch(batchSize), h_ptr_H_batch(batchSize);
         // Initialise shifts
-        int shift_global_A, shift_batch_A, shift_global_rhs;
+        int shift_global_A, shift_batch_A, shift_global_rhs, shift_global_B, shift_batch_B;
         shift_global_A = tid*freq_max*nnz_max;
+        shift_global_B = tid*freq_max*nnz_max_B;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
     // Loop over each matrix size
@@ -233,22 +230,28 @@ int main (int argc, char *argv[]){
             // Initialise Shifts
             shift_global_rhs = 0;
             shift_batch_A = 0;
+            shift_batch_B = 0;
             // Loop over batch (assume batchSize = freq_max)
             for (size_t j = 0; j < batchSize; ++j){
-                // Update matrix A pointer
-                h_ptr_A_batch[j] = d_ptr_A_base + shift_batch_A + shift_global_A;
-                // Update rhs pointer
-                h_ptr_rhs_batch[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
                 // Compute frequency (assume batchSize = freq_max)
                 freq[j] = (j+1);
                 freq_square[j] = -(freq[j]*freq[j]);
+                // Update pointers for batched operations
+                h_ptr_A_batch[j]   = d_ptr_A_base + shift_batch_A + shift_global_A;
+                h_ptr_rhs_batch[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
+                h_ptr_B_batch[j]   = d_ptr_B_base + shift_batch_B + shift_global_B;
+                h_ptr_C_batch[j]   = d_ptr_C_base + shift_batch_B + shift_global_B;
                 // Assemble matrix
                 PUSH_RANGE("Matrix Assembly", 4)
                 assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A_batch[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square[j]);
                 POP_RANGE
+                // Construct matrices for Interface Jacobian
+                thrust::copy_n(thrust::device, h_ptr_B[i], nnz_sub_B[i], h_ptr_B_batch[j]);
+                thrust::copy_n(thrust::device, h_ptr_C[i], nnz_sub_B[i], h_ptr_C_batch[j]);
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
+                shift_batch_B    += nnz_sub_B[i];
             }
             PUSH_RANGE("Linear System", 5)
             /*--------------
@@ -262,24 +265,28 @@ int main (int argc, char *argv[]){
             d_ptr_rhs_batch = h_ptr_rhs_batch;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs_batch.data()), row_sub[i], &solverInfo_solve, batchSize));
-            POP_RANGE
+            POP_RANGE // Linear System
+
+            /*----------------
+            Interface Jacobian
+            ----------------*/
+            PUSH_RANGE("Interface Jacobian", 5)
+
+            POP_RANGE // Interface Jacobian
+
             /*-----------------
             Synchronize Streams
             -----------------*/
             cudaStreamSynchronize(streams[tid]);
         } // matrix loop
     } // omp parallel
+
+    timerMOR.stop();
+    std::cout << ">>>> Krylov Subspace Method Time (s) = " << timerMOR.getDurationMicroSec()*1e-6 << "\n" << std::endl;
     POP_RANGE // Krylov Subspace Method
-
-    timerLoop.stop();
-    nvtxRangePop();
-
-    std::cout << ">> Matrix loop finished" << std::endl;
-    std::cout << ">>>> Time taken (s) = " << timerLoop.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
-
 
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 /*

@@ -1,5 +1,6 @@
 //Libraries
 #include <iostream>
+#include <iomanip>
 #include <cuComplex.h>
 
 //Header Files
@@ -49,12 +50,12 @@ void config::check_memory(int mat_repetition, double freq_max, int num_threads){
     memory_row = sizeof(cuDoubleComplex) * 2658;               // 2
     memory_nnz_max = sizeof(cuDoubleComplex) * 97344;          // 3
     memory_ptr_batch = sizeof(cuDoubleComplex*) * freq_max;    // 4
-    unsigned int memory_required = (memory_nnz*2*mat_repetition + memory_row*freq_max + num_threads*freq_max*memory_nnz_max + memory_ptr_batch*2)*1E-9;
+    double memory_required = (memory_nnz*2*mat_repetition + memory_row*freq_max + num_threads*freq_max*memory_nnz_max + memory_ptr_batch*2)*1E-9;
     if (memory_required > 32){
         std::cerr << ">> NOT ENOUGH MEMORY ON GPU" << std::endl;
-        std::cerr << ">>>> Memory Required = " << memory_required << "GB" << std::endl;
+        std::cerr << ">>>> Memory Required = " << std::setprecision(3) << memory_required << "GB" << std::endl;
         std::cerr << ">>>> Hardware Limit = 32GB" << std::endl;
         std::exit(1);
     }
-    else std::cout << ">> Memory Required = " << memory_required << "GB\n" << std::endl;
+    else std::cout << ">> Memory Required = " << std::setprecision(3) << memory_required << "GB\n" << std::endl;
 }

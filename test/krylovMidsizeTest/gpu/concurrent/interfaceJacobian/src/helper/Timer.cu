@@ -21,8 +21,10 @@
 
 //Instantiate the timer object
 Timer   timerTotal;
-Timer	timerIteration;
-Timer	timerLoop;
-Timer	timerIO;
-Timer	timerMatrixCpy;
-Timer	timerMatrixComp;
+Timer   timerInit;
+Timer   timerDataHost;
+Timer   timerDataDevice;
+Timer   timerMORprep;
+Timer   timerMOR;
+Timer   timerDataD2H;
+Timer   timerIO;

@@ -7,9 +7,10 @@ namespace staccato{
     namespace data{
         void getInfoHostDataStructure(
                                       thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs, thrust::host_vector<int> &shift_local_B,
-                                      thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B, thrust::host_vector<int> &num_input_sub,
-                                      int &nnz, int &nnz_B, int &row, int &nnz_max, int &nnz_max_B, int mat_repetition, int row_baseline[], int num_input_baseline[]
-                                      );
+                                      thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B, thrust::host_vector<int> &nnz_sub_H,
+                                      thrust::host_vector<int> &num_input_sub, int &nnz, int &nnz_B, int &nnz_H, int &row, int &nnz_max, int &nnz_max_B,
+                                      int mat_repetition, int row_baseline[], int num_input_baseline[]
+                                     );
 
         void getInfoDeviceDataStructure(
                                         thrust::host_vector<cuDoubleComplex*> &h_ptr_K,
@@ -46,5 +47,5 @@ namespace staccato{
                                         thrust::host_vector<thrust::host_vector<cuDoubleComplex>> &B_sub,
                                         thrust::host_vector<thrust::host_vector<cuDoubleComplex>> &C_sub
                                        );
-    }
-}
+    } // namespace::data
+} // namespace::staccato

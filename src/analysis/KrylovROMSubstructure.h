@@ -162,6 +162,15 @@ public:
 	***********/
 	void backTransformKMOR(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase);
 	/***********************************************************************************************
+	* \brief This function carries out the direct solve of FOM
+	* \param[in] _analysisName Name of Current Analysis
+	* \param[in] _freq Fine frequency for interpolation
+	* \param[in] _inputLoad Input
+	* \param[in] _numLoadCase Number of loadcases
+	* \author Harikrishnan Sreekumar
+	***********/
+	void performSolveFOM(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase);
+	/***********************************************************************************************
 	* \brief Function to get node set information from XML for SIM import routine
 	* \param[in] _iPart XML Part ID
 	* \author Harikrishnan Sreekumar
@@ -254,11 +263,13 @@ private:
 	std::string currentPart;
 	bool isSymMIMO;
 	bool enablePropDamping;
+	bool isSymmetricSystem;
 
 	int FOM_DOF;
 	int ROM_DOF;
 
 	std::string myModelType;
+	std::string myAnalysisType;
 
 	// UMA Reader
 	SimuliaUMA* myUMAReader;

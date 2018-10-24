@@ -46,6 +46,7 @@ SimuliaUMA::SimuliaUMA(std::string _fileName, HMesh& _hMesh, int _partId) : myHM
 	numDoFperNode = 0;
 	noStructuralDamping = false;
 	noDamping = false;
+	isSymmetricSystem = true;
 	openFile();
 }
 
@@ -289,8 +290,10 @@ void SimuliaUMA::extractDatastructure(const uma_System &system, char *matrixName
 	printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
 	if (smtx.IsSymmetric())
 		printf("; symmetric");
-	else
+	else {
+		isSymmetricSystem = false;
 		printf("; non-symmetric");
+	}
 	printf("\n");
 }
 #endif
@@ -436,6 +439,7 @@ void SimuliaUMA::ImportSIM(const char* _matrixkey, const char* _fileName, bool _
 #ifdef USE_SIMULIA_UMA_API
 	std::cout << ">>> Import SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
 	bool flag = false;
+
 	std::ifstream ifile(_fileName);
 	if (!ifile) {
 		if (std::string(_matrixkey) == structuralDampingUMA_key)
@@ -486,12 +490,17 @@ void SimuliaUMA::ImportSIM(const char* _matrixkey, const char* _fileName, bool _
 			//exit(EXIT_FAILURE);
 		}
 
+		makeNonTriangular = false;
 		if (std::string(_matrixkey) == std::string(stiffnessUMA_key)) {
 			std::cout << " > Importing Ke ..." << std::endl;
 			loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Stiffness", _ia, _ja, _values);
 		}
 		else if (std::string(_matrixkey) == std::string(massUMA_key)) {
 			std::cout << " > Importing Me ..." << std::endl;
+			if (!isSymmetricSystem && smtx.IsSymmetric()) {
+				std::cout << " > Reading in symmetric, non-triangular mode." << std::endl;
+				makeNonTriangular = true;
+			}
 			loadDataFromSIM(smtx, _printToFile, "Staccato_Sparse_Mass", _ia, _ja, _values);
 		}
 		else if (std::string(_matrixkey) == std::string(structuralDampingUMA_key)) {
@@ -546,7 +555,7 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 
 	int rem_row = -22;
 	int nnz_row = 0;
-
+	
 	for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 		iter.Entry(row, col, val);
 
@@ -570,17 +579,23 @@ void SimuliaUMA::loadDataFromSIM(const uma_SparseMatrix &_smtx, bool _printToFil
 		}
 
 		// Exception for Internal DOFs. Exchange Row and Column Index
-		if (globalrow > globalcol && fnode_row >= 1000000000) {
-			int temp = globalrow;
-			globalrow = globalcol;
-			globalcol = temp;
+		if (_smtx.IsSymmetric())
+		{
+			if (globalrow > globalcol && fnode_row >= 1000000000) {
+				int temp = globalrow;
+				globalrow = globalcol;
+				globalcol = temp;
+			}
+
+			if (makeNonTriangular)
+				prepMapCSR[globalcol][globalrow+1] = val;
 		}
 		prepMapCSR[globalrow][globalcol + 1] = val;
 
 		if (globalrow == globalcol) {
 			if (val >= 1e36) {
 				std::cout << "Error: DBC pivot found!";
-				exit(EXIT_FAILURE);
+				//exit(EXIT_FAILURE);
 			}
 		}
 	}

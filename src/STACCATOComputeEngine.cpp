@@ -70,7 +70,7 @@ void STACCATOComputeEngine::prepare(void) {
 				}
 			}
 		}
-		else if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR")  {
+		else if (std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_KMOR" || std::string(iterParts->PART()[iPart].TYPE()->data()) == "FE_SUBSTRUCT_DIRECT")  {
 			for (int iFileImport = 0; iFileImport < iterParts->PART()[iPart].FILEIMPORT().size(); iFileImport++)			/// Assumption: Only One FileImport per Part
 			{
 				//Todo add global search path to xml file
@@ -79,7 +79,7 @@ void STACCATOComputeEngine::prepare(void) {
 					ReadWriteFile* fileReader = new SimuliaODB(filePath, *myHMesh, iPart);
 				}
 				else if (std::string(iterParts->PART()[iPart].FILEIMPORT()[iFileImport].Type()->data()) == "AbqSIM") {
-					std::cout << " > SIM Reading for KMOR detached from STACCATOComputeEngine to KrylovROMSubstructure" << std::endl;
+					std::cout << " > SIM Reading for SUBSTRUCT detached from STACCATOComputeEngine to KrylovROMSubstructure" << std::endl;
 					myHMesh = NULL;
 				}
 				else {

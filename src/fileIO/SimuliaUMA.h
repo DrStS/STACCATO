@@ -188,5 +188,8 @@ private:
 public:
 	/// Total number of dofs
 	int totalDOFs;
+	/// Symmetricity all read matrices
+	bool isSymmetricSystem;
+	bool makeNonTriangular;
 };
 

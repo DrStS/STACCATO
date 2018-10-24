@@ -103,7 +103,8 @@ int main (int argc, char *argv[]){
     CHECK MEMORY REQUIREMENTS
     -----------------------*/
     config::check_memory(mat_repetition, freq_max, num_threads);
-    nvtxRangePop();
+
+    nvtxRangePop(); // Initial Configuration
 
     /*--------------------
     DATA STRUCTURES (HOST)
@@ -125,75 +126,55 @@ int main (int argc, char *argv[]){
     // Set up host data structures
     data::constructHostDataStructure(filename_K, filename_M, filename_D, filepath, baseName_K, baseName_M, baseName_D, base_format, row_baseline,
                                      K_sub, M_sub, D_sub, shift_local_A, shift_local_rhs, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, K, M, D);
-    nvtxRangePop();
+
+    nvtxRangePop(); // Data Structures (Host)
 
     /*----------------------
     DATA STRUCTURES (DEVICE)
     ----------------------*/
     nvtxRangePushA("Data Structures (Device)");
     // Send matrices to device
-    timerMatrixCpy.start();
     thrust::device_vector<cuDoubleComplex> d_K = K;
     thrust::device_vector<cuDoubleComplex> d_M = M;
     thrust::device_vector<cuDoubleComplex> d_D = D;
-    timerMatrixCpy.stop();
-    std::cout << ">> Matrices copied to device " << std::endl;
-    std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
-
-    // Create RHS directly on device
-    timerMatrixCpy.start();
+    // Create RHS vector directly on device (will be replaced with send operation)
     thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
-    timerMatrixCpy.stop();
-    std::cout << ">> RHS copied to device " << std::endl;
-    std::cout << ">>>> Time taken = " << timerMatrixCpy.getDurationMicroSec()*1e-6 << " (sec)" << "\n" << std::endl;
-
     // Create matrix device_vectors
     thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max);
-
-    // Get vector of raw pointers to matrices
+    // Get raw pointers to device matrices & vectors
     cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
     cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
     cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-
-    // Get local shifts
+    cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
+    cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
+    // Create array of pointers for each sub-components from combined matrices on device
     thrust::host_vector<cuDoubleComplex*> h_ptr_K(subComponents);
     thrust::host_vector<cuDoubleComplex*> h_ptr_M(subComponents);
     thrust::host_vector<cuDoubleComplex*> h_ptr_D(subComponents);
-    size_t mat_shift = 0;
-    size_t sol_shift = 0;
-    for (size_t i = 0; i < subComponents; ++i){
-        h_ptr_K[i] = d_ptr_K_base + mat_shift;
-        h_ptr_M[i] = d_ptr_M_base + mat_shift;
-        h_ptr_D[i] = d_ptr_D_base + mat_shift;
-        //shift_local_rhs[i] = sol_shift;
-        //shift_local_A[i]   = mat_shift;
-        mat_shift += nnz_sub[i];
-        sol_shift += row_sub[i];
-    }
+    // Get information from device data structures
+    data::getInfoDeviceDataStructure(h_ptr_K, h_ptr_M, h_ptr_D, d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, nnz_sub, subComponents);
 
-    // Get raw pointers to matrix A and rhs
-    cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-    cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
-    nvtxRangePop();
+    nvtxRangePop(); // Data Structures (Device)
 
-    timerMatrixComp.start();
-    // M = 4*pi^2*M (Single computation suffices)
+
+    /*--------------------------------
+    Krylov Subspace Method Preparation
+    --------------------------------*/
+    nvtxRangePushA("Krylov Subspace Method Preparation");
+    // M = 4*pi^2*M
     cublas_check(cublasZdscal(cublasHandle[0], nnz, &alpha, d_ptr_M_base, 1));
-    timerMatrixComp.stop();
-    std::cout << ">> M_tilde computed with cuBLAS" << std::endl;
-    std::cout << ">>>> Time taken = " << timerMatrixComp.getDurationMicroSec()*1e-6 << " (sec)\n" << std::endl;
-
     // Solver Info for batched LU decomposition
     thrust::device_vector<int> d_solverInfo(batchSize);
     int *d_ptr_solverInfo = thrust::raw_pointer_cast(d_solverInfo.data());
     int solverInfo_solve;
-
     // Stream initialisation
     cudaStream_t streams[num_streams];
     for (size_t i = 0; i < num_streams; ++i){
         cudaStreamCreateWithFlags(&streams[i], cudaStreamNonBlocking);
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
+
+    nvtxRangePop(); // Krylov Subspace Method Preparation
 
     /*--------------------
     Krylov Subspace Method

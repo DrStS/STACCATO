@@ -9,6 +9,17 @@ namespace staccato{
                                       thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs,
                                       thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, int &nnz, int &row, int &nnz_max, int mat_repetition, int row_baseline[]
                                       );
+
+        void getInfoDeviceDataStructure(
+                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_K,
+                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_M,
+                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_D,
+                                        cuDoubleComplex *d_ptr_K_base,
+                                        cuDoubleComplex *d_ptr_M_base,
+                                        cuDoubleComplex *d_ptr_D_base,
+                                        thrust::host_vector<int> nnz_sub,
+                                        int subComponents
+                                       );
         void combineHostMatrices(
                                  thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub,
                                  thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub,

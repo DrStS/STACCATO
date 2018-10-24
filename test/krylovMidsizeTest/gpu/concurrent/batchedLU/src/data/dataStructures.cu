@@ -43,6 +43,27 @@ void data::getInfoHostDataStructure(
     nnz_max = *nnz_max_it;
 }
 
+void data::getInfoDeviceDataStructure(
+                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_K,
+                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_M,
+                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_D,
+                                      cuDoubleComplex *d_ptr_K_base,
+                                      cuDoubleComplex *d_ptr_M_base,
+                                      cuDoubleComplex *d_ptr_D_base,
+                                      thrust::host_vector<int> nnz_sub,
+                                      int subComponents
+                                     )
+{
+    // Get pointers to each sub-components in combined matrices on device
+    int mat_shift = 0;
+    for (size_t i = 0; i < subComponents; ++i){
+        h_ptr_K[i] = d_ptr_K_base + mat_shift;
+        h_ptr_M[i] = d_ptr_M_base + mat_shift;
+        h_ptr_D[i] = d_ptr_D_base + mat_shift;
+        mat_shift += nnz_sub[i];
+    }
+}
+
 void data::combineHostMatrices(
                                thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub,
                                thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub,
@@ -123,4 +144,3 @@ void data::constructHostDataStructure(
     ----------------------------------*/
     data::combineHostMatrices(K_sub, M_sub, D_sub, K, M, D, nnz, mat_repetition, nnz_sub);
 }
-

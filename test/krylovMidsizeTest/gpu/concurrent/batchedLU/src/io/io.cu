@@ -16,6 +16,9 @@
 #include "io.cuh"
 #include "../helper/Timer.cuh"
 
+// Namespace
+using namespace staccato;
+
 // Reads dense Mtx file
 void io::readMtxDense(thrust::host_vector<cuDoubleComplex> &A, std::string _filepath, std::string _filename, bool _isComplex){
     // Local variables

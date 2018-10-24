@@ -12,6 +12,9 @@
 #include "assembly.cuh"
 #include "../helper/helper.cuh"
 
+// Namespace
+using namespace staccato;
+
 __global__ void assembleGlobalMatrix4Batched_kernel(
     cuDoubleComplex * __restrict__ const d_ptr_A,
     const cuDoubleComplex * __restrict__ const d_ptr_K,

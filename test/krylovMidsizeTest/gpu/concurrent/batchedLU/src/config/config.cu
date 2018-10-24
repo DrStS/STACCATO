@@ -5,6 +5,9 @@
 //Header Files
 #include "config.cuh"
 
+// Namespace
+using namespace staccato;
+
 void config::configureTest(int argc, char *argv[], double &freq_max, int &mat_repetition, int &subComponents, int &num_streams, int &num_threads, int &batchSize){
     // Usage
     if (argc < 5){

@@ -39,6 +39,9 @@ typedef thrust::system::cuda::experimental::pinned_allocator<int> pinnedAllocInt
 typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex> pinnedAlloc;
 typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> pinnedAllocPtr;
 
+// Namespace
+using namespace staccato;
+
 int main (int argc, char *argv[]){
 
     /*--------------------
@@ -73,16 +76,15 @@ int main (int argc, char *argv[]){
     /*--------
     PARAMETERS
     --------*/
-    bool isComplex = 1;
-    double freq, freq_square;
     const double alpha = 4*PI*PI;
     cuDoubleComplex rhs_val;
     rhs_val.x = (double)1.0;
     rhs_val.y = (double)0.0;
     // Array of matrix sizes (row)
     int row_baseline[] = {126, 132, 168, 174, 180, 186, 192, 288, 294, 300, 306, 312};
-    // Sort the array row_baseline
-    //std::sort(row_baseline.begin(), row_baseline.end());
+    // Frequency vector
+    thrust::host_vector<int, pinnedAllocInt> freq(batchSize);
+    thrust::host_vector<int, pinnedAllocInt> freq_square(batchSize);
 
     /*----------------------------
     OPENMP & CUBLAS INITIALIZATION
@@ -113,9 +115,9 @@ int main (int argc, char *argv[]){
         filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
         filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
         filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
-        io::readMtxDense(K_sub[i], filepath[0], filename_K[i], isComplex);
-        io::readMtxDense(M_sub[i], filepath[0], filename_M[i], isComplex);
-        io::readMtxDense(D_sub[i], filepath[0], filename_D[i], isComplex);
+        io::readMtxDense(K_sub[i], filepath[0], filename_K[i], true);
+        io::readMtxDense(M_sub[i], filepath[0], filename_M[i], true);
+        io::readMtxDense(D_sub[i], filepath[0], filename_D[i], true);
         K_sub[i].pop_back();
         M_sub[i].pop_back();
         D_sub[i].pop_back();
@@ -125,9 +127,9 @@ int main (int argc, char *argv[]){
         filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
         filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
         filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
-        io::readMtxDense(K_sub[i], filepath[1], filename_K[i], isComplex);
-        io::readMtxDense(M_sub[i], filepath[1], filename_M[i], isComplex);
-        io::readMtxDense(D_sub[i], filepath[1], filename_D[i], isComplex);
+        io::readMtxDense(K_sub[i], filepath[1], filename_K[i], true);
+        io::readMtxDense(M_sub[i], filepath[1], filename_M[i], true);
+        io::readMtxDense(D_sub[i], filepath[1], filename_D[i], true);
         K_sub[i].pop_back();
         M_sub[i].pop_back();
         D_sub[i].pop_back();
@@ -252,7 +254,7 @@ int main (int argc, char *argv[]){
     nvtxRangePushA("Krylov Subspace Method");
     timerLoop.start();
     std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
-#pragma omp parallel private(tid, freq, freq_square) num_threads(num_threads)
+#pragma omp parallel private(tid) num_threads(num_threads)
     {
         // Get thread number
         tid = omp_get_thread_num();
@@ -282,11 +284,11 @@ int main (int argc, char *argv[]){
                 // Update rhs pointer
                 h_ptr_rhs[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
                 // Compute frequency (assume batchSize = freq_max)
-                freq = (j+1);
-                freq_square = -(freq*freq);
+                freq[j] = (j+1);
+                freq_square[j] = -(freq[j]*freq[j]);
                 // Assemble matrix
                 nvtxRangePushA("Matrix Assembly");
-                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square);
+                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square[j]);
                 nvtxRangePop();
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
@@ -320,6 +322,7 @@ int main (int argc, char *argv[]){
 
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
+
 
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);

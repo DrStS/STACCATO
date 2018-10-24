@@ -26,6 +26,7 @@
 // Header files
 #include "config/config.cuh"
 #include "io/io.cuh"
+#include "data/dataStructures.cuh"
 #include "solver/assembly.cuh"
 #include "helper/Timer.cuh"
 #include "helper/helper.cuh"
@@ -102,81 +103,23 @@ int main (int argc, char *argv[]){
     -----------------------*/
     config::check_memory(mat_repetition, freq_max, num_threads);
 
-    /*-------------
-    DATA STRUCTURES
-    --------------*/
+    /*--------------------
+    DATA STRUCTURES (HOST)
+    --------------------*/
     // Create matrix host_vectors
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> K_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> M_sub(12);
     thrust::host_vector<thrust::host_vector<cuDoubleComplex>> D_sub(12);
-
-    // Read and process MTX file
-    for (size_t i = 0; i < 7; ++i){
-        filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
-        filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
-        filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
-        io::readMtxDense(K_sub[i], filepath[0], filename_K[i], true);
-        io::readMtxDense(M_sub[i], filepath[0], filename_M[i], true);
-        io::readMtxDense(D_sub[i], filepath[0], filename_D[i], true);
-        K_sub[i].pop_back();
-        M_sub[i].pop_back();
-        D_sub[i].pop_back();
-    }
-
-    for (size_t i = 7; i < 12; ++i){
-        filename_K[i] = baseName_K + std::to_string(row_baseline[i]) + base_format;
-        filename_M[i] = baseName_M + std::to_string(row_baseline[i]) + base_format;
-        filename_D[i] = baseName_D + std::to_string(row_baseline[i]) + base_format;
-        io::readMtxDense(K_sub[i], filepath[1], filename_K[i], true);
-        io::readMtxDense(M_sub[i], filepath[1], filename_M[i], true);
-        io::readMtxDense(D_sub[i], filepath[1], filename_D[i], true);
-        K_sub[i].pop_back();
-        M_sub[i].pop_back();
-        D_sub[i].pop_back();
-    }
-    std::cout << ">> Matrices imported" << std::endl;
-
-    // Get matrix sizes
+    thrust::host_vector<cuDoubleComplex> K;
+    thrust::host_vector<cuDoubleComplex> M;
+    thrust::host_vector<cuDoubleComplex> D;
+    // Array information
     thrust::host_vector<int> row_sub(subComponents);
     thrust::host_vector<int> nnz_sub(subComponents);
-    int nnz = 0;
-    int row = 0;
-    size_t idx;
-    for (size_t j = 0; j < mat_repetition; ++j){
-        for (size_t i = 0; i < 12; ++i){
-            idx = i + 12*j;
-            row_sub[idx] = row_baseline[i];
-            nnz_sub[idx] = row_sub[i]*row_sub[i];
-            nnz += nnz_sub[idx];
-            row += row_sub[idx];
-        }
-    }
-
-    // Get maximum matrix size
-    auto nnz_max_it = thrust::max_element(nnz_sub.begin(), nnz_sub.end());
-    int nnz_max = *nnz_max_it;
-
-    // Combine matrices into a single array on host (to make use of GPU's high bandwidth. We could also import the matrices directly like this)
-    thrust::host_vector<cuDoubleComplex> K(nnz);
-    thrust::host_vector<cuDoubleComplex> M(nnz);
-    thrust::host_vector<cuDoubleComplex> D(nnz);
-    auto K_sub_ptr = &K_sub[0];
-    auto M_sub_ptr = &M_sub[0];
-    auto D_sub_ptr = &D_sub[0];
-    size_t array_shift = 0;
-    for (size_t j = 0; j < mat_repetition; ++j){
-        for (size_t i = 0; i < 12; ++i){
-            K_sub_ptr = &K_sub[i];
-            M_sub_ptr = &M_sub[i];
-            D_sub_ptr = &D_sub[i];
-            thrust::copy(K_sub_ptr->begin(), K_sub_ptr->end(), K.begin() + array_shift);
-            thrust::copy(M_sub_ptr->begin(), M_sub_ptr->end(), M.begin() + array_shift);
-            thrust::copy(D_sub_ptr->begin(), D_sub_ptr->end(), D.begin() + array_shift);
-            array_shift += nnz_sub[i];
-        }
-    }
-
-    std::cout <<">> Matrices combined" << std::endl;
+    int nnz, row, nnz_max;
+    // Set up host data structures
+    data::constructHostDataStructure(filename_K, filename_M, filename_D, filepath, baseName_K, baseName_M, baseName_D, base_format, row_baseline,
+                                     K_sub, M_sub, D_sub, row_sub, nnz_sub, nnz, row, nnz_max, mat_repetition, K, M, D);
 
     /*----------------------
     DATA STRUCTURES (DEVICE)
@@ -324,8 +267,8 @@ int main (int argc, char *argv[]){
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
 
-/*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+/*
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */

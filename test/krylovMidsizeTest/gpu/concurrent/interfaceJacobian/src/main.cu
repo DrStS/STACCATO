@@ -315,14 +315,14 @@ int main (int argc, char *argv[]){
     std::cout << ">>>> Time taken = " << timerMOR.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Krylov Subspace Method
 
-    // Copy solution from device to host
+    // Copy solution and re-project matrix from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
-    // Copy re-projection matrix from device to host
     thrust::host_vector<cuDoubleComplex> H = d_H;
 
+    // Write solutions
+/*
     io::writeSolVecComplex(H, filepath_sol, "H.dat");
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
-/*
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */

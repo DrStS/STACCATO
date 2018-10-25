@@ -11,8 +11,8 @@ using namespace staccato;
 
 void data::getInfoHostDataStructure(
                                     thrust::host_vector<int> &shift_local_A, thrust::host_vector<int> &shift_local_rhs, thrust::host_vector<int> &shift_local_B,
-                                    thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B, thrust::host_vector<int> &nnz_sub_H,
-                                    thrust::host_vector<int> &num_input_sub, int &nnz, int &nnz_B, int &nnz_H, int &row, int &nnz_max, int &nnz_max_B,
+                                    thrust::host_vector<int> &shift_local_H, thrust::host_vector<int> &row_sub, thrust::host_vector<int> &nnz_sub, thrust::host_vector<int> &nnz_sub_B,
+                                    thrust::host_vector<int> &nnz_sub_H, thrust::host_vector<int> &num_input_sub, int &nnz, int &nnz_B, int &nnz_H, int &row, int &nnz_max, int &nnz_max_B,
                                     int mat_repetition, int row_baseline[], int num_input_baseline[]
                                    )
 {
@@ -25,6 +25,7 @@ void data::getInfoHostDataStructure(
     int mat_shift   = 0;
     int sol_shift   = 0;
     int mat_B_shift = 0;
+    int mat_H_shift = 0;
     for (size_t j = 0; j < mat_repetition; ++j){
         for (size_t i = 0; i < 12; ++i){
             // Index for combined matrix
@@ -44,10 +45,12 @@ void data::getInfoHostDataStructure(
             shift_local_A[idx]   = mat_shift;
             shift_local_rhs[idx] = sol_shift;
             shift_local_B[idx]   = mat_B_shift;
+            shift_local_H[idx]   = mat_H_shift;
             // Update shifts
             mat_shift   += nnz_sub[idx];
             sol_shift   += row_sub[idx];
             mat_B_shift += nnz_sub_B[idx];
+            mat_H_shift += nnz_sub_H[idx];
         }
     }
     // Get maximum matrix size

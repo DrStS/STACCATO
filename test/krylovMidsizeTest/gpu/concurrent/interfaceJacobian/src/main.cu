@@ -320,7 +320,8 @@ int main (int argc, char *argv[]){
     // Copy re-projection matrix from device to host
     thrust::host_vector<cuDoubleComplex> H = d_H;
 
-    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    io::writeSolVecComplex(H, filepath_sol, "H.dat");
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 /*
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");

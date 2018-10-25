@@ -58,16 +58,16 @@ void data::getInfoHostDataStructure(
 }
 
 void data::getInfoDeviceDataStructure(
-                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_K,
-                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_M,
-                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_D,
-                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_B,
-                                      thrust::host_vector<cuDoubleComplex*> &h_ptr_C,
+                                      thrust::device_vector<cuDoubleComplex*> &d_ptr_K,
+                                      thrust::device_vector<cuDoubleComplex*> &d_ptr_M,
+                                      thrust::device_vector<cuDoubleComplex*> &d_ptr_D,
+                                      thrust::host_vector<cuDoubleComplex*>   &h_ptr_B,
+                                      thrust::host_vector<cuDoubleComplex*>   &h_ptr_C,
                                       cuDoubleComplex *d_ptr_K_base,
                                       cuDoubleComplex *d_ptr_M_base,
                                       cuDoubleComplex *d_ptr_D_base,
-                                      cuDoubleComplex *h_ptr_B_base,
-                                      cuDoubleComplex *h_ptr_C_base,
+                                      cuDoubleComplex *d_ptr_B_base,
+                                      cuDoubleComplex *d_ptr_C_base,
                                       thrust::host_vector<int> nnz_sub, thrust::host_vector<int> nnz_sub_B,
                                       int subComponents
                                      )
@@ -76,11 +76,11 @@ void data::getInfoDeviceDataStructure(
     int mat_shift   = 0;
     int mat_B_shift = 0;
     for (size_t i = 0; i < subComponents; ++i){
-        h_ptr_K[i] = d_ptr_K_base + mat_shift;
-        h_ptr_M[i] = d_ptr_M_base + mat_shift;
-        h_ptr_D[i] = d_ptr_D_base + mat_shift;
-        h_ptr_B[i] = h_ptr_B_base + mat_B_shift;
-        h_ptr_C[i] = h_ptr_C_base + mat_B_shift;
+        d_ptr_K[i] = d_ptr_K_base + mat_shift;
+        d_ptr_M[i] = d_ptr_M_base + mat_shift;
+        d_ptr_D[i] = d_ptr_D_base + mat_shift;
+        h_ptr_B[i] = d_ptr_B_base + mat_B_shift;
+        h_ptr_C[i] = d_ptr_C_base + mat_B_shift;
         mat_shift   += nnz_sub[i];
         mat_B_shift += nnz_sub_B[i];
     }
@@ -126,7 +126,6 @@ void data::combineHostMatrices(
             array_shift_B += nnz_sub_B[i];
         }
     }
-    std::cout <<">> Matrices combined" << std::endl;
 }
 
 void data::constructHostDataStructure(
@@ -178,5 +177,4 @@ void data::constructHostDataStructure(
         B_sub[i].pop_back();
         C_sub[i].pop_back();
     }
-    std::cout << ">> Matrices imported" << std::endl;
 }

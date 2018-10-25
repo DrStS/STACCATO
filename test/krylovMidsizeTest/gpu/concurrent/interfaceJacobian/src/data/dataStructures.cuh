@@ -13,16 +13,16 @@ namespace staccato{
                                      );
 
         void getInfoDeviceDataStructure(
-                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_K,
-                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_M,
-                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_D,
-                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_B,
-                                        thrust::host_vector<cuDoubleComplex*> &h_ptr_C,
+                                        thrust::device_vector<cuDoubleComplex*> &d_ptr_K,
+                                        thrust::device_vector<cuDoubleComplex*> &d_ptr_M,
+                                        thrust::device_vector<cuDoubleComplex*> &d_ptr_D,
+                                        thrust::host_vector<cuDoubleComplex*>   &h_ptr_B,
+                                        thrust::host_vector<cuDoubleComplex*>   &h_ptr_C,
                                         cuDoubleComplex *d_ptr_K_base,
                                         cuDoubleComplex *d_ptr_M_base,
                                         cuDoubleComplex *d_ptr_D_base,
-                                        cuDoubleComplex *d_ptr_B_base,
-                                        cuDoubleComplex *d_ptr_C_base,
+                                        cuDoubleComplex *h_ptr_B_base,
+                                        cuDoubleComplex *h_ptr_C_base,
                                         thrust::host_vector<int> nnz_sub, thrust::host_vector<int> nnz_sub_B,
                                         int subComponents
                                        );

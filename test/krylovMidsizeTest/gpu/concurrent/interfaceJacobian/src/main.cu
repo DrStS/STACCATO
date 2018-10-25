@@ -120,7 +120,8 @@ int main (int argc, char *argv[]){
     config::check_memory(mat_repetition, freq_max, num_threads);
 
     timerInit.stop();
-    std::cout << ">>>> Initial Configuration Time (s) = " << timerInit.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << ">> Initial Configuration done" << std::endl;
+    std::cout << ">>>> Time taken = " << timerInit.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE; // Initial Configuration
 
     /*--------------------
@@ -145,7 +146,8 @@ int main (int argc, char *argv[]){
     data::combineHostMatrices(K_sub, M_sub, D_sub, B_sub, C_sub, K, M, D, B, C, nnz, nnz_B, mat_repetition, nnz_sub, nnz_sub_B);
 
     timerDataHost.stop();
-    std::cout << ">>>> Data Structure Construction Time (Host) (s) = " << timerDataHost.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << ">> Host data structure constructued" << std::endl;
+    std::cout << ">>>> Time taken = " << timerDataHost.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Data Structures (Host)
 
     /*----------------------
@@ -157,28 +159,33 @@ int main (int argc, char *argv[]){
     thrust::device_vector<cuDoubleComplex> d_K = K;
     thrust::device_vector<cuDoubleComplex> d_M = M;
     thrust::device_vector<cuDoubleComplex> d_D = D;
+    thrust::device_vector<cuDoubleComplex> d_B = B;
+    thrust::device_vector<cuDoubleComplex> d_C = C;
     // Create RHS vector directly on device (will be replaced with send operation)
     thrust::device_vector<cuDoubleComplex> d_rhs(row*freq_max, rhs_val);
     // Create matrix device_vectors
-    thrust::device_vector<cuDoubleComplex> d_A(num_threads*freq_max*nnz_max), d_B(num_threads*freq_max*nnz_max_B), d_C(num_threads*freq_max*nnz_max_B), d_H(freq_max*nnz_B);
+    thrust::device_vector<cuDoubleComplex> d_A_batch(num_threads*freq_max*nnz_max), d_B_batch(num_threads*freq_max*nnz_max_B), d_C_batch(num_threads*freq_max*nnz_max_B), d_H(freq_max*nnz_B);
     // Get raw pointers to device matrices & vectors
-    cuDoubleComplex *d_ptr_K_base = thrust::raw_pointer_cast(d_K.data());
-    cuDoubleComplex *d_ptr_M_base = thrust::raw_pointer_cast(d_M.data());
-    cuDoubleComplex *d_ptr_D_base = thrust::raw_pointer_cast(d_D.data());
-    cuDoubleComplex *d_ptr_B_base = thrust::raw_pointer_cast(d_B.data());
-    cuDoubleComplex *d_ptr_C_base = thrust::raw_pointer_cast(d_C.data());
-    cuDoubleComplex *d_ptr_A_base = thrust::raw_pointer_cast(d_A.data());
-    cuDoubleComplex *d_ptr_rhs_base = thrust::raw_pointer_cast(d_rhs.data());
-    // Get raw pointers to host matrices
-    cuDoubleComplex *h_ptr_B_base = thrust::raw_pointer_cast(B.data());
-    cuDoubleComplex *h_ptr_C_base = thrust::raw_pointer_cast(C.data());
-    // Create host vectors of pointers for each sub-components from combined matrices on device
-    thrust::host_vector<cuDoubleComplex*> h_ptr_K(subComponents), h_ptr_M(subComponents), h_ptr_D(subComponents), h_ptr_B(subComponents), h_ptr_C(subComponents);
+    cuDoubleComplex *d_ptr_K_base       = thrust::raw_pointer_cast(d_K.data());
+    cuDoubleComplex *d_ptr_M_base       = thrust::raw_pointer_cast(d_M.data());
+    cuDoubleComplex *d_ptr_D_base       = thrust::raw_pointer_cast(d_D.data());
+    cuDoubleComplex *d_ptr_B_base       = thrust::raw_pointer_cast(d_B.data());
+    cuDoubleComplex *d_ptr_C_base       = thrust::raw_pointer_cast(d_C.data());
+    cuDoubleComplex *d_ptr_A_batch_base = thrust::raw_pointer_cast(d_A_batch.data());
+    cuDoubleComplex *d_ptr_B_batch_base = thrust::raw_pointer_cast(d_B_batch.data());
+    cuDoubleComplex *d_ptr_C_batch_base = thrust::raw_pointer_cast(d_C_batch.data());
+    cuDoubleComplex *d_ptr_rhs_base     = thrust::raw_pointer_cast(d_rhs.data());
+    // Create DEVICE vectors of pointers for each sub-components from combined matrices on DEVICE
+    thrust::device_vector<cuDoubleComplex*> d_ptr_K(subComponents), d_ptr_M(subComponents), d_ptr_D(subComponents);
+    // Create HOST vectors of pointers for each sub-components from combined matrices on DEVICE
+    thrust::host_vector<cuDoubleComplex*> h_ptr_B(subComponents), h_ptr_C(subComponents);
     // Get information from device data structures
-    data::getInfoDeviceDataStructure(h_ptr_K, h_ptr_M, h_ptr_D, h_ptr_B, h_ptr_C, d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, h_ptr_B_base, h_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
+    data::getInfoDeviceDataStructure(d_ptr_K, d_ptr_M, d_ptr_D, h_ptr_B, h_ptr_C,
+                                     d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, d_ptr_B_base, d_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
 
     timerDataDevice.stop();
-    std::cout << ">>>> Data Structure Construction Time (Device) (s) = " << timerDataDevice.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << ">> Device data structure constructued" << std::endl;
+    std::cout << ">>>> Time taken = " << timerDataDevice.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Data Structures (Device)
 
     /*--------------------------------
@@ -199,7 +206,8 @@ int main (int argc, char *argv[]){
         std::cout << ">> Stream " << i << " created" << std::endl;
     }
     timerMORprep.stop();
-    std::cout << ">>>> Krylov Subspace Method Preparation Time (s) = " << timerMORprep.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << "\n>> Ready to start to Krylov Subspace Method" << std::endl;
+    std::cout << ">>>> Time taken = " << timerMORprep.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Krylov Subspace Method Preparation
 
     /*--------------------
@@ -207,7 +215,7 @@ int main (int argc, char *argv[]){
     --------------------*/
     PUSH_RANGE("Krylov Subspace Method", 3)
     timerMOR.start();
-    std::cout << "\n>> Matrix loop started for batched execution" << std::endl;
+    std::cout << "\n>> Krylov Subspace Method started" << std::endl;
 #pragma omp parallel private(tid) num_threads(num_threads)
     {
         // Get thread number
@@ -237,17 +245,19 @@ int main (int argc, char *argv[]){
                 freq[j] = (j+1);
                 freq_square[j] = -(freq[j]*freq[j]);
                 // Update pointers for batched operations
-                h_ptr_A_batch[j]   = d_ptr_A_base + shift_batch_A + shift_global_A;
+                h_ptr_A_batch[j]   = d_ptr_A_batch_base + shift_batch_A + shift_global_A;
                 h_ptr_rhs_batch[j] = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
-                h_ptr_B_batch[j]   = d_ptr_B_base + shift_batch_B + shift_global_B;
-                h_ptr_C_batch[j]   = d_ptr_C_base + shift_batch_B + shift_global_B;
+                h_ptr_B_batch[j]   = d_ptr_B_batch_base + shift_batch_B + shift_global_B;
+                h_ptr_C_batch[j]   = d_ptr_C_batch_base + shift_batch_B + shift_global_B;
                 // Assemble matrix
                 PUSH_RANGE("Matrix Assembly", 4)
-                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A_batch[j], h_ptr_K[i], h_ptr_M[i], nnz_sub[i], freq_square[j]);
-                POP_RANGE
-                // Construct matrices for Interface Jacobian
+                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A_batch[j], d_ptr_K[i], d_ptr_M[i], nnz_sub[i], freq_square[j]);
+                POP_RANGE // Matrix Assembly
+                // Construct matrices for Interface Jacobian -> Let this execute on default stream for asynchronous operation
+                PUSH_RANGE("Input matrix construction", 8)
                 thrust::copy_n(thrust::device, h_ptr_B[i], nnz_sub_B[i], h_ptr_B_batch[j]);
                 thrust::copy_n(thrust::device, h_ptr_C[i], nnz_sub_B[i], h_ptr_C_batch[j]);
+                POP_RANGE
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
@@ -282,7 +292,8 @@ int main (int argc, char *argv[]){
     } // omp parallel
 
     timerMOR.stop();
-    std::cout << ">>>> Krylov Subspace Method Time (s) = " << timerMOR.getDurationMicroSec()*1e-6 << "\n" << std::endl;
+    std::cout << ">> Krylov Subspace Method finished" << std::endl;
+    std::cout << ">>>> Time taken = " << timerMOR.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Krylov Subspace Method
 
     // Copy solution from device to host
@@ -301,5 +312,6 @@ int main (int argc, char *argv[]){
     }
 
     timerTotal.stop();
+    std::cout << ">>>> End of program" << std::endl;
     std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

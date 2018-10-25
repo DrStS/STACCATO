@@ -20,7 +20,7 @@
 // CUBLAS
 #include <cublas_v2.h>
 
-// NVTX: https://devblogs.nvidia.com/cuda-pro-tip-generate-custom-application-profile-timelines-nvtx/
+// NVTX
 #include <nvToolsExt.h>
 
 // Header files
@@ -45,7 +45,6 @@ using namespace staccato;
 
 /*
 TODO:
-    1. Interface Jacobian
     2. Batched assembly
     3. Batched construction of B and C
 */
@@ -148,7 +147,7 @@ int main (int argc, char *argv[]){
     data::combineHostMatrices(K_sub, M_sub, D_sub, B_sub, C_sub, K, M, D, B, C, nnz, nnz_B, mat_repetition, nnz_sub, nnz_sub_B);
 
     timerDataHost.stop();
-    std::cout << ">> Host data structure constructued" << std::endl;
+    std::cout << ">> Host data structure constructed" << std::endl;
     std::cout << ">>>> Time taken = " << timerDataHost.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Data Structures (Host)
 
@@ -187,7 +186,7 @@ int main (int argc, char *argv[]){
                                      d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, d_ptr_B_base, d_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
 
     timerDataDevice.stop();
-    std::cout << ">> Device data structure constructued" << std::endl;
+    std::cout << ">> Device data structure constructed" << std::endl;
     std::cout << ">>>> Time taken = " << timerDataDevice.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
     POP_RANGE // Data Structures (Device)
 
@@ -316,8 +315,14 @@ int main (int argc, char *argv[]){
     POP_RANGE // Krylov Subspace Method
 
     // Copy solution and re-project matrix from device to host
+    PUSH_RANGE("Solution Transfer to Host", 8)
+    timerDataD2H.start();
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
     thrust::host_vector<cuDoubleComplex> H = d_H;
+    timerDataD2H.stop();
+    POP_RANGE // Solution Transfer to Host
+    std::cout << ">> Solutions copied to Host" << std::endl;
+    std::cout << ">>>> Time taken = " << timerDataD2H.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
 
     // Write solutions
 /*

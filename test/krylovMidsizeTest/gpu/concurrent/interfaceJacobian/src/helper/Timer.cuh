@@ -93,4 +93,5 @@ extern Timer    timerDataDevice;
 extern Timer    timerMORprep;
 extern Timer    timerMOR;
 extern Timer    timerDataD2H;
+extern Timer    timerDataH2D;
 extern Timer    timerIO;

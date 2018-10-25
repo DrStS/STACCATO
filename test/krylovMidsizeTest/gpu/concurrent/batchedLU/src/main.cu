@@ -252,9 +252,9 @@ int main (int argc, char *argv[]){
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
 
-
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    // Write solutions
 /*
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */

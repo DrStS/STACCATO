@@ -218,7 +218,7 @@ int main (int argc, char *argv[]){
     --------------------*/
     PUSH_RANGE("Krylov Subspace Method", 3)
     timerMOR.start();
-    std::cout << "\n>> Krylov Subspace Method started" << std::endl;
+    std::cout << ">> Krylov Subspace Method started" << std::endl;
 #pragma omp parallel private(tid) num_threads(num_threads)
     {
         // Get thread number
@@ -297,8 +297,8 @@ int main (int argc, char *argv[]){
             PUSH_RANGE("GEMM", 7)
             d_ptr_C_batch = h_ptr_C_batch;
             d_ptr_H = h_ptr_H;
-            cublas_check(cublasZgemmBatched(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], nnz_sub_B[i], &one, thrust::raw_pointer_cast(d_ptr_C_batch.data()),
-                                            nnz_sub_B[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), nnz_sub_B[i], &zero, thrust::raw_pointer_cast(d_ptr_H.data()), num_input_sub[i],
+            cublas_check(cublasZgemmBatched(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i], &one, thrust::raw_pointer_cast(d_ptr_C_batch.data()),
+                                            num_input_sub[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &zero, thrust::raw_pointer_cast(d_ptr_H.data()), num_input_sub[i],
                                             batchSize));
             POP_RANGE // GEMM
 
@@ -318,9 +318,9 @@ int main (int argc, char *argv[]){
     // Copy solution from device to host
     thrust::host_vector<cuDoubleComplex> rhs = d_rhs;
     // Copy re-projection matrix from device to host
-    //thrust::host_vector<cuDoubleComplex> H = d_H;
+    thrust::host_vector<cuDoubleComplex> H = d_H;
 
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    //io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
 /*
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");

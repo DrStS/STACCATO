@@ -44,6 +44,13 @@ typedef thrust::system::cuda::experimental::pinned_allocator<cuDoubleComplex*> p
 using namespace staccato;
 
 /*
+    DOFs
+
+    i8: 2369456
+    test set: 10914300
+*/
+
+/*
 TODO:
     2. Batched assembly
     3. Batched construction of B and C

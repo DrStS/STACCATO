@@ -25,11 +25,16 @@ __global__ void assembleGlobalMatrix4Batched_kernel(cuDoubleComplex ** __restric
     // Block information
     int idx_block = blockIdx.x;
     int block_size = blockDim.x;
-    // Total size of array
-    int nnz = nnz_sub * batchSize;
+    // Total size of array batch
+    int nnz_batch = nnz_sub * batchSize;
 
-    if (idx_thread_global < nnz){
+    if (idx_thread_global < nnz_batch){
+
+
         const cuDoubleComplex k = d_ptr_K[idx_thread_global];
+
+
+
     }
 
 /*
@@ -49,7 +54,7 @@ void assembly::assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex 
                                            cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
                                            const int nnz_sub, const int *freq_square, const int batchSize, const int subComponents){
     constexpr int block = 1024;                         // Number of threads per block
-    int grid = (int)(nnz_sub*batchSize/block) + 1;      // Number of blocks per grid
+    int grid = (int)(nnz_sub*batchSize/block) + 1;      // Number of blocks per grid (sufficient for a grid to cover nnz_sub*batchSize)
     //int grid = batchSize;
     assembleGlobalMatrix4Batched_kernel <<< grid, block, 0, stream >>> (d_ptr_A_batch, d_ptr_K, d_ptr_M, nnz_sub, freq_square, batchSize, subComponents, grid);
     cudaError_t cudaStatus = cudaGetLastError();

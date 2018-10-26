@@ -31,8 +31,8 @@
 // in the accompanying FLOSSE file.
 //
 
-#ifndef IP_STACCATO_XML_HXX
-#define IP_STACCATO_XML_HXX
+#ifndef IP_STACCATO_XML_MASTER_HXX
+#define IP_STACCATO_XML_MASTER_HXX
 
 #ifndef XSD_USE_CHAR
 #define XSD_USE_CHAR
@@ -255,6 +255,7 @@ class MATERIAL;
 class SECTION;
 class ELEMENTSET;
 class DISPLACEMENT;
+class UMA;
 class NODE;
 class ELEMENT;
 
@@ -2869,6 +2870,23 @@ class IMPORT: public ::xml_schema::type
   void
   LIST (::std::auto_ptr< LIST_type > p);
 
+  // UMA
+  //
+  typedef ::UMA UMA_type;
+  typedef ::xsd::cxx::tree::sequence< UMA_type > UMA_sequence;
+  typedef UMA_sequence::iterator UMA_iterator;
+  typedef UMA_sequence::const_iterator UMA_const_iterator;
+  typedef ::xsd::cxx::tree::traits< UMA_type, char > UMA_traits;
+
+  const UMA_sequence&
+  UMA () const;
+
+  UMA_sequence&
+  UMA ();
+
+  void
+  UMA (const UMA_sequence& s);
+
   // NODE
   //
   typedef ::NODE NODE_type;
@@ -2972,6 +2990,7 @@ class IMPORT: public ::xml_schema::type
 
   protected:
   LIST_optional LIST_;
+  UMA_sequence UMA_;
   NODE_sequence NODE_;
   ELEMENT_sequence ELEMENT_;
   TRANSLATETO_sequence TRANSLATETO_;
@@ -3434,6 +3453,63 @@ class DISPLACEMENT: public ::xml_schema::type
   REAL_sequence REAL_;
   IMAGINARY_sequence IMAGINARY_;
   Name_optional Name_;
+};
+
+class UMA: public ::xml_schema::type
+{
+  public:
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  UMA ();
+
+  UMA (const ::xercesc::DOMElement& e,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       ::xml_schema::container* c = 0);
+
+  UMA (const UMA& x,
+       ::xml_schema::flags f = xml_schema::flags::dont_validate,
+       ::xml_schema::container* c = 0);
+
+  virtual UMA*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  UMA&
+  operator= (const UMA& x);
+
+  virtual 
+  ~UMA ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  Type_optional Type_;
 };
 
 class NODE: public ::xml_schema::type
@@ -4113,4 +4189,4 @@ STACCATO_XML_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
 //
 // End epilogue.
 
-#endif // IP_STACCATO_XML_HXX
+#endif // IP_STACCATO_XML_MASTER_HXX

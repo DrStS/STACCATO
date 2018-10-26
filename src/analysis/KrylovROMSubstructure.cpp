@@ -145,10 +145,10 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 							// Iterate inside the list of node list
 							for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
 							{
-								auto searchInStaccatoLocalDofMapSIM = nodeToDofMap.find(search->second[jNodeSet]);
-								auto searchInStaccatoGlobalDofMapSIM = nodeToGlobalMap.find(search->second[jNodeSet]);
+								auto searchInStaccatoLocalDofMapSIM = nodeToDofCommonMap.find(search->second[jNodeSet]);
+								auto searchInStaccatoGlobalDofMapSIM = nodeToGlobalCommonMap.find(search->second[jNodeSet]);
 
-								if (searchInStaccatoLocalDofMapSIM != nodeToDofMap.end() && searchInStaccatoGlobalDofMapSIM != nodeToGlobalMap.end()) {
+								if (searchInStaccatoLocalDofMapSIM != nodeToDofCommonMap.end() && searchInStaccatoGlobalDofMapSIM != nodeToGlobalCommonMap.end()) {
 
 									myInputDOFS.insert(myInputDOFS.end(), searchInStaccatoGlobalDofMapSIM->second.begin(), searchInStaccatoGlobalDofMapSIM->second.end());
 									// for every dof, add the same node label
@@ -349,75 +349,6 @@ void KrylovROMSubstructure::getSystemMatricesODB() {
 	mySparseM = (*MComplex).convertToSparseDatatype();
 }
 
-void KrylovROMSubstructure::getSystemMatricesSIM() {
-
-	std::vector<std::string> importSIMMatrices;
-	importSIMMatrices.push_back("stiffness");
-	importSIMMatrices.push_back("mass");
-	importSIMMatrices.push_back("structuraldamping");
-	importSIMMatrices.push_back("viscousdamping");
-
-	for (size_t i = 0; i < importSIMMatrices.size(); i++)
-	{
-		std::cout << " > Imporing " << importSIMMatrices[i] << " SIM Matrix..." << std::endl;
-		if (importSIMMatrices[i] == "stiffness") {
-			stiffnessCSR = new csrStruct;
-			acquireSparseMatrix(importSIMMatrices[i] , *stiffnessCSR);
-		}
-		else if (importSIMMatrices[i] == "mass") {
-			massCSR = new csrStruct;
-			acquireSparseMatrix(importSIMMatrices[i], *massCSR);
-		}
-		else if (importSIMMatrices[i] == "structuraldamping") {
-			structdampingCSR = new csrStruct;
-			acquireSparseMatrix(importSIMMatrices[i], *structdampingCSR);
-		}
-		else if (importSIMMatrices[i] == "viscousdamping") {
-			viscdampingCSR = new csrStruct;
-			acquireSparseMatrix(importSIMMatrices[i], *viscdampingCSR);
-		}
-	}
-}
-
-void KrylovROMSubstructure::acquireSparseMatrix(std::string _key, KrylovROMSubstructure::csrStruct& _struct) {
-	myUMAReader->getSparseMatrixCSR(_key, _struct.csr_ia, _struct.csr_ja, _struct.csr_values, writeFOM);
-
-	if (_struct.csr_values.size() == 0) {
-		// Make a zero CSR - Case if the viscous damping sim or structural damping sim file is not found
-		int m = stiffnessCSR->csr_ia.size() - 1;
-		int n = m;	// Square matrix
-		_struct.csr_ia.push_back(1);
-		_struct.csr_ja.push_back(1);
-		_struct.csr_values.push_back({ 0,0 });
-		for (int i = 0; i < m; i++)
-			_struct.csr_ia.push_back(2);
-	}
-
-	std::cout << ">> Sparse Info " << _key << ": nnz = " << _struct.csr_values.size() << ". Size: " << _struct.csr_ia.size() - 1 << "x" << _struct.csr_ia.size() - 1 << std::endl;
-	for (int i = 0; i < _struct.csr_ia.size() - 1; i++)
-	{
-		_struct.csrPointerB.push_back(_struct.csr_ia[i]);
-		_struct.csrPointerE.push_back(_struct.csr_ia[i + 1]);
-	}
-
-	if (_key == "stiffness") {
-		MathLibrary::createSparseCSRComplex(&mySparseK, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-	}
-	else if (_key == "mass") {
-		MathLibrary::createSparseCSRComplex(&mySparseM, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-	}
-	else if (_key == "structuraldamping") {
-		sparse_matrix_t sparseSD;
-		MathLibrary::createSparseCSRComplex(&sparseSD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-		STACCATOComplexDouble ComplexOne = { 0,1 };
-		MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
-	}
-	else if (_key == "viscousdamping") {
-		MathLibrary::createSparseCSRComplex(&mySparseD, _struct.csr_ia.size() - 1, _struct.csr_ia.size() - 1, &_struct.csrPointerB[0], &_struct.csrPointerE[0], &_struct.csr_ja[0], &_struct.csr_values[0]);
-	}
-	std::cout << " > Imporing " << _key << " SIM Matrix... Finished." << std::endl;
-}
-
 void KrylovROMSubstructure::buildProjectionMatManual() {
 	addKrylovModesForExpansionPoint(myExpansionPoints, myKrylovOrder);
 
@@ -429,7 +360,6 @@ void KrylovROMSubstructure::buildProjectionMatManual() {
 		AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myV.dat", myV, FOM_DOF, ROM_DOF, false); 
 		if(!isSymMIMO)
 			AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(filename + currentPart + "_myZ.dat", myZ, FOM_DOF, ROM_DOF, false);
-
 	}
 }
 
@@ -474,8 +404,8 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		std::vector<STACCATOComplexDouble> QV;
 		QV.resize(FOM_DOF*myInputDOFS.size());
 
-		factorizeSparseMatrixComplex(&K_tilde, true, true, myInputDOFS.size());
-		solveDirectSparseComplex(&K_tilde, true, true, myInputDOFS.size(), &QV[0], &myB[0]);
+		factorizeSparseMatrixComplex(&K_tilde, isSymmetricSystem, true, myInputDOFS.size());
+		solveDirectSparseComplex(&K_tilde, isSymmetricSystem, true, myInputDOFS.size(), &QV[0], &myB[0]);
 
 		// Orthogonalization of first set of vectors : iterative
 		// procedure
@@ -564,7 +494,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &mySparseM, &QV[0], &WQ_i_K[0], false, false, ZeroComplex, true, false);
 
 			// Q = -K_tilde\(obj.M*Q);
-			solveDirectSparseComplex(&K_tilde, true, true, RR, &QV[0], &WQ_i_K[0]);
+			solveDirectSparseComplex(&K_tilde, isSymmetricSystem, true, RR, &QV[0], &WQ_i_K[0]);
 			WQ_i_K.clear();
 
 			// w0 = Q; eta = 1/sqrt(2); lim = 0; wk_=w0;
@@ -842,9 +772,7 @@ void KrylovROMSubstructure::clearDataFOM() {
 	myV.clear();
 	myZ.clear();
 	// clear FOM Data
-	delete stiffnessCSR;
-	delete massCSR;
-	delete structdampingCSR;
+	delete[] systemCSR;
 	myB.clear();
 	myC.clear();
 
@@ -909,6 +837,8 @@ void KrylovROMSubstructure::buildAbqODB() {
 
 void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 
+	std::cout << "|| Physical memory consumption before UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 
 	/* -- Prepare Reader -- */
@@ -918,25 +848,153 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 #if defined(__linux__) 
 	std::string filePath = "/opt/software/repos/STACCATO/model/";
 #endif
-	filePath += std::string(iterParts->PART()[_iPart].FILEIMPORT().begin()->FILE()->data());
-	std::cout << "|| Physical memory consumption before UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	myUMAReader = new SimuliaUMA(filePath, *myHMesh, _iPart);
-	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	myHMesh = NULL;
-	nodeToDofMap = myUMAReader->getNodeToDofMap();
-	nodeToGlobalMap = myUMAReader->getNodeToGlobalMap();
+
+	std::map<std::string, std::vector<std::string>> myUMAKeys;
+	myUMAKeys["GEN_STIF"].push_back("GenericSystem_stiffness");
+	myUMAKeys["GEN_MASS"].push_back("GenericSystem_mass");
+	myUMAKeys["GEN_STRD"].push_back("GenericSystem_structuralDamping");
+	myUMAKeys["GEN_VISD"].push_back("GenericSystem_viscousDamping");
+	myUMAKeys["GEN_ALL"] = { "GenericSystem_stiffness", "GenericSystem_mass", "GenericSystem_structuralDamping", "GenericSystem_viscousDamping" };
+
+	std::map<std::string, std::string> myUMAFileMapper;
+	std::vector<std::string> foundKeys;
+
+	// Propery Flag
+	bool isPartSymmetric = true;
+	bool isPartCoupledFS = false;
+
+	//- Preparation Stage
+	for (int iFileReader = 0; iFileReader < iterParts->PART()[_iPart].FILEIMPORT().size(); iFileReader++)
+	{
+		//- Initialize reader
+		std::ifstream ifile(filePath + std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()));
+		if (!ifile) {
+			std::cout << ">> Error: File not found: " << std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()) <<". Remove the import or check file name!\n";
+			exit(EXIT_FAILURE);
+		}
+		myUMAReader = new SimuliaUMA(filePath + std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()), *myHMesh, _iPart);
+		//- Understand the matrix import
+		//-- accumulateMap
+		if (std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].IMPORT().begin()->Type()->c_str()) == "Matrix") {
+			for (int iUMAReader = 0; iUMAReader < iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].IMPORT().begin()->UMA().size(); iUMAReader++)
+			{
+				std::string uma_readType = std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].IMPORT().begin()->UMA()[iUMAReader].Type()->c_str());
+				for (int iRead = 0; iRead < myUMAKeys[uma_readType].size(); iRead++) {
+					char* uma_key = const_cast<char*>(myUMAKeys[uma_readType][iRead].c_str());
+					int status = myUMAReader->collectDatastructureSIM(uma_key, nodeToDofCommonMap);
+					if (!myUMAReader->isUmaSymmetric(uma_key))
+						isPartSymmetric = false;
+
+					myUMAFileMapper[myUMAKeys[uma_readType][iRead]] = filePath + std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data());
+				}
+			}
+		}
+		else {
+			std::cout << " !! Error: Unrecognized import type" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+		ifile.close();
+		delete myUMAReader;
+	}
+
+	//- Check all prerequisites
+	generateCollectiveGlobalMap(nodeToDofCommonMap, nodeToGlobalCommonMap);
 	buildXMLforSIM(_iPart);
+	//- set reading properties
+	// Is fluid-structure interaction present?
+	if (numDOF_p > 0 && numDOF_u > 0)
+		isPartCoupledFS = true;
+	std::cout << ">> Part checker [sym,FSI]: [" << isPartSymmetric << "," << isPartCoupledFS << "]" << std::endl;
 
-	std::cout << ">> Assembling FOM system matrices from SIM... " << std::endl;
-	getSystemMatricesSIM();
-	std::cout << ">> Assembling FOM system matrices from SIM... Finished." << std::endl;
+	//- reading stage
+	//-- Order of Reading 1-Stiffness, 2-Mass, 3-SD, 4-VD
+	std::vector<std::string> readOrder = myUMAKeys["GEN_ALL"];
 
-	FOM_DOF = myUMAReader->totalDOFs;
-	isSymmetricSystem = myUMAReader->isSymmetricSystem;
+	systemCSR = new csrStruct[readOrder.size()];
+	for (int iLoader = 0; iLoader < readOrder.size(); iLoader++)
+	{
+		std::map<int, std::map<int, double>> K_ASI;
+		auto search = myUMAFileMapper.find(readOrder[iLoader]);
+		if (search!=myUMAFileMapper.end())
+		{
+			myUMAReader = new SimuliaUMA(search->second, *myHMesh, _iPart);
+			int modeFSI = 0;		// 0: For normal read, 1: Extract, 2: Add
+			if (isPartSymmetric && !isPartCoupledFS) {	// Single Domain-Symmetric
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, nodeToDofCommonMap, nodeToGlobalCommonMap, modeFSI, false, writeFOM, totaldof);
+			}
+			else // Execute a more specific storyline
+			{
+				bool isAlreadySym = myUMAReader->isUmaSymmetric(const_cast<char*>(search->first.c_str()));
+				bool specialUnSymRead = isAlreadySym && !isPartSymmetric ? true : false;
 
-	std::cout << "|| Physical memory consumption before UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	delete myUMAReader;
-	std::cout << "|| Physical memory consumption after UMA delete: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+				if (isPartCoupledFS) {
+					if (search->first == "GenericSystem_stiffness")			
+						modeFSI = 1;	// Perform Extract. Get the extract after loading
+					else if (search->first == "GenericSystem_mass") {
+						modeFSI = 2;	// Perform Add. Set the extract before loading
+						myUMAReader->setCouplingMatFSI(K_ASI);
+					}
+				}
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, nodeToDofCommonMap, nodeToGlobalCommonMap, modeFSI, specialUnSymRead, writeFOM, totaldof);
+
+				if (search->first == "GenericSystem_stiffness")		
+					K_ASI = myUMAReader->getCouplingMatFSI();
+			}
+			delete myUMAReader;
+		}
+		else {
+			std::cout << ">> " << readOrder[iLoader] << " is zero." << std::endl;
+			if (readOrder[iLoader] == "GenericSystem_stiffness" || readOrder[iLoader] == "GenericSystem_mass")
+			{
+				exit(EXIT_FAILURE);
+			}
+			else if (readOrder[iLoader] == "GenericSystem_structuralDamping" || readOrder[iLoader] == "GenericSystem_viscousDamping")
+			{
+				if (systemCSR[iLoader].csr_values.size() == 0) {
+					// Make a zero CSR - Case if the viscous damping sim or structural damping sim file is not found
+					int mT = systemCSR[0].csr_ia.size() - 1;
+					int nT = mT;	// Square matrix
+					systemCSR[iLoader].csr_ia.push_back(1);
+					systemCSR[iLoader].csr_ja.push_back(1);
+					systemCSR[iLoader].csr_values.push_back({ 0,0 });
+					for (int i = 0; i < mT; i++)
+						systemCSR[iLoader].csr_ia.push_back(2);
+				}
+			}
+		}
+
+		std::cout << ">> Sparse Info " << readOrder[iLoader] << ": nnz = " << systemCSR[iLoader].csr_values.size() << ". Size: " << systemCSR[iLoader].csr_ia.size() - 1 << "x" << systemCSR[iLoader].csr_ia.size() - 1 << std::endl;
+		for (int i = 0; i < systemCSR[iLoader].csr_ia.size() - 1; i++)
+		{
+			systemCSR[iLoader].csrPointerB.push_back(systemCSR[iLoader].csr_ia[i]);
+			systemCSR[iLoader].csrPointerE.push_back(systemCSR[iLoader].csr_ia[i + 1]);
+		}
+
+		if (readOrder[iLoader] == "GenericSystem_stiffness")					// Read stiffness
+		{
+			MathLibrary::createSparseCSRComplex(&mySparseK, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+		}
+		else if (readOrder[iLoader] == "GenericSystem_mass")					// Read mass
+		{
+			MathLibrary::createSparseCSRComplex(&mySparseM, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+		}
+		else if (readOrder[iLoader] == "GenericSystem_structuralDamping")	// Read SD
+		{
+			sparse_matrix_t sparseSD;
+			MathLibrary::createSparseCSRComplex(&sparseSD, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+			STACCATOComplexDouble ComplexOne = { 0,1 };
+			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
+		}
+		else if (readOrder[iLoader] == "GenericSystem_viscousDamping")		// Read VD
+		{
+			MathLibrary::createSparseCSRComplex(&mySparseD, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+		}
+	}
+
+	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
+	
+	FOM_DOF = totaldof;
+	isSymmetricSystem = isPartSymmetric;
 }
 
 void KrylovROMSubstructure::displayModelSize() {
@@ -987,7 +1045,7 @@ void KrylovROMSubstructure::exportROMToFiles() {
 #ifdef USE_HDF5
 	std::cout << " >> Exporting ROM to HDF5...";
 	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
-	FileROM myFile("reducedOrderModel.h5", filePath);
+	FileROM myFile(currentPart + "_ROM.h5", filePath);
 	myFile.createContainer(true);
 	myFile.addComplexDenseMatrix("M", myMComplexReduced);
 	myFile.addComplexDenseMatrix("D", myDComplexReduced);
@@ -1087,7 +1145,7 @@ void KrylovROMSubstructure::performAnalysis() {
 											for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
 											{
 												nodeDofSet.clear();
-												auto searchInStaccatoMap = nodeToGlobalMap.find(search->second[jNodeSet]);
+												auto searchInStaccatoMap = nodeToGlobalCommonMap.find(search->second[jNodeSet]);
 												nodeDofSet.insert(nodeDofSet.end(), searchInStaccatoMap->second.begin(), searchInStaccatoMap->second.end());
 
 												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++)
@@ -1257,8 +1315,8 @@ void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
 		std::vector<int> idList;
 		// Keyword: ALL
 		if (std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].LIST()->c_str()) == "ALL") {
-			int alldof = myUMAReader->totalDOFs;
-			for (size_t i = 0; i < alldof; i++)
+			int allnode = nodeToGlobalCommonMap.size();
+			for (size_t i = 0; i < allnode; i++)
 				idList.push_back(i);
 		}
 		else {	// ID List
@@ -1273,4 +1331,90 @@ void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
 		}
 		nodeSetsMap[std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].Name()->c_str())] =  idList;
 	}
+}
+
+void KrylovROMSubstructure::generateCollectiveGlobalMap(std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap) {
+	numDOF_u = 0;
+	numDOF_p = 0;
+	numDOF_ui = 0;
+	numDOF_pi = 0;
+	
+	numUndetected = 0;
+	totaldof = 0;
+
+	// Create Global Map
+	std::vector<int> dispDOF = { 1,2,3,4,5,6 };
+	std::vector<int> pressureDOF = { 8 };
+	int globalIndex = 0;
+	for (std::map<int, std::vector<int>>::iterator it = _dofMap.begin(); it != _dofMap.end(); ++it) {
+		bool isUDOF = false;
+		bool isPDOF = false;
+		totaldof += it->second.size();
+		for (int j = 0; j < it->second.size(); j++)
+		{
+			_globalMap[it->first].push_back(globalIndex);
+			globalIndex++;
+
+			if (std::find(pressureDOF.begin(), pressureDOF.end(), it->second[j]) != pressureDOF.end())
+				isPDOF = true;
+			else if (std::find(dispDOF.begin(), dispDOF.end(), it->second[j]) != dispDOF.end())
+				isUDOF = true;
+		}
+
+		if (isUDOF) {
+			if (it->first < 1000000000)
+				numDOF_u++;
+			else
+				numDOF_ui++;
+		}
+		else if (isPDOF) {
+			if (it->first < 1000000000)
+				numDOF_p++;
+			else
+				numDOF_pi++;
+		} else
+			numUndetected++;
+	}
+
+	printMapToFile();
+
+	std::cout << "== UMA Part Properties ======================" << std::endl;
+	if (numDOF_p > 0)
+		std::cout << "#Fluid_Nodes with dof [8]                   : " << numDOF_p << std::endl;
+	std::cout << "#Displ_Nodes with dof [1,2,3,4,5,6]         : " << numDOF_u << std::endl;
+	if (numDOF_ui > 0 || numDOF_pi > 0)
+	{
+		std::cout << "--" << std::endl;
+		if (numDOF_pi > 0)
+		std::cout << "#Internal Fluid_Nodes with dof [8]          : " << numDOF_pi << std::endl;
+	std::cout << "#Internal Displ_Nodes with dof [1,2,3,4,5,6]: " << numDOF_ui << std::endl;
+	}
+	std::cout << "--" << std::endl;
+	std::cout << "Detected " << _dofMap.size() - numUndetected << " of " << _dofMap.size() << " nodes" << std::endl;
+	if (numUndetected != 0) {
+		std::cout << "Check: FAILED." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	else
+		std::cout << "Check: PASSED." << std::endl;
+	std::cout << "=============================================" << std::endl;
+}
+
+void KrylovROMSubstructure::printMapToFile() {
+	std::string _fileName = "Staccato_KMOR_MAP_UMA.dat";
+	std::cout << ">> Writing " << _fileName << "..." << std::endl;
+	std::ofstream myfile;
+	myfile.open(_fileName);
+	myfile << std::scientific;
+	myfile << "% UMA MAP | Generated with STACCCATO" << std::endl;
+	myfile << "% NODE LABEL  |  LOCAL DOF  |  GLOBAL DOF" << std::endl;
+	std::map<int, std::vector<int>>::iterator it2 = nodeToDofCommonMap.begin();
+	for (std::map<int, std::vector<int>>::iterator it = nodeToGlobalCommonMap.begin(); it != nodeToGlobalCommonMap.end(); ++it, ++it2) {
+		for (int j = 0; j < it->second.size(); j++)
+		{
+			myfile << it->first << " " << it2->second[j] << " " << it->second[j] << std::endl;
+		}
+	}
+	myfile << std::endl;
+	myfile.close();
 }

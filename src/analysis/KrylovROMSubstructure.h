@@ -65,12 +65,6 @@ public:
 	***********/
 	void getSystemMatricesODB();
 	/***********************************************************************************************
-	* \brief Assemble UMA stiffness and mass matrices
-	* \param[in] Type of analysis
-	* \author Harikrishnan Sreekumar
-	***********/
-	void getSystemMatricesSIM();
-	/***********************************************************************************************
 	* \brief Build projection basis for second order Krylov subspaces for manual settings
 	* \author Harikrishnan Sreekumar
 	***********/
@@ -181,6 +175,16 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void clearDataFOM();
+	/***********************************************************************************************
+	* \brief Generates global map
+	* \author Harikrishnan Sreekumar
+	***********/
+	void generateCollectiveGlobalMap(std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap);
+	/***********************************************************************************************
+	* \brief Generates a file with node to local dof and global dof map
+	* \author Harikrishnan Sreekumar
+	***********/
+	void printMapToFile();
 private:
 #ifdef USE_INTEL_MKL
 	/// HMesh object 
@@ -284,7 +288,7 @@ private:
 		std::vector<STACCATOComplexDouble> csr_values;
 		std::vector<int> csrPointerB;
 		std::vector<int> csrPointerE;
-	}*massCSR, *stiffnessCSR, *structdampingCSR, *viscdampingCSR;
+	}*systemCSR;
 
 	// Export Flags
 	bool writeFOM;
@@ -295,8 +299,8 @@ private:
 	bool writeTransferFunctions;
 
 	// Maps
-	std::map<int, std::vector<int>> nodeToDofMap;
-	std::map<int, std::vector<int>> nodeToGlobalMap;
+	std::map<int, std::vector<int>> nodeToDofCommonMap;
+	std::map<int, std::vector<int>> nodeToGlobalCommonMap;
 
 	// StaccatoAbaqusInputOutputInfoMap
 	/// Sets with same index info
@@ -309,13 +313,12 @@ private:
 	/// List of corresponding dof numbers for output
 	std::vector<int> myAbaqusOutputDofList;
 
-public:
-	/***********************************************************************************************
-	* \brief Function to load a matrix from SimuliaUMA reader
-	* \param[in] _key Key for matrix [stiffness, mass, structuraldamping]
-	* \param[out] _struct Reference to CSR struct container
-	* \author Harikrishnan Sreekumar
-	***********/
-	void acquireSparseMatrix(std::string _key, csrStruct& _struct);
+	int numDOF_u;	// Displacement nodes
+	int numDOF_p;	// Pressure nodes
+	int numDOF_ui;	// Internal displacement nodes
+	int numDOF_pi;	// Internal pressure nodes
+	int numUndetected;	// number of nodes undetected
+
+	int totaldof;	// total number of nodes 
 #endif
 };

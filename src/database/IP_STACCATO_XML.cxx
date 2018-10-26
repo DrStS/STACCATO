@@ -2087,6 +2087,24 @@ LIST (::std::auto_ptr< LIST_type > x)
   this->LIST_.set (x);
 }
 
+const IMPORT::UMA_sequence& IMPORT::
+UMA () const
+{
+  return this->UMA_;
+}
+
+IMPORT::UMA_sequence& IMPORT::
+UMA ()
+{
+  return this->UMA_;
+}
+
+void IMPORT::
+UMA (const UMA_sequence& s)
+{
+  this->UMA_ = s;
+}
+
 const IMPORT::NODE_sequence& IMPORT::
 NODE () const
 {
@@ -2599,6 +2617,40 @@ void DISPLACEMENT::
 Name (::std::auto_ptr< Name_type > x)
 {
   this->Name_.set (x);
+}
+
+
+// UMA
+// 
+
+const UMA::Type_optional& UMA::
+Type () const
+{
+  return this->Type_;
+}
+
+UMA::Type_optional& UMA::
+Type ()
+{
+  return this->Type_;
+}
+
+void UMA::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void UMA::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void UMA::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
 }
 
 
@@ -5752,6 +5804,7 @@ IMPORT::
 IMPORT ()
 : ::xml_schema::type (),
   LIST_ (this),
+  UMA_ (this),
   NODE_ (this),
   ELEMENT_ (this),
   TRANSLATETO_ (this),
@@ -5765,6 +5818,7 @@ IMPORT (const IMPORT& x,
         ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
   LIST_ (x.LIST_, f, this),
+  UMA_ (x.UMA_, f, this),
   NODE_ (x.NODE_, f, this),
   ELEMENT_ (x.ELEMENT_, f, this),
   TRANSLATETO_ (x.TRANSLATETO_, f, this),
@@ -5778,6 +5832,7 @@ IMPORT (const ::xercesc::DOMElement& e,
         ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
   LIST_ (this),
+  UMA_ (this),
   NODE_ (this),
   ELEMENT_ (this),
   TRANSLATETO_ (this),
@@ -5812,6 +5867,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
         this->LIST_.set (r);
         continue;
       }
+    }
+
+    // UMA
+    //
+    if (n.name () == "UMA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< UMA_type > r (
+        UMA_traits::create (i, f, this));
+
+      this->UMA_.push_back (r);
+      continue;
     }
 
     // NODE
@@ -5878,6 +5944,7 @@ operator= (const IMPORT& x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
     this->LIST_ = x.LIST_;
+    this->UMA_ = x.UMA_;
     this->NODE_ = x.NODE_;
     this->ELEMENT_ = x.ELEMENT_;
     this->TRANSLATETO_ = x.TRANSLATETO_;
@@ -6406,6 +6473,81 @@ operator= (const DISPLACEMENT& x)
 
 DISPLACEMENT::
 ~DISPLACEMENT ()
+{
+}
+
+// UMA
+//
+
+UMA::
+UMA ()
+: ::xml_schema::type (),
+  Type_ (this)
+{
+}
+
+UMA::
+UMA (const UMA& x,
+     ::xml_schema::flags f,
+     ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+UMA::
+UMA (const ::xercesc::DOMElement& e,
+     ::xml_schema::flags f,
+     ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void UMA::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+UMA* UMA::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class UMA (*this, f, c);
+}
+
+UMA& UMA::
+operator= (const UMA& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+UMA::
+~UMA ()
 {
 }
 

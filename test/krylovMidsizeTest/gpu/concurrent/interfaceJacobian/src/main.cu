@@ -109,6 +109,9 @@ int main (int argc, char *argv[]){
     int num_input_baseline[] = {6, 12, 18, 24, 30, 36, 42, 48, 54, 60, 66, 72};
     // Frequency vector
     thrust::host_vector<int, pinnedAllocInt> freq(batchSize), freq_square(batchSize);
+    // Fill in frequency vectors
+    thrust::sequence(freq.begin(), freq.end(), 1);
+    thrust::transform(freq.begin(), freq.end(), freq.begin(), freq_square.begin(), thrust::multiplies<int>());
 
     /*----------------------------
     OPENMP & CUBLAS INITIALIZATION
@@ -251,9 +254,6 @@ int main (int argc, char *argv[]){
             shift_batch_B    = 0;
             // Loop over batch (assume batchSize = freq_max)
             for (size_t j = 0; j < batchSize; ++j){
-                // Compute frequency (assume batchSize = freq_max)
-                freq[j] = (j+1);
-                freq_square[j] = -(freq[j]*freq[j]);
                 // Update pointers for batched operations
                 h_ptr_A_batch[j]   = d_ptr_A_batch_base + shift_batch_A + shift_global_A;
                 h_ptr_rhs[j]       = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
@@ -333,8 +333,8 @@ int main (int argc, char *argv[]){
 
     // Write solutions
 /*
-    io::writeSolVecComplex(H, filepath_sol, "H.dat");
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    io::writeSolVecComplex(H, filepath_sol, "H.dat");
     thrust::host_vector<cuDoubleComplex> A = d_A;
     io::writeSolVecComplex(A, filepath_sol, "A.dat");
 */

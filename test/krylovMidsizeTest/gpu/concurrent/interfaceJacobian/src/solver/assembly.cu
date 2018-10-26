@@ -1,8 +1,6 @@
 // Libraries
 #include <iostream>
 #include <cassert>
-#include <stdio.h>
-#include <algorithm>
 
 // cuComplex
 #include <cuComplex.h>

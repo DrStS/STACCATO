@@ -59,32 +59,34 @@ FileROM::~FileROM() {
 }
 
 void FileROM::createContainer(bool _forceWrite) {
+#ifdef USE_HDF5
 
 	try
 	{
 		if (_forceWrite) {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_TRUNC);
-			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
+			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/OperatorsDenseROM"));
 		}
 		else {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_EXCL);
-			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/Operators"));
+			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/OperatorsDenseROM"));
 		}
 	}
-		catch (H5::FileIException error)
+	catch (H5::FileIException error)
 	{
-			std::cout << "Error: Cannot create file" << std::endl;
-			std::cout << "File already exists!" << std::endl;
+		std::cout << "Error: Cannot create file" << std::endl;
+		std::cout << "File already exists!" << std::endl;
 	}
+#endif // USE_HDF5
 }
 
 void FileROM::openContainer(bool _writePermission) {
-
+#ifdef USE_HDF5
 	try
 	{
 		if (_writePermission) {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_RDWR);
-		}
+}
 		else {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_RDONLY);
 		}
@@ -94,10 +96,13 @@ void FileROM::openContainer(bool _writePermission) {
 		std::cout << "Error: Cannot open file" << std::endl;
 		std::cout << "File already exists!" << std::endl;
 	}
+#endif // USE_HDF5
+	
 }
 
 
-void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values) {
+void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values, unsigned int _numColumns, unsigned int _numRows) {
+#ifdef USE_HDF5
 	try
 	{
 		unsigned int size = _values.size();
@@ -107,8 +112,16 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 		mtype.insertMember("real", HOFFSET(STACCATOComplexDouble, real), H5::PredType::NATIVE_DOUBLE);
 		mtype.insertMember("imag", HOFFSET(STACCATOComplexDouble, imag), H5::PredType::NATIVE_DOUBLE);
 		H5::DataSet* dataset;
-		dataset = new H5::DataSet(myHDF5FileHandle->createDataSet("Operators/"+_matrixName, mtype, space));
+		dataset = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsDenseROM/"+_matrixName, mtype, space));
 		dataset->write(_values.data(), mtype);
+		/// Add matrix dimension information to container
+		H5::DataSpace attrDataspaceScalar(H5S_SCALAR);
+		H5::Attribute attribute = dataset->createAttribute("Matrix # columns", H5::PredType::STD_I32BE, attrDataspaceScalar);
+		int attrDataScalar[1] = { _numColumns };
+		attribute.write(H5::PredType::NATIVE_INT, attrDataScalar);
+		attribute = dataset->createAttribute("Matrix # rows", H5::PredType::STD_I32BE, attrDataspaceScalar);
+		attrDataScalar[0] = _numRows;
+		attribute.write(H5::PredType::NATIVE_INT, attrDataScalar);
 		delete dataset;
 	} 
 	catch (H5::DataSetIException error)
@@ -123,9 +136,18 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 	{
 		std::cout << "Error: DataType operations" << std::endl;
 	}
+#endif // USE_HDF5
 }
 
 
+void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values) {
+	_values.size();
+	addComplexDenseMatrix(_matrixName, _values, sqrt(_values.size()), sqrt(_values.size()));
+}
+
 void FileROM::closeContainer(void) {
+#ifdef USE_HDF5
+	myHDF5groupOperators->close();
 	myHDF5FileHandle->close();
+#endif // USE_HDF5
 }

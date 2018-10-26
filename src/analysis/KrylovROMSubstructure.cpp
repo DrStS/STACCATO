@@ -911,9 +911,9 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::vector<std::string> readOrder = myUMAKeys["GEN_ALL"];
 
 	systemCSR = new csrStruct[readOrder.size()];
+	std::map<int, std::map<int, double>> K_ASI;
 	for (int iLoader = 0; iLoader < readOrder.size(); iLoader++)
 	{
-		std::map<int, std::map<int, double>> K_ASI;
 		auto search = myUMAFileMapper.find(readOrder[iLoader]);
 		if (search!=myUMAFileMapper.end())
 		{

@@ -191,8 +191,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 		}
 
 		// Exception for Internal DOFs. Exchange Row and Column Index
-		if(fnode_row >= 1000000000)
-			if (globalrow > globalcol) {
+		if(fnode_row >= 1000000000 || fnode_col>= 1000000000) {
 				int temp = globalrow;
 				globalrow = globalcol;
 				globalcol = temp;

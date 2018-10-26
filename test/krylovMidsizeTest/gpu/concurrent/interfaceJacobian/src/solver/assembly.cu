@@ -15,31 +15,43 @@
 // Namespace
 using namespace staccato;
 
-__global__ void assembleGlobalMatrix4Batched_kernel(
-    cuDoubleComplex * __restrict__ const d_ptr_A,
-    const cuDoubleComplex * __restrict__ const d_ptr_K,
-    const cuDoubleComplex * __restrict__ const d_ptr_M,
-    const int nnz_sub, const double freq_square)
+__global__ void assembleGlobalMatrix4Batched_kernel(cuDoubleComplex ** __restrict__ const d_ptr_A_batch, const cuDoubleComplex * __restrict__ const d_ptr_K,
+                                                    const cuDoubleComplex * __restrict__ const d_ptr_M, const int nnz_sub, const int * __restrict__ const freq_square,
+                                                    const int batchSize, const int subcomponents, int num_blocks)
 {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if ( idx < nnz_sub )
-    {
-        const cuDoubleComplex k = d_ptr_K[idx];
-        cuDoubleComplex A = d_ptr_M[idx];
-        A.x *= freq_square;
-        A.y *= freq_square;
+    // Thread indices
+    int idx_thread_global = threadIdx.x + blockDim.x * blockIdx.x;
+    int idx_thread_local  = threadIdx.x;
+    // Block information
+    int idx_block = blockIdx.x;
+    int block_size = blockDim.x;
+    // Total size of array
+    int nnz = nnz_sub * batchSize;
+
+    if (idx_thread_global < nnz){
+        const cuDoubleComplex k = d_ptr_K[idx_thread_global];
+    }
+
+/*
+    if (idx < nnz){
+        const cuDoubleComplex k = d_ptr_K[idx_thread_local];
+        cuDoubleComplex A = d_ptr_M[idx_thread_local];
+        A.x *= freq_square[idx_block];
+        A.y *= freq_square[idx_block];
         A.x += k.x;
         A.y += k.y;
-        d_ptr_A[idx] = A;
     }
+*/
 }
 
 // Assembles global matrix for batched execution
-void assembly::assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex *d_ptr_A,
+void assembly::assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex **d_ptr_A_batch,
                                            cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
-                                           int nnz_sub, double freq_square){
-    constexpr int block_size = 128;
-    assembleGlobalMatrix4Batched_kernel<<<((nnz_sub-1)/block_size)+1,block_size,0,stream>>>(d_ptr_A,d_ptr_K,d_ptr_M,nnz_sub,freq_square);
+                                           const int nnz_sub, const int *freq_square, const int batchSize, const int subComponents){
+    constexpr int block = 1024;                         // Number of threads per block
+    int grid = (int)(nnz_sub*batchSize/block) + 1;      // Number of blocks per grid
+    //int grid = batchSize;
+    assembleGlobalMatrix4Batched_kernel <<< grid, block, 0, stream >>> (d_ptr_A_batch, d_ptr_K, d_ptr_M, nnz_sub, freq_square, batchSize, subComponents, grid);
     cudaError_t cudaStatus = cudaGetLastError();
     assert(cudaStatus == cudaSuccess);
 }

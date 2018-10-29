@@ -283,7 +283,7 @@ int main (int argc, char *argv[]){
             d_ptr_B_batch = h_ptr_B_batch;
             d_ptr_C_batch = h_ptr_C_batch;
             PUSH_RANGE("Input matrix construction", 8)
-            assembly::constructMatricesBatched(streams[tid], h_ptr_B[i], h_ptr_C[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), thrust::raw_pointer_cast(d_ptr_C_batch.data()),
+            assembly::constructMatricesBatched(streams[tid], h_ptr_B[i], h_ptr_C[i], thrust::raw_pointer_cast(h_ptr_B_batch.data()), thrust::raw_pointer_cast(h_ptr_C_batch.data()),
                                                nnz_sub_B[i], (int)freq_max);
             POP_RANGE
 
@@ -341,11 +341,6 @@ int main (int argc, char *argv[]){
     std::cout << ">>>> Time taken = " << timerDataD2H.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
 
     // Write solutions
-
-    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
-    io::writeSolVecComplex(H, filepath_sol, "H.dat");
-
-
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     io::writeSolVecComplex(H, filepath_sol, "H.dat");

@@ -50,12 +50,6 @@ using namespace staccato;
     test set: 10914300
 */
 
-/*
-TODO:
-    2. Batched assembly
-    3. Batched construction of B and C
-*/
-
 int main (int argc, char *argv[]){
 
     timerTotal.start();

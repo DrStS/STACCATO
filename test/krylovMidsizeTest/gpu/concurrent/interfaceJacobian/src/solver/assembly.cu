@@ -28,15 +28,16 @@ __global__ void assembleGlobalMatrix4Batched_kernel(cuDoubleComplex ** __restric
     // Total size of array batch
     int nnz_batch = nnz_sub * batchSize;
 
-    //if (idx_thread_global < nnz_batch){
-    if (idx_thread_global < 1){
-        const cuDoubleComplex k = d_ptr_K[idx_thread_global];
-        cuDoubleComplex A = d_ptr_M[idx_thread_global];
-        A.x *= freq_square[idx_thread_global];
-        A.y *= freq_square[idx_thread_global];
-        A.x += k.x;
-        A.y += k.y;
-        d_ptr_A_batch[idx_thread_global][idx_thread_global] = A;
+    if (idx_thread_global < nnz_sub){
+        if (idx_thread_local < batchSize){
+            const cuDoubleComplex k = d_ptr_K[idx_thread_global];
+            cuDoubleComplex A = d_ptr_M[idx_thread_global];
+            A.x *= freq_square[idx_thread_local];
+            A.y *= freq_square[idx_thread_local];
+            A.x += k.x;
+            A.y += k.y;
+            d_ptr_A_batch[idx_thread_local][idx_thread_global] = A;
+        }
     }
 
 /*

@@ -46,17 +46,17 @@ void config::check_memory(int mat_repetition, double freq_max, int num_threads){
     4. H = freq_max * nnz_H
     5. A = nt * freq_max * nnz_max
     6. B_batch, C_batch = nt * freq_max * nnz_max_B * 2
-    7. d_ptr_K, d_ptr_M, d_ptr_D = subComponents * 3
+    7. d_ptr_K, d_ptr_M, d_ptr_D, d_ptr_B, d_ptr_C = subComponents * 5
     8. d_ptr_A_batch, d_ptr_rhs, d_ptr_B_batch, d_ptr_C_batch, d_ptr_H = freq_max * 5
     */
     unsigned int memory_nnz, memory_nnz_B, memory_row, memory_nnz_H, memory_nnz_max, memory_nnz_max_B, memory_ptr;
-    memory_nnz = sizeof(cuDoubleComplex) * 611424;             // 1
-    memory_nnz_B = sizeof(cuDoubleComplex) * 120060;           // 2
-    memory_row = sizeof(cuDoubleComplex) * 2658;               // 3
-    memory_nnz_H = sizeof(cuDoubleComplex) * 23400;            // 4
-    memory_nnz_max = sizeof(cuDoubleComplex) * 97344;          // 5
+    memory_nnz       = sizeof(cuDoubleComplex) * 611424;       // 1
+    memory_nnz_B     = sizeof(cuDoubleComplex) * 120060;       // 2
+    memory_row       = sizeof(cuDoubleComplex) * 2658;         // 3
+    memory_nnz_H     = sizeof(cuDoubleComplex) * 23400;        // 4
+    memory_nnz_max   = sizeof(cuDoubleComplex) * 97344;        // 5
     memory_nnz_max_B = sizeof(cuDoubleComplex) * 22464;        // 6
-    memory_ptr = sizeof(cuDoubleComplex*);                     // 7
+    memory_ptr       = sizeof(cuDoubleComplex*);               // 7
     double memory_required = (
                               memory_nnz*3*mat_repetition +
                               memory_nnz_B*2*mat_repetition +
@@ -64,10 +64,9 @@ void config::check_memory(int mat_repetition, double freq_max, int num_threads){
                               memory_nnz_H*freq_max +
                               num_threads*freq_max*memory_nnz_max +
                               num_threads*freq_max*memory_nnz_max_B*2 +
-                              memory_ptr * 12 * mat_repetition * 3 +
+                              memory_ptr * 12 * mat_repetition * 5 +
                               memory_ptr * freq_max * 5
                              )*1E-9;
-
 
     if (memory_required > 32){
         std::cerr << ">> NOT ENOUGH MEMORY ON GPU" << std::endl;

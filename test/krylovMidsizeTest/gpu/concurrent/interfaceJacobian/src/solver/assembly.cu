@@ -63,6 +63,7 @@ void assembly::assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex 
 {
     constexpr int block = 1024;                         // Number of threads per block
     int grid = (int)(nnz_sub*batchSize/block) + 1;      // Number of blocks per grid (sufficient for a grid to cover nnz_sub*batchSize)
+    size_t shared_memory_size = batchSize*sizeof(int);  // Size of shared memory
     assembleGlobalMatrixBatched_kernel <<< grid, block, 0, stream >>> (d_ptr_A_batch, d_ptr_K, d_ptr_M, nnz_sub, freq_square, batchSize);
     cudaError_t cudaStatus = cudaGetLastError();
     assert(cudaStatus == cudaSuccess);

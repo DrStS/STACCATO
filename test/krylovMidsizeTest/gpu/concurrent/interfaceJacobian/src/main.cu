@@ -116,6 +116,9 @@ int main (int argc, char *argv[]){
     // OpenMP
     int tid;
     omp_set_num_threads(num_threads);
+    omp_set_dynamic(0);
+    omp_set_nested(1);
+    omp_set_num_threads(num_threads);
     // cuBLAS
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
@@ -189,12 +192,10 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_B_batch_base = thrust::raw_pointer_cast(d_B_batch.data());
     cuDoubleComplex *d_ptr_C_batch_base = thrust::raw_pointer_cast(d_C_batch.data());
     cuDoubleComplex *d_ptr_rhs_base     = thrust::raw_pointer_cast(d_rhs.data());
-    // Create DEVICE vectors of pointers for each sub-components from combined matrices on DEVICE
-    thrust::device_vector<cuDoubleComplex*> d_ptr_K(subComponents), d_ptr_M(subComponents), d_ptr_D(subComponents);
-    // Create HOST vectors of pointers for each sub-components from combined matrices on DEVICE
-    thrust::host_vector<cuDoubleComplex*> h_ptr_B(subComponents), h_ptr_C(subComponents);
+    // Create device vectors of pointers for each sub-components from combined matrices on device
+    thrust::device_vector<cuDoubleComplex*> d_ptr_K(subComponents), d_ptr_M(subComponents), d_ptr_D(subComponents), d_ptr_B(subComponents), d_ptr_C(subComponents);
     // Get information from device data structures
-    data::getInfoDeviceDataStructure(d_ptr_K, d_ptr_M, d_ptr_D, h_ptr_B, h_ptr_C,
+    data::getInfoDeviceDataStructure(d_ptr_K, d_ptr_M, d_ptr_D, d_ptr_B, d_ptr_C,
                                      d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, d_ptr_B_base, d_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
 
     timerDataDevice.stop();
@@ -249,9 +250,9 @@ int main (int argc, char *argv[]){
     // Loop over each matrix size
     #pragma omp for
         for (size_t i = 0; i < subComponents; ++i){
-            /*---------------------------------------------------------------
-            Assemble Global Matrix & Update pointers to each matrix A and RHS
-            ---------------------------------------------------------------*/
+            /*--------------------------------------
+            Update pointers to each matrix A and RHS
+            --------------------------------------*/
             // Initialise Shifts
             shift_global_rhs = 0;
             shift_global_H   = 0;
@@ -260,17 +261,18 @@ int main (int argc, char *argv[]){
             // Loop over batch (assume batchSize = freq_max)
             for (size_t j = 0; j < batchSize; ++j){
                 // Update pointers for batched operations
-                h_ptr_A_batch[j]   = d_ptr_A_batch_base + shift_batch_A + shift_global_A;
-                h_ptr_rhs[j]       = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
-                h_ptr_B_batch[j]   = d_ptr_B_batch_base + shift_batch_B + shift_global_B;
-                h_ptr_C_batch[j]   = d_ptr_C_batch_base + shift_batch_B + shift_global_B;
-                h_ptr_H[j]   = d_ptr_H_base + shift_local_H[i] + shift_global_H;
+                h_ptr_A_batch[j] = d_ptr_A_batch_base + shift_batch_A      + shift_global_A;
+                h_ptr_rhs[j]     = d_ptr_rhs_base     + shift_local_rhs[i] + shift_global_rhs;
+                h_ptr_B_batch[j] = d_ptr_B_batch_base + shift_batch_B      + shift_global_B;
+                h_ptr_C_batch[j] = d_ptr_C_batch_base + shift_batch_B      + shift_global_B;
+                h_ptr_H[j]       = d_ptr_H_base       + shift_local_H[i]   + shift_global_H;
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
                 shift_batch_B    += nnz_sub_B[i];
                 shift_global_H   += nnz_H;
             }
+
             PUSH_RANGE("Linear System", 5)
 
             /*------------------------
@@ -278,7 +280,7 @@ int main (int argc, char *argv[]){
             ------------------------*/
             PUSH_RANGE("Matrix Assembly", 4)
             d_ptr_A_batch = h_ptr_A_batch;
-            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(h_ptr_A_batch.data()), d_ptr_K[i], d_ptr_M[i],
+            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(d_ptr_A_batch.data()), d_ptr_K[i], d_ptr_M[i],
                                                   nnz_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max);
             POP_RANGE // Matrix Assembly
 
@@ -288,7 +290,7 @@ int main (int argc, char *argv[]){
             d_ptr_B_batch = h_ptr_B_batch;
             d_ptr_C_batch = h_ptr_C_batch;
             PUSH_RANGE("Input matrix construction", 8)
-            assembly::constructMatricesBatched(streams[tid], h_ptr_B[i], h_ptr_C[i], thrust::raw_pointer_cast(h_ptr_B_batch.data()), thrust::raw_pointer_cast(h_ptr_C_batch.data()),
+            assembly::constructMatricesBatched(streams[tid], d_ptr_B[i], d_ptr_C[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), thrust::raw_pointer_cast(d_ptr_C_batch.data()),
                                                nnz_sub_B[i], (int)freq_max);
             POP_RANGE
 

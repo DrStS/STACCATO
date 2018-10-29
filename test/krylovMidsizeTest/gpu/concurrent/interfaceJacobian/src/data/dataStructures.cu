@@ -64,8 +64,8 @@ void data::getInfoDeviceDataStructure(
                                       thrust::device_vector<cuDoubleComplex*> &d_ptr_K,
                                       thrust::device_vector<cuDoubleComplex*> &d_ptr_M,
                                       thrust::device_vector<cuDoubleComplex*> &d_ptr_D,
-                                      thrust::host_vector<cuDoubleComplex*>   &h_ptr_B,
-                                      thrust::host_vector<cuDoubleComplex*>   &h_ptr_C,
+                                      thrust::device_vector<cuDoubleComplex*> &d_ptr_B,
+                                      thrust::device_vector<cuDoubleComplex*> &d_ptr_C,
                                       cuDoubleComplex *d_ptr_K_base,
                                       cuDoubleComplex *d_ptr_M_base,
                                       cuDoubleComplex *d_ptr_D_base,
@@ -82,8 +82,8 @@ void data::getInfoDeviceDataStructure(
         d_ptr_K[i] = d_ptr_K_base + mat_shift;
         d_ptr_M[i] = d_ptr_M_base + mat_shift;
         d_ptr_D[i] = d_ptr_D_base + mat_shift;
-        h_ptr_B[i] = d_ptr_B_base + mat_B_shift;
-        h_ptr_C[i] = d_ptr_C_base + mat_B_shift;
+        d_ptr_B[i] = d_ptr_B_base + mat_B_shift;
+        d_ptr_C[i] = d_ptr_C_base + mat_B_shift;
         mat_shift   += nnz_sub[i];
         mat_B_shift += nnz_sub_B[i];
     }

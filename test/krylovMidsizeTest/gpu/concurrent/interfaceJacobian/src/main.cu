@@ -260,11 +260,6 @@ int main (int argc, char *argv[]){
                 h_ptr_B_batch[j]   = d_ptr_B_batch_base + shift_batch_B + shift_global_B;
                 h_ptr_C_batch[j]   = d_ptr_C_batch_base + shift_batch_B + shift_global_B;
                 h_ptr_H[j]   = d_ptr_H_base + shift_local_H[i] + shift_global_H;
-                // Construct matrices for Interface Jacobian -> Let this execute on default stream for asynchronous operation
-                PUSH_RANGE("Input matrix construction", 8)
-                thrust::copy_n(thrust::device, h_ptr_B[i], nnz_sub_B[i], h_ptr_B_batch[j]);
-                thrust::copy_n(thrust::device, h_ptr_C[i], nnz_sub_B[i], h_ptr_C_batch[j]);
-                POP_RANGE
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
@@ -279,44 +274,43 @@ int main (int argc, char *argv[]){
             PUSH_RANGE("Matrix Assembly", 4)
             d_ptr_A_batch = h_ptr_A_batch;
             assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(h_ptr_A_batch.data()), d_ptr_K[i], d_ptr_M[i],
-                                                  nnz_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max, subComponents);
+                                                  nnz_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max);
             POP_RANGE // Matrix Assembly
 
             /*------------------------------------------------
             Construct Matrices for Interface Jacobian in Batch
             ------------------------------------------------*/
+            d_ptr_B_batch = h_ptr_B_batch;
+            d_ptr_C_batch = h_ptr_C_batch;
+            PUSH_RANGE("Input matrix construction", 8)
+            assembly::constructMatricesBatched(streams[tid], h_ptr_B[i], h_ptr_C[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), thrust::raw_pointer_cast(d_ptr_C_batch.data()),
+                                               nnz_sub_B[i], (int)freq_max);
+            POP_RANGE
 
             /*--------------
             LU Decomposition
             --------------*/
-/*
             d_ptr_A_batch = h_ptr_A_batch;
             cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
-*/
             /*-----------
             Solve x = A\b
             -----------*/
-/*
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
             POP_RANGE // Linear System
-*/
 
             /*----------------
             Interface Jacobian
             ----------------*/
-/*
             PUSH_RANGE("Interface Jacobian", 5)
             // Solve A\B
             PUSH_RANGE("Schur Complement", 6)
-            d_ptr_B_batch = h_ptr_B_batch;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], num_input_sub[i], thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &solverInfo_solve, batchSize));
             POP_RANGE // Schur Complement
             // Compute H (GEMM)
             PUSH_RANGE("GEMM", 7)
-            d_ptr_C_batch = h_ptr_C_batch;
             d_ptr_H = h_ptr_H;
             cublas_check(cublasZgemmBatched(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i], &one, thrust::raw_pointer_cast(d_ptr_C_batch.data()),
                                             num_input_sub[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &zero, thrust::raw_pointer_cast(d_ptr_H.data()), num_input_sub[i],
@@ -324,7 +318,6 @@ int main (int argc, char *argv[]){
             POP_RANGE // GEMM
 
             POP_RANGE // Interface Jacobian
-*/
             /*-----------------
             Synchronize Streams
             -----------------*/
@@ -348,6 +341,11 @@ int main (int argc, char *argv[]){
     std::cout << ">>>> Time taken = " << timerDataD2H.getDurationMicroSec()*1e-6 << " sec" << "\n" << std::endl;
 
     // Write solutions
+
+    io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
+    io::writeSolVecComplex(H, filepath_sol, "H.dat");
+
+
 /*
     io::writeSolVecComplex(rhs, filepath_sol, filename_sol);
     io::writeSolVecComplex(H, filepath_sol, "H.dat");

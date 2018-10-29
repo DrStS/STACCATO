@@ -95,8 +95,11 @@ int main (int argc, char *argv[]){
     /*--------
     PARAMETERS
     --------*/
-    const double alpha = 4*PI*PI;
+    double alpha = 4*PI*PI;
     cuDoubleComplex rhs_val, one, zero;
+    void *onePtr, *zeroPtr;
+    onePtr = &one;
+    zeroPtr = &zero;
     rhs_val.x = 1.0;
     rhs_val.y = 0.0;
     one.x     = 1.0;
@@ -122,6 +125,11 @@ int main (int argc, char *argv[]){
     // cuBLAS
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
+    // Tensor Core Option
+    cublasMath_t cublasMathMode = CUBLAS_TENSOR_OP_MATH;
+    cublasSetMathMode(cublasHandle[0], cublasMathMode);
+    cudaDataType_t cudaArrayDataType = CUDA_C_64F;
+    cublasGemmAlgo_t cudaAlgoType = CUBLAS_GEMM_DEFAULT_TENSOR_OP;
 
     /*-----------------------
     CHECK MEMORY REQUIREMENTS
@@ -234,6 +242,7 @@ int main (int argc, char *argv[]){
         tid = omp_get_thread_num();
         // Allocate vector of array pointers to A in each thread
         thrust::device_vector<cuDoubleComplex*> d_ptr_A_batch(batchSize), d_ptr_rhs(batchSize), d_ptr_B_batch(batchSize), d_ptr_C_batch(batchSize), d_ptr_H(batchSize);
+        thrust::device_vector<void *> d_ptr_B_batch_GEMM(batchSize), d_ptr_C_batch_GEMM(batchSize), d_ptr_H_GEMM(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A_batch(batchSize), h_ptr_rhs(batchSize), h_ptr_B_batch(batchSize), h_ptr_C_batch(batchSize), h_ptr_H(batchSize);
         // Initialise shifts
         int shift_global_A, shift_batch_A, shift_global_rhs, shift_global_H, shift_global_B, shift_batch_B;
@@ -241,6 +250,8 @@ int main (int argc, char *argv[]){
         shift_global_B = tid*freq_max*nnz_max_B;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
+        // Set tensor core math mode
+        cublasSetMathMode(cublasHandle[tid], cublasMathMode);
     // Loop over each matrix size
     #pragma omp for
         for (size_t i = 0; i < subComponents; ++i){
@@ -301,11 +312,14 @@ int main (int argc, char *argv[]){
             POP_RANGE // Schur Complement
             // Compute H (GEMM)
             PUSH_RANGE("GEMM", 7)
-            d_ptr_C_batch = h_ptr_C_batch;
-            d_ptr_H = h_ptr_H;
-            cublas_check(cublasZgemmBatched(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i], &one, thrust::raw_pointer_cast(d_ptr_C_batch.data()),
-                                            num_input_sub[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &zero, thrust::raw_pointer_cast(d_ptr_H.data()), num_input_sub[i],
-                                            batchSize));
+            d_ptr_B_batch_GEMM = h_ptr_B_batch;
+            d_ptr_C_batch_GEMM = h_ptr_C_batch;
+            d_ptr_H_GEMM       = h_ptr_H;
+            cublas_check(cublasGemmBatchedEx(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i],
+                                             onePtr, thrust::raw_pointer_cast(d_ptr_C_batch_GEMM.data()), cudaArrayDataType, num_input_sub[i],
+                                             thrust::raw_pointer_cast(d_ptr_B_batch_GEMM.data()), cudaArrayDataType, row_sub[i],
+                                             zeroPtr, thrust::raw_pointer_cast(d_ptr_H_GEMM.data()), cudaArrayDataType, num_input_sub[i], batchSize,
+                                             cudaArrayDataType, cudaAlgoType));
             POP_RANGE // GEMM
 
             POP_RANGE // Interface Jacobian

@@ -15,7 +15,7 @@
 // Namespace
 using namespace staccato;
 
-__global__ void assembleGlobalMatrix4Batched_kernel(
+__global__ void assembleGlobalMatrixBatched_kernel(
     cuDoubleComplex * __restrict__ const d_ptr_A,
     const cuDoubleComplex * __restrict__ const d_ptr_K,
     const cuDoubleComplex * __restrict__ const d_ptr_M,
@@ -39,7 +39,7 @@ void assembly::assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex 
                                            cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
                                            int nnz_sub, double freq_square){
     constexpr int block_size = 128;
-    assembleGlobalMatrix4Batched_kernel<<<((nnz_sub-1)/block_size)+1,block_size,0,stream>>>(d_ptr_A,d_ptr_K,d_ptr_M,nnz_sub,freq_square);
+    assembleGlobalMatrixBatched_kernel<<<((nnz_sub-1)/block_size)+1,block_size,0,stream>>>(d_ptr_A,d_ptr_K,d_ptr_M,nnz_sub,freq_square);
     cudaError_t cudaStatus = cudaGetLastError();
     assert(cudaStatus == cudaSuccess);
 }

@@ -271,15 +271,6 @@ int main (int argc, char *argv[]){
                 h_ptr_B_batch[j]   = d_ptr_B_batch_base + shift_batch_B + shift_global_B;
                 h_ptr_C_batch[j]   = d_ptr_C_batch_base + shift_batch_B + shift_global_B;
                 h_ptr_H[j]   = d_ptr_H_base + shift_local_H[i] + shift_global_H;
-                // Assemble matrix
-                PUSH_RANGE("Matrix Assembly", 4)
-                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A_batch[j], d_ptr_K[i], d_ptr_M[i], nnz_sub[i], freq_square[j]);
-                POP_RANGE // Matrix Assembly
-                // Construct matrices for Interface Jacobian -> Let this execute on default stream for asynchronous operation
-                PUSH_RANGE("Input matrix construction", 8)
-                thrust::copy_n(thrust::device, h_ptr_B[i], nnz_sub_B[i], h_ptr_B_batch[j]);
-                thrust::copy_n(thrust::device, h_ptr_C[i], nnz_sub_B[i], h_ptr_C_batch[j]);
-                POP_RANGE
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
@@ -287,6 +278,26 @@ int main (int argc, char *argv[]){
                 shift_global_H   += nnz_H;
             }
             PUSH_RANGE("Linear System", 5)
+
+            /*------------------------
+            Assembly Matrices in Batch
+            ------------------------*/
+            PUSH_RANGE("Matrix Assembly", 4)
+            d_ptr_A_batch = h_ptr_A_batch;
+            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(h_ptr_A_batch.data()), d_ptr_K[i], d_ptr_M[i],
+                                                  nnz_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max);
+            POP_RANGE // Matrix Assembly
+
+            /*------------------------------------------------
+            Construct Matrices for Interface Jacobian in Batch
+            ------------------------------------------------*/
+            d_ptr_B_batch = h_ptr_B_batch;
+            d_ptr_C_batch = h_ptr_C_batch;
+            PUSH_RANGE("Input matrix construction", 8)
+            assembly::constructMatricesBatched(streams[tid], h_ptr_B[i], h_ptr_C[i], thrust::raw_pointer_cast(h_ptr_B_batch.data()), thrust::raw_pointer_cast(h_ptr_C_batch.data()),
+                                               nnz_sub_B[i], (int)freq_max);
+            POP_RANGE
+
             /*--------------
             LU Decomposition
             --------------*/
@@ -306,7 +317,6 @@ int main (int argc, char *argv[]){
             PUSH_RANGE("Interface Jacobian", 5)
             // Solve A\B
             PUSH_RANGE("Schur Complement", 6)
-            d_ptr_B_batch = h_ptr_B_batch;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], num_input_sub[i], thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &solverInfo_solve, batchSize));
             POP_RANGE // Schur Complement

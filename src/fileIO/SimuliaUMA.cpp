@@ -62,7 +62,6 @@ void SimuliaUMA::openFile() {
 }
 
 int SimuliaUMA::collectDatastructureSIM(char* _key, std::map<int, std::vector<int>> &_dofMap) {
-	std::cout << ">> Sensing SIM File: " << myFileName << " UMA Key: " << _key << std::endl;
 	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
 	// Check for matrix existence
 	if (!myUMASystem->HasMatrix(_key)) {
@@ -77,20 +76,9 @@ int SimuliaUMA::collectDatastructureSIM(char* _key, std::map<int, std::vector<in
 		std::cout << " >> Sparse matrix " << _key << " cannot be accessed!\n";
 		exit(EXIT_FAILURE);
 	}
-
-	printf(" Matrix %s - sparse type\n", _key);
-	printf("  domain: rows %s, columns %s\n", mapTypeName[smtx.TypeRows()], mapTypeName[smtx.TypeColumns()]);
-	printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
-	if (smtx.IsSymmetric())
-		printf("; symmetric");
-	else {
-		printf("; non-symmetric");
-	}
-	printf("\n");
-
-	uma_ArrayInt nodes; smtx.MapColumns(nodes, uma_Enum::NODES);
+	   	uma_ArrayInt nodes; smtx.MapColumns(nodes, uma_Enum::NODES);
 	uma_ArrayInt ldofs; smtx.MapColumns(ldofs, uma_Enum::DOFS);
-	
+
 	// Create pool of all available nodes and dofs
 	for (int col = 0; col < nodes.Size(); col++) {
 		auto search = _dofMap.find(nodes[col]);
@@ -107,7 +95,7 @@ int SimuliaUMA::collectDatastructureSIM(char* _key, std::map<int, std::vector<in
 			}
 		}
 		else {
-			_dofMap[nodes[col]] .push_back(ldofs[col]);
+			_dofMap[nodes[col]].push_back(ldofs[col]);
 		}
 	}
 	return 1;
@@ -130,7 +118,7 @@ std::map<int, std::map<int, double>> SimuliaUMA::getCouplingMatFSI() {
 }
 
 void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows) {
-	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: ["<< _flagUnymRead<< "," << _readMode << "]..."<<std::endl;
+	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: [" << _flagUnymRead << "," << _readMode << "]..." << std::endl;
 	int FF_start = -1; int FF_end = -1;
 	int SS_start = -1; int SS_end = -1;
 	if (_readMode > 0)
@@ -143,7 +131,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 				fluidMap[it->first] = it->second;
 			else if (it->first < 1000000000 && (it->second.size() == 3 || it->second.size() == 6))
 				structMap[it->first] = it->second;
- 		}
+		}
 		FF_start = fluidMap.begin()->second[0];		FF_end = fluidMap.rbegin()->second[0];
 		SS_start = structMap.begin()->second[0];	SS_end = structMap.rbegin()->second[structMap.rbegin()->second.size() - 1];
 		std::cout << ">> FSI: FF [" << FF_start << ":" << FF_end << "," << FF_end - FF_start << "], SS [" << SS_start << ":" << SS_end << "," << SS_end - SS_start << "]" << std::endl;
@@ -171,59 +159,78 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 	for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 		iter.Entry(row, col, val);
 
+		// Picking respective STACCATO indices
 		int fnode_row = nodes[row];
 		int fdof_row = ldofs[row];
 		int fnode_col = nodes[col];
 		int fdof_col = ldofs[col];
 
-		int globalrow = -1;
-		int globalcol = -1;
+		int staccato_row = -1;
+		int staccato_col = -1;
 
 		for (int i = 0; i < _dofMap[fnode_row].size(); i++)
 		{
 			if (_dofMap[fnode_row][i] == fdof_row)
-				globalrow = _globalMap[fnode_row][i];
+				staccato_row = _globalMap[fnode_row][i];
 		}
 		for (int i = 0; i < _dofMap[fnode_col].size(); i++)
 		{
 			if (_dofMap[fnode_col][i] == fdof_col)
-				globalcol = _globalMap[fnode_col][i];
+				staccato_col = _globalMap[fnode_col][i];
 		}
 
 		// Exception for Internal DOFs. Exchange Row and Column Index
-		if(fnode_row >= 1000000000 || fnode_col>= 1000000000) {
-				int temp = globalrow;
-				globalrow = globalcol;
-				globalcol = temp;
-			}
-
-		if (_readMode == 1)	// Extraction
+		// For symmetric matrix, the respective lower triangular entries (corresponding to row: InternalDOF and col: NormalDOF) should be entered correctly in the upper triangular area
+		if (fnode_row >= 1000000000 && fnode_col < 1000000000) {
+			int temp = staccato_row;
+			staccato_row = staccato_col;
+			staccato_col = temp;
+		}
+		// For unsymmetric matrix, the opposite is done. The respective upper triangular entries (corresponding to col: InternalDOF and row: NormalDOF) should be entered correctly in the lower triangular area
+		if (!smtx.IsSymmetric())
 		{
-			if ((globalrow >= FF_start && globalrow <= FF_end) && (globalcol >= SS_start && globalcol <= SS_end)) {
-				myCouplingMatFSI[globalrow][globalcol + 1] = -val;		// (-)K_ASI  negation is done while extraction
+			if (fnode_col >= 1000000000 && fnode_row < 1000000000) {
+				int temp = staccato_row;
+				staccato_row = staccato_col;
+				staccato_col = temp;
+			}
+		}
+
+		// FSI Part: Extraction of Coupling entries
+		if (_readMode == 1)	
+		{
+			if ((staccato_row >= FF_start && staccato_row <= FF_end) && (staccato_col >= SS_start && staccato_col <= SS_end)) {
+				myCouplingMatFSI[staccato_row][staccato_col + 1] = -val;		// (-)K_ASI  negation is done while extraction
 				val = 0;
 			}
 		}
 
-		mySystemMatrixMapCSR[globalrow][globalcol + 1] = val;
+		mySystemMatrixMapCSR[staccato_row][staccato_col + 1] = val;
 		if (_flagUnymRead)		// Special lower triangular entries for symmetric matrices
-			mySystemMatrixMapCSR[globalcol][globalrow + 1] = val;
+			mySystemMatrixMapCSR[staccato_col][staccato_row + 1] = val;
 
-
-		if (globalrow == globalcol) {
+		// Check for Dirichlet Pivot: Has to be taken care, if required.
+		if (staccato_row == staccato_col) {
 			if (val >= 1e36) {
-				std::cout << "Error: DBC pivot found!"<<std::endl;
-				//exit(EXIT_FAILURE);
+				std::cout << "Error: DBC pivot found!" << std::endl;
+				exit(EXIT_FAILURE);
 			}
+		}
+		// Check for lower triangular entries for symmetric matrix (True for correct algorithm).
+		if (staccato_row > staccato_col && smtx.IsSymmetric() ){
+				std::cout << "Error: Lower triangular entry found " << staccato_row << " "<<staccato_col<< "." << std::endl;
+				exit(EXIT_FAILURE);
 		}
 	}
 
-	if (_readMode==2)	{
+	// FSI Part: Adding of Coupling entries
+	if (_readMode == 2) {
 		for (std::map<int, std::map<int, double>>::iterator it = myCouplingMatFSI.begin(); it != myCouplingMatFSI.end(); ++it) {
 			mySystemMatrixMapCSR[it->first] = it->second;
 		}
 	}
 
+	// Conversion of Entry map to CSR
 	for (size_t iTotalDof = 0; iTotalDof < _numrows; iTotalDof++)
 	{
 		_ia.push_back(_values.size() + 1);
@@ -246,7 +253,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(exportFilePrefix + "_CSR_MAT.dat", _values);
 	}
 	mySystemMatrixMapCSR.clear();
-	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: [" << _flagUnymRead << "," << _readMode << "]... Finished."<<std::endl;
+	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: [" << _flagUnymRead << "," << _readMode << "]... Finished." << std::endl;
 }
 
 #ifdef USE_SIMULIA_UMA_API
@@ -284,9 +291,9 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 			if (row != lastRow)
 				printf("\n");
 			if (row != col)
-				printf("  %2i,%-2i:%g", row+1, col+1, val);
+				printf("  %2i,%-2i:%g", row + 1, col + 1, val);
 			else
-				printf("  *%2i,%-2i:%g", row+1, col+1, val);
+				printf("  *%2i,%-2i:%g", row + 1, col + 1, val);
 
 			lastRow = row;
 		}
@@ -301,14 +308,14 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 		for (int col = 0; col < nodes.Size(); col++) {
 			if (col % 10 == 0)
 				printf("\n");
-			printf(" %3i:%3i-%1i", col+1, nodes[col], ldofs[col]);
+			printf(" %3i:%3i-%1i", col + 1, nodes[col], ldofs[col]);
 		}
 		printf("\n");
 	}
 
 	if (_printToFile) {
 		std::ofstream myfile;
-		myfile.open(std::string(matrixName) +".mtx");
+		myfile.open(std::string(matrixName) + ".mtx");
 		std::cout << ">>> Writing file to: " << std::string(matrixName) + ".mtx" << std::endl;
 		myfile.precision(std::numeric_limits<double>::digits10 + 1);
 		myfile << std::scientific;

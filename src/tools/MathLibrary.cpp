@@ -531,7 +531,7 @@ namespace MathLibrary {
 #endif
 	}
 
-	void print_csr_sparse_z(sparse_matrix_t* _mat)
+	void printToScreen_csr_sparse_z(sparse_matrix_t* _mat)
 	{
 #ifdef USE_INTEL_MKL
 		// Read Matrix Data and Print it
@@ -544,6 +544,7 @@ namespace MathLibrary {
 		if (status == SPARSE_STATUS_SUCCESS)
 		{
 			printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
+			std::cout << "nnz: " << ei[row-1] - 1 << std::endl;
 			for (int r = 0; r < row; ++r)
 			{
 				for (int idx = bi[r]; idx < ei[r]; ++idx)
@@ -552,6 +553,50 @@ namespace MathLibrary {
 				}
 			}
 		}
+#endif
+	}
+
+	void printToFile_csr_sparse_z(sparse_matrix_t* _mat)
+	{
+#ifdef USE_INTEL_MKL
+		// Read Matrix Data and Print it
+		int row, col;
+		sparse_index_base_t indextype;
+		int * bi, *ei;
+		int * j;
+		MKL_Complex16* rv;
+		sparse_status_t status = mkl_sparse_z_export_csr(*_mat, &indextype, &row, &col, &bi, &ei, &j, &rv);
+		std::vector<STACCATOComplexDouble> values;
+		std::vector<int> jaCSRR;
+		if (status == SPARSE_STATUS_SUCCESS)
+		{
+			printf("SparseMatrix(%d x %d) [base:%d]\n", row, col, indextype);
+			std::cout << "nnz: " << ei[row - 1] - 1 << std::endl;
+			for (int r = 0; r < row; ++r)
+			{
+				for (int idx = bi[r]; idx < ei[r]; ++idx)
+				{
+					values.push_back(rv[idx - 1]);
+					jaCSRR.push_back(j[idx - 1]);
+				}
+			}
+		}
+		std::vector<int> testpB;
+		std::vector<int> testpE;
+		for (int i = 0; i < row; i++)
+		{
+			testpB.push_back(bi[i]);
+			testpE.push_back(ei[i + 1]);
+		}
+		testpB.push_back(ei[row - 1]);
+
+
+		std::string exportFilePrefix = "Staccato_Sparse_Export";
+		std::cout << ">> Printing to " << exportFilePrefix << " Matrix CSR Format..." << std::endl;
+		AuxiliaryFunctions::writeIntegerVectorDatFormat(exportFilePrefix + "_CSR_IA.dat", testpB);
+		AuxiliaryFunctions::writeIntegerVectorDatFormat(exportFilePrefix + "_CSR_JA.dat", jaCSRR);
+
+		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(exportFilePrefix + "_CSR_MAT.dat", values);
 #endif
 	}
 

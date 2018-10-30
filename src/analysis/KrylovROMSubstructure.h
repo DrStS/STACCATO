@@ -179,12 +179,12 @@ public:
 	* \brief Generates global map
 	* \author Harikrishnan Sreekumar
 	***********/
-	void generateCollectiveGlobalMap(std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap);
+	void generateCollectiveGlobalMap();
 	/***********************************************************************************************
 	* \brief Generates a file with node to local dof and global dof map
 	* \author Harikrishnan Sreekumar
 	***********/
-	void printMapToFile();
+	void printStaccatoMapToFile();
 private:
 #ifdef USE_INTEL_MKL
 	/// HMesh object 
@@ -299,8 +299,8 @@ private:
 	bool writeTransferFunctions;
 
 	// Maps
-	std::map<int, std::vector<int>> nodeToDofCommonMap;
-	std::map<int, std::vector<int>> nodeToGlobalCommonMap;
+	std::map<int, std::vector<int>> myNodeToDofStaccatoMap;
+	std::map<int, std::vector<int>> myNodeToGlobalStaccatoMap;
 
 	// StaccatoAbaqusInputOutputInfoMap
 	/// Sets with same index info

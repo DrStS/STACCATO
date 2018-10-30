@@ -58,7 +58,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	/* -------------------------- */
 	
 	/* -- Exporting ------------- */
-	writeFOM = false;
+	writeFOM = true;
 	writeROM = true;
 	exportRHS = true;
 	exportSolution = true;
@@ -910,6 +910,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 
 	systemCSR = new csrStruct[readOrder.size()];
 	std::map<int, std::map<int, double>> K_ASI;
+	std::vector<int> dirichletIndices;
 	for (int iLoader = 0; iLoader < readOrder.size(); iLoader++)
 	{
 		auto search = myUMAFileMapper.find(readOrder[iLoader]);
@@ -918,7 +919,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 			myUMAReader = new SimuliaUMA(search->second, *myHMesh, _iPart);
 			int modeFSI = 0;		// 0: For normal read, 1: Extract, 2: Add
 			if (isPartSymmetric && !isPartCoupledFS) {	// Single Domain-Symmetric
-				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, modeFSI, false, writeFOM, totaldof);
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, dirichletIndices, modeFSI, false, writeFOM, totaldof);
 			}
 			else // Execute a more specific storyline
 			{
@@ -933,7 +934,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 						myUMAReader->setCouplingMatFSI(K_ASI);
 					}
 				}
-				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, modeFSI, specialUnSymRead, writeFOM, totaldof);
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, dirichletIndices, modeFSI, specialUnSymRead, writeFOM, totaldof);
 
 				if (search->first == "GenericSystem_stiffness")
 					K_ASI = myUMAReader->getCouplingMatFSI();

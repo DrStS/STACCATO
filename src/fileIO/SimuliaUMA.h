@@ -88,7 +88,7 @@ public:
 	* \param[in] _numrows Number of totaldof equal to all system matrices
 	* \author Harikrishnan Sreekumar
 	***********/
-	void loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows);
+	void loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, std::vector<int> &_dbcpivot, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows);
 	/***********************************************************************************************
 	* \brief Function to intialize the coupling matrix incase of Fluid Structure interaction
 	* \param[in] _KASI matrix in map form

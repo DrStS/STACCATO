@@ -525,7 +525,7 @@ FeAnalysis::FeAnalysis(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				}
 				else if (analysisType == "STEADYSTATE_DYNAMIC") {
 					(*AComplex)(dofIndex, dofIndex).real = 1;
-					(*AComplex)(dofIndex, dofIndex).imag = 1;
+					(*AComplex)(dofIndex, dofIndex).imag = 0;
 					bComplex[dofIndex].real = 0;
 					bComplex[dofIndex].imag = 0;
 				}

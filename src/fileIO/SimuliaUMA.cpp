@@ -62,7 +62,6 @@ void SimuliaUMA::openFile() {
 }
 
 int SimuliaUMA::collectDatastructureSIM(char* _key, std::map<int, std::vector<int>> &_dofMap) {
-	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
 	// Check for matrix existence
 	if (!myUMASystem->HasMatrix(_key)) {
 		std::cout << " >> Sparse matrix " << _key << " not found\n";
@@ -117,7 +116,7 @@ std::map<int, std::map<int, double>> SimuliaUMA::getCouplingMatFSI() {
 	return myCouplingMatFSI;
 }
 
-void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows) {
+void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, std::vector<int> &_dbcpivot, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows) {
 	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: [" << _flagUnymRead << "," << _readMode << "]..." << std::endl;
 	int FF_start = -1; int FF_end = -1;
 	int SS_start = -1; int SS_end = -1;
@@ -143,6 +142,17 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 	uma_SparseMatrix smtx;
 	myUMASystem->SparseMatrix(smtx, const_cast<char*>(_key.c_str()));
 
+	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
+	printf(" Matrix %s - sparse type\n", const_cast<char*>(_key.c_str()));
+	printf("  domain: rows %s, columns %s\n", mapTypeName[smtx.TypeRows()], mapTypeName[smtx.TypeColumns()]);
+	printf("  size: rows %i, columns %i, entries %i", smtx.NumRows(), smtx.NumColumns(), smtx.NumEntries());
+	if (smtx.IsSymmetric())
+		printf("; symmetric");
+	else
+		printf("; non-symmetric");
+	printf("\n");
+
+	//PrintMatrix(*myUMASystem, const_cast<char*>(_key.c_str()), true, false);
 	int nnz = smtx.NumEntries();
 	_ia.reserve(_numrows + 1);
 	_ja.reserve(nnz);
@@ -156,6 +166,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 
 	int rem_row = -22;
 	int nnz_row = 0;
+	//myDirichletIndices.clear();
 	for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 		iter.Entry(row, col, val);
 
@@ -181,15 +192,9 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 
 		// Exception for Internal DOFs. Exchange Row and Column Index
 		// For symmetric matrix, the respective lower triangular entries (corresponding to row: InternalDOF and col: NormalDOF) should be entered correctly in the upper triangular area
-		if (fnode_row >= 1000000000 && fnode_col < 1000000000) {
-			int temp = staccato_row;
-			staccato_row = staccato_col;
-			staccato_col = temp;
-		}
-		// For unsymmetric matrix, the opposite is done. The respective upper triangular entries (corresponding to col: InternalDOF and row: NormalDOF) should be entered correctly in the lower triangular area
-		if (!smtx.IsSymmetric())
+		if (smtx.IsSymmetric())
 		{
-			if (fnode_col >= 1000000000 && fnode_row < 1000000000) {
+			if (fnode_row >= 1000000000 && fnode_col < 1000000000) {
 				int temp = staccato_row;
 				staccato_row = staccato_col;
 				staccato_col = temp;
@@ -212,8 +217,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 		// Check for Dirichlet Pivot: Has to be taken care, if required.
 		if (staccato_row == staccato_col) {
 			if (val >= 1e36) {
-				std::cout << "Error: DBC pivot found!" << std::endl;
-				exit(EXIT_FAILURE);
+				_dbcpivot.push_back(staccato_row);
 			}
 		}
 		// Check for lower triangular entries for symmetric matrix (True for correct algorithm).
@@ -226,10 +230,29 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 	// FSI Part: Adding of Coupling entries
 	if (_readMode == 2) {
 		for (std::map<int, std::map<int, double>>::iterator it = myCouplingMatFSI.begin(); it != myCouplingMatFSI.end(); ++it) {
-			mySystemMatrixMapCSR[it->first] = it->second;
+			for (std::map<int, double>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2)
+				mySystemMatrixMapCSR[it->first][it2->first] = it2->second;
 		}
 	}
 
+	if (_dbcpivot.size()!=0)
+	{
+		int pivot = _key == "GenericSystem_stiffness" ? 1 : 0;
+			
+		std::cout << " > Performing DBC Correction..." << std::endl;
+		std::cout << "  > There are " << _dbcpivot.size() << " dirichlet pivots." << std::endl;
+		// Delete Rows
+		for (int i = 0; i < _dbcpivot.size(); i++)
+		{
+			for (int j = 0; j < _numrows; j++)
+				mySystemMatrixMapCSR[j][_dbcpivot[i] + 1] = 0;						// Deletes all non zero entries in column
+
+			mySystemMatrixMapCSR[_dbcpivot[i]].clear();							// Deletes all non zero entries in row
+			mySystemMatrixMapCSR[_dbcpivot[i]][_dbcpivot[i] + 1] = pivot;	// Add the pivot
+		}
+		std::cout << " > Performing DBC Correction... Finished." << std::endl;
+	}
+	
 	// Conversion of Entry map to CSR
 	for (size_t iTotalDof = 0; iTotalDof < _numrows; iTotalDof++)
 	{
@@ -286,7 +309,7 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 	if (_printToScreen) {
 		int count = 0;
 		int lastRow = 0;
-		for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
+		/*for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 			iter.Entry(row, col, val);
 			if (row != lastRow)
 				printf("\n");
@@ -297,7 +320,7 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 
 			lastRow = row;
 		}
-		printf("\n");
+		printf("\n");*/
 
 		// Map column DOFS to user nodes and dofs
 		if (smtx.TypeColumns() != uma_Enum::DOFS)
@@ -306,9 +329,9 @@ void SimuliaUMA::PrintMatrix(const uma_System &system, const char *matrixName, b
 		uma_ArrayInt     nodes; smtx.MapColumns(nodes, uma_Enum::NODES); // test array
 		std::vector<int> ldofs; smtx.MapColumns(ldofs, uma_Enum::DOFS);  // test vector
 		for (int col = 0; col < nodes.Size(); col++) {
-			if (col % 10 == 0)
-				printf("\n");
-			printf(" %3i:%3i-%1i", col + 1, nodes[col], ldofs[col]);
+			//if (col % 10 == 0)
+			//	printf("\n");
+			printf(" %3i:%3i-%1i\n", col, nodes[col], ldofs[col]);
 		}
 		printf("\n");
 	}

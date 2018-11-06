@@ -80,6 +80,15 @@ public:
     ***********/
 	void addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values, unsigned int _numColumns, unsigned int _numRows);
 	/***********************************************************************************************
+    * \brief Add input output map for dense ROM matrices 
+    * \author Stefan Sicklinger
+    * \param[in] _inputNodeLabel
+    * \param[in] _inputDoFLabel
+    * \param[in] _outputNodeLabel
+    * \param[in] _outputDoFLabel
+    ***********/
+	void addInputOutputMapROM(const std::vector<unsigned int>& _inputNodeLabel, const std::vector<unsigned int>& _inputDoFLabel, const std::vector<unsigned int>& _outputNodeLabel, const std::vector<unsigned int>& _outputDoFLabel);
+	/***********************************************************************************************
      * \brief Close binary container
      * \author Stefan Sicklinger
      ***********/

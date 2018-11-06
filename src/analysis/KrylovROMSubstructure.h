@@ -305,13 +305,13 @@ private:
 	// StaccatoAbaqusInputOutputInfoMap
 	/// Sets with same index info
 	/// List of node numbers for input
-	std::vector<int> myAbaqusInputNodeList;
+	std::vector<unsigned int> myAbaqusInputNodeList;
 	/// List of corresponding dof numbers for input
-	std::vector<int> myAbaqusInputDofList;
+	std::vector<unsigned int> myAbaqusInputDoFList;
 	/// List of node numbers for output
-	std::vector<int> myAbaqusOutputNodeList;
+	std::vector<unsigned int> myAbaqusOutputNodeList;
 	/// List of corresponding dof numbers for output
-	std::vector<int> myAbaqusOutputDofList;
+	std::vector<unsigned int> myAbaqusOutputDoFList;
 
 	int numDOF_u;	// Displacement nodes
 	int numDOF_p;	// Pressure nodes

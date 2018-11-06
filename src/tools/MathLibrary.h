@@ -282,7 +282,13 @@ namespace MathLibrary {
 	* \param[in] _mat Sparse matrix for displaying
 	* \author Harikrishnan Sreekumar
 	***********/
-	void print_csr_sparse_z(sparse_matrix_t* _mat);
+	void printToScreen_csr_sparse_z(sparse_matrix_t* _mat);
+	/***********************************************************************************************
+	* \brief Exports the CSR sparse data type to a default file in CSR format
+	* \param[in] _mat Sparse matrix for exporting
+	* \author Harikrishnan Sreekumar
+	***********/
+	void printToFile_csr_sparse_z(sparse_matrix_t* _mat);
 	/***********************************************************************************************
 	* \brief Step 1 of QR: Computes the pivoted QR factorization of a complex mxn matrix and returns the R matrix and elmentory reflectors
 	* \param[in] _m Specifies the number of rows of the matrix A

@@ -50,12 +50,6 @@ using namespace staccato;
     test set: 10914300
 */
 
-/*
-TODO:
-    2. Batched assembly
-    3. Batched construction of B and C
-*/
-
 int main (int argc, char *argv[]){
 
     timerTotal.start();
@@ -95,8 +89,11 @@ int main (int argc, char *argv[]){
     /*--------
     PARAMETERS
     --------*/
-    const double alpha = 4*PI*PI;
+    double alpha = 4*PI*PI;
     cuDoubleComplex rhs_val, one, zero;
+    void *onePtr, *zeroPtr;
+    onePtr = &one;
+    zeroPtr = &zero;
     rhs_val.x = 1.0;
     rhs_val.y = 0.0;
     one.x     = 1.0;
@@ -119,9 +116,17 @@ int main (int argc, char *argv[]){
     // OpenMP
     int tid;
     omp_set_num_threads(num_threads);
+    omp_set_dynamic(0);
+    omp_set_nested(1);
+    omp_set_num_threads(num_threads);
     // cuBLAS
     cublasHandle_t cublasHandle[MAX_NUM_THREADS];
     for (size_t i = 0; i < num_threads; ++i) cublasCreate(cublasHandle + i);
+    // Tensor Core Option
+    cublasMath_t cublasMathMode = CUBLAS_TENSOR_OP_MATH;
+    cublasSetMathMode(cublasHandle[0], cublasMathMode);
+    cudaDataType_t cudaArrayDataType = CUDA_C_64F;
+    cublasGemmAlgo_t cudaAlgoType = CUBLAS_GEMM_DEFAULT_TENSOR_OP;
 
     /*-----------------------
     CHECK MEMORY REQUIREMENTS
@@ -187,12 +192,10 @@ int main (int argc, char *argv[]){
     cuDoubleComplex *d_ptr_B_batch_base = thrust::raw_pointer_cast(d_B_batch.data());
     cuDoubleComplex *d_ptr_C_batch_base = thrust::raw_pointer_cast(d_C_batch.data());
     cuDoubleComplex *d_ptr_rhs_base     = thrust::raw_pointer_cast(d_rhs.data());
-    // Create DEVICE vectors of pointers for each sub-components from combined matrices on DEVICE
-    thrust::device_vector<cuDoubleComplex*> d_ptr_K(subComponents), d_ptr_M(subComponents), d_ptr_D(subComponents);
-    // Create HOST vectors of pointers for each sub-components from combined matrices on DEVICE
-    thrust::host_vector<cuDoubleComplex*> h_ptr_B(subComponents), h_ptr_C(subComponents);
+    // Create device vectors of pointers for each sub-components from combined matrices on device
+    thrust::device_vector<cuDoubleComplex*> d_ptr_K(subComponents), d_ptr_M(subComponents), d_ptr_D(subComponents), d_ptr_B(subComponents), d_ptr_C(subComponents);
     // Get information from device data structures
-    data::getInfoDeviceDataStructure(d_ptr_K, d_ptr_M, d_ptr_D, h_ptr_B, h_ptr_C,
+    data::getInfoDeviceDataStructure(d_ptr_K, d_ptr_M, d_ptr_D, d_ptr_B, d_ptr_C,
                                      d_ptr_K_base, d_ptr_M_base, d_ptr_D_base, d_ptr_B_base, d_ptr_C_base, nnz_sub, nnz_sub_B, subComponents);
 
     timerDataDevice.stop();
@@ -234,6 +237,7 @@ int main (int argc, char *argv[]){
         tid = omp_get_thread_num();
         // Allocate vector of array pointers to A in each thread
         thrust::device_vector<cuDoubleComplex*> d_ptr_A_batch(batchSize), d_ptr_rhs(batchSize), d_ptr_B_batch(batchSize), d_ptr_C_batch(batchSize), d_ptr_H(batchSize);
+        thrust::device_vector<void *> d_ptr_B_batch_GEMM(batchSize), d_ptr_C_batch_GEMM(batchSize), d_ptr_H_GEMM(batchSize);
         thrust::host_vector<cuDoubleComplex*, pinnedAllocPtr> h_ptr_A_batch(batchSize), h_ptr_rhs(batchSize), h_ptr_B_batch(batchSize), h_ptr_C_batch(batchSize), h_ptr_H(batchSize);
         // Initialise shifts
         int shift_global_A, shift_batch_A, shift_global_rhs, shift_global_H, shift_global_B, shift_batch_B;
@@ -241,12 +245,14 @@ int main (int argc, char *argv[]){
         shift_global_B = tid*freq_max*nnz_max_B;
         // Set cuBLAS stream
         cublasSetStream(cublasHandle[tid], streams[tid]);
+        // Set tensor core math mode
+        cublasSetMathMode(cublasHandle[tid], cublasMathMode);
     // Loop over each matrix size
     #pragma omp for
         for (size_t i = 0; i < subComponents; ++i){
-            /*---------------------------------------------------------------
-            Assemble Global Matrix & Update pointers to each matrix A and RHS
-            ---------------------------------------------------------------*/
+            /*--------------------------------------
+            Update pointers to each matrix A and RHS
+            --------------------------------------*/
             // Initialise Shifts
             shift_global_rhs = 0;
             shift_global_H   = 0;
@@ -255,35 +261,35 @@ int main (int argc, char *argv[]){
             // Loop over batch (assume batchSize = freq_max)
             for (size_t j = 0; j < batchSize; ++j){
                 // Update pointers for batched operations
-                h_ptr_A_batch[j]   = d_ptr_A_batch_base + shift_batch_A + shift_global_A;
-                h_ptr_rhs[j]       = d_ptr_rhs_base + shift_local_rhs[i] + shift_global_rhs;
-                h_ptr_B_batch[j]   = d_ptr_B_batch_base + shift_batch_B + shift_global_B;
-                h_ptr_C_batch[j]   = d_ptr_C_batch_base + shift_batch_B + shift_global_B;
-                h_ptr_H[j]   = d_ptr_H_base + shift_local_H[i] + shift_global_H;
-                // Assemble matrix
-                PUSH_RANGE("Matrix Assembly", 4)
-                assembly::assembleGlobalMatrixBatched(streams[tid], h_ptr_A_batch[j], d_ptr_K[i], d_ptr_M[i], nnz_sub[i], freq_square[j]);
-                POP_RANGE // Matrix Assembly
-                // Construct matrices for Interface Jacobian -> Let this execute on default stream for asynchronous operation
-                PUSH_RANGE("Input matrix construction", 8)
-                thrust::copy_n(thrust::device, h_ptr_B[i], nnz_sub_B[i], h_ptr_B_batch[j]);
-                thrust::copy_n(thrust::device, h_ptr_C[i], nnz_sub_B[i], h_ptr_C_batch[j]);
-                POP_RANGE
+                h_ptr_A_batch[j] = d_ptr_A_batch_base + shift_batch_A      + shift_global_A;
+                h_ptr_rhs[j]     = d_ptr_rhs_base     + shift_local_rhs[i] + shift_global_rhs;
+                h_ptr_B_batch[j] = d_ptr_B_batch_base + shift_batch_B      + shift_global_B;
+                h_ptr_C_batch[j] = d_ptr_C_batch_base + shift_batch_B      + shift_global_B;
+                h_ptr_H[j]       = d_ptr_H_base       + shift_local_H[i]   + shift_global_H;
                 // Update shifts
                 shift_batch_A    += nnz_sub[i];
                 shift_global_rhs += row;
                 shift_batch_B    += nnz_sub_B[i];
                 shift_global_H   += nnz_H;
             }
+
+            /*------------------------
+            Solve Reduced Order System
+            ------------------------*/
             PUSH_RANGE("Linear System", 5)
-            /*--------------
-            LU Decomposition
-            --------------*/
+
+            // Assembly Matrices in Batch
+            PUSH_RANGE("Matrix Assembly", 4)
+            d_ptr_A_batch = h_ptr_A_batch;
+            assembly::assembleGlobalMatrixBatched(streams[tid], thrust::raw_pointer_cast(d_ptr_A_batch.data()), d_ptr_K[i], d_ptr_M[i],
+                                                  nnz_sub[i], thrust::raw_pointer_cast(freq_square.data()), (int)freq_max);
+            POP_RANGE // Matrix Assembly
+
+            // LU Decomposition
             d_ptr_A_batch = h_ptr_A_batch;
             cublas_check(cublasZgetrfBatched(cublasHandle[tid], row_sub[i], thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL, d_ptr_solverInfo, batchSize));
-            /*-----------
-            Solve x = A\b
-            -----------*/
+
+            // Solve x = A\b
             d_ptr_rhs = h_ptr_rhs;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], 1, thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_rhs.data()), row_sub[i], &solverInfo_solve, batchSize));
@@ -293,26 +299,40 @@ int main (int argc, char *argv[]){
             Interface Jacobian
             ----------------*/
             PUSH_RANGE("Interface Jacobian", 5)
+
+            //Construct Matrices for Interface Jacobian in Batch
+            d_ptr_B_batch = h_ptr_B_batch;
+            d_ptr_C_batch = h_ptr_C_batch;
+            PUSH_RANGE("Input matrix construction", 8)
+            assembly::constructMatricesBatched(streams[tid], d_ptr_B[i], d_ptr_C[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), thrust::raw_pointer_cast(d_ptr_C_batch.data()),
+                                               nnz_sub_B[i], (int)freq_max);
+            POP_RANGE
+
             // Solve A\B
             PUSH_RANGE("Schur Complement", 6)
-            d_ptr_B_batch = h_ptr_B_batch;
             cublas_check(cublasZgetrsBatched(cublasHandle[tid], CUBLAS_OP_N, row_sub[i], num_input_sub[i], thrust::raw_pointer_cast(d_ptr_A_batch.data()), row_sub[i], NULL,
                                              thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &solverInfo_solve, batchSize));
             POP_RANGE // Schur Complement
+
             // Compute H (GEMM)
             PUSH_RANGE("GEMM", 7)
-            d_ptr_C_batch = h_ptr_C_batch;
-            d_ptr_H = h_ptr_H;
-            cublas_check(cublasZgemmBatched(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i], &one, thrust::raw_pointer_cast(d_ptr_C_batch.data()),
-                                            num_input_sub[i], thrust::raw_pointer_cast(d_ptr_B_batch.data()), row_sub[i], &zero, thrust::raw_pointer_cast(d_ptr_H.data()), num_input_sub[i],
-                                            batchSize));
+            d_ptr_B_batch_GEMM = h_ptr_B_batch;
+            d_ptr_C_batch_GEMM = h_ptr_C_batch;
+            d_ptr_H_GEMM       = h_ptr_H;
+            cublas_check(cublasGemmBatchedEx(cublasHandle[tid], CUBLAS_OP_N, CUBLAS_OP_N, num_input_sub[i], num_input_sub[i], row_sub[i],
+                                             onePtr, thrust::raw_pointer_cast(d_ptr_C_batch_GEMM.data()), cudaArrayDataType, num_input_sub[i],
+                                             thrust::raw_pointer_cast(d_ptr_B_batch_GEMM.data()), cudaArrayDataType, row_sub[i],
+                                             zeroPtr, thrust::raw_pointer_cast(d_ptr_H_GEMM.data()), cudaArrayDataType, num_input_sub[i], batchSize,
+                                             cudaArrayDataType, cudaAlgoType));
             POP_RANGE // GEMM
 
             POP_RANGE // Interface Jacobian
+
             /*-----------------
             Synchronize Streams
             -----------------*/
             cudaStreamSynchronize(streams[tid]);
+
         } // matrix loop
     } // omp parallel
 

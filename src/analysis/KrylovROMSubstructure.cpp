@@ -54,16 +54,15 @@
 KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	std::cout << "=============== STACCATO ROM Analysis =============\n";
 	/* -- Properties of KMOR ---- */
-	isSymMIMO = false;
 	enablePropDamping = false;
 	/* -------------------------- */
 	
 	/* -- Exporting ------------- */
-	writeFOM = false;
+	writeFOM = true;
 	writeROM = true;
 	exportRHS = true;
 	exportSolution = true;
-	writeTransferFunctions = false;
+	writeTransferFunctions = true;
 	writeProjectionmatrices = false;
 	/* -------------------------- */
 
@@ -145,10 +144,10 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 							// Iterate inside the list of node list
 							for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
 							{
-								auto searchInStaccatoLocalDofMapSIM = nodeToDofCommonMap.find(search->second[jNodeSet]);
-								auto searchInStaccatoGlobalDofMapSIM = nodeToGlobalCommonMap.find(search->second[jNodeSet]);
+								auto searchInStaccatoLocalDofMapSIM = myNodeToDofStaccatoMap.find(search->second[jNodeSet]);
+								auto searchInStaccatoGlobalDofMapSIM = myNodeToGlobalStaccatoMap.find(search->second[jNodeSet]);
 
-								if (searchInStaccatoLocalDofMapSIM != nodeToDofCommonMap.end() && searchInStaccatoGlobalDofMapSIM != nodeToGlobalCommonMap.end()) {
+								if (searchInStaccatoLocalDofMapSIM != myNodeToDofStaccatoMap.end() && searchInStaccatoGlobalDofMapSIM != myNodeToGlobalStaccatoMap.end()) {
 
 									myInputDOFS.insert(myInputDOFS.end(), searchInStaccatoGlobalDofMapSIM->second.begin(), searchInStaccatoGlobalDofMapSIM->second.end());
 									// for every dof, add the same node label
@@ -168,6 +167,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 				}
 			}
+			AuxiliaryFunctions::writeIntegerVectorDatFormat("test.dat", myInputDOFS);
 			/// Outputs
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "NODES") {
 				std::cout << " !! Output DOFs found! Unsymmetric MIMO not yet supported." << std::endl;
@@ -180,7 +180,8 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				myAbaqusOutputDoFList  = myAbaqusInputDoFList;
 
 				isSymMIMO = true;
-			}
+			} else
+				isSymMIMO = false;
 
 			// Size prediction
 			ROM_DOF = myExpansionPoints.size()*myKrylovOrder*myInputDOFS.size();	// Assuming MIMO
@@ -737,19 +738,16 @@ void KrylovROMSubstructure::generateROM() {
 	else
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myMComplexReduced[0], true, false, OneComplex, false, false, false);
 
-	if (enablePropDamping)
-	{
-		myDComplexReduced.resize(ROM_DOF*ROM_DOF);
-		// obj.D_R = obj.Z'*obj.D*obj.V;
-		y.clear();
-		y.resize(FOM_DOF*ROM_DOF, ZeroComplex);
-		MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(ROM_DOF, FOM_DOF, FOM_DOF, &mySparseD, &myV[0], &y[0], false, false, OneComplex, true, false);
-		// obj.D_R = obj.Z'*y
-		if (isSymMIMO)
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
-		else
-			MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
-	}
+	myDComplexReduced.resize(ROM_DOF*ROM_DOF);
+	// obj.D_R = obj.Z'*obj.D*obj.V;
+	y.clear();
+	y.resize(FOM_DOF*ROM_DOF, ZeroComplex);
+	MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(ROM_DOF, FOM_DOF, FOM_DOF, &mySparseD, &myV[0], &y[0], false, false, OneComplex, true, false);
+	// obj.D_R = obj.Z'*y
+	if (isSymMIMO)
+		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myV[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
+	else
+		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, ROM_DOF, FOM_DOF, &myZ[0], &y[0], &myDComplexReduced[0], true, false, OneComplex, false, false, false);
 
 	// obj.B_R = obj.Z'*obj.B;
 	if (isSymMIMO)
@@ -836,7 +834,6 @@ void KrylovROMSubstructure::buildAbqODB() {
 }
 
 void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
-
 	std::cout << "|| Physical memory consumption before UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
@@ -864,12 +861,13 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	bool isPartCoupledFS = false;
 
 	//- Preparation Stage
+	std::cout << ">> Sensing SIM File for building [Node][Dof] Map..." << std::endl;
 	for (int iFileReader = 0; iFileReader < iterParts->PART()[_iPart].FILEIMPORT().size(); iFileReader++)
 	{
 		//- Initialize reader
 		std::ifstream ifile(filePath + std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()));
 		if (!ifile) {
-			std::cout << ">> Error: File not found: " << std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()) <<". Remove the import or check file name!\n";
+			std::cout << ">> Error: File not found: " << std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()) << ". Remove the import or check file name!\n";
 			exit(EXIT_FAILURE);
 		}
 		myUMAReader = new SimuliaUMA(filePath + std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].FILE()->data()), *myHMesh, _iPart);
@@ -881,7 +879,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 				std::string uma_readType = std::string(iterParts->PART()[_iPart].FILEIMPORT()[iFileReader].IMPORT().begin()->UMA()[iUMAReader].Type()->c_str());
 				for (int iRead = 0; iRead < myUMAKeys[uma_readType].size(); iRead++) {
 					char* uma_key = const_cast<char*>(myUMAKeys[uma_readType][iRead].c_str());
-					int status = myUMAReader->collectDatastructureSIM(uma_key, nodeToDofCommonMap);
+					int status = myUMAReader->collectDatastructureSIM(uma_key, myNodeToDofStaccatoMap);
 					if (!myUMAReader->isUmaSymmetric(uma_key))
 						isPartSymmetric = false;
 
@@ -897,8 +895,8 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 		delete myUMAReader;
 	}
 
-	//- Check all prerequisites
-	generateCollectiveGlobalMap(nodeToDofCommonMap, nodeToGlobalCommonMap);
+	//- Create the map
+	generateCollectiveGlobalMap();
 	buildXMLforSIM(_iPart);
 	//- set reading properties
 	// Is fluid-structure interaction present?
@@ -912,15 +910,16 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 
 	systemCSR = new csrStruct[readOrder.size()];
 	std::map<int, std::map<int, double>> K_ASI;
+	std::vector<int> dirichletIndices;
 	for (int iLoader = 0; iLoader < readOrder.size(); iLoader++)
 	{
 		auto search = myUMAFileMapper.find(readOrder[iLoader]);
-		if (search!=myUMAFileMapper.end())
+		if (search != myUMAFileMapper.end())
 		{
 			myUMAReader = new SimuliaUMA(search->second, *myHMesh, _iPart);
 			int modeFSI = 0;		// 0: For normal read, 1: Extract, 2: Add
 			if (isPartSymmetric && !isPartCoupledFS) {	// Single Domain-Symmetric
-				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, nodeToDofCommonMap, nodeToGlobalCommonMap, modeFSI, false, writeFOM, totaldof);
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, dirichletIndices, modeFSI, false, writeFOM, totaldof);
 			}
 			else // Execute a more specific storyline
 			{
@@ -928,16 +927,16 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 				bool specialUnSymRead = isAlreadySym && !isPartSymmetric ? true : false;
 
 				if (isPartCoupledFS) {
-					if (search->first == "GenericSystem_stiffness")			
+					if (search->first == "GenericSystem_stiffness")
 						modeFSI = 1;	// Perform Extract. Get the extract after loading
 					else if (search->first == "GenericSystem_mass") {
 						modeFSI = 2;	// Perform Add. Set the extract before loading
 						myUMAReader->setCouplingMatFSI(K_ASI);
 					}
 				}
-				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, nodeToDofCommonMap, nodeToGlobalCommonMap, modeFSI, specialUnSymRead, writeFOM, totaldof);
+				myUMAReader->loadSIMforUMA(search->first, systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, systemCSR[iLoader].csr_values, myNodeToDofStaccatoMap, myNodeToGlobalStaccatoMap, dirichletIndices, modeFSI, specialUnSymRead, writeFOM, totaldof);
 
-				if (search->first == "GenericSystem_stiffness")		
+				if (search->first == "GenericSystem_stiffness")
 					K_ASI = myUMAReader->getCouplingMatFSI();
 			}
 			delete myUMAReader;
@@ -992,7 +991,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	}
 
 	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
-	
+
 	FOM_DOF = totaldof;
 	isSymmetricSystem = isPartSymmetric;
 }
@@ -1146,7 +1145,7 @@ void KrylovROMSubstructure::performAnalysis() {
 											for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
 											{
 												nodeDofSet.clear();
-												auto searchInStaccatoMap = nodeToGlobalCommonMap.find(search->second[jNodeSet]);
+												auto searchInStaccatoMap = myNodeToGlobalStaccatoMap.find(search->second[jNodeSet]);
 												nodeDofSet.insert(nodeDofSet.end(), searchInStaccatoMap->second.begin(), searchInStaccatoMap->second.end());
 
 												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++)
@@ -1205,7 +1204,7 @@ void KrylovROMSubstructure::performSolveFOM(std::string _analysisName, std::vect
 	anaysisTimer01.start();
 #ifdef USE_INTEL_MKL		
 	for (int iFreqCounter = 0; iFreqCounter < _freq->size(); iFreqCounter++) {
-
+		std::cout << "Direct Solving for freq " << _freq->at(iFreqCounter) << " Hz..." << std::endl;
 		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ..." << std::endl;
 		double omega = 2 * M_PI*_freq->at(iFreqCounter);
 
@@ -1217,12 +1216,12 @@ void KrylovROMSubstructure::performSolveFOM(std::string _analysisName, std::vect
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_Dynamic, false, true, negativeOmegaSquare);
 
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_Dynamic, &K_Dynamic, false, true, complexOmega);
-
+		//MathLibrary::print_csr_sparse_z(&K_Dynamic);
 		// result = K_tilde\f;               % Initial Search Direction
 		std::vector<STACCATOComplexDouble> resultFreq;
 		resultFreq.resize(FOM_DOF, { 0,0 });
-		factorizeSparseMatrixComplex(&K_Dynamic, isSymmetricSystem, false, _numLoadCase);
-		solveDirectSparseComplex(&K_Dynamic, isSymmetricSystem, false, _numLoadCase, &resultFreq[0], &_inputLoad[0]);
+		factorizeSparseMatrixComplex(&K_Dynamic, isSymmetricSystem, true, _numLoadCase);
+		solveDirectSparseComplex(&K_Dynamic, isSymmetricSystem, true, _numLoadCase, &resultFreq[0], &_inputLoad[0]);
 
 		results.insert(results.end(), resultFreq.begin(), resultFreq.end());
 		cleanPardiso();
@@ -1260,17 +1259,14 @@ void KrylovROMSubstructure::backTransformKMOR(std::string _analysisName, std::ve
 		MathLibrary::computeDenseVectorAdditionComplex(&myKComplexReduced[0], &StiffnessAssembled[0], &OneComplex, ROM_DOF*ROM_DOF);
 		// K_krylov_dyn += -omega^2*obj.M_R 
 		MathLibrary::computeDenseVectorAdditionComplex(&myMComplexReduced[0], &StiffnessAssembled[0], &NegOmegaSquare, ROM_DOF*ROM_DOF);
-		if (enablePropDamping)
-		{
-			// K_krylov_dyn += 1i*2*pi*freqs_fine(i)*obj.D_R
-			STACCATOComplexDouble complexOmega = { 0,omega };
-			MathLibrary::computeDenseVectorAdditionComplex(&myDComplexReduced[0], &StiffnessAssembled[0], &complexOmega, ROM_DOF*ROM_DOF);
-		}
+
+		// K_krylov_dyn += 1i*2*pi*freqs_fine(i)*obj.D_R
+		STACCATOComplexDouble complexOmega = { 0,omega };
+		MathLibrary::computeDenseVectorAdditionComplex(&myDComplexReduced[0], &StiffnessAssembled[0], &complexOmega, ROM_DOF*ROM_DOF);
 
 		// obj.B_R*obj.F
 		std::vector<STACCATOComplexDouble> inputLoad_krylov(ROM_DOF*_numLoadCase, { 0,0 });
 		MathLibrary::computeDenseMatrixMatrixMultiplicationComplex(ROM_DOF, _numLoadCase, myInputDOFS.size(), &myBReduced[0], _inputLoad, &inputLoad_krylov[0], false, false, OneComplex, false, false, false);
-
 
 		// z_krylov_freq = K_krylov_dyn\(obj.B_R*obj.F);
 		// Factorize StiffnessAssembled
@@ -1316,9 +1312,8 @@ void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
 		std::vector<int> idList;
 		// Keyword: ALL
 		if (std::string(iterParts->PART()[_iPart].SETS().begin()->NODESET()[k].LIST()->c_str()) == "ALL") {
-			int allnode = nodeToGlobalCommonMap.size();
-			for (size_t i = 0; i < allnode; i++)
-				idList.push_back(i);
+			for (std::map<int, std::vector<int>>::iterator it = myNodeToGlobalStaccatoMap.begin(); it != myNodeToGlobalStaccatoMap.end(); ++it)
+				idList.push_back(it->first);
 		}
 		else {	// ID List
 				// filter
@@ -1334,7 +1329,7 @@ void KrylovROMSubstructure::buildXMLforSIM(int _iPart) {
 	}
 }
 
-void KrylovROMSubstructure::generateCollectiveGlobalMap(std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap) {
+void KrylovROMSubstructure::generateCollectiveGlobalMap() {
 	numDOF_u = 0;
 	numDOF_p = 0;
 	numDOF_ui = 0;
@@ -1347,37 +1342,58 @@ void KrylovROMSubstructure::generateCollectiveGlobalMap(std::map<int, std::vecto
 	std::vector<int> dispDOF = { 1,2,3,4,5,6 };
 	std::vector<int> pressureDOF = { 8 };
 	int globalIndex = 0;
-	for (std::map<int, std::vector<int>>::iterator it = _dofMap.begin(); it != _dofMap.end(); ++it) {
-		bool isUDOF = false;
-		bool isPDOF = false;
-		totaldof += it->second.size();
-		for (int j = 0; j < it->second.size(); j++)
-		{
-			_globalMap[it->first].push_back(globalIndex);
-			globalIndex++;
+	// Indexing for Normal DOFs: performed first 
+	for (std::map<int, std::vector<int>>::iterator it = myNodeToDofStaccatoMap.begin(); it != myNodeToDofStaccatoMap.end(); ++it) {
+		if (it->first < 1000000000) {
+			bool isUDOF = false;
+			bool isPDOF = false;
+			totaldof += it->second.size();
+			for (int j = 0; j < it->second.size(); j++)
+			{
+				myNodeToGlobalStaccatoMap[it->first].push_back(globalIndex);
+				globalIndex++;
 
-			if (std::find(pressureDOF.begin(), pressureDOF.end(), it->second[j]) != pressureDOF.end())
-				isPDOF = true;
-			else if (std::find(dispDOF.begin(), dispDOF.end(), it->second[j]) != dispDOF.end())
-				isUDOF = true;
-		}
+				if (std::find(pressureDOF.begin(), pressureDOF.end(), it->second[j]) != pressureDOF.end())
+					isPDOF = true;
+				else if (std::find(dispDOF.begin(), dispDOF.end(), it->second[j]) != dispDOF.end())
+					isUDOF = true;
+			}
 
-		if (isUDOF) {
-			if (it->first < 1000000000)
+			if (isUDOF) 
 				numDOF_u++;
-			else
-				numDOF_ui++;
-		}
-		else if (isPDOF) {
-			if (it->first < 1000000000)
+			else if (isPDOF) 
 				numDOF_p++;
 			else
+				numUndetected++;
+		}
+	}
+	// Indexing for Internal DOFs: in staccato, the internal dofs are pushed to bottom and indexed in descending order of node label
+	for (auto it = myNodeToDofStaccatoMap.rbegin(); it != myNodeToDofStaccatoMap.rend(); ++it) {
+		if (it->first >= 1000000000) {
+			bool isUDOF = false;
+			bool isPDOF = false;
+			totaldof += it->second.size();
+			for (int j = 0; j < it->second.size(); j++)
+			{
+				myNodeToGlobalStaccatoMap[it->first].push_back(globalIndex);
+				globalIndex++;
+
+				if (std::find(pressureDOF.begin(), pressureDOF.end(), it->second[j]) != pressureDOF.end())
+					isPDOF = true;
+				else if (std::find(dispDOF.begin(), dispDOF.end(), it->second[j]) != dispDOF.end())
+					isUDOF = true;
+			}
+
+			if (isUDOF)
+				numDOF_ui++;
+			else if (isPDOF)
 				numDOF_pi++;
-		} else
-			numUndetected++;
+			else
+				numUndetected++;
+		}
 	}
 
-	printMapToFile();
+	printStaccatoMapToFile();
 
 	std::cout << "== UMA Part Properties ======================" << std::endl;
 	if (numDOF_p > 0)
@@ -1391,7 +1407,7 @@ void KrylovROMSubstructure::generateCollectiveGlobalMap(std::map<int, std::vecto
 	std::cout << "#Internal Displ_Nodes with dof [1,2,3,4,5,6]: " << numDOF_ui << std::endl;
 	}
 	std::cout << "--" << std::endl;
-	std::cout << "Detected " << _dofMap.size() - numUndetected << " of " << _dofMap.size() << " nodes" << std::endl;
+	std::cout << "Detected " << myNodeToDofStaccatoMap.size() - numUndetected << " of " << myNodeToDofStaccatoMap.size() << " nodes" << std::endl;
 	if (numUndetected != 0) {
 		std::cout << "Check: FAILED." << std::endl;
 		exit(EXIT_FAILURE);
@@ -1401,7 +1417,7 @@ void KrylovROMSubstructure::generateCollectiveGlobalMap(std::map<int, std::vecto
 	std::cout << "=============================================" << std::endl;
 }
 
-void KrylovROMSubstructure::printMapToFile() {
+void KrylovROMSubstructure::printStaccatoMapToFile() {
 	std::string _fileName = "Staccato_KMOR_MAP_UMA.dat";
 	std::cout << ">> Writing " << _fileName << "..." << std::endl;
 	std::ofstream myfile;
@@ -1409,8 +1425,8 @@ void KrylovROMSubstructure::printMapToFile() {
 	myfile << std::scientific;
 	myfile << "% UMA MAP | Generated with STACCCATO" << std::endl;
 	myfile << "% NODE LABEL  |  LOCAL DOF  |  GLOBAL DOF" << std::endl;
-	std::map<int, std::vector<int>>::iterator it2 = nodeToDofCommonMap.begin();
-	for (std::map<int, std::vector<int>>::iterator it = nodeToGlobalCommonMap.begin(); it != nodeToGlobalCommonMap.end(); ++it, ++it2) {
+	std::map<int, std::vector<int>>::iterator it2 = myNodeToDofStaccatoMap.begin();
+	for (std::map<int, std::vector<int>>::iterator it = myNodeToGlobalStaccatoMap.begin(); it != myNodeToGlobalStaccatoMap.end(); ++it, ++it2) {
 		for (int j = 0; j < it->second.size(); j++)
 		{
 			myfile << it->first << " " << it2->second[j] << " " << it->second[j] << std::endl;

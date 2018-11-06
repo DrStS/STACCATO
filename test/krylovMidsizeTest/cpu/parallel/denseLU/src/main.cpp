@@ -125,9 +125,6 @@ int main(int argc, char *argv[]) {
     MKL_Complex16 one;				// Dummy scaling factor for global matrix assembly
     one.real = 1;
     one.imag = 0;
-    MKL_Complex16 zero;               // Dummy scaling factor for PARDISO
-    zero.real = 0;
-    zero.imag = 0;
     MKL_Complex16 rhs_val;
     rhs_val.real = 1.0;
     rhs_val.imag = 0.0;

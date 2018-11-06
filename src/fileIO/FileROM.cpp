@@ -139,6 +139,74 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 #endif // USE_HDF5
 }
 
+void FileROM::addInputOutputMapROM(const std::vector<unsigned int>& _inputNodeLabel, const std::vector<unsigned int>& _inputDoFLabel, const std::vector<unsigned int>& _outputNodeLabel, const std::vector<unsigned int>& _outputDoFLabel) {
+#ifdef USE_HDF5
+	try
+	{
+
+
+		struct nodeLabelDoFLabel
+		{
+			unsigned int nodeLabel;
+			unsigned int DoFLabel;
+		};
+			if (_inputNodeLabel.size() == _inputDoFLabel.size())
+			{
+			std::vector < nodeLabelDoFLabel> nodeLabelDoFLabelTmp;
+			nodeLabelDoFLabelTmp.resize(_inputNodeLabel.size());
+			for (int i = 0; i < _inputNodeLabel.size(); i++) {
+				nodeLabelDoFLabelTmp[i].nodeLabel = _inputNodeLabel[i];
+				nodeLabelDoFLabelTmp[i].DoFLabel = _inputDoFLabel[i];
+			}
+			unsigned int size = _inputNodeLabel.size();
+			hsize_t dim[] = { size };
+			H5::DataSpace space(1, dim);
+			H5::CompType mtype(sizeof(nodeLabelDoFLabel));
+			mtype.insertMember("nodeLabel", HOFFSET(nodeLabelDoFLabel, nodeLabel), H5::PredType::NATIVE_UINT);
+			mtype.insertMember("DoFLabel" , HOFFSET(nodeLabelDoFLabel, DoFLabel ), H5::PredType::NATIVE_UINT);
+			H5::DataSet* dataset;
+			dataset = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsDenseROM/inputMap", mtype, space));
+			dataset->write(nodeLabelDoFLabelTmp.data(), mtype);
+			delete dataset;
+		}
+			std::cout << "T: " << _outputNodeLabel.size() << std::endl;
+			std::cout << "TT: " << _outputDoFLabel.size() << std::endl;
+		if (_outputNodeLabel.size() == _outputDoFLabel.size())
+		{
+			std::vector < nodeLabelDoFLabel> nodeLabelDoFLabelTmp;
+			nodeLabelDoFLabelTmp.resize(_outputNodeLabel.size());
+			for (int i = 0; i < _outputNodeLabel.size(); i++) {
+				nodeLabelDoFLabelTmp[i].nodeLabel = _outputNodeLabel[i];
+				nodeLabelDoFLabelTmp[i].DoFLabel = _outputDoFLabel[i];
+			}
+			unsigned int size = _outputNodeLabel.size();
+			hsize_t dim[] = { size };
+			H5::DataSpace space(1, dim);
+			H5::CompType mtype(sizeof(nodeLabelDoFLabel));
+			mtype.insertMember("nodeLabel", HOFFSET(nodeLabelDoFLabel, nodeLabel), H5::PredType::NATIVE_UINT);
+			mtype.insertMember("DoFLabel", HOFFSET(nodeLabelDoFLabel, DoFLabel), H5::PredType::NATIVE_UINT);
+			H5::DataSet* dataset;
+			dataset = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsDenseROM/outputMap", mtype, space));
+			dataset->write(nodeLabelDoFLabelTmp.data(), mtype);
+			delete dataset;
+		}
+	}
+	catch (H5::DataSetIException error)
+	{
+		std::cout << "Error: DataSet operations" << std::endl;
+	}
+	catch (H5::DataSpaceIException error)
+	{
+		std::cout << "Error: DataSpace operations" << std::endl;
+	}
+	catch (H5::DataTypeIException error)
+	{
+		std::cout << "Error: DataType operations" << std::endl;
+	}
+#endif // USE_HDF5
+}
+
+
 
 void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values) {
 	_values.size();

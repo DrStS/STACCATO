@@ -154,7 +154,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 									for (int jInfoIter = 0; jInfoIter < searchInStaccatoLocalDofMapSIM->second.size(); jInfoIter++)
 										myAbaqusInputNodeList.push_back(searchInStaccatoLocalDofMapSIM->first);
 
-									myAbaqusInputDofList.insert(myAbaqusInputDofList.end(), searchInStaccatoLocalDofMapSIM->second.begin(), searchInStaccatoLocalDofMapSIM->second.end());
+									myAbaqusInputDoFList.insert(myAbaqusInputDoFList.end(), searchInStaccatoLocalDofMapSIM->second.begin(), searchInStaccatoLocalDofMapSIM->second.end());
 								}
 								else {
 									std::cerr << "!! Unexpected Detection error! Exiting Staccato!" << std:: endl;
@@ -177,7 +177,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				myOutputDOFS = myInputDOFS;
 
 				myAbaqusOutputNodeList = myAbaqusInputNodeList;
-				myAbaqusOutputDofList = myAbaqusOutputDofList;
+				myAbaqusOutputDoFList  = myAbaqusInputDoFList;
 
 				isSymMIMO = true;
 			} else
@@ -225,9 +225,9 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 				exportROMToFiles();
 
 			std::cout << "-- MAP KMOR Results -- " << std::endl;
-			for (size_t i = 0; i < myAbaqusInputDofList.size(); i++)
+			for (size_t i = 0; i < myAbaqusInputDoFList.size(); i++)
 			{
-				std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDofList[i] << std::endl;
+				std::cout << " N " << myAbaqusInputNodeList[i] << " :DOF " << myAbaqusInputDoFList[i] << std::endl;
 			}
 		}
 	}
@@ -1051,6 +1051,7 @@ void KrylovROMSubstructure::exportROMToFiles() {
 	myFile.addComplexDenseMatrix("K", myKComplexReduced);
 	myFile.addComplexDenseMatrix("B", myBReduced, myInputDOFS.size(), ROM_DOF);
 	myFile.addComplexDenseMatrix("C", myCReduced, ROM_DOF, myOutputDOFS.size());
+	myFile.addInputOutputMapROM(myAbaqusInputNodeList, myAbaqusInputDoFList, myAbaqusOutputNodeList, myAbaqusOutputDoFList);
 	myFile.closeContainer();
 	std::cout << " Finished." << std::endl;
 #endif //USE_HDF5

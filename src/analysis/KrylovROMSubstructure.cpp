@@ -37,6 +37,7 @@
 
 #ifdef USE_HDF5
 #include "FileROM.h"
+#include "FileFOM.h"
 #endif //USE_HDF5
 
 #include "OutputDatabase.h"
@@ -58,9 +59,9 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	/* -------------------------- */
 	
 	/* -- Exporting ------------- */
-	writeFOM = true;
+	writeFOM = false;
 	writeROM = true;
-	exportRHS = true;
+	exportRHS = false;
 	exportSolution = true;
 	writeTransferFunctions = true;
 	writeProjectionmatrices = false;
@@ -839,12 +840,7 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 
 	/* -- Prepare Reader -- */
-#if defined(_WIN32) || defined(__WIN32__) 
-	std::string filePath = "C:/software/repos/STACCATO/model/";
-#endif
-#if defined(__linux__) 
-	std::string filePath = "/opt/software/repos/STACCATO/model/";
-#endif
+	std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
 
 	std::map<std::string, std::vector<std::string>> myUMAKeys;
 	myUMAKeys["GEN_STIF"].push_back("GenericSystem_stiffness");
@@ -911,6 +907,14 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	systemCSR = new csrStruct[readOrder.size()];
 	std::map<int, std::map<int, double>> K_ASI;
 	std::vector<int> dirichletIndices;
+
+#ifdef USE_HDF5
+	std::cout << " >> Exporting FOM to HDF5...";
+	std::cout << " >> currentPart..." << currentPart;
+	myFileFOM = (FileFOM*) new FileFOM(currentPart + "_FOM.h5", filePath);
+	myFileFOM->createContainer(true);
+#endif //USE_HDF5
+
 	for (int iLoader = 0; iLoader < readOrder.size(); iLoader++)
 	{
 		auto search = myUMAFileMapper.find(readOrder[iLoader]);
@@ -972,23 +976,41 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 		if (readOrder[iLoader] == "GenericSystem_stiffness")					// Read stiffness
 		{
 			MathLibrary::createSparseCSRComplex(&mySparseK, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+#ifdef USE_HDF5	
+			myFileFOM->addRealSparseMatrix("Kre", systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, AuxiliaryFunctions::extractRealPart(systemCSR[iLoader].csr_values));
+#endif //USE_HDF5
 		}
 		else if (readOrder[iLoader] == "GenericSystem_mass")					// Read mass
 		{
 			MathLibrary::createSparseCSRComplex(&mySparseM, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+#ifdef USE_HDF5	
+			myFileFOM->addRealSparseMatrix("M", systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, AuxiliaryFunctions::extractRealPart(systemCSR[iLoader].csr_values));
+#endif //USE_HDF5
 		}
 		else if (readOrder[iLoader] == "GenericSystem_structuralDamping")	// Read SD
 		{
 			sparse_matrix_t sparseSD;
 			MathLibrary::createSparseCSRComplex(&sparseSD, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+#ifdef USE_HDF5	
+			myFileFOM->addRealSparseMatrix("Kim", systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, AuxiliaryFunctions::extractRealPart(systemCSR[iLoader].csr_values));
+#endif //USE_HDF5
 			STACCATOComplexDouble ComplexOne = { 0,1 };
 			MathLibrary::computeSparseMatrixAdditionComplex(&sparseSD, &mySparseK, &mySparseK, false, true, ComplexOne);
 		}
 		else if (readOrder[iLoader] == "GenericSystem_viscousDamping")		// Read VD
 		{
 			MathLibrary::createSparseCSRComplex(&mySparseD, systemCSR[iLoader].csr_ia.size() - 1, systemCSR[iLoader].csr_ia.size() - 1, &systemCSR[iLoader].csrPointerB[0], &systemCSR[iLoader].csrPointerE[0], &systemCSR[iLoader].csr_ja[0], &systemCSR[iLoader].csr_values[0]);
+#ifdef USE_HDF5	
+			myFileFOM->addRealSparseMatrix("D", systemCSR[iLoader].csr_ia, systemCSR[iLoader].csr_ja, AuxiliaryFunctions::extractRealPart(systemCSR[iLoader].csr_values));
+#endif //USE_HDF5
 		}
 	}
+
+#ifdef USE_HDF5
+	myFileFOM->addNodeAndDoFLabel(myAbaqusNodeLabelListFOM, myAbaqusDoFLabelListFOM);
+	myFileFOM->closeContainer();
+	std::cout << " Finished." << std::endl;
+#endif //USE_HDF5
 
 	std::cout << "|| Physical memory consumption after UMA read: " << memWatcher.getCurrentUsedPhysicalMemory() / 1000000 << " Mb" << std::endl;
 
@@ -1430,6 +1452,8 @@ void KrylovROMSubstructure::printStaccatoMapToFile() {
 		for (int j = 0; j < it->second.size(); j++)
 		{
 			myfile << it->first << " " << it2->second[j] << " " << it->second[j] << std::endl;
+			myAbaqusNodeLabelListFOM.push_back(it->first);
+			myAbaqusDoFLabelListFOM.push_back(it2->second[j]);
 		}
 	}
 	myfile << std::endl;

@@ -17,60 +17,45 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "FileROM.h"
+#include "FileFOM.h"
 #include "AuxiliaryParameters.h"
+#include "ReadWriteFile.h"
 //HDF5
 #ifdef USE_HDF5
 #include "H5Cpp.h"
 #include "Timer.h"
 #endif
 
-FileROM::FileROM(std::string _fileName, std::string _filePath) : myFileName(_fileName), myFilePath(_filePath) {
+FileFOM::FileFOM(std::string _fileName, std::string _filePath) : myFileName(_fileName), myFilePath(_filePath), ReadWriteFile() {
 #ifdef USE_HDF5
-	H5::Exception::dontPrint();
-	myHDF5FileHandle = NULL;
-
-/*
-
-		STACCATOComplexDouble *kdynRead = new STACCATOComplexDouble[LENGTH];
-
-		dataset->read(kdynRead, mtype);
-
-		std::cout << std::endl << "Field real : " << std::endl;
-		for (i = 0; i < LENGTH; i++)
-			std::cout << kdyn[i].real - kdynRead[i].real << " ";
-		std::cout << std::endl;
-		std::cout << std::endl << "Field imag : " << std::endl;
-		for (i = 0; i < LENGTH; i++)
-			std::cout << kdyn[i].imag - kdynRead[i].imag << " ";
-		std::cout << std::endl;
-
-		delete dataset;
-		delete file;
-*/
-		myHDF5FileHandle = NULL;
+	//H5::Exception::dontPrint();
+	myHDF5FileHandle = nullptr;
+	myHDF5FileHandle = nullptr;
 #endif
 }
 
 
-FileROM::~FileROM() {
+FileFOM::~FileFOM() {
 	delete myHDF5FileHandle;
 	delete myHDF5groupOperators;
 }
 
-void FileROM::createContainer(bool _forceWrite) {
+void FileFOM::createContainer(bool _forceWrite) {
 #ifdef USE_HDF5
 
 	try
 	{
 		if (_forceWrite) {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_TRUNC);
-			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/OperatorsDenseROM"));
 		}
 		else {
 			myHDF5FileHandle = new H5::H5File(myFilePath + myFileName, H5F_ACC_EXCL);
-			myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/OperatorsDenseROM"));
 		}
+		myHDF5groupOperators = new H5::Group(myHDF5FileHandle->createGroup("/OperatorsSparseFOM"));
+		myHDF5groupOperators->createGroup("/OperatorsSparseFOM/Kre");
+		myHDF5groupOperators->createGroup("/OperatorsSparseFOM/Kim");
+		myHDF5groupOperators->createGroup("/OperatorsSparseFOM/D");
+		myHDF5groupOperators->createGroup("/OperatorsSparseFOM/M");
 	}
 	catch (H5::FileIException error)
 	{
@@ -80,7 +65,7 @@ void FileROM::createContainer(bool _forceWrite) {
 #endif // USE_HDF5
 }
 
-void FileROM::openContainer(bool _writePermission) {
+void FileFOM::openContainer(bool _writePermission) {
 #ifdef USE_HDF5
 	try
 	{
@@ -100,30 +85,31 @@ void FileROM::openContainer(bool _writePermission) {
 	
 }
 
-
-void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values, unsigned int _numColumns, unsigned int _numRows) {
-#ifdef USE_HDF5
+void FileFOM::addRealSparseMatrix(std::string _matrixName, const std::vector<int>& _iA, const std::vector<int>& _jA, const std::vector<double>& _values) {
 	try
 	{
-		unsigned int size = _values.size();
-		hsize_t dim[] = { size }; 
-		H5::DataSpace space(1, dim);
-		H5::CompType mtype(sizeof(STACCATOComplexDouble));
-		mtype.insertMember("real", HOFFSET(STACCATOComplexDouble, real), H5::PredType::NATIVE_DOUBLE);
-		mtype.insertMember("imag", HOFFSET(STACCATOComplexDouble, imag), H5::PredType::NATIVE_DOUBLE);
-		H5::DataSet* dataset;
-		dataset = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsDenseROM/"+_matrixName, mtype, space));
-		dataset->write(_values.data(), mtype);
-		/// Add matrix dimension information to container
-		H5::DataSpace attrDataspaceScalar(H5S_SCALAR);
-		H5::Attribute attribute = dataset->createAttribute("Matrix # columns", H5::PredType::STD_I32BE, attrDataspaceScalar);
-		int attrDataScalar[1] = { _numColumns };
-		attribute.write(H5::PredType::NATIVE_INT, attrDataScalar);
-		attribute = dataset->createAttribute("Matrix # rows", H5::PredType::STD_I32BE, attrDataspaceScalar);
-		attrDataScalar[0] = _numRows;
-		attribute.write(H5::PredType::NATIVE_INT, attrDataScalar);
-		delete dataset;
-	} 
+		H5::DataSet* dataset1;
+		unsigned int size1 = _iA.size();
+		hsize_t dim1[] = { size1 };
+		H5::DataSpace space1(1, dim1);
+		dataset1 = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsSparseFOM/" + _matrixName + "/iIndices", H5::PredType::NATIVE_INT, space1));
+		dataset1->write(_iA.data(), H5::PredType::NATIVE_INT);
+		delete dataset1;
+		H5::DataSet* dataset2;
+		unsigned int size2 = _jA.size();
+		hsize_t dim2[] = { size2 };
+		H5::DataSpace space2(1, dim2);
+		dataset2 = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsSparseFOM/" + _matrixName + "/jIndices", H5::PredType::NATIVE_INT, space2));
+		dataset2->write(_jA.data(), H5::PredType::NATIVE_INT);
+		delete dataset2;
+		H5::DataSet* dataset3;
+		unsigned int size3 = _values.size();
+		hsize_t dim3[] = { size3 };
+		H5::DataSpace space3(1, dim3);
+		dataset3 = new H5::DataSet(myHDF5FileHandle->createDataSet("OperatorsSparseFOM/" + _matrixName + "/values", H5::PredType::NATIVE_DOUBLE, space3));
+		dataset3->write(_values.data(), H5::PredType::NATIVE_DOUBLE);
+		delete dataset3;/**/
+	}
 	catch (H5::DataSetIException error)
 	{
 		std::cout << "Error: DataSet operations" << std::endl;
@@ -136,20 +122,13 @@ void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCAT
 	{
 		std::cout << "Error: DataType operations" << std::endl;
 	}
-#endif // USE_HDF5
 }
 
-void FileROM::addInputOutputMapROM(const std::vector<unsigned int>& _inputNodeLabel, const std::vector<unsigned int>& _inputDoFLabel, const std::vector<unsigned int>& _outputNodeLabel, const std::vector<unsigned int>& _outputDoFLabel) {
-	addNodeToDoFLabelMap("OperatorsDenseROM/inputMap",   _inputNodeLabel, _inputDoFLabel);
-	addNodeToDoFLabelMap("OperatorsDenseROM/outputMap", _outputNodeLabel, _outputDoFLabel);
+void FileFOM::addNodeAndDoFLabel(const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
+	addNodeToDoFLabelMap("OperatorsSparseFOM/nodeToDoFLabelMap", _nodeLabel, _DoFLabel);
 }
 
-void FileROM::addComplexDenseMatrix(std::string _matrixName, std::vector<STACCATOComplexDouble>& _values) {
-	_values.size();
-	addComplexDenseMatrix(_matrixName, _values, sqrt(_values.size()), sqrt(_values.size()));
-}
-
-void FileROM::closeContainer(void) {
+void FileFOM::closeContainer(void) {
 #ifdef USE_HDF5
 	myHDF5groupOperators->close();
 	myHDF5FileHandle->close();
@@ -157,7 +136,7 @@ void FileROM::closeContainer(void) {
 }
 
 
-void FileROM::addNodeToDoFLabelMap(std::string _containerName, const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
+void FileFOM::addNodeToDoFLabelMap(std::string _containerName, const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
 	try
 	{
 		struct nodeLabelDoFLabel

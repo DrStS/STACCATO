@@ -34,6 +34,7 @@ class HMesh;
 class FeElement;
 class FeUmaElement;
 class SimuliaUMA;
+class FileFOM;
 /**********
 * \brief Class KrylovROMSubstructure holds and builds the whole ROM Analysis
 * Input to this class is a FeMetaDatabase and a HMesh object
@@ -204,6 +205,9 @@ private:
 	sparse_matrix_t mySparseM;
 	sparse_matrix_t mySparseD;
 
+	//fileHandles
+	FileFOM* myFileFOM;
+
 	// ROM Complex data
 	/// Dense reduced stiffness matrix
 	std::vector<STACCATOComplexDouble> myKComplexReduced;
@@ -313,6 +317,9 @@ private:
 	std::vector<unsigned int> myAbaqusOutputNodeList;
 	/// List of corresponding dof numbers for output
 	std::vector<unsigned int> myAbaqusOutputDoFList;
+
+	std::vector<unsigned int> myAbaqusNodeLabelListFOM;
+	std::vector<unsigned int> myAbaqusDoFLabelListFOM;
 
 	int numDOF_u;	// Displacement nodes
 	int numDOF_p;	// Pressure nodes

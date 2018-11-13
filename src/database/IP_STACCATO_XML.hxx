@@ -31,8 +31,8 @@
 // in the accompanying FLOSSE file.
 //
 
-#ifndef IP_STACCATO_XML_MASTER_HXX
-#define IP_STACCATO_XML_MASTER_HXX
+#ifndef IP_STACCATO_XML_HXX
+#define IP_STACCATO_XML_HXX
 
 #ifndef XSD_USE_CHAR
 #define XSD_USE_CHAR
@@ -235,6 +235,7 @@ class PARTS;
 class ANALYSIS;
 class PART;
 class FREQUENCY;
+class FILEEXPORT;
 class BCCASE;
 class LOADCASES;
 class ROMDATA;
@@ -244,6 +245,7 @@ class SECTIONS;
 class SETS;
 class LOADS;
 class BC_DEF;
+class EXPORT;
 class BC;
 class LOADCASE;
 class EXP_POINTS;
@@ -255,6 +257,8 @@ class MATERIAL;
 class SECTION;
 class ELEMENTSET;
 class DISPLACEMENT;
+class INPUT_LOADCASE;
+class OUTPUTS_HISTORY;
 class UMA;
 class NODE;
 class ELEMENT;
@@ -317,6 +321,27 @@ class NODESET: public ::xml_schema::type
   void
   Name (::std::auto_ptr< Name_type > p);
 
+  // Instance
+  //
+  typedef ::xml_schema::string Instance_type;
+  typedef ::xsd::cxx::tree::optional< Instance_type > Instance_optional;
+  typedef ::xsd::cxx::tree::traits< Instance_type, char > Instance_traits;
+
+  const Instance_optional&
+  Instance () const;
+
+  Instance_optional&
+  Instance ();
+
+  void
+  Instance (const Instance_type& x);
+
+  void
+  Instance (const Instance_optional& x);
+
+  void
+  Instance (::std::auto_ptr< Instance_type > p);
+
   // Constructors.
   //
   NODESET ();
@@ -349,6 +374,7 @@ class NODESET: public ::xml_schema::type
   protected:
   LIST_optional LIST_;
   Name_optional Name_;
+  Instance_optional Instance_;
 };
 
 class TRANSLATETO: public ::xml_schema::type
@@ -1332,6 +1358,23 @@ class ANALYSIS: public ::xml_schema::type
   void
   FREQUENCY (const FREQUENCY_sequence& s);
 
+  // FILEEXPORT
+  //
+  typedef ::FILEEXPORT FILEEXPORT_type;
+  typedef ::xsd::cxx::tree::sequence< FILEEXPORT_type > FILEEXPORT_sequence;
+  typedef FILEEXPORT_sequence::iterator FILEEXPORT_iterator;
+  typedef FILEEXPORT_sequence::const_iterator FILEEXPORT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< FILEEXPORT_type, char > FILEEXPORT_traits;
+
+  const FILEEXPORT_sequence&
+  FILEEXPORT () const;
+
+  FILEEXPORT_sequence&
+  FILEEXPORT ();
+
+  void
+  FILEEXPORT (const FILEEXPORT_sequence& s);
+
   // BCCASE
   //
   typedef ::BCCASE BCCASE_type;
@@ -1399,6 +1442,7 @@ class ANALYSIS: public ::xml_schema::type
   NAME_optional NAME_;
   TYPE_optional TYPE_;
   FREQUENCY_sequence FREQUENCY_;
+  FILEEXPORT_sequence FILEEXPORT_;
   BCCASE_sequence BCCASE_;
   LOADCASES_sequence LOADCASES_;
 };
@@ -1728,6 +1772,81 @@ class FREQUENCY: public ::xml_schema::type
   START_FREQ_optional START_FREQ_;
   END_FREQ_optional END_FREQ_;
   STEP_FREQ_optional STEP_FREQ_;
+  Type_optional Type_;
+};
+
+class FILEEXPORT: public ::xml_schema::type
+{
+  public:
+  // EXPORT
+  //
+  typedef ::EXPORT EXPORT_type;
+  typedef ::xsd::cxx::tree::sequence< EXPORT_type > EXPORT_sequence;
+  typedef EXPORT_sequence::iterator EXPORT_iterator;
+  typedef EXPORT_sequence::const_iterator EXPORT_const_iterator;
+  typedef ::xsd::cxx::tree::traits< EXPORT_type, char > EXPORT_traits;
+
+  const EXPORT_sequence&
+  EXPORT () const;
+
+  EXPORT_sequence&
+  EXPORT ();
+
+  void
+  EXPORT (const EXPORT_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  FILEEXPORT ();
+
+  FILEEXPORT (const ::xercesc::DOMElement& e,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              ::xml_schema::container* c = 0);
+
+  FILEEXPORT (const FILEEXPORT& x,
+              ::xml_schema::flags f = xml_schema::flags::dont_validate,
+              ::xml_schema::container* c = 0);
+
+  virtual FILEEXPORT*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  FILEEXPORT&
+  operator= (const FILEEXPORT& x);
+
+  virtual 
+  ~FILEEXPORT ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  EXPORT_sequence EXPORT_;
   Type_optional Type_;
 };
 
@@ -2344,6 +2463,99 @@ class BC_DEF: public ::xml_schema::type
 
   protected:
   DISPLACEMENT_sequence DISPLACEMENT_;
+};
+
+class EXPORT: public ::xml_schema::type
+{
+  public:
+  // INPUT_LOADCASE
+  //
+  typedef ::INPUT_LOADCASE INPUT_LOADCASE_type;
+  typedef ::xsd::cxx::tree::sequence< INPUT_LOADCASE_type > INPUT_LOADCASE_sequence;
+  typedef INPUT_LOADCASE_sequence::iterator INPUT_LOADCASE_iterator;
+  typedef INPUT_LOADCASE_sequence::const_iterator INPUT_LOADCASE_const_iterator;
+  typedef ::xsd::cxx::tree::traits< INPUT_LOADCASE_type, char > INPUT_LOADCASE_traits;
+
+  const INPUT_LOADCASE_sequence&
+  INPUT_LOADCASE () const;
+
+  INPUT_LOADCASE_sequence&
+  INPUT_LOADCASE ();
+
+  void
+  INPUT_LOADCASE (const INPUT_LOADCASE_sequence& s);
+
+  // OUTPUTS_HISTORY
+  //
+  typedef ::OUTPUTS_HISTORY OUTPUTS_HISTORY_type;
+  typedef ::xsd::cxx::tree::sequence< OUTPUTS_HISTORY_type > OUTPUTS_HISTORY_sequence;
+  typedef OUTPUTS_HISTORY_sequence::iterator OUTPUTS_HISTORY_iterator;
+  typedef OUTPUTS_HISTORY_sequence::const_iterator OUTPUTS_HISTORY_const_iterator;
+  typedef ::xsd::cxx::tree::traits< OUTPUTS_HISTORY_type, char > OUTPUTS_HISTORY_traits;
+
+  const OUTPUTS_HISTORY_sequence&
+  OUTPUTS_HISTORY () const;
+
+  OUTPUTS_HISTORY_sequence&
+  OUTPUTS_HISTORY ();
+
+  void
+  OUTPUTS_HISTORY (const OUTPUTS_HISTORY_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  EXPORT ();
+
+  EXPORT (const ::xercesc::DOMElement& e,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  EXPORT (const EXPORT& x,
+          ::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0);
+
+  virtual EXPORT*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  EXPORT&
+  operator= (const EXPORT& x);
+
+  virtual 
+  ~EXPORT ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  INPUT_LOADCASE_sequence INPUT_LOADCASE_;
+  OUTPUTS_HISTORY_sequence OUTPUTS_HISTORY_;
+  Type_optional Type_;
 };
 
 class BC: public ::xml_schema::type
@@ -3455,6 +3667,138 @@ class DISPLACEMENT: public ::xml_schema::type
   Name_optional Name_;
 };
 
+class INPUT_LOADCASE: public ::xml_schema::type
+{
+  public:
+  // NODESET
+  //
+  typedef ::NODESET NODESET_type;
+  typedef ::xsd::cxx::tree::sequence< NODESET_type > NODESET_sequence;
+  typedef NODESET_sequence::iterator NODESET_iterator;
+  typedef NODESET_sequence::const_iterator NODESET_const_iterator;
+  typedef ::xsd::cxx::tree::traits< NODESET_type, char > NODESET_traits;
+
+  const NODESET_sequence&
+  NODESET () const;
+
+  NODESET_sequence&
+  NODESET ();
+
+  void
+  NODESET (const NODESET_sequence& s);
+
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  INPUT_LOADCASE ();
+
+  INPUT_LOADCASE (const ::xercesc::DOMElement& e,
+                  ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                  ::xml_schema::container* c = 0);
+
+  INPUT_LOADCASE (const INPUT_LOADCASE& x,
+                  ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                  ::xml_schema::container* c = 0);
+
+  virtual INPUT_LOADCASE*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  INPUT_LOADCASE&
+  operator= (const INPUT_LOADCASE& x);
+
+  virtual 
+  ~INPUT_LOADCASE ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  NODESET_sequence NODESET_;
+  Type_optional Type_;
+};
+
+class OUTPUTS_HISTORY: public ::xml_schema::type
+{
+  public:
+  // Type
+  //
+  typedef ::xml_schema::string Type_type;
+  typedef ::xsd::cxx::tree::optional< Type_type > Type_optional;
+  typedef ::xsd::cxx::tree::traits< Type_type, char > Type_traits;
+
+  const Type_optional&
+  Type () const;
+
+  Type_optional&
+  Type ();
+
+  void
+  Type (const Type_type& x);
+
+  void
+  Type (const Type_optional& x);
+
+  void
+  Type (::std::auto_ptr< Type_type > p);
+
+  // Constructors.
+  //
+  OUTPUTS_HISTORY ();
+
+  OUTPUTS_HISTORY (const ::xercesc::DOMElement& e,
+                   ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                   ::xml_schema::container* c = 0);
+
+  OUTPUTS_HISTORY (const OUTPUTS_HISTORY& x,
+                   ::xml_schema::flags f = xml_schema::flags::dont_validate,
+                   ::xml_schema::container* c = 0);
+
+  virtual OUTPUTS_HISTORY*
+  _clone (::xml_schema::flags f = xml_schema::flags::dont_validate,
+          ::xml_schema::container* c = 0) const;
+
+  OUTPUTS_HISTORY&
+  operator= (const OUTPUTS_HISTORY& x);
+
+  virtual 
+  ~OUTPUTS_HISTORY ();
+
+  // Implementation.
+  //
+  protected:
+  void
+  parse (::xsd::cxx::xml::dom::parser< char >&,
+         ::xml_schema::flags);
+
+  protected:
+  Type_optional Type_;
+};
+
 class UMA: public ::xml_schema::type
 {
   public:
@@ -4189,4 +4533,4 @@ STACCATO_XML_ (::xml_schema::dom::auto_ptr< ::xercesc::DOMDocument > d,
 //
 // End epilogue.
 
-#endif // IP_STACCATO_XML_MASTER_HXX
+#endif // IP_STACCATO_XML_HXX

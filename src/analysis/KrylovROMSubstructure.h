@@ -95,7 +95,7 @@ public:
 	* \param[in] _b right hand side
 	* \author Harikrishnan Sreekumar
 	***********/
-	void solveDirectSparseComplex(const sparse_matrix_t* _mat, const bool _symmetric, const bool _positiveDefinite, int _nRHS, STACCATOComplexDouble* _x, STACCATOComplexDouble* _b);
+	void solveDirectSparseComplex(STACCATOComplexDouble* _x, STACCATOComplexDouble* _b);
 	/***********************************************************************************************
 	* \brief Generate reduced matrices from projection matrices
 	* \author Harikrishnan Sreekumar
@@ -157,13 +157,13 @@ public:
 	void backTransformKMOR(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase);
 	/***********************************************************************************************
 	* \brief This function carries out the direct solve of FOM
-	* \param[in] _analysisName Name of Current Analysis
 	* \param[in] _freq Fine frequency for interpolation
 	* \param[in] _inputLoad Input
 	* \param[in] _numLoadCase Number of loadcases
+	* \param[out] _results
 	* \author Harikrishnan Sreekumar
 	***********/
-	void performSolveFOM(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase);
+	void performSolveFOM(std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase, std::vector<STACCATOComplexDouble>* _results);
 	/***********************************************************************************************
 	* \brief Function to get node set information from XML for SIM import routine
 	* \param[in] _iPart XML Part ID
@@ -185,6 +185,7 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	void printStaccatoMapToFile();
+
 private:
 #ifdef USE_INTEL_MKL
 	/// HMesh object 

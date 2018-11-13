@@ -118,6 +118,8 @@ std::map<int, std::map<int, double>> SimuliaUMA::getCouplingMatFSI() {
 
 void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, std::vector<int> &_dbcpivot, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows) {
 	std::cout << " > Reading: " << _key << " in mode [unsy, rmod]: [" << _flagUnymRead << "," << _readMode << "]..." << std::endl;
+	
+	// Fluid structure interaction settings
 	int FF_start = -1; int FF_end = -1;
 	int SS_start = -1; int SS_end = -1;
 	if (_readMode > 0)
@@ -133,6 +135,8 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 		}
 		FF_start = fluidMap.begin()->second[0];		FF_end = fluidMap.rbegin()->second[0];
 		SS_start = structMap.begin()->second[0];	SS_end = structMap.rbegin()->second[structMap.rbegin()->second.size() - 1];
+		fluidMap.clear();
+		structMap.clear();
 		std::cout << ">> FSI: FF [" << FF_start << ":" << FF_end << "," << FF_end - FF_start << "], SS [" << SS_start << ":" << SS_end << "," << SS_end - SS_start << "]" << std::endl;
 	}
 
@@ -166,7 +170,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 
 	int rem_row = -22;
 	int nnz_row = 0;
-	//myDirichletIndices.clear();
+
 	for (iter.First(); !iter.IsDone(); iter.Next(), count++) {
 		iter.Entry(row, col, val);
 
@@ -235,6 +239,7 @@ void SimuliaUMA::loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vec
 		}
 	}
 
+	// DBC correction: clearing row and column entries and filling the diagonal entry with pivot = 1 (only for stiffness)
 	if (_dbcpivot.size()!=0)
 	{
 		int pivot = _key == "GenericSystem_stiffness" ? 1 : 0;

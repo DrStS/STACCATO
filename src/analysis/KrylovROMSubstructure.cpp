@@ -58,11 +58,11 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	/* -------------------------- */
 	
 	/* -- Exporting ------------- */
-	writeFOM = true;
+	writeFOM = false;
 	writeROM = true;
 	exportRHS = true;
 	exportSolution = true;
-	writeTransferFunctions = true;
+	writeTransferFunctions = false;
 	writeProjectionmatrices = false;
 	/* -------------------------- */
 
@@ -167,7 +167,6 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 					}
 				}
 			}
-			AuxiliaryFunctions::writeIntegerVectorDatFormat("test.dat", myInputDOFS);
 			/// Outputs
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->OUTPUTS().begin()->Type()->c_str()) == "NODES") {
 				std::cout << " !! Output DOFs found! Unsymmetric MIMO not yet supported." << std::endl;
@@ -406,7 +405,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		QV.resize(FOM_DOF*myInputDOFS.size());
 
 		factorizeSparseMatrixComplex(&K_tilde, isSymmetricSystem, true, myInputDOFS.size());
-		solveDirectSparseComplex(&K_tilde, isSymmetricSystem, true, myInputDOFS.size(), &QV[0], &myB[0]);
+		solveDirectSparseComplex( &QV[0], &myB[0]);
 
 		// Orthogonalization of first set of vectors : iterative
 		// procedure
@@ -495,7 +494,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &mySparseM, &QV[0], &WQ_i_K[0], false, false, ZeroComplex, true, false);
 
 			// Q = -K_tilde\(obj.M*Q);
-			solveDirectSparseComplex(&K_tilde, isSymmetricSystem, true, RR, &QV[0], &WQ_i_K[0]);
+			solveDirectSparseComplex(&QV[0], &WQ_i_K[0]);
 			WQ_i_K.clear();
 
 			// w0 = Q; eta = 1/sqrt(2); lim = 0; wk_=w0;
@@ -590,13 +589,13 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 	pt.message_level = MKL_PRINT;
 	check_err_val = sparse_matrix_checker(&pt);
 
-	printf("Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+	//printf("Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
 	if (check_err_val == MKL_SPARSE_CHECKER_NONTRIANGULAR) {
 		printf("Matrix check result: MKL_SPARSE_CHECKER_NONTRIANGULAR\n");
 		error = 0;
 	}
 	else {
-		if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf("Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+		if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) {/* printf("Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); */}
 		if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf("Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
 		if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf("Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
 		if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf("Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
@@ -634,13 +633,13 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 	pardiso_iparm[12] = 1;   // improved accuracy using (non-) symmetric weighted matching.
 	int len = 198;
 	char buf[198];
-	mkl_get_version_string(buf, len);
-	printf("%s\n", buf);
-	printf("\n");
+	//mkl_get_version_string(buf, len);
+	//printf("%s\n", buf);
+	//printf("\n");
 
 	mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
-	std::cout << "Matrixtype for PARDISO: " << pardiso_mtype << std::endl;
-	std::cout << "#Threads   for PARDISO: " << mkl_get_max_threads() << std::endl;
+	/*std::cout << "Matrixtype for PARDISO: " << pardiso_mtype << std::endl;
+	std::cout << "#Threads   for PARDISO: " << mkl_get_max_threads() << std::endl;*/
 
 	linearSolverTimer01.start();
 	linearSolverTimer02.start();
@@ -650,7 +649,7 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 		&pardiso_nrhs, pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum,
 		&pardiso_error);
 	linearSolverTimer01.stop();
-	std::cout << "Reordering completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
+	//std::cout << "Reordering completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 	if (pardiso_error != 0) {
 		std::cout << "Error pardiso reordering failed with error code: " << pardiso_error
 			<< std::endl;
@@ -670,7 +669,7 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 		std::cout << "Error pardiso factorization failed with error code: " << pardiso_error
 			<< std::endl;
 		exit(EXIT_FAILURE);
-	}
+	}/*
 	std::cout << "Factorization completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 	std::cout << "Info: Number of equation = " << pardiso_neq << std::endl;
 	std::cout << "Info: Number of nonzeros in factors = " << pardiso_iparm[17] << std::endl;
@@ -678,14 +677,13 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 	std::cout << "Info: Total peak memory on numerical factorization and solution (Mb) = " << (pardiso_iparm[14] + pardiso_iparm[15] + pardiso_iparm[16]) / 1000 << std::endl;
 	std::cout << "Info: Number of positive eigenvalues = " << pardiso_iparm[21] << std::endl;
 	std::cout << "Info: Number of negative eigenvalues = " << pardiso_iparm[22] << std::endl;
-	std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;
+	std::cout << "Info: Number of zero or negative pivot = " << pardiso_iparm[29] << std::endl;*/
 #endif
 }
 
-void KrylovROMSubstructure::solveDirectSparseComplex(const sparse_matrix_t* _mat, const bool _symmetric, const bool _positiveDefinite, int _nRHS, STACCATOComplexDouble* _x, STACCATOComplexDouble* _b) {
+void KrylovROMSubstructure::solveDirectSparseComplex( STACCATOComplexDouble* _x, STACCATOComplexDouble* _b) {
 	//Computes x=A\b
 #ifdef USE_INTEL_MKL
-	pardiso_nrhs = _nRHS;	// number of right hand side
 	linearSolverTimer01.start();
 	pardiso_phase = 33; // forward and backward substitution
 	mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
@@ -699,10 +697,10 @@ void KrylovROMSubstructure::solveDirectSparseComplex(const sparse_matrix_t* _mat
 		exit(EXIT_FAILURE);
 	}
 	linearSolverTimer01.stop();
-	std::cout << "Number of iterative refinement steps performed: " << pardiso_iparm[6] << std::endl;
-	std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
+	//std::cout << "Number of iterative refinement steps performed: " << pardiso_iparm[6] << std::endl;
+	//std::cout << "Forward and backward substitution completed: " << linearSolverTimer01.getDurationMilliSec() << " (milliSec)" << std::endl;
 	linearSolverTimer02.stop();
-	std::cout << "=== Complete duration PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec) for system dimension " << m << "x" << n << std::endl;
+	//std::cout << "=== Complete duration PARDISO: " << linearSolverTimer02.getDurationMilliSec() << " (milliSec) for system dimension " << m << "x" << n << std::endl;
 #endif
 }
 
@@ -1148,8 +1146,12 @@ void KrylovROMSubstructure::performAnalysis() {
 												auto searchInStaccatoMap = myNodeToGlobalStaccatoMap.find(search->second[jNodeSet]);
 												nodeDofSet.insert(nodeDofSet.end(), searchInStaccatoMap->second.begin(), searchInStaccatoMap->second.end());
 
-												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++)
-													bComplex[nodeDofSet[iLoadAss]] = loadVector[iLoadAss];
+												for (size_t iLoadAss = 0; iLoadAss < nodeDofSet.size(); iLoadAss++) {
+													if (iLoadAss >=3)  // XML has no moment input
+														bComplex[nodeDofSet[iLoadAss]] = { 0 ,0};	
+													else
+														bComplex[nodeDofSet[iLoadAss]] = loadVector[iLoadAss];
+												}
 											} 
 										}
 										else
@@ -1170,6 +1172,7 @@ void KrylovROMSubstructure::performAnalysis() {
 		}
 		std::cout << ">> Building RHS Matrix for Neumann... Finished.\n" << std::endl;
 
+		std::vector<STACCATOComplexDouble> analysisResults;
 		if (myAnalysisType == "FE_KMOR") {
 			std::vector<STACCATOComplexDouble> inputLoad;
 			for (int iRHS = 0; iRHS < sizeofRHS; iRHS++)
@@ -1184,22 +1187,125 @@ void KrylovROMSubstructure::performAnalysis() {
 				inputLoad.insert(inputLoad.end(), temp.begin(), temp.end());
 			}
 			backTransformKMOR(std::string(iAnalysis->NAME()->data()), &freq, &inputLoad[0], sizeofRHS);
+			
 		}
 		else if (myAnalysisType == "FE_SUBSTRUCT_DIRECT") {
-			performSolveFOM(std::string(iAnalysis->NAME()->data()), &freq, &bComplex[0], sizeofRHS);
+			performSolveFOM(&freq, &bComplex[0], sizeofRHS, &analysisResults);
+			if (exportSolution)
+				AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_SUBSTRUCT_DIRECT_Results.dat", analysisResults);
 		}
 
 		std::cout << "==== Anaylsis Completed: " << iAnalysis->NAME()->data() << " ====" << std::endl;
+
+		std::cout << ">> Performing file exports... " << std::endl;
+		for (int iFileExports  = 0; iFileExports< iAnalysis->FILEEXPORT().size(); iFileExports++)
+		{
+			std::string typeFile = std::string(iAnalysis->FILEEXPORT()[iFileExports].Type()->c_str());
+			for (int iExports = 0; iExports < iAnalysis->FILEEXPORT()[iFileExports].EXPORT().size(); iExports++)
+			{
+				std::string typeExport = std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].Type()->c_str());
+				if (typeExport == "TransferFunctions")
+				{
+					std::cout << " > Found: Export " << typeExport << " to " << typeFile << std::endl;
+					// Preparation of Required Data
+					/// Inputs
+					std::vector<int> LoadCaseDoFs;
+					if (std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].INPUT_LOADCASE().begin()->Type()->c_str()) == "NODES") {	// Currently nodes are dof indices
+						for (int iNodeSet = 0; iNodeSet < iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].INPUT_LOADCASE().begin()->NODESET().size(); iNodeSet++) {
+							if (myModelType == "FOM_ODB")
+							{
+								// Developer note: Multipart is not dealt for now
+								std::vector<int> nodeSet = myHMesh->convertNodeSetNameToLabels(std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].INPUT_LOADCASE().begin()->NODESET()[iNodeSet].Name()->c_str()));
+								// Insert nodeSet entries to DOFS
+								for (int jNodeSet = 0; jNodeSet < nodeSet.size(); jNodeSet++) {
+									std::vector<int> dofIndices = myHMesh->getNodeIndexToDoFIndices()[myHMesh->convertNodeLabelToNodeIndex(nodeSet[jNodeSet])];
+									LoadCaseDoFs.insert(LoadCaseDoFs.end(), dofIndices.begin(), dofIndices.end());
+								}
+							}
+							else if (myModelType == "FOM_SIM") {
+								auto search = nodeSetsMap.find(std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].INPUT_LOADCASE().begin()->NODESET()[iNodeSet].Name()->c_str()));
+								if (search != nodeSetsMap.end()) {
+									// Iterate inside the list of node list
+									for (int jNodeSet = 0; jNodeSet < search->second.size(); jNodeSet++)
+									{
+										auto searchInStaccatoLocalDofMapSIM = myNodeToDofStaccatoMap.find(search->second[jNodeSet]);
+										auto searchInStaccatoGlobalDofMapSIM = myNodeToGlobalStaccatoMap.find(search->second[jNodeSet]);
+
+										if (searchInStaccatoLocalDofMapSIM != myNodeToDofStaccatoMap.end() && searchInStaccatoGlobalDofMapSIM != myNodeToGlobalStaccatoMap.end()) {
+											LoadCaseDoFs.insert(LoadCaseDoFs.end(), searchInStaccatoGlobalDofMapSIM->second.begin(), searchInStaccatoGlobalDofMapSIM->second.end());
+										}
+										else {
+											std::cerr << "!! Unexpected Detection error! Exiting Staccato!" << std::endl;
+											exit(EXIT_FAILURE);
+										}
+									}
+								}
+								else
+									std::cout << "!! InputNodeSet not found!";
+							}
+						}
+					}
+
+					/// Outputs
+					std::vector<int> HistoryDoFs;
+					if (std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].OUTPUTS_HISTORY().begin()->Type()->c_str()) == "NODES") {
+						std::cout << " !! Output DOFs found! Unsymmetric MIMO not yet supported." << std::endl;
+						exit(EXIT_FAILURE);
+					}
+					else if (std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].OUTPUTS_HISTORY().begin()->Type()->c_str()) == "SYM_MIMO") {
+						HistoryDoFs = LoadCaseDoFs;
+					}
+
+					// Generate Load Cases
+					std::vector<MKL_Complex16> bComplexExport;
+					bComplexExport.resize(FOM_DOF*LoadCaseDoFs.size(), {0,0});
+					for (int iInput = 0; iInput < LoadCaseDoFs.size(); iInput++)
+						bComplexExport[LoadCaseDoFs[iInput] + iInput * FOM_DOF] = { 1,0 }; // Unit Load
+
+					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_EXPORT_RHS.dat", bComplexExport);
+
+					// Solve for each load case
+					std::vector<STACCATOComplexDouble> transferfunctionResults;
+					performSolveFOM(&freq, &bComplexExport[0], LoadCaseDoFs.size(), &transferfunctionResults);
+
+					std::vector<STACCATOComplexDouble> historySolution;
+					for (int iInput = 0; iInput < LoadCaseDoFs.size(); iInput++)
+					{
+						for (int iFreqs = 0; iFreqs < freq.size(); iFreqs++)
+						{
+							for (int iHistory = 0; iHistory < HistoryDoFs.size(); iHistory++) {
+								historySolution.push_back(transferfunctionResults[(iInput*freq.size()+iFreqs)*FOM_DOF + HistoryDoFs[iHistory]]);
+							}
+						}
+					}
+
+					if (typeFile == "HDF5") {
+						// Export of HDF5 happen here
+					}
+					else if(typeFile == "DAT")
+					{
+						AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_DIRECT_" + typeExport + ".dat", historySolution);
+					}
+					else {
+						std::cout << " !! Unknown file export type." << std::endl;
+						exit(EXIT_FAILURE);
+					}
+				}
+				else {
+					std::cout << " !! Unknowm identifier for export: " << typeExport << std::endl;
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+		std::cout << ">> Performing file exports... Finished" << std::endl;
 	}
 	std::cout << ">> All Analyses Completed." << std::endl;
 }
 
-void KrylovROMSubstructure::performSolveFOM(std::string _analysisName, std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase) {
+void KrylovROMSubstructure::performSolveFOM( std::vector<double>* _freq, STACCATOComplexDouble* _inputLoad, int _numLoadCase, std::vector<STACCATOComplexDouble>* _results) {
 	STACCATOComplexDouble ZeroComplex = { 0,0 };
 	STACCATOComplexDouble OneComplex = { 1,0 };
-
-	std::vector<STACCATOComplexDouble> results;
-
+	
 	// Solving for each frequency
 	anaysisTimer01.start();
 #ifdef USE_INTEL_MKL		
@@ -1216,22 +1322,21 @@ void KrylovROMSubstructure::performSolveFOM(std::string _analysisName, std::vect
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseM, &mySparseK, &K_Dynamic, false, true, negativeOmegaSquare);
 
 		MathLibrary::computeSparseMatrixAdditionComplex(&mySparseD, &K_Dynamic, &K_Dynamic, false, true, complexOmega);
-		//MathLibrary::print_csr_sparse_z(&K_Dynamic);
+		
+		//MathLibrary::printToScreen_csr_sparse_z(&K_Dynamic);
 		// result = K_tilde\f;               % Initial Search Direction
 		std::vector<STACCATOComplexDouble> resultFreq;
-		resultFreq.resize(FOM_DOF, { 0,0 });
+		resultFreq.resize(FOM_DOF*_numLoadCase, { 0,0 });
 		factorizeSparseMatrixComplex(&K_Dynamic, isSymmetricSystem, true, _numLoadCase);
-		solveDirectSparseComplex(&K_Dynamic, isSymmetricSystem, true, _numLoadCase, &resultFreq[0], &_inputLoad[0]);
+		solveDirectSparseComplex(&resultFreq[0], &_inputLoad[0]);
 
-		results.insert(results.end(), resultFreq.begin(), resultFreq.end());
+		_results->insert(_results->end(), resultFreq.begin(), resultFreq.end());
 		cleanPardiso();
 		//std::cout << ">> Computing frequency step at " << freq[iFreqCounter] << " Hz ... Finished." << std::endl;
 	}
 	anaysisTimer01.stop();
 	std::cout << " --> Duration for direct FOM Solve: " << anaysisTimer01.getDurationMilliSec() << " ms" << std::endl;
 
-	if (exportSolution)
-		AuxiliaryFunctions::writeMKLComplexVectorDatFormat(_analysisName + "_SUBSTRUCT_DIRECT_Results.dat", results);
 #endif // USE_INTEL_MKL
 }
 

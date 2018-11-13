@@ -71,7 +71,6 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
-
 		/* %%% Build FOM - Builds type sparse_matrix_t K, M, D %%% */
 		exportCSRTimer01.start();
 		if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB")
@@ -375,7 +374,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-8;
+		double sigTol = 1e-12;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -406,7 +405,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 		QV.resize(FOM_DOF*myInputDOFS.size());
 
 		factorizeSparseMatrixComplex(&K_tilde, isSymmetricSystem, true, myInputDOFS.size());
-		solveDirectSparseComplex( &QV[0], &myB[0]);
+		solveDirectSparseComplex(myInputDOFS.size(), &QV[0], &myB[0]);
 
 		// Orthogonalization of first set of vectors : iterative
 		// procedure
@@ -495,7 +494,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 			MathLibrary::computeSparseMatrixDenseMatrixMultiplicationComplex(RR, FOM_DOF, FOM_DOF, &mySparseM, &QV[0], &WQ_i_K[0], false, false, ZeroComplex, true, false);
 
 			// Q = -K_tilde\(obj.M*Q);
-			solveDirectSparseComplex(&QV[0], &WQ_i_K[0]);
+			solveDirectSparseComplex(RR, &QV[0], &WQ_i_K[0]);
 			WQ_i_K.clear();
 
 			// w0 = Q; eta = 1/sqrt(2); lim = 0; wk_=w0;
@@ -682,9 +681,10 @@ void  KrylovROMSubstructure::factorizeSparseMatrixComplex(const sparse_matrix_t*
 #endif
 }
 
-void KrylovROMSubstructure::solveDirectSparseComplex( STACCATOComplexDouble* _x, STACCATOComplexDouble* _b) {
+void KrylovROMSubstructure::solveDirectSparseComplex(int _nRHS, STACCATOComplexDouble* _x, STACCATOComplexDouble* _b) {
 	//Computes x=A\b
 #ifdef USE_INTEL_MKL
+	pardiso_nrhs = _nRHS;	// number of right hand side
 	linearSolverTimer01.start();
 	pardiso_phase = 33; // forward and backward substitution
 	mkl_set_num_threads(STACCATO::AuxiliaryParameters::solverMKLThreads); // set number of threads to 1 for mkl call only
@@ -1350,7 +1350,7 @@ void KrylovROMSubstructure::performSolveFOM( std::vector<double>* _freq, STACCAT
 		std::vector<STACCATOComplexDouble> resultFreq;
 		resultFreq.resize(FOM_DOF*_numLoadCase, { 0,0 });
 		factorizeSparseMatrixComplex(&K_Dynamic, isSymmetricSystem, true, _numLoadCase);
-		solveDirectSparseComplex(&resultFreq[0], &_inputLoad[0]);
+		solveDirectSparseComplex(_numLoadCase, &resultFreq[0], &_inputLoad[0]);
 
 		_results->insert(_results->end(), resultFreq.begin(), resultFreq.end());
 		cleanPardiso();

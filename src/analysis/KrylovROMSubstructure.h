@@ -88,15 +88,12 @@ public:
 	void factorizeSparseMatrixComplex(const sparse_matrix_t* _mat, const bool _symmetric, const bool _positiveDefinite, int _nRHS);
 	/***********************************************************************************************
 	* \brief PARDISO solving for sparse matrix
-	* \param[in] _mat sparse matrix
-	* \param[in] _symmetric symmetricity
-	* \param[in] _positiveDefinite
 	* \param[in] _nRHS number of RHS
 	* \param[out] _x solution vector
 	* \param[in] _b right hand side
 	* \author Harikrishnan Sreekumar
 	***********/
-	void solveDirectSparseComplex(STACCATOComplexDouble* _x, STACCATOComplexDouble* _b);
+	void solveDirectSparseComplex(int _nRHS, STACCATOComplexDouble* _x, STACCATOComplexDouble* _b);
 	/***********************************************************************************************
 	* \brief Generate reduced matrices from projection matrices
 	* \author Harikrishnan Sreekumar

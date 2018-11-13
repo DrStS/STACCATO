@@ -86,6 +86,7 @@ void FileFOM::openContainer(bool _writePermission) {
 }
 
 void FileFOM::addRealSparseMatrix(std::string _matrixName, const std::vector<int>& _iA, const std::vector<int>& _jA, const std::vector<double>& _values) {
+#ifdef USE_HDF5
 	try
 	{
 		H5::DataSet* dataset1;
@@ -122,6 +123,7 @@ void FileFOM::addRealSparseMatrix(std::string _matrixName, const std::vector<int
 	{
 		std::cout << "Error: DataType operations" << std::endl;
 	}
+#endif // USE_HDF5
 }
 
 void FileFOM::addNodeAndDoFLabel(const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
@@ -137,6 +139,7 @@ void FileFOM::closeContainer(void) {
 
 
 void FileFOM::addNodeToDoFLabelMap(std::string _containerName, const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
+#ifdef USE_HDF5
 	try
 	{
 		struct nodeLabelDoFLabel
@@ -176,4 +179,5 @@ void FileFOM::addNodeToDoFLabelMap(std::string _containerName, const std::vector
 	{
 		std::cout << "Error: DataType operations" << std::endl;
 	}
+#endif // USE_HDF5
 }

@@ -158,6 +158,7 @@ void FileROM::closeContainer(void) {
 
 
 void FileROM::addNodeToDoFLabelMap(std::string _containerName, const std::vector<unsigned int>& _nodeLabel, const std::vector<unsigned int>& _DoFLabel) {
+#ifdef USE_HDF5
 	try
 	{
 		struct nodeLabelDoFLabel
@@ -197,4 +198,5 @@ void FileROM::addNodeToDoFLabelMap(std::string _containerName, const std::vector
 	{
 		std::cout << "Error: DataType operations" << std::endl;
 	}
+#endif // USE_HDF5
 }

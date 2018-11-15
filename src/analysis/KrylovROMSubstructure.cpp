@@ -63,7 +63,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	writeROM = true;
 	exportRHS = false;
 	exportSolution = true;
-	writeTransferFunctions = false;
+	writeTransferFunctions = true;
 	writeProjectionmatrices = false;
 	/* -------------------------- */
 
@@ -71,6 +71,7 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 	STACCATO_XML::PARTS_const_iterator iterParts(MetaDatabase::getInstance()->xmlHandle->PARTS().begin());
 	for (int iPart = 0; iPart < iterParts->PART().size(); iPart++)
 	{
+		currentPart = std::string(iterParts->PART()[iPart].Name()->data());
 		/* %%% Build FOM - Builds type sparse_matrix_t K, M, D %%% */
 		exportCSRTimer01.start();
 		if (std::string(iterParts->PART()[iPart].FILEIMPORT().begin()->Type()->c_str()) == "AbqODB")
@@ -110,7 +111,6 @@ KrylovROMSubstructure::KrylovROMSubstructure(HMesh& _hMesh) : myHMesh(&_hMesh) {
 		if (myAnalysisType == "FE_KMOR")
 		{
 			std::cout << ">> KMOR procedure to be performed on FE part: " << std::string(iterParts->PART()[iPart].Name()->data()) << std::endl;
-			currentPart = std::string(iterParts->PART()[iPart].Name()->data());
 			// Getting ROM prerequisites
 			/// Exapansion points
 			if (std::string(iterParts->PART()[iPart].ROMDATA().begin()->EXP_POINTS().begin()->Type()->c_str()) == "MANUAL") {
@@ -374,7 +374,7 @@ void KrylovROMSubstructure::addKrylovModesForExpansionPoint(std::vector<double>&
 
 	for (int iEP = 0; iEP < _expPoint.size(); iEP++)
 	{
-		double sigTol = 1e-12;
+		double sigTol = 1e-8;
 		std::cout << "  > Deflation Tolerance: " << sigTol << std::endl;
 		std::cout << "  -------------------------------------------------------> Processing expansion point " << _expPoint[iEP] << " Hz..." << std::endl;
 		double progress = (iEP + 1) * 100 / _expPoint.size();
@@ -907,8 +907,8 @@ void KrylovROMSubstructure::buildAbqSIM(int _iPart) {
 	std::vector<int> dirichletIndices;
 
 #ifdef USE_HDF5
-	std::cout << " >> Exporting FOM to HDF5...";
-	std::cout << " >> currentPart..." << currentPart;
+	std::cout << " >> Exporting FOM to HDF5..." << std::endl;
+	std::cout << " >> currentPart..." << currentPart << std::endl;
 	myFileFOM = (FileFOM*) new FileFOM(currentPart + "_FOM.h5", filePath);
 	myFileFOM->createContainer(true);
 #endif //USE_HDF5
@@ -1225,6 +1225,10 @@ void KrylovROMSubstructure::performAnalysis() {
 			std::string typeFile = std::string(iAnalysis->FILEEXPORT()[iFileExports].Type()->c_str());
 			for (int iExports = 0; iExports < iAnalysis->FILEEXPORT()[iFileExports].EXPORT().size(); iExports++)
 			{
+				// Map of Transfer Function
+				std::vector<unsigned int> exportNode;
+				std::vector<unsigned int> exportNodeDof;
+
 				std::string typeExport = std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].Type()->c_str());
 				if (typeExport == "TransferFunctions")
 				{
@@ -1255,6 +1259,12 @@ void KrylovROMSubstructure::performAnalysis() {
 
 										if (searchInStaccatoLocalDofMapSIM != myNodeToDofStaccatoMap.end() && searchInStaccatoGlobalDofMapSIM != myNodeToGlobalStaccatoMap.end()) {
 											LoadCaseDoFs.insert(LoadCaseDoFs.end(), searchInStaccatoGlobalDofMapSIM->second.begin(), searchInStaccatoGlobalDofMapSIM->second.end());
+
+											// for every dof, add the same node label
+											for (int jInfoIter = 0; jInfoIter < searchInStaccatoLocalDofMapSIM->second.size(); jInfoIter++)
+												exportNode.push_back(searchInStaccatoLocalDofMapSIM->first);
+
+											exportNodeDof.insert(exportNodeDof.end(), searchInStaccatoLocalDofMapSIM->second.begin(), searchInStaccatoLocalDofMapSIM->second.end());
 										}
 										else {
 											std::cerr << "!! Unexpected Detection error! Exiting Staccato!" << std::endl;
@@ -1284,7 +1294,7 @@ void KrylovROMSubstructure::performAnalysis() {
 					for (int iInput = 0; iInput < LoadCaseDoFs.size(); iInput++)
 						bComplexExport[LoadCaseDoFs[iInput] + iInput * FOM_DOF] = { 1,0 }; // Unit Load
 
-					AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_EXPORT_RHS.dat", bComplexExport);
+					//AuxiliaryFunctions::writeMKLComplexVectorDatFormat(std::string(iAnalysis->NAME()->data()) + "_EXPORT_RHS.dat", bComplexExport);
 
 					// Solve for each load case
 					std::vector<STACCATOComplexDouble> transferfunctionResults;

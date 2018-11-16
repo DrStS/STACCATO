@@ -2,8 +2,8 @@
 
 namespace staccato{
     namespace assembly{
-        void assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex *d_ptr_A,
+        void assembleGlobalMatrixBatched(cudaStream_t stream, cuDoubleComplex **d_ptr_A_batch,
                                          cuDoubleComplex *d_ptr_K, cuDoubleComplex *d_ptr_M,
-                                         int nnz_sub, double freq_square);
-    }
-}
+                                         const int nnz_sub, const int *freq_square, const int batchSize);
+    } // namespace::staccato
+} // namespace::assembly

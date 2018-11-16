@@ -39,7 +39,7 @@
 #include "MetaDatabase.h"
 
 FeUmaElement::FeUmaElement(Material *_material) : FeElement(_material) {
-	nodeToDofMap = MetaDatabase::getInstance()->nodeToDofMapMeta;
+	/*nodeToDofMap = MetaDatabase::getInstance()->nodeToDofMapMeta;
 	nodeToGlobalMap = MetaDatabase::getInstance()->nodeToGlobalMapMeta;
 
 	int numNodes = nodeToGlobalMap.size();
@@ -49,14 +49,14 @@ FeUmaElement::FeUmaElement(Material *_material) : FeElement(_material) {
 	}
 	mySparseSDReal = new MathLibrary::SparseMatrix<double>(totalDOFs, true, true);
 
-	std::cout << " >> UMA Element Created with TotalDoFs: " << totalDOFs << std::endl;
+	std::cout << " >> UMA Element Created with TotalDoFs: " << totalDOFs << std::endl;*/
 }
 
 FeUmaElement::~FeUmaElement() {
 }
 
 void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
-	bool matdisp = false;
+	/*bool matdisp = false;
 	bool fileexp = false;
 
 	std::string simFileK = MetaDatabase::getInstance()->simFile + "_X1.sim";
@@ -82,13 +82,13 @@ void FeUmaElement::computeElementMatrix(const double* _eleCoords) {
 ImportSIM(stiffnessUMA_key, simFileStiffness, matdisp, fileexp);
 ImportSIM(massUMA_key, simFileMass, matdisp, fileexp);
 ImportSIM(structuralDampingUMA_key, simFileSD, matdisp, fileexp);
-#endif
+#endif*/
 }
 
 #ifdef USE_SIMULIA_UMA_API
 void FeUmaElement::PrintMatrix(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile)
 {
-	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
+	/*char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
 	if (!system.HasMatrix(matrixName)) {
 		return;
 		printf("\nSparse matrix %s not found\n", matrixName);
@@ -152,13 +152,13 @@ void FeUmaElement::PrintMatrix(const uma_System &system, const char *matrixName,
 			myfile << row << " " << col << " " << val << std::endl;
 		}
 		myfile.close();
-	}
+	}*/
 }
 #endif
 
 void FeUmaElement::DebugSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile) {
 #ifdef USE_SIMULIA_UMA_API
-	std::cout << ">>> Debug SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
+	/*std::cout << ">>> Debug SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
 	uma_System system(_fileName);
 	if (system.IsNull()) {
 		std::cout << ">>> Error: System not defined.\n";
@@ -167,13 +167,13 @@ void FeUmaElement::DebugSIM(const char* _matrixkey, const char* _fileName, bool 
 		std::cout << "Error: Struc. Damping Not a Generic System.\n";
 	}
 
-	PrintMatrix(system, _matrixkey, _printToScreen, _printToFile);
+	PrintMatrix(system, _matrixkey, _printToScreen, _printToFile);*/
 #endif
 }
 
 void FeUmaElement::ImportSIM(const char* _matrixkey, const char* _fileName, bool _printToScreen, bool _printToFile) {
 #ifdef USE_SIMULIA_UMA_API
-	std::cout << ">>> Import SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
+	/*std::cout << ">>> Import SIM File: " << _fileName << " UMA Key: " << _matrixkey << std::endl;
 	bool flag = false;
 	std::ifstream ifile(_fileName);
 	if (!ifile) {
@@ -198,13 +198,13 @@ void FeUmaElement::ImportSIM(const char* _matrixkey, const char* _fileName, bool
 		}
 
 		extractData(system, _matrixkey, _printToScreen, _printToFile);
-	}
+	}*/
 #endif
 }
 
 #ifdef USE_SIMULIA_UMA_API
 void FeUmaElement::extractData(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile) {
-	char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
+	/*char * mapTypeName[] = { "DOFS", "NODES", "MODES", "ELEMENTS", "CASES", "Unknown" };
 	// Check for matrix existence
 	if (!system.HasMatrix(matrixName)) {
 		std::cout << " >> Sparse matrix " << matrixName << " not found\n";
@@ -387,6 +387,6 @@ void FeUmaElement::extractData(const uma_System &system, const char *matrixName,
 			std::cout << ">> Printing to file Staccato_Sparse_StructuralDamping.mtx..." << std::endl;
 			(*mySparseSDReal).writeSparseMatrixToFile("Staccato_Sparse_StructuralDamping", "mtx");
 		}
-	}
+	}*/
 }
 #endif

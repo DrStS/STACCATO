@@ -26,21 +26,22 @@
 
 #include <string>
 #include <assert.h>
-#include <Reader.h>
 #include <vector>
 #include <map>
+
+#include "ReadWriteFile.h"
+#include "AuxiliaryParameters.h"
 
 #ifdef USE_SIMULIA_UMA_API
 class uma_System;
 class uma_SparseMatrix;
-//#include <uma_SparseMatrix.h>
 #endif
 
 class HMesh;
 /********//**
 * \brief This handles the output handling with Abaqus SIM
 **************************************************************************************************/
-class SimuliaUMA :public Reader {
+class SimuliaUMA :public ReadWriteFile {
 public:
 	/***********************************************************************************************
 	* \brief Constructor
@@ -61,26 +62,47 @@ public:
 	***********/
 	void openFile();
 	/***********************************************************************************************
-	* \brief Import routine to load datastructure from SIM
-	* \param[in] SIM file name
+	* \brief The routine collects the information to the common map which is passed as arguments
 	* \param[in] Matrix key
-	* \param[in] Flag for displaying imported matrices and maps
+	* \param[in/out] dof map
 	* \author Harikrishnan Sreekumar
 	***********/
-	void importDatastructureSIM(char* _file, char* _key, bool _printToScreen);
-
-#ifdef USE_SIMULIA_UMA_API
+	int collectDatastructureSIM(char* _key, std::map<int, std::vector<int>> &_dofMap);
 	/***********************************************************************************************
-	* \brief Extract datastructure from UMA
-	* \param[in] UMA System with the valid matrix
-	* \param[in] Name of matrix
-	* \param[in] Flag for displaying imported matrices
+	* \brief Open the matrix for the passed key and checks for symmetricity
+	* \param[in] _key uma matrix key
 	* \author Harikrishnan Sreekumar
 	***********/
-	void extractDatastructure(const uma_System &system, char *matrixName, bool _printToScreen);
-#endif
+	bool isUmaSymmetric(char* _key);
 	/***********************************************************************************************
-	* \brief Routine to check for internal dofs (Can be disabled if not required)
+	* \brief The routine reads in matrix entries and return the CSR format
+	* \param[in] Matrix key
+	* \param[in/out] CSR _ia
+	* \param[in/out] CSR _ja
+	* \param[in/out] CSR _values
+	* \param[in] local dof map
+	* \param[in] global dof map
+	* \param[in] read mode. 0-> normal symmetric read | 1-> read with FSI extraction | 2-> read with FSI extraction
+	* \param[in] _flagUnymRead Use symmetric read with entries in lower triangular entries also
+	* \param[in] _printToFile Export the read matrix to file in dat CSR format
+	* \param[in] _numrows Number of totaldof equal to all system matrices
+	* \author Harikrishnan Sreekumar
+	***********/
+	void loadSIMforUMA(std::string _key, std::vector<int>& _ia, std::vector<int> &_ja, std::vector<STACCATOComplexDouble> &_values, std::map<int, std::vector<int>> &_dofMap, std::map<int, std::vector<int>> &_globalMap, std::vector<int> &_dbcpivot, int _readMode, bool _flagUnymRead, bool _printToFile, int _numrows);
+	/***********************************************************************************************
+	* \brief Function to intialize the coupling matrix incase of Fluid Structure interaction
+	* \param[in] _KASI matrix in map form
+	* \author Harikrishnan Sreekumar
+	***********/
+	void setCouplingMatFSI(std::map<int, std::map<int, double>> &_KASI);
+	/***********************************************************************************************
+	* \brief Function to retrieve the coupling matrix incase of Fluid Structure interaction
+	* \param[out] _KASI matrix in map form
+	* \author Harikrishnan Sreekumar
+	***********/
+	std::map<int, std::map<int, double>> getCouplingMatFSI();
+	/***********************************************************************************************
+	* \brief Prints the UMA imported matrix
 	* \param[in] UMA System with the valid matrix
 	* \param[in] Name of matrix
 	* \param[in] Flag for displaying imported matrices
@@ -88,69 +110,18 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 #ifdef USE_SIMULIA_UMA_API
-	void checkForInternalDofs(const uma_SparseMatrix &smtx, char *matrixName, bool _printToScreen);
+	void PrintMatrix(const uma_System &system, const char *matrixName, bool _printToScreen, bool _printToFile);
 #endif
-	/***********************************************************************************************
-	* \brief Adds an internal dof to the datastructure
-	* \param[in] Name of matrix
-	* \param[in] GlobalIndex
-	* \param[in] Flag to mark detection of internal dof
-	* \author Harikrishnan Sreekumar
-	***********/
-	void addInternalDof(char *matrixName, int _index, bool _flag);
-	/***********************************************************************************************
-	* \brief Generates global map
-	* \author Harikrishnan Sreekumar
-	***********/
-	void generateGlobalMap(bool _printToScreen);
-	/***********************************************************************************************
-	* \brief Generates a file with node to local dof and global dof map
-	* \author Harikrishnan Sreekumar
-	***********/
-	void printMapToFile();
-	/***********************************************************************************************
-	* \brief Adds a detected node and its dof to the map (accumulates info from all SIMs and avoid duplicates)
-	* \param[in] Node
-	* \param[in] Dof
-	* \author Harikrishnan Sreekumar
-	***********/
-	void addEntryToNodeDofMap(int _node, int _dof);
 private:
+	/// UMA filename
 	std::string myFileName;
 	/// HMesh object 
-	HMesh *myHMesh;
-	/// Node Label and DoF vector
-	std::vector<std::vector<int>> simNodeMap;
-	/// Number of nodes
-	int numNodes;
-	/// Total number of dofs
-	int totalDOFs;
-	/// Number of DoFs per Node
-	int numDoFperNode;
-
-	// Flags
-	bool hasInternalDOF_K;
-	bool hasInternalDOF_M;
-	bool hasInternalDOF_SD;
-	bool flag_SD;
-
-	// vectors with local dof of internaldofs
-	std::vector<int> internalDOF_K;
-	std::vector<int> internalDOF_M;
-	std::vector<int> internalDOF_SD;
-
-	// SIM File Names
-	std::string stiffnessFileName;
-	std::string massFileName ;
-	std::string structDampingFileName;
-
-	// Definition of matrix keys
-	char* stiffnessUMA_key ;
-	char* massUMA_key;
-	char* structuralDampingUMA_key;
-
-	// Maps
-	std::map<int, std::vector<int>> nodeToDofMap;
-	std::map<int, std::vector<int>> nodeToGlobalMap;
-
+	HMesh *myHMesh;	   
+	/// The system matrix map
+	std::map<int, std::map<int, double>> mySystemMatrixMapCSR;
+	/// FSI Coupling matrix map
+	std::map<int, std::map<int, double>> myCouplingMatFSI;
+	/// the current system
+	uma_System* myUMASystem;
 };
+

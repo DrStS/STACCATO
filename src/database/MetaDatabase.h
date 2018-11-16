@@ -60,6 +60,7 @@ private:
 	***********/
 	MetaDatabase(std::string);
 	static MetaDatabase* metaDatabase;
+	std::string myWorkingPath;
 public:
 	std::auto_ptr<STACCATO_XML> xmlHandle;
 	static void init(std::string);
@@ -69,9 +70,9 @@ public:
 	void buildXML(HMesh& _hMesh);
 	void exportXML();
 	void outputXML(xercesc::DOMDocument* _pmyDOMDocument, std::string _filePath);
-
-	// Has to be removed with efficient datastructure
-	std::string simFile;
-	std::map<int, std::vector<int>> nodeToDofMapMeta;
-	std::map<int, std::vector<int>> nodeToGlobalMapMeta;
+	/***********************************************************************************************
+     * \brief Get working path
+     * \author Stefan Sicklinger
+     ***********/
+	std::string getWorkingPath();
 };

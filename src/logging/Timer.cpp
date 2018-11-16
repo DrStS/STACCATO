@@ -27,3 +27,4 @@ Timer   linearSolverTimer01;
 Timer   linearSolverTimer02;
 Timer	exportCSRTimer01;
 Timer mklTimer01;
+Timer mklSparseTimer01;

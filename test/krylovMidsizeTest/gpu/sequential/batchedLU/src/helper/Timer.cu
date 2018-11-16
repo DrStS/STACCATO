@@ -17,11 +17,12 @@
 *  You should have received a copy of the GNU General Public License
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
-#include "Reader.h"
+#include "Timer.cuh"
 
-
-Reader::Reader()  {
-}
-
-Reader::~Reader() {
-}
+//Instantiate the timer object
+Timer   timerTotal;
+Timer	timerIteration;
+Timer	timerLoop;
+Timer	timerIO;
+Timer	timerMatrixCpy;
+Timer	timerMatrixComp;

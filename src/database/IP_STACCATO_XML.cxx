@@ -103,6 +103,36 @@ Name (::std::auto_ptr< Name_type > x)
   this->Name_.set (x);
 }
 
+const NODESET::Instance_optional& NODESET::
+Instance () const
+{
+  return this->Instance_;
+}
+
+NODESET::Instance_optional& NODESET::
+Instance ()
+{
+  return this->Instance_;
+}
+
+void NODESET::
+Instance (const Instance_type& x)
+{
+  this->Instance_.set (x);
+}
+
+void NODESET::
+Instance (const Instance_optional& x)
+{
+  this->Instance_ = x;
+}
+
+void NODESET::
+Instance (::std::auto_ptr< Instance_type > x)
+{
+  this->Instance_.set (x);
+}
+
 
 // TRANSLATETO
 // 
@@ -953,6 +983,24 @@ FREQUENCY (const FREQUENCY_sequence& s)
   this->FREQUENCY_ = s;
 }
 
+const ANALYSIS::FILEEXPORT_sequence& ANALYSIS::
+FILEEXPORT () const
+{
+  return this->FILEEXPORT_;
+}
+
+ANALYSIS::FILEEXPORT_sequence& ANALYSIS::
+FILEEXPORT ()
+{
+  return this->FILEEXPORT_;
+}
+
+void ANALYSIS::
+FILEEXPORT (const FILEEXPORT_sequence& s)
+{
+  this->FILEEXPORT_ = s;
+}
+
 const ANALYSIS::BCCASE_sequence& ANALYSIS::
 BCCASE () const
 {
@@ -1298,6 +1346,58 @@ Type (const Type_optional& x)
 }
 
 void FREQUENCY::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// FILEEXPORT
+// 
+
+const FILEEXPORT::EXPORT_sequence& FILEEXPORT::
+EXPORT () const
+{
+  return this->EXPORT_;
+}
+
+FILEEXPORT::EXPORT_sequence& FILEEXPORT::
+EXPORT ()
+{
+  return this->EXPORT_;
+}
+
+void FILEEXPORT::
+EXPORT (const EXPORT_sequence& s)
+{
+  this->EXPORT_ = s;
+}
+
+const FILEEXPORT::Type_optional& FILEEXPORT::
+Type () const
+{
+  return this->Type_;
+}
+
+FILEEXPORT::Type_optional& FILEEXPORT::
+Type ()
+{
+  return this->Type_;
+}
+
+void FILEEXPORT::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void FILEEXPORT::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void FILEEXPORT::
 Type (::std::auto_ptr< Type_type > x)
 {
   this->Type_.set (x);
@@ -1661,6 +1761,76 @@ void BC_DEF::
 DISPLACEMENT (const DISPLACEMENT_sequence& s)
 {
   this->DISPLACEMENT_ = s;
+}
+
+
+// EXPORT
+// 
+
+const EXPORT::INPUT_LOADCASE_sequence& EXPORT::
+INPUT_LOADCASE () const
+{
+  return this->INPUT_LOADCASE_;
+}
+
+EXPORT::INPUT_LOADCASE_sequence& EXPORT::
+INPUT_LOADCASE ()
+{
+  return this->INPUT_LOADCASE_;
+}
+
+void EXPORT::
+INPUT_LOADCASE (const INPUT_LOADCASE_sequence& s)
+{
+  this->INPUT_LOADCASE_ = s;
+}
+
+const EXPORT::OUTPUTS_HISTORY_sequence& EXPORT::
+OUTPUTS_HISTORY () const
+{
+  return this->OUTPUTS_HISTORY_;
+}
+
+EXPORT::OUTPUTS_HISTORY_sequence& EXPORT::
+OUTPUTS_HISTORY ()
+{
+  return this->OUTPUTS_HISTORY_;
+}
+
+void EXPORT::
+OUTPUTS_HISTORY (const OUTPUTS_HISTORY_sequence& s)
+{
+  this->OUTPUTS_HISTORY_ = s;
+}
+
+const EXPORT::Type_optional& EXPORT::
+Type () const
+{
+  return this->Type_;
+}
+
+EXPORT::Type_optional& EXPORT::
+Type ()
+{
+  return this->Type_;
+}
+
+void EXPORT::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void EXPORT::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void EXPORT::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
 }
 
 
@@ -2085,6 +2255,24 @@ void IMPORT::
 LIST (::std::auto_ptr< LIST_type > x)
 {
   this->LIST_.set (x);
+}
+
+const IMPORT::UMA_sequence& IMPORT::
+UMA () const
+{
+  return this->UMA_;
+}
+
+IMPORT::UMA_sequence& IMPORT::
+UMA ()
+{
+  return this->UMA_;
+}
+
+void IMPORT::
+UMA (const UMA_sequence& s)
+{
+  this->UMA_ = s;
 }
 
 const IMPORT::NODE_sequence& IMPORT::
@@ -2602,6 +2790,126 @@ Name (::std::auto_ptr< Name_type > x)
 }
 
 
+// INPUT_LOADCASE
+// 
+
+const INPUT_LOADCASE::NODESET_sequence& INPUT_LOADCASE::
+NODESET () const
+{
+  return this->NODESET_;
+}
+
+INPUT_LOADCASE::NODESET_sequence& INPUT_LOADCASE::
+NODESET ()
+{
+  return this->NODESET_;
+}
+
+void INPUT_LOADCASE::
+NODESET (const NODESET_sequence& s)
+{
+  this->NODESET_ = s;
+}
+
+const INPUT_LOADCASE::Type_optional& INPUT_LOADCASE::
+Type () const
+{
+  return this->Type_;
+}
+
+INPUT_LOADCASE::Type_optional& INPUT_LOADCASE::
+Type ()
+{
+  return this->Type_;
+}
+
+void INPUT_LOADCASE::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void INPUT_LOADCASE::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void INPUT_LOADCASE::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// OUTPUTS_HISTORY
+// 
+
+const OUTPUTS_HISTORY::Type_optional& OUTPUTS_HISTORY::
+Type () const
+{
+  return this->Type_;
+}
+
+OUTPUTS_HISTORY::Type_optional& OUTPUTS_HISTORY::
+Type ()
+{
+  return this->Type_;
+}
+
+void OUTPUTS_HISTORY::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void OUTPUTS_HISTORY::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void OUTPUTS_HISTORY::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
+// UMA
+// 
+
+const UMA::Type_optional& UMA::
+Type () const
+{
+  return this->Type_;
+}
+
+UMA::Type_optional& UMA::
+Type ()
+{
+  return this->Type_;
+}
+
+void UMA::
+Type (const Type_type& x)
+{
+  this->Type_.set (x);
+}
+
+void UMA::
+Type (const Type_optional& x)
+{
+  this->Type_ = x;
+}
+
+void UMA::
+Type (::std::auto_ptr< Type_type > x)
+{
+  this->Type_.set (x);
+}
+
+
 // NODE
 // 
 
@@ -2655,7 +2963,8 @@ NODESET::
 NODESET ()
 : ::xml_schema::type (),
   LIST_ (this),
-  Name_ (this)
+  Name_ (this),
+  Instance_ (this)
 {
 }
 
@@ -2665,7 +2974,8 @@ NODESET (const NODESET& x,
          ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
   LIST_ (x.LIST_, f, this),
-  Name_ (x.Name_, f, this)
+  Name_ (x.Name_, f, this),
+  Instance_ (x.Instance_, f, this)
 {
 }
 
@@ -2675,7 +2985,8 @@ NODESET (const ::xercesc::DOMElement& e,
          ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
   LIST_ (this),
-  Name_ (this)
+  Name_ (this),
+  Instance_ (this)
 {
   if ((f & ::xml_schema::flags::base) == 0)
   {
@@ -2722,6 +3033,12 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
       this->Name_.set (Name_traits::create (i, f, this));
       continue;
     }
+
+    if (n.name () == "Instance" && n.namespace_ ().empty ())
+    {
+      this->Instance_.set (Instance_traits::create (i, f, this));
+      continue;
+    }
   }
 }
 
@@ -2740,6 +3057,7 @@ operator= (const NODESET& x)
     static_cast< ::xml_schema::type& > (*this) = x;
     this->LIST_ = x.LIST_;
     this->Name_ = x.Name_;
+    this->Instance_ = x.Instance_;
   }
 
   return *this;
@@ -3805,6 +4123,7 @@ ANALYSIS ()
   NAME_ (this),
   TYPE_ (this),
   FREQUENCY_ (this),
+  FILEEXPORT_ (this),
   BCCASE_ (this),
   LOADCASES_ (this)
 {
@@ -3818,6 +4137,7 @@ ANALYSIS (const ANALYSIS& x,
   NAME_ (x.NAME_, f, this),
   TYPE_ (x.TYPE_, f, this),
   FREQUENCY_ (x.FREQUENCY_, f, this),
+  FILEEXPORT_ (x.FILEEXPORT_, f, this),
   BCCASE_ (x.BCCASE_, f, this),
   LOADCASES_ (x.LOADCASES_, f, this)
 {
@@ -3831,6 +4151,7 @@ ANALYSIS (const ::xercesc::DOMElement& e,
   NAME_ (this),
   TYPE_ (this),
   FREQUENCY_ (this),
+  FILEEXPORT_ (this),
   BCCASE_ (this),
   LOADCASES_ (this)
 {
@@ -3890,6 +4211,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
       continue;
     }
 
+    // FILEEXPORT
+    //
+    if (n.name () == "FILEEXPORT" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< FILEEXPORT_type > r (
+        FILEEXPORT_traits::create (i, f, this));
+
+      this->FILEEXPORT_.push_back (r);
+      continue;
+    }
+
     // BCCASE
     //
     if (n.name () == "BCCASE" && n.namespace_ ().empty ())
@@ -3932,6 +4264,7 @@ operator= (const ANALYSIS& x)
     this->NAME_ = x.NAME_;
     this->TYPE_ = x.TYPE_;
     this->FREQUENCY_ = x.FREQUENCY_;
+    this->FILEEXPORT_ = x.FILEEXPORT_;
     this->BCCASE_ = x.BCCASE_;
     this->LOADCASES_ = x.LOADCASES_;
   }
@@ -4278,6 +4611,105 @@ operator= (const FREQUENCY& x)
 
 FREQUENCY::
 ~FREQUENCY ()
+{
+}
+
+// FILEEXPORT
+//
+
+FILEEXPORT::
+FILEEXPORT ()
+: ::xml_schema::type (),
+  EXPORT_ (this),
+  Type_ (this)
+{
+}
+
+FILEEXPORT::
+FILEEXPORT (const FILEEXPORT& x,
+            ::xml_schema::flags f,
+            ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  EXPORT_ (x.EXPORT_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+FILEEXPORT::
+FILEEXPORT (const ::xercesc::DOMElement& e,
+            ::xml_schema::flags f,
+            ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  EXPORT_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void FILEEXPORT::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // EXPORT
+    //
+    if (n.name () == "EXPORT" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< EXPORT_type > r (
+        EXPORT_traits::create (i, f, this));
+
+      this->EXPORT_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+FILEEXPORT* FILEEXPORT::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class FILEEXPORT (*this, f, c);
+}
+
+FILEEXPORT& FILEEXPORT::
+operator= (const FILEEXPORT& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->EXPORT_ = x.EXPORT_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+FILEEXPORT::
+~FILEEXPORT ()
 {
 }
 
@@ -5131,6 +5563,120 @@ BC_DEF::
 {
 }
 
+// EXPORT
+//
+
+EXPORT::
+EXPORT ()
+: ::xml_schema::type (),
+  INPUT_LOADCASE_ (this),
+  OUTPUTS_HISTORY_ (this),
+  Type_ (this)
+{
+}
+
+EXPORT::
+EXPORT (const EXPORT& x,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  INPUT_LOADCASE_ (x.INPUT_LOADCASE_, f, this),
+  OUTPUTS_HISTORY_ (x.OUTPUTS_HISTORY_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+EXPORT::
+EXPORT (const ::xercesc::DOMElement& e,
+        ::xml_schema::flags f,
+        ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  INPUT_LOADCASE_ (this),
+  OUTPUTS_HISTORY_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void EXPORT::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // INPUT_LOADCASE
+    //
+    if (n.name () == "INPUT_LOADCASE" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< INPUT_LOADCASE_type > r (
+        INPUT_LOADCASE_traits::create (i, f, this));
+
+      this->INPUT_LOADCASE_.push_back (r);
+      continue;
+    }
+
+    // OUTPUTS_HISTORY
+    //
+    if (n.name () == "OUTPUTS_HISTORY" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< OUTPUTS_HISTORY_type > r (
+        OUTPUTS_HISTORY_traits::create (i, f, this));
+
+      this->OUTPUTS_HISTORY_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+EXPORT* EXPORT::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class EXPORT (*this, f, c);
+}
+
+EXPORT& EXPORT::
+operator= (const EXPORT& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->INPUT_LOADCASE_ = x.INPUT_LOADCASE_;
+    this->OUTPUTS_HISTORY_ = x.OUTPUTS_HISTORY_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+EXPORT::
+~EXPORT ()
+{
+}
+
 // BC
 //
 
@@ -5752,6 +6298,7 @@ IMPORT::
 IMPORT ()
 : ::xml_schema::type (),
   LIST_ (this),
+  UMA_ (this),
   NODE_ (this),
   ELEMENT_ (this),
   TRANSLATETO_ (this),
@@ -5765,6 +6312,7 @@ IMPORT (const IMPORT& x,
         ::xml_schema::container* c)
 : ::xml_schema::type (x, f, c),
   LIST_ (x.LIST_, f, this),
+  UMA_ (x.UMA_, f, this),
   NODE_ (x.NODE_, f, this),
   ELEMENT_ (x.ELEMENT_, f, this),
   TRANSLATETO_ (x.TRANSLATETO_, f, this),
@@ -5778,6 +6326,7 @@ IMPORT (const ::xercesc::DOMElement& e,
         ::xml_schema::container* c)
 : ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
   LIST_ (this),
+  UMA_ (this),
   NODE_ (this),
   ELEMENT_ (this),
   TRANSLATETO_ (this),
@@ -5812,6 +6361,17 @@ parse (::xsd::cxx::xml::dom::parser< char >& p,
         this->LIST_.set (r);
         continue;
       }
+    }
+
+    // UMA
+    //
+    if (n.name () == "UMA" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< UMA_type > r (
+        UMA_traits::create (i, f, this));
+
+      this->UMA_.push_back (r);
+      continue;
     }
 
     // NODE
@@ -5878,6 +6438,7 @@ operator= (const IMPORT& x)
   {
     static_cast< ::xml_schema::type& > (*this) = x;
     this->LIST_ = x.LIST_;
+    this->UMA_ = x.UMA_;
     this->NODE_ = x.NODE_;
     this->ELEMENT_ = x.ELEMENT_;
     this->TRANSLATETO_ = x.TRANSLATETO_;
@@ -6406,6 +6967,255 @@ operator= (const DISPLACEMENT& x)
 
 DISPLACEMENT::
 ~DISPLACEMENT ()
+{
+}
+
+// INPUT_LOADCASE
+//
+
+INPUT_LOADCASE::
+INPUT_LOADCASE ()
+: ::xml_schema::type (),
+  NODESET_ (this),
+  Type_ (this)
+{
+}
+
+INPUT_LOADCASE::
+INPUT_LOADCASE (const INPUT_LOADCASE& x,
+                ::xml_schema::flags f,
+                ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  NODESET_ (x.NODESET_, f, this),
+  Type_ (x.Type_, f, this)
+{
+}
+
+INPUT_LOADCASE::
+INPUT_LOADCASE (const ::xercesc::DOMElement& e,
+                ::xml_schema::flags f,
+                ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  NODESET_ (this),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, true, false, true);
+    this->parse (p, f);
+  }
+}
+
+void INPUT_LOADCASE::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  for (; p.more_content (); p.next_content (false))
+  {
+    const ::xercesc::DOMElement& i (p.cur_element ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    // NODESET
+    //
+    if (n.name () == "NODESET" && n.namespace_ ().empty ())
+    {
+      ::std::auto_ptr< NODESET_type > r (
+        NODESET_traits::create (i, f, this));
+
+      this->NODESET_.push_back (r);
+      continue;
+    }
+
+    break;
+  }
+
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+INPUT_LOADCASE* INPUT_LOADCASE::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class INPUT_LOADCASE (*this, f, c);
+}
+
+INPUT_LOADCASE& INPUT_LOADCASE::
+operator= (const INPUT_LOADCASE& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->NODESET_ = x.NODESET_;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+INPUT_LOADCASE::
+~INPUT_LOADCASE ()
+{
+}
+
+// OUTPUTS_HISTORY
+//
+
+OUTPUTS_HISTORY::
+OUTPUTS_HISTORY ()
+: ::xml_schema::type (),
+  Type_ (this)
+{
+}
+
+OUTPUTS_HISTORY::
+OUTPUTS_HISTORY (const OUTPUTS_HISTORY& x,
+                 ::xml_schema::flags f,
+                 ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+OUTPUTS_HISTORY::
+OUTPUTS_HISTORY (const ::xercesc::DOMElement& e,
+                 ::xml_schema::flags f,
+                 ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void OUTPUTS_HISTORY::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+OUTPUTS_HISTORY* OUTPUTS_HISTORY::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class OUTPUTS_HISTORY (*this, f, c);
+}
+
+OUTPUTS_HISTORY& OUTPUTS_HISTORY::
+operator= (const OUTPUTS_HISTORY& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+OUTPUTS_HISTORY::
+~OUTPUTS_HISTORY ()
+{
+}
+
+// UMA
+//
+
+UMA::
+UMA ()
+: ::xml_schema::type (),
+  Type_ (this)
+{
+}
+
+UMA::
+UMA (const UMA& x,
+     ::xml_schema::flags f,
+     ::xml_schema::container* c)
+: ::xml_schema::type (x, f, c),
+  Type_ (x.Type_, f, this)
+{
+}
+
+UMA::
+UMA (const ::xercesc::DOMElement& e,
+     ::xml_schema::flags f,
+     ::xml_schema::container* c)
+: ::xml_schema::type (e, f | ::xml_schema::flags::base, c),
+  Type_ (this)
+{
+  if ((f & ::xml_schema::flags::base) == 0)
+  {
+    ::xsd::cxx::xml::dom::parser< char > p (e, false, false, true);
+    this->parse (p, f);
+  }
+}
+
+void UMA::
+parse (::xsd::cxx::xml::dom::parser< char >& p,
+       ::xml_schema::flags f)
+{
+  while (p.more_attributes ())
+  {
+    const ::xercesc::DOMAttr& i (p.next_attribute ());
+    const ::xsd::cxx::xml::qualified_name< char > n (
+      ::xsd::cxx::xml::dom::name< char > (i));
+
+    if (n.name () == "Type" && n.namespace_ ().empty ())
+    {
+      this->Type_.set (Type_traits::create (i, f, this));
+      continue;
+    }
+  }
+}
+
+UMA* UMA::
+_clone (::xml_schema::flags f,
+        ::xml_schema::container* c) const
+{
+  return new class UMA (*this, f, c);
+}
+
+UMA& UMA::
+operator= (const UMA& x)
+{
+  if (this != &x)
+  {
+    static_cast< ::xml_schema::type& > (*this) = x;
+    this->Type_ = x.Type_;
+  }
+
+  return *this;
+}
+
+UMA::
+~UMA ()
 {
 }
 

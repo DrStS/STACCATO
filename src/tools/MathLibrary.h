@@ -79,6 +79,13 @@ namespace MathLibrary {
 	***********/
 	void copyDenseVector(double *vec1, const double *vec2, const int elements);
 	/***********************************************************************************************
+	* \brief Copy dense vector vec1 <- vec2
+	* \param[in] vec1 the 1st vector
+	* \param[in] vec2 the 2nd vector
+	* \author Harikrishnan Sreekumar
+	***********/
+	void copyDenseVectorComplex(STACCATOComplexDouble *vec1, const STACCATOComplexDouble *vec2, const int elements);
+	/***********************************************************************************************
 	* \brief Compute Euclidean norm of vector
 	* \param[in] vec1 the 1st vector
 	* \param[in] elements number of elements in vec1
@@ -176,6 +183,16 @@ namespace MathLibrary {
 	***********/
 	void computeDenseMatrixVectorMultiplication(int _m, int _n, const double *_A, const double *_b, double *_c);
 	/***********************************************************************************************
+	* \brief Compute dense matrix-vector product
+	* \param[in] _m Specifies the number of rows of the matrix A and vector length b
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in] _A m rows by _n columns
+	* \param[in] _b vector of length _n
+	* \param[in/out] _c vector of length _m
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixVectorMultiplicationComplex(int _m, int _n, int _k, const STACCATOComplexDouble *_A, const STACCATOComplexDouble *_b, STACCATOComplexDouble *_c, const bool _transposeA, const bool _multByScalar, const STACCATOComplexDouble _alpha, const bool _addPrevious, const bool _useIntelSmall, const bool _rowMajor);
+	/***********************************************************************************************
 	* \brief Computes the Cross Product of two vectors
 	* \param[in] Vector 1
 	* \param[in] Vector 2
@@ -259,13 +276,41 @@ namespace MathLibrary {
 	* \param[in] _entries Handle to complex entries
 	* \author Harikrishnan Sreekumar
 	***********/
-	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, std::vector<int>& _pointerB, std::vector<int>& _pointerE, std::vector<int>& _columns, std::vector<STACCATOComplexDouble>& _entries);
+	void createSparseCSRComplex(sparse_matrix_t* _mat, int _m, int _n, int* _pointerB, int* _pointerE, int* _columns, STACCATOComplexDouble* _entries);
 	/***********************************************************************************************
 	* \brief Displays the CSR sparse data type
 	* \param[in] _mat Sparse matrix for displaying
 	* \author Harikrishnan Sreekumar
 	***********/
-	void print_csr_sparse_z(sparse_matrix_t* _mat);
+	void printToScreen_csr_sparse_z(sparse_matrix_t* _mat);
+	/***********************************************************************************************
+	* \brief Exports the CSR sparse data type to a default file in CSR format
+	* \param[in] _mat Sparse matrix for exporting
+	* \author Harikrishnan Sreekumar
+	***********/
+	void printToFile_csr_sparse_z(sparse_matrix_t* _mat);
+	/***********************************************************************************************
+	* \brief Step 1 of QR: Computes the pivoted QR factorization of a complex mxn matrix and returns the R matrix and elmentory reflectors
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A m rows by _n columns, out-> the upper triangular matrix R
+	* \param[in] _rowMajor matrix format
+	* \param[out] _tau elementary reflectors
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixPivotedQR_R_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool _rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+	/***********************************************************************************************
+	* \brief Step 2 of QR: Extracts the orthogonal Q matrix after doing STEP 1 of QR
+	* \param[in] _m Specifies the number of rows of the matrix A
+	* \param[in] _n Specifies the number of columns of the matrix A
+	* \param[in/out] _A Upper triangular matrix R with _m rows by _n columns, out-> the orthogonal matrix Q
+	* \param[in] _rowMajor matrix format
+	* \param[in] _tau elementary reflectors
+	* \author Harikrishnan Sreekumar
+	***********/
+	void computeDenseMatrixQR_Q_DecompositionComplex(int _m, int _n, STACCATOComplexDouble *_A, bool rowMajor, std::vector<STACCATOComplexDouble>& _tau);
+
+
 	/**********
 	* \brief This is a template class does compressed sparse row matrix computations: CSR Format (3-Array Variation)
 	*
@@ -1040,7 +1085,7 @@ namespace MathLibrary {
 		sparse_matrix_t convertToSparseDatatype() {
 			determineCSR();
 			sparse_matrix_t sparseMat;
-			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, pointerB, pointerE, columns, values);
+			MathLibrary::createSparseCSRComplex(&sparseMat, m, n, &pointerB[0], &pointerE[0], &columns[0], &values[0]);
 			return sparseMat;
 		}
 	private:
@@ -1334,7 +1379,7 @@ namespace MathLibrary {
 		void writeMtxMat(std::false_type, std::string _fileName) {
 			std::cout << ">> Writing " << _fileName << "#" << m << "x" << n << "..." << std::endl;
 			size_t ii_counter;
-			std::map<size_t, T>::iterator jj_counter;
+			typename std::map<size_t, T>::iterator jj_counter;
 
 			std::ofstream myfile;
 			myfile.open(_fileName);

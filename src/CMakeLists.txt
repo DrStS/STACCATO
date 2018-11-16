@@ -20,6 +20,11 @@ IF (${USE_OCCT})
   include_directories(${OCCT_INCLUDE_DIR})
   SET(STACCATO_LIBS ${STACCATO_LIBS}  ${OCCT_LIBRARIES})
 ENDIF()
+# Set HDF5
+IF (${USE_HDF5})
+  include_directories(${HDF5_INCLUDE_DIR})
+  SET(STACCATO_LIBS ${STACCATO_LIBS} ${HDF5_LIBRARIES})
+ENDIF()
 # SET VTK
 IF (${USE_VTK})
   include_directories(${VTK_INCLUDE_DIR})

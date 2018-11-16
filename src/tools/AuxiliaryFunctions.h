@@ -70,5 +70,13 @@ public:
 	* \author Harikrishnan Sreekumar
 	***********/
 	static void writeMKLComplexDenseMatrixMtxFormat(std::string _fileName, std::vector<MKL_Complex16> &_vector, const int _row, const int _col, const bool _isRowMajor);
+	/***********************************************************************************************
+	* \brief Write a STACCATOComplexDouble vector to the DAT file with format: <real_value> <imag_value>
+	* \param[in] _fileName
+	* \param[in] _vector::MKL_Complex16
+	* \return std:vector<double> 
+	* \author Stefan Sicklinger
+	***********/
+    static std::vector<double> extractRealPart(std::vector< STACCATOComplexDouble > &_vector);
 };
 

@@ -78,11 +78,10 @@ int main(int argc, char *argv[]) {
 
     // Command line arguments
     if (argc < 5){
-        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -mkl <mkl threads> -openmp <OpenMP threads>" << std::endl;
+        std::cerr << ">> Usage: " << argv[0] << " -f <maximum frequency> -m <matrix repetition> -mkl <mkl threads>" << std::endl;
         std::cerr << ">> NOTE: There are 12 matrices and matrix repetition increases the total number of matrices (e.g. matrix repetition of 5 will use 60 matrices)" << std::endl;
         std::cerr << "         Frequency starts from 1 to maximum frequency" << std::endl;
         std::cerr << "         Default number of MKL threads is mkl_get_max_threads()" << std::endl;
-        std::cerr << "         Default number of OpenMP threads is 1" << std::endl;
         return 1;
     }
 
@@ -92,19 +91,18 @@ int main(int argc, char *argv[]) {
     std::cout << ">> Maximum Frequency: " << freq_max << std::endl;
     std::cout << ">> Total number of matrices: " << num_matrix << "\n" << std::endl;
 
-    // OpenMP
+    // MKL threads
     int nt_mkl = mkl_get_max_threads();
-    int nt = 1;
     if (argc > 6) nt_mkl = atoi(argv[6]);
-    if (argc > 8){
-        nt_mkl = atoi(argv[6]);
-        nt = atoi(argv[8]);
-    }
-
-    omp_set_num_threads(nt);
     mkl_set_num_threads(nt_mkl);
-    std::cout << ">> Software will use the following number of threads: " << nt << " OpenMP threads, " << nt_mkl << " MKL threads\n" << std::endl;
+    std::cout << ">> Software will use the following number of threads: " << nt_mkl << " MKL threads\n" << std::endl;
 
+    // Print MKL Version
+    int len = 198;
+    char buf[198];
+    mkl_get_version_string(buf, len);
+    printf("%s\n", buf);
+    printf("\n");
 
 #if defined(_WIN32) || defined(__WIN32__)
     std::string filePathPrefix = "C:/software/examples/";
@@ -252,6 +250,25 @@ int main(int argc, char *argv[]) {
     /*--------------------
     PARDISO Initialisation
     --------------------*/
+    // Check if sparse matrix is good
+    std::cout << "\n >> Checking if CSR format is correct ... " << std::endl;
+    sparse_checker_error_values check_err_val;
+    sparse_struct pt;
+    int error = 0;
+    sparse_matrix_checker_init(&pt);
+    pt.n = row;
+    pt.csr_ia = csrRowPtr.data();
+    pt.csr_ja = csrColInd.data();
+    pt.indexing = MKL_ZERO_BASED;
+    pt.print_style = MKL_C_STYLE;
+    pt.message_level = MKL_PRINT;
+    check_err_val = sparse_matrix_checker(&pt);
+    printf(">>>> Matrix check details: (%d, %d, %d)\n", pt.check_result[0], pt.check_result[1], pt.check_result[2]);
+    if (check_err_val == MKL_SPARSE_CHECKER_SUCCESS) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_SUCCESS\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_NON_MONOTONIC) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NON_MONOTONIC\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_OUT_OF_RANGE) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_OUT_OF_RANGE\n"); }
+    if (check_err_val == MKL_SPARSE_CHECKER_NONORDERED) { printf(">>>> Matrix check result: MKL_SPARSE_CHECKER_NONORDERED\n"); }
+    error = 1;
     // Pardiso variables
     void *pardiso_pt[64] = {};   // Internal solver memory pointer
     MKL_INT pardiso_mtype = 13; // Real Complex Unsymmetric Matrix
@@ -287,42 +304,48 @@ int main(int argc, char *argv[]) {
     pardiso_iparm[17] = -1;         // Output: Number of nonzeros in the factor LU
     pardiso_iparm[18] = -1;         // Output: Mflops for LU factorization
     pardiso_iparm[19] = 0;          // Output: Numbers of CG Iterations
+    pardiso_iparm[34] = 1;          // Zero based indexing
     pardiso_maxfct = 1;             // Maximum number of numerical factorizations
     pardiso_mnum = 1;               // Which factorization to use
     pardiso_msglvl = 0;             // Print statistical information
     pardiso_error = 0;              // Initialize error flag
-    // Pardiso configuration
-    pardiso_phase = 23;             // Numerical factorization, solve, iterative refinement
-    // Create 3 array MKL CSR format
-    //mkl_sparse_z_create_csr(&csrA, SPARSE_INDEX_BASE_ZERO, row, row, csrRowPtr, csrRowPtr+1, csrColInd, A);
 
+    // Loop over frequency
     int sol_shift = 0;
     std::cout << "\n" << ">> Frequency loop started" << std::endl;
     timerLoop.start();
-    // Loop over frequency
-#pragma omp parallel
-    {
-        //#pragma omp critical (cout)
-        //std::cout << "I'm thread " << omp_get_thread_num() << " of " << omp_get_num_threads() << std::endl;
-#pragma omp for
-        for (int it = (int)freq_min; it <= (int)freq_max; it++) {
-            // Compute scaling
-            freq = (double)it;
-            freq_square = -(freq*freq);
+    for (int it = (int)freq_min; it <= (int)freq_max; it++) {
+        // Compute scaling
+        freq = (double)it;
+        freq_square = -(freq*freq);
 
-            // Assemble global matrix ( A = K - f^2*M_tilde)
-            cblas_zcopy(nnz, M.data(), 1, A.data(), 1);
-            cblas_zdscal(nnz, freq_square, A.data(), 1);
-            cblas_zaxpy(nnz, &one, K.data(), 1, A.data(), 1);
+        // Assemble global matrix ( A = K - f^2*M_tilde)
+        cblas_zcopy(nnz, M.data(), 1, A.data(), 1);
+        cblas_zdscal(nnz, freq_square, A.data(), 1);
+        cblas_zaxpy(nnz, &one, K.data(), 1, A.data(), 1);
 
-            // PARDISO
-            pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
-                    pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data() + sol_shift, &pardiso_error);
+        /*-----
+        PARDISO
+        -----*/
+        // Symbolic factorization
+        pardiso_phase = 11;
+        pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+        if (pardiso_error != 0) {std::cout << "ERROR during symbolic factorisation: " << pardiso_error; exit(1);}
+        // Numerical factorization
+        pardiso_phase = 22;
+        pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
+        if (pardiso_error != 0) {std::cout << "ERROR during numerical factorisation: " << pardiso_error; exit(2);}
+        // Backward substitution
+        pardiso_phase = 33;
+        pardiso(pardiso_pt, &pardiso_maxfct, &pardiso_mnum, &pardiso_mtype, &pardiso_phase, &row, A.data(), csrRowPtr.data(), csrColInd.data(), &pardiso_idum, &pardiso_nrhs,
+                pardiso_iparm, &pardiso_msglvl, rhs.data(), sol.data()+sol_shift, &pardiso_error);
+        if (pardiso_error != 0) {std::cout << "ERROR during backward substitution: " << pardiso_error; exit(3);}
 
-            // Update solution shift
-            sol_shift += row;
-        } // frequency loop
-    } // omp parallel
+        // Update solution shift
+        sol_shift += row;
+    } // frequency loop
     timerLoop.stop();
     timerTotal.stop();
 
@@ -336,7 +359,7 @@ int main(int argc, char *argv[]) {
             pardiso_iparm, &pardiso_msglvl, &pardiso_ddum, &pardiso_ddum, &pardiso_error);
 
     // Output solutions
-    io::writeSolVecComplex(sol, filepath_sol, filename_sol);
+    //io::writeSolVecComplex(sol, filepath_sol, filename_sol);
 
     std::cout << ">>>>>> Total execution time (s) = " << timerTotal.getDurationMicroSec()*1e-6 << "\n" << std::endl;
 }

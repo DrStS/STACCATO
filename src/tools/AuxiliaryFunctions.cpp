@@ -22,6 +22,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <algorithm>
 
 AuxiliaryFunctions::AuxiliaryFunctions()
 {
@@ -107,3 +108,10 @@ void AuxiliaryFunctions::writeMKLComplexDenseMatrixMtxFormat(std::string _fileNa
 	}
 	myfile.close();
 }
+
+
+std::vector<double> AuxiliaryFunctions::extractRealPart(std::vector<STACCATOComplexDouble> &  _vector){
+std::vector<double> realPart;
+std::transform(_vector.begin(), _vector.end(), std::back_inserter(realPart),[](STACCATOComplexDouble const& x) { return x.real; });
+return realPart;
+};

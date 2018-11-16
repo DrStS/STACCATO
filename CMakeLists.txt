@@ -22,6 +22,7 @@ project (STACCATO)
 cmake_minimum_required (VERSION 3.2)
 cmake_policy(VERSION 3.2)
 set( CMAKE_VERBOSE_MAKEFILE off )
+#cmake_policy(SET CMP0074 NEW)
 #------------------------------------------------------------------------------------#
 # Check OS and host system
 IF( (${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND ${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")) 
@@ -61,6 +62,7 @@ option(USE_QT5                 "Use QT5"  OFF )
 option(USE_SIMULIA_ODB         "Use SIMULIA ODB"  ON )
 option(USE_SIMULIA_UMA         "Use SIMULIA UMA"  ON )
 option(USE_XSD                 "Use XSD with XERCES"  ON )
+option(USE_HDF5                "Use HDF5"  ON )
 option(STACCATO_COMMANDLINE    "Build STACCATO COMMANDLINE"  ON)
 ######################################################################################
 #2. Macros
@@ -76,7 +78,13 @@ include(CheckCXXCompilerFlag)
 ######################################################################################
 #3. Compiler
 ######################################################################################
-
+IF (${STACCATO_COMMANDLINE})
+  MESSAGE("Build STACCATO commandline only!")
+  add_definitions(-DSTACCATO_COMMANDLINE_ON)
+  option(USE_OCCT                "Use Opencascade"  OFF )
+  option(USE_VTK                 "Use VTK"  OFF )
+  option(USE_QT5                 "Use QT5"  OFF )
+ENDIF()
 #------------------------------------------------------------------------------------#
 # Avoid in source builds
 macro_ensure_out_of_source_build("In source build is not allowed for ${PROJECT_NAME}. Please run CMake from your build directory. You may want to remove CMakeCache.txt.")
@@ -113,22 +121,25 @@ ENDIF()
 # Try to find VTK
 IF (${USE_VTK})
  add_definitions(-DUSE_VTK)
+ SET(VTK_BASE_DIR "C:/software/libs/VTK-8.1.1")
  IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-   SET(VTK_DIR "C:/software/libs/VTK-8.1.1/build")
+   SET(VTK_DIR "${VTK_BASE_DIR}/build")
  ENDIF()
  IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
      SET(VTK_DIR "/opt/software/libs/VTK-8.1.1/gcc/lib/cmake/vtk-8.1")
  ENDIF()
-
   MESSAGE("VTK_DIR: ${VTK_DIR}")
   find_package(VTK REQUIRED)
   INCLUDE(${VTK_USE_FILE})
-  MESSAGE("VTK status: ${VTK_FOUND}")
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/build/ThirdParty/hdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/build/ThirdParty/hdf5/vtkhdf5)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5/vtkhdf5/hl/src)
+  LIST(REMOVE_ITEM VTK_INCLUDE_DIRS ${VTK_BASE_DIR}/ThirdParty/hdf5/vtkhdf5/src)
+  MESSAGE("VTK status: ${VTK_FOUND} ")#${VTK_INCLUDE_DIRS}
   IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
-	
   ENDIF()
   IF (${USE_GCC_COMPILERS_LINUX})
-    
   ENDIF()
 ENDIF()
 # Try to find Intel MKL 
@@ -139,9 +150,14 @@ IF (${USE_INTEL_MKL})
   MESSAGE("MKL status: ${MKL_FOUND}")
   # Get OpenMP activated and use Intel link library
 	    IF (CMAKE_SYSTEM_NAME MATCHES "Windows")
-	    	set (CMAKE_C_FLAGS   "/MD /openmp")
-	      set (CMAKE_CXX_FLAGS "/MD /openmp")
-	      set (CMAKE_EXE_LINKER_FLAGS "/nodefaultlib:vcomp ${MKL_OMP_LIBRARY}")
+		    IF(USE_INTEL_COMPILER)
+		      set (CMAKE_C_FLAGS   "/MD /Qopenmp")
+		      set (CMAKE_CXX_FLAGS "/MD /Qopenmp")
+		    ELSE()
+		    	set (CMAKE_C_FLAGS   "/MD /openmp")
+		      set (CMAKE_CXX_FLAGS "/MD /openmp")
+		      set (CMAKE_EXE_LINKER_FLAGS "/nodefaultlib:vcomp ${MKL_OMP_LIBRARY}")
+		    ENDIF()
       ENDIF()
       IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	    	set (CMAKE_C_FLAGS   "-fopenmp")
@@ -194,10 +210,19 @@ IF (${USE_XSD})
   ENDIF()
 ENDIF()
 # 
-IF (${STACCATO_COMMANDLINE})
-  MESSAGE("Build STACCATO commandline only!")
-  add_definitions(-DSTACCATO_COMMANDLINE_ON)
+# Try to find HDF5
+IF (${USE_HDF5})
+  add_definitions(-DUSE_HDF5)
+  find_package(HDF5 REQUIRED)
+  MESSAGE("HDF5 status: ${HDF5_FOUND}")
+  IF (${USE_MICROSOFT_COMPILERS_WINDOWS})
+  	SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+	ENDIF()
+  IF (${USE_GCC_COMPILERS_LINUX})
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  ENDIF()
 ENDIF()
+
 #------------------------------------------------------------------------------------#
 # Global compiler flags
 IF (${USE_GCC_COMPILERS_LINUX})

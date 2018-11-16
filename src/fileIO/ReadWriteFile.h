@@ -18,27 +18,27 @@
 *  along with STACCATO.  If not, see http://www.gnu.org/licenses/.
 */
 /***********************************************************************************************//**
-* \file Reader.h
-* This file holds the class Reader; Base class for a Fe element
-* \date 2/1/2018
+* \file ReadWriteFile.h
+* This file holds the class file IO 
+* \date 9/11/2018
 **************************************************************************************************/
 #pragma once
 
 /********//**
-* \brief Class Reader
+* \brief Class file IO
 **************************************************************************************************/
-class Reader {
+class ReadWriteFile {
 public:
 	/***********************************************************************************************
 	* \brief Constructor
-	* \author Harikrishnan Sreekumar
+	* \author Stefan Sicklinger
 	***********/
-	Reader();
+	ReadWriteFile();
 	/***********************************************************************************************
 	* \brief Destructor
-	* \author Harikrishnan Sreekumar
+	* \author Stefan Sicklinger
 	***********/
-	virtual ~Reader(void);
+	virtual ~ReadWriteFile(void);
 
 protected:
 

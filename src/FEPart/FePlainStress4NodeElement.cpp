@@ -21,6 +21,7 @@
 #include "Material.h"
 #include "Message.h"
 #include "MathLibrary.h"
+#include <cstring>
 
 
 FePlainStress4NodeElement::FePlainStress4NodeElement(Material *_material) : FeElement(_material) {

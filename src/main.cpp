@@ -67,11 +67,11 @@
 #include "STACCATOComputeEngine.h"
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON
- //Qt5
+//Qt5
 #include <QApplication>
- //VTK
+//VTK
 #include <QVTKOpenGLWidget.h>
- //USER
+//USER
 #include <STACCATOMainWindow.h>
 #endif // STACCATO_COMMANDLINE_ON
 
@@ -93,9 +93,6 @@ int main(int argc, char **argv) {
 		myComputeEngine->compute();
 		myComputeEngine->clean();
 	}
-
-
-
 #endif // STACCATO_COMMANDLINE_ON
 #ifndef STACCATO_COMMANDLINE_ON
 	//TODO
@@ -112,4 +109,3 @@ int main(int argc, char **argv) {
 
 
 }
-

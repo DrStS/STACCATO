@@ -34,14 +34,15 @@
 #include "MemWatcher.h"
 #include "MetaDatabase.h"
 #include "VectorFieldResults.h"
+#include "OutputDatabase.h"
+#include "AuxiliaryFunctions.h"
+
 
 #ifdef USE_HDF5
 #include "FileROM.h"
 #include "FileFOM.h"
+#include "FileResults.h"
 #endif //USE_HDF5
-
-#include "OutputDatabase.h"
-#include "AuxiliaryFunctions.h"
 
 #include <string.h>
 #include <complex>
@@ -1232,6 +1233,13 @@ void KrylovROMSubstructure::performAnalysis() {
 				std::string typeExport = std::string(iAnalysis->FILEEXPORT()[iFileExports].EXPORT()[iExports].Type()->c_str());
 				if (typeExport == "TransferFunctions")
 				{
+#ifdef USE_HDF5
+					std::cout << " >> Exporting Transfer Functions to HDF5..." << std::endl;
+					std::cout << " >> currentPart..." << currentPart << std::endl;
+					std::string filePath = MetaDatabase::getInstance()->getWorkingPath();
+					myFileResults = (FileResults*) new FileResults(currentPart + "_FRF_Results_" + std::to_string(iExports) + ".h5", filePath);
+					myFileResults->createContainer(true);
+#endif //USE_HDF5
 					std::cout << " > Found: Export " << typeExport << " to " << typeFile << std::endl;
 					// Preparation of Required Data
 					/// Inputs
@@ -1312,7 +1320,11 @@ void KrylovROMSubstructure::performAnalysis() {
 					}
 
 					if (typeFile == "HDF5") {
-						// Export of HDF5 happen here
+#ifdef USE_HDF5	
+						myFileResults->addComplexDenseMatrixFRF("A", historySolution);
+						myFileResults->addFrequencyVectorFRF(freq);
+#endif //USE_HDF5
+
 					}
 					else if(typeFile == "DAT")
 					{
@@ -1327,8 +1339,14 @@ void KrylovROMSubstructure::performAnalysis() {
 					std::cout << " !! Unknowm identifier for export: " << typeExport << std::endl;
 					exit(EXIT_FAILURE);
 				}
+#ifdef USE_HDF5
+				myFileResults->addInputOutputMapFRF(exportNode, exportNodeDof, exportNode, exportNodeDof);
+				myFileResults->closeContainer();
+				std::cout << " Finished." << std::endl;
+#endif //USE_HDF5
 			}
 		}
+
 		std::cout << ">> Performing file exports... Finished" << std::endl;
 	}
 	std::cout << ">> All Analyses Completed." << std::endl;

@@ -23,18 +23,19 @@
 * \date 12/06/2018
 **************************************************************************************************/
 #pragma once
+#include <MathLibrary.h>
+
 
 #include <string>
 #include <assert.h>
 #include <math.h>
-
-#include <MathLibrary.h>
 
 class HMesh;
 class FeElement;
 class FeUmaElement;
 class SimuliaUMA;
 class FileFOM;
+class FileResults;
 /**********
 * \brief Class KrylovROMSubstructure holds and builds the whole ROM Analysis
 * Input to this class is a FeMetaDatabase and a HMesh object
@@ -204,6 +205,7 @@ private:
 
 	//fileHandles
 	FileFOM* myFileFOM;
+	FileResults* myFileResults;
 
 	// ROM Complex data
 	/// Dense reduced stiffness matrix
